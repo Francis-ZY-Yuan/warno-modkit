@@ -72,9 +72,18 @@ def is_gameplay_file(rel: str) -> bool:
 ID_LINE = "ID = {id} ;"  # the Config.ini line holding the mod's Steam ID; CONFIG_INI writes 0, as every unpublished mod
 
 
+def check_mod_id(mod_id: object) -> int:
+    """`mod_id` (a mod's Steam Workshop ID, 0 until its first upload) if it is a non-negative integer that fits in a
+    uint64; raises what gates.check raises otherwise (a bool is no ID)."""
+    check(isinstance(mod_id, int) and not isinstance(mod_id, bool) and 0 <= mod_id < 2 ** 64,
+          f"the Workshop ID {mod_id!r} is not a non-negative integer that fits in a uint64")
+    return mod_id
+
+
 def config_ini(mod_name: str, *, mod_id: int, extra_config_rows: Iterable[str]) -> str:
-    """CONFIG_INI for the mod folder `mod_name` with ID = `mod_id`, and `extra_config_rows` (whole lines, such as a
-    changed cluster's '<key>=<md5>') under [Config]."""
+    """CONFIG_INI for the mod folder `mod_name` with ID = `mod_id` (check_mod_id), and `extra_config_rows` (whole
+    lines, such as a changed cluster's '<key>=<md5>') under [Config]."""
+    check_mod_id(mod_id)
     text = CONFIG_INI.format(name=mod_name)
     old = ID_LINE.format(id=0)
     check(text.count(old) == 1, "Config.ini template changed: cannot set the mod ID")

@@ -26,6 +26,7 @@ from typing import Callable, Iterable, Mapping, NamedTuple
 
 from modkit.core import ndfbin, paths
 from modkit.core.gates import Pending, check
+from modkit.core.packaging import check_mod_id
 from modkit.ops.graph import Node
 from modkit.ops.items import Item
 from modkit.ops.leveldesign import LdItem
@@ -251,7 +252,9 @@ class OpProfile:
     # Ship the template's Details whole, byte for byte, instead of a generated LevelDesign, its zone files and the map
     # copies (the content then has no LevelDesign items): a clone that keeps the template's map and layout.
     details_from_template: bool = False
-    mod_id: int = 0                         # Config.ini ID (0: the template's)
+    # Config.ini's ID, the mod's Steam Workshop ID: 0 until its first upload (the bytes are then the template's), then the
+    # item's ID, so a rebuild keeps it (packaging.check_mod_id: a non-negative integer that fits in a uint64).
+    mod_id: int = 0
     # --- extension points
     extra_config_rows: tuple[str, ...] = ()                     # whole lines under Config.ini's [Config]
     extra_manifest_rows: tuple[tuple[str, str, str], ...] = ()  # (name, action, source) rows of MANIFEST.tsv
@@ -265,6 +268,7 @@ class OpProfile:
     reviewed_pending: Pending = field(default_factory=dict)
 
     def __post_init__(self):
+        check_mod_id(self.mod_id)
         check(tuple(self.packs) == PACKS,
               f"OpProfile.packs is {list(self.packs)}, but a build always plans and writes the packs {list(PACKS)}, "
               f"in that order: leave packs out (a new pack goes in extra_packs)")

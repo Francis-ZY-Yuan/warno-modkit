@@ -190,7 +190,7 @@ class Package(unittest.TestCase):
         self.assertTrue((self.tmp / "build" / "share" / f"Install {NAME}.cmd").is_file())
 
 
-CMD_SHA256 = "cab2321523cf66f4343e9b1c31379669865a89ef4fdb8ea3e16a215769a0ec51"  # build_cmd's bytes for fixed_cmd()
+CMD_SHA256 = "9d49e19a87e0b92efa1f6b590763c1c91cadb2dea5fba96f165843d3aebee418"  # build_cmd's bytes for fixed_cmd()
 
 
 def fixed_cmd(root: Path) -> bytes:
@@ -431,16 +431,67 @@ class Install(unittest.TestCase):
         self.assertEqual(self.ini(), f"[Config]\r\nActivatedMods = {WORKSHOP_ID}|Other\r\n".encode())
 
     def test_the_replaced_copys_id_counts_as_the_mod(self):
-        """An installed copy may have another ID than the new build (here a Workshop ID, the new build 0): the entry
-        for the old ID is the mod's, and takes the new form in its place."""
+        """An installed copy has a Workshop ID the new build (ID 0) lacks: the entry for that ID is the mod's, and the
+        installed ID is kept (test_a_non_zero_installed_id_is_carried_over), so the entry stays in the ID form."""
         old = self.modroot / NAME
         old.mkdir(parents=True)
         (old / "Config.ini").write_text(CONFIG_ID, encoding="ascii", newline="")
         self.put_ini(f"[Config]\nActivatedMods = Other|{WORKSHOP_ID}|Third\n")
         r = self.run_cmd()
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual(self.ini(), f"[Config]\nActivatedMods = Other|{WORKSHOP_ID}|Third\n".encode())
+
+    def install_over(self, installed_config: str | None) -> subprocess.CompletedProcess:
+        """Run the installer over a copy whose Config.ini is `installed_config` (None: no prior copy)."""
+        if installed_config is not None:
+            old = self.modroot / NAME
+            old.mkdir(parents=True)
+            (old / "Config.ini").write_text(installed_config, encoding="ascii", newline="")
+            (old / "stale.dat").write_bytes(b"old")
+        return self.run_cmd()
+
+    def test_a_non_zero_installed_id_is_carried_over(self):
+        """The upload wrote the item's ID into the installed Config.ini; the build ships ID = 0. The new Config.ini
+        keeps the installed ID, on that one line, and the installer says so."""
+        r = self.install_over(CONFIG_ID)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn(f"Kept the installed Workshop ID {WORKSHOP_ID}", r.stdout)
+        self.assertEqual(r.stdout.count("Kept the installed"), 1)
+        want = dict(self.want, **{"Config.ini": CONFIG_ID.encode("ascii")})
+        self.assertEqual(tree(self.modroot / NAME), want)
+        r = self.run_cmd()  # a second run replaces the copy with the build's 0 again and keeps the ID again
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("Kept the installed", r.stdout)
+        self.assertEqual(tree(self.modroot / NAME), want)
+
+    def test_two_different_non_zero_ids_are_refused(self):
+        self.use_config(CONFIG.replace("ID = 0 ;", "ID = 777 ;"))
+        r = self.install_over(CONFIG_ID)
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn("Install failed", r.stdout)
+        self.assertIn(WORKSHOP_ID, r.stdout)
+        self.assertIn("777", r.stdout)
+        self.assertEqual((self.modroot / NAME / "Config.ini").read_text(), CONFIG_ID)  # the old copy is untouched
+        self.assertTrue((self.modroot / NAME / "stale.dat").exists())
+
+    def test_the_same_non_zero_id_installs_as_is(self):
+        self.use_config(CONFIG_ID)
+        r = self.install_over(CONFIG_ID)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertNotIn("Kept the installed", r.stdout)
         self.assertInstalled()
-        self.assertEqual(self.ini(), f"[Config]\nActivatedMods = Other|{NAME}|Third\n".encode())
+
+    def test_a_plain_install_keeps_the_builds_id_0(self):
+        r = self.install_over(None)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertNotIn("Kept the installed", r.stdout)
+        self.assertInstalled()
+
+    def test_an_installed_id_0_changes_nothing(self):
+        r = self.install_over(CONFIG)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertNotIn("Kept the installed", r.stdout)
+        self.assertInstalled()
 
     def test_damaged_installer_is_refused(self):
         # a payload that no longer matches the baked hashes (here: the first hash is wrong) must install nothing

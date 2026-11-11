@@ -72,6 +72,10 @@ SCALAR_EDITS = (
                Value(0x03, MENU_ORDER)),
     ScalarEdit("MapConfiguration", "TChallengeMapInfo", "Duration", Value(0x02, 3), Value(0x02, 1)),
 )
+# Twin Strike's Steam Workshop item ID, written to Config.ini's ID: 0 until the first upload. The upload writes the new
+# item's ID into the installed Config.ini only, so set it here to that ID right after the first upload: a rebuild then
+# keeps it, and the next upload updates the same item instead of creating a second one.
+WORKSHOP_ID = 0
 MAP_SWAP_STRINGS = {"_3x3_Railway": TWIN_CITIES.name}     # ScenarioInfo.RootDatapackName
 MAP_SWAP_TRANS = {"Railway": TWIN_CITIES.env_settings}    # import $/GraphicSettings/EnvironmentSettings/<map>
 DECK_SWAP = SOVIET_PLAYER_DECK_SWAP                       # MapConfiguration LocalPlayerDeck
@@ -159,7 +163,7 @@ def profile() -> OpProfile:
         dictionaries=DICTIONARIES, asset_rules=ASSET_RULES,
         import_rule="trie", shape_sources=SHAPE_SOURCES, player_camp=CAMPS[PLAYER], enemy_camp=CAMPS["NATO"],
         end_exports=(END_FUNNEL,),
-        build_root=os.path.abspath(paths.build_root()), dumps=True, mod_id=0,
+        build_root=os.path.abspath(paths.build_root()), dumps=True, mod_id=WORKSHOP_ID,
         extra_items=(CUT.items, CAMERA.items), extra_gates=EXTRA_GATES, extra_outputs=(overlay,),
     )
 

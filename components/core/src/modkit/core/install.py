@@ -11,7 +11,10 @@ and the same installer beside it, <out>/Install <ModName>.cmd, to send on its ow
 The installer copies the mod into <Saved Games>\\EugenSystems\\WARNO\\mod\\ and adds it to ActivatedMods in the
 shared mod\\Config.ini, as the game's Mod Center does, in the form the game itself writes there: the mod's ID when it
 has a non-zero one (a Workshop item), else its folder name. Either form already in the list, or the ID of the copy it
-replaces, counts as the mod, so a reinstall keeps one entry in its place. Refuses (exit 1) a mod with no Config.ini, a
+replaces, counts as the mod, so a reinstall keeps one entry in its place. A build ships ID = 0, but an upload to
+the Workshop writes the item's ID into the installed Config.ini: when the installed copy has a non-zero ID and the
+incoming one has 0, the installer carries the installed ID into the new Config.ini (that one line only) and says so;
+when both are non-zero and differ it refuses, naming both. Refuses (exit 1) a mod with no Config.ini, a
 Gameplay mod (cluster lines under [Config], or a file under Gen/ that the game's Gameplay tag lists:
 packaging.is_gameplay_file) or a mod whose MANIFEST.tsv lists `requires` rows.
 
@@ -246,13 +249,31 @@ try {{
     # 4. Replace any older copy, then check what landed
     $dest = Join-Path $modRoot $ModName
     $forms = @($ModName)  # every ActivatedMods entry that names this mod
+    $oldId = ''
     if (Test-Path -LiteralPath $dest) {{
         $oldId = Get-ModId $dest  # the copy being replaced may have another ID than this one
+        $inId = Get-ModId (Join-Path $stage $ModName)
+        if ($oldId -and $inId -and $oldId -ne $inId) {{
+            throw ('the installed copy has Workshop ID ' + $oldId + ' but this build has ID ' + $inId + '; not replacing one Workshop item with another. Remove the installed copy first if you mean to.')
+        }}
         if ($oldId) {{ $forms += $oldId }}
         Remove-Item -LiteralPath $dest -Recurse -Force
     }}
     Copy-Item -LiteralPath (Join-Path $stage $ModName) -Destination $modRoot -Recurse
     Test-Hashes $dest
+    # An upload writes the new Workshop item's ID into the installed Config.ini; a build ships ID = 0. Keep the
+    # installed ID (rewriting that one line only), or the next upload would create a second Workshop item.
+    if ($oldId -and -not (Get-ModId $dest)) {{
+        $cfg = Join-Path $dest 'Config.ini'
+        $utf8cfg = New-Object Text.UTF8Encoding($false)
+        $cfgText = [IO.File]::ReadAllText($cfg, $utf8cfg)
+        $im = [regex]::Match($cfgText, '(?m)^([ \t]*ID[ \t]*=[ \t]*)[0-9]+')
+        if ($im.Success) {{
+            $cfgText = $cfgText.Substring(0, $im.Index) + $im.Groups[1].Value + $oldId + $cfgText.Substring($im.Index + $im.Length)
+            [IO.File]::WriteAllText($cfg, $cfgText, $utf8cfg)
+            Write-Host ('Kept the installed Workshop ID ' + $oldId + ' in Config.ini (this build has ID 0).')
+        }}
+    }}
 
     # 5. Switch it on: add it to ActivatedMods in mod\Config.ini, like the game does. The game rewrites the list at
     #    startup, naming a mod with a non-zero ID by that ID and any other by its folder name, so the entry takes

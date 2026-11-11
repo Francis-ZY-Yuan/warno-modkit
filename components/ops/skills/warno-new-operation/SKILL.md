@@ -65,6 +65,10 @@ base directory; `components/ops/examples/` in a clone):
    `${CLAUDE_PLUGIN_ROOT}/tests/test_probes.py` does; `modkit.ops.testing` reads a built script back.
 9. **Play it** with every Gameplay mod switched off (`warno-probe-and-playtest`). A failure goes to
    `warno-launch-triage`, and every outcome to `warno-record-finding`.
+10. **Publish** (`warno-ship`). The upload writes the new Workshop item's ID into the installed `Config.ini` only, and
+    every build writes `ID = 0`. Right after the first upload, put that ID into the profile's `mod_id` (Twin Strike
+    names it `WORKSHOP_ID`) and commit: a rebuild then keeps it, and the next upload updates the same item instead of
+    creating a second one. The share installer also keeps an installed non-zero ID over a build's 0.
 
 ## Red flags
 

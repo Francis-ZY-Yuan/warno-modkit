@@ -177,6 +177,11 @@ class ExtensionPointsTest(unittest.TestCase):
         self.assertIn("-\tOtherMod\t\trequires\ttest", manifest)
         self.assertEqual(manifest[-1], "-\tTrophy.ndfbin\t\tdrop\tdropped")
 
+    def test_the_profile_refuses_a_bad_workshop_id(self):
+        for bad in (-1, 2 ** 64, "7"):
+            with self.subTest(bad=bad), self.assertRaisesRegex(CheckError, "Workshop ID"):
+                profile(mod_id=bad)
+
     def test_no_extension_points_write_the_template_config(self):
         files = self.write(profile(build_root=self.tmp.name, dumps=False))
         self.assertIn("ID = 0", files["ModX/Config.ini"].decode("ascii"))

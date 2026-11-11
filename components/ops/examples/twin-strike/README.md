@@ -85,6 +85,11 @@ folder as a zip with a one-click `.cmd` installer, in `share/` in the build fold
 installer, switch every Gameplay mod off, and play one run with the play sheet below beside you. Record what you see as
 a trial (the `warno-record-finding` skill).
 
+**After the first Workshop upload,** set `WORKSHOP_ID` in `twinstrike/profile.py` to the new item's ID and commit. The
+upload writes that ID into the installed `Config.ini` only, and every build writes `ID = 0`: without it, the next build
+and reinstall reset the ID, and the next upload creates a second Workshop item instead of updating the first. (The share
+installer also keeps an installed non-zero ID over a build's 0, and refuses a build with a different non-zero one.)
+
 ## Play sheet
 
 Play one run on Medium. Answer each question with what the map shows; a number or a yes/no is enough. Every phase

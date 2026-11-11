@@ -70,6 +70,14 @@ class WriteTest(unittest.TestCase):
         self.assertNotIn("\nID = 0 ;", text)
         self.assertTrue(text.endswith("do not modify\nGFX/Unit=abc\n"), text[-60:])
 
+    def test_the_workshop_id_must_fit_a_uint64(self):
+        for good in (0, 1, 2 ** 64 - 1):
+            with self.subTest(good=good):
+                self.assertIn(f"\nID = {good} ;", packaging.config_ini("MyOp", mod_id=good, extra_config_rows=()))
+        for bad in (-1, 2 ** 64, 1.5, "7", None, True):
+            with self.subTest(bad=bad), self.assertRaisesRegex(CheckError, "Workshop ID"):
+                packaging.config_ini("MyOp", mod_id=bad, extra_config_rows=())
+
     def test_config_ini_checks_the_template(self):
         for template in (packaging.CONFIG_INI.replace("ID = 0 ;", "ID = 1 ;"),
                          packaging.CONFIG_INI.replace(packaging.CONFIG_HEADER, "[Other]")):
