@@ -56,7 +56,8 @@ them on each machine.
 ## Map pictures (TGV)
 
 `.tgv` files are textures. `python -m modkit.core.tgv info|topng` reads the uncompressed RGBA format that map
-pictures use, and refuses any other format rather than guess.
+pictures use, and refuses any other format rather than guess. `frompng` writes that format the way stock menu
+pictures are written; `roundtrip` proves it, re-encoding every scenario's `MapPackAssets/Textures/*.tgv` byte for byte.
 
 | picture | where | pixels per map grid unit |
 | --- | --- | --- |

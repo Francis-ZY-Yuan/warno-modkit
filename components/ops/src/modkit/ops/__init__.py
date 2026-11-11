@@ -14,6 +14,9 @@ def _op(folder: str, *packs: str, why: str) -> tuple[Stock, ...]:
                  for p in packs)
 
 
+# A scenario's menu pictures, inside its Assets pack (MapTexture.tgv, the card modkit.ops.menuart redraws, among them).
+MENU_PICTURES = "PC/Texture/*/MapPackAssets/Textures/*.tgv"
+
 # The game's own INTERFACE_INGAME dictionary of one language (format `lang`), relative to the extraction: where the
 # game looks dialog button labels up (modkit.ops.gates.INGAME_PROPS). STOCK_PATHS declares its folder.
 INGAME_DIC = "glad_201602/Localisation/Core/INTERFACE_INGAME-{lang}.dic"
@@ -42,10 +45,11 @@ STOCK_PATHS = (
     Stock("glad_201602/Localisation/Core", packs=("ZZ_1",),
           rename=(r"Localisation/Localisation/Core/(INTERFACE_INGAME-[A-Za-z]+\.dic)", r"\1"),
           why="the game's INTERFACE_INGAME dictionaries (the glyph gate and the in-game key check)"),
-    *(Stock(f"scenarios/{family}_*", packs=("{}_Assets",), include=("*-SC.dic", *more),
+    *(Stock(f"scenarios/{family}_*", packs=("{}_Assets",), include=("*-SC.dic", *more, MENU_PICTURES),
             why="every stock scenario's Chinese dictionaries: the characters the glyph gate admits (gates.check_strings)"
                 + ("; the challenges' English menu texts: the stock lengths the title convention is measured against "
-                   "(strings.check_titles)" if more else ""))
+                   "(strings.check_titles)" if more else "")
+                + "; its menu pictures: what the TGV writer round-trips byte for byte (core's test_tgv)")
       for family, more in (("challenge", ("Localisation/*/SCENARIO_DEFINITION-US.dic",)), ("CampagneStrat", ()))),
     Stock("moddata_base", archive="Mods/ModData/base.zip",
           include=("GameData/Generated/Gameplay/Effects/*", "GameData/Gameplay/Constantes/Enumerations/*",
