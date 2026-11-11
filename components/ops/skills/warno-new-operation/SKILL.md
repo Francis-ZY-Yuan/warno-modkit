@@ -58,8 +58,9 @@ base directory; `components/ops/examples/` in a clone):
 7. **Write the strings** for exactly the profile's three dictionaries, each token as `(English, Chinese)`. Chinese
    uses only characters stock text uses ([[chinese-text-stock-glyphs]]), and dialog text carries no live numbers
    ([[dialog-text-takes-no-variables]]). Menu titles stay within 30 UTF-16 units: a toolkit convention, not a game
-   limit. Gate 1 holds the tokens in `Content.menu_tokens` to it; the examples list all seven menu tokens, but stock's
-   briefing runs past 1,000 units, so leave a stock-length briefing's token out of that list.
+   limit. Gate 1 holds the tokens in `Content.menu_tokens` to it, so list only the titles there. Open Door and the
+   probes list all seven menu tokens; Twin Strike lists its two titles, and its briefing, forces line, background and
+   outcome texts take stock's form and lengths (the briefing past 1,000 units; `twinstrike/strings.py`).
 8. **Build:** `python build.py --content <name>`. Read the gate lines. A `FAILED:` line is the game's rule, so fix
    the content, never the gate (`warno-gates`). Then pin each rule the mission relies on in a test, as
    `${CLAUDE_PLUGIN_ROOT}/tests/test_probes.py` does; `modkit.ops.testing` reads a built script back.

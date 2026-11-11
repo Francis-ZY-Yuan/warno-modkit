@@ -49,7 +49,8 @@ STOCK_PATHS = (
             why="every stock scenario's Chinese dictionaries: the characters the glyph gate admits (gates.check_strings)"
                 + ("; the challenges' English menu texts: the stock lengths the title convention is measured against "
                    "(strings.check_titles)" if more else "")
-                + "; its menu pictures: what the TGV writer round-trips byte for byte (core's test_tgv)")
+                + "; its menu pictures: what the TGV writer round-trips byte for byte (core's test_tgv), and what a "
+                  "profile's menu art ships in place of the template's (OpProfile.menu_art)")
       for family, more in (("challenge", ("Localisation/*/SCENARIO_DEFINITION-US.dic",)), ("CampagneStrat", ()))),
     Stock("moddata_base", archive="Mods/ModData/base.zip",
           include=("GameData/Generated/Gameplay/Effects/*", "GameData/Gameplay/Constantes/Enumerations/*",

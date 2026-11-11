@@ -6,7 +6,7 @@ challenge_OperationTwinStrike and its own GUID, its map rows point at Twin Citie
 ts_*. Survivors' four camps stay (its CampList and SetDeck block), flipped to the stock Soviet-player shape
 [[soviet-player-camp]] (modkit.ops.profile.SOVIET_PLAYER_CAMP_ROWS): the player Soviet on RedJuggernaut's deck, its AI
 ally (the division artillery's camp) Soviet, the two Alliance 1 camps NATO. The menu's player deck follows
-(SOVIET_PLAYER_DECK_SWAP).
+(SOVIET_PLAYER_DECK_SWAP), and so do its emblems: RedJuggernaut's, in place of Survivors' (MENU_ART).
 
 The op plays on a cut of the stock layout SM_SU_3x3_TwinCities_03 (twinstrike.map.CUT): the cut ships its own
 playable zone and AI grid [[ai-grid-tiles-playable-zone]], and the op its own start camera (twinstrike.map.CAMERA) in
@@ -47,6 +47,10 @@ FOLDER = "$/GDScript/TS"            # the script's own exports (Main, Variables,
 MENU_RENAMES = (("op13_name", "ts_name"), ("op13_order", "ts_order"), ("op13_headr", "ts_headr"),
                 ("op13_cname", "ts_cname"), ("op13_recap", "ts_recap"), ("op13_vic", "ts_vic"), ("op13_def", "ts_def"))
 MENU_TOKENS = tuple(new for _, new in MENU_RENAMES)
+# The menu's titles (MissionName and TitreObjectifs), the only tokens gate 1's 30-unit title convention holds
+# (Content.menu_tokens). The other five take stock's form and lengths, the briefing over 1,000 units
+# (twinstrike.strings).
+TITLE_TOKENS = ("ts_name", "ts_cname")
 
 # The sides as Survivors' camps, flipped to the Soviet-player shape: Soviet (joueur, the player), SovietAlly (Allie,
 # the division artillery), NATO (ordinateur_SOV: the garrison and both battalions) and NATO2 (ordinateur_DDR, unused).
@@ -93,6 +97,12 @@ ASSET_RULES = (
     (f"PC/Texture/{SOURCE}/*", "drop", "Survivors dialog portraits; not referenced"),
     (f"PC/Video/{SOURCE}/*", "drop", "Survivors videos; not referenced"),
 )
+# The menu's emblems from RedJuggernaut, the stock Operation of the 79th Guards Tank Division whose deck the player
+# fields [[soviet-player-camp]], in place of Survivors' British ones (OpProfile.menu_art): its corner logo (the red
+# star), its country flag (the Soviet Union's) and its end-of-game blazon (the division's Guards badge). The map
+# picture stays Survivors' MapTexture.
+MENU_ART = {"CornerLogo": "challenge_RedJuggernaut", "MissionCountry": "challenge_RedJuggernaut",
+            "EndgameBlazon": "challenge_RedJuggernaut"}
 SHAPE_SOURCES = {  # generated file -> stock files whose shapes it may use, relative to the extraction
     "GDScript": ("scenarios/challenge_*/NDF/Scenarios/GDScript/challenge_*.ndfbin",),
     LD_FILE: ("scenarios/challenge_*/out/LevelDesign.ndfbin", "kreide_op/*/out/LevelDesign.ndfbin"),
@@ -160,7 +170,7 @@ def profile() -> OpProfile:
         template=SURVIVORS, guid_namespace=GUID_NAMESPACE,
         map_strings=MAP_SWAP_STRINGS, map_trans=MAP_SWAP_TRANS, map_details=TWIN_CITIES.details, map_copies=(),
         ground_z=TWIN_CITIES.ground_z, scalar_edits=SCALAR_EDITS, deck_swap=DECK_SWAP,
-        dictionaries=DICTIONARIES, asset_rules=ASSET_RULES,
+        dictionaries=DICTIONARIES, asset_rules=ASSET_RULES, menu_art=MENU_ART,
         import_rule="trie", shape_sources=SHAPE_SOURCES, player_camp=CAMPS[PLAYER], enemy_camp=CAMPS["NATO"],
         end_exports=(END_FUNNEL,),
         build_root=os.path.abspath(paths.build_root()), dumps=True, mod_id=WORKSHOP_ID,

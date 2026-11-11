@@ -30,7 +30,7 @@ extraction and resolved only when a build runs.
   byte (`map_copies`). With `details_from_template` the template's Details ship whole instead.
 - **Assets:** the string table as one dictionary per language (the Chinese column for SC, English for the other
   seven), and the template's files kept by `asset_rules` (its menu pictures; its voice, Python, video and portraits
-  are dropped).
+  are dropped). `menu_art` swaps a menu picture for another stock Operation's, at the same path.
 
 ## The profile
 
@@ -45,6 +45,7 @@ new op on Geisa, change the identity and leave the rest until you know why.
 | `scalar_edits` | Definition scalars changed: the menu order (`OrderToChainMission`) and the duration | the menu order `derived_menu_order(SCENARIO, GUID_NAMESPACE)` ([[content-identity-unique]]); keep the rest. Left out, the build derives it |
 | `deck_swap` | MapConfiguration's player deck | change with the player's `CAMP_ROWS` deck |
 | `dictionaries`, `asset_rules` | the three dictionaries; what to do with each template asset | keep |
+| `menu_art` | menu pictures from another stock Operation: `{picture name: stock scenario}`, shipped in place of the template's at the path MapConfiguration names | empty keeps the template's; Twin Strike takes RedJuggernaut's three emblems |
 | `import_rule`, `shape_sources` | the canonical-layout rule; the stock files each generated file's shapes are held to | keep |
 | `player_camp`, `enemy_camp` | the camps the tier gate reads | keep (the examples' NATO and PACT camps) |
 | `end_exports` | the end funnel's export paths; `()` for none | your `FOLDER`'s funnel |
@@ -67,7 +68,7 @@ AI-controlled ally and the enemy ([[custom-operation-from-stock-parts]]).
 | `items` | every LevelDesign item (`LdItem`), zones and arrivals included |
 | `script` | the template's GDScript in, `(roots, exports)` out; `None` ships the template's own |
 | `strings` | `{dictionary: {token: (English, Chinese)}}`, exactly the profile's dictionaries |
-| `menu_tokens` | the SCENARIO_DEFINITION tokens held to the 30-unit title limit (a toolkit convention: stock's briefings run past 1,000 units) |
+| `menu_tokens` | the SCENARIO_DEFINITION tokens held to the 30-unit title limit (a toolkit convention: stock's briefings run past 1,000 units), so the titles only |
 | `scenario`, `mod_name`, `menu_renames` | the identity ([[content-identity-unique]]) |
 | `extra_shapes` | shapes no stock file uses but this content uses on purpose, each a reviewed decision |
 | `blocking_objectives` | objectives reviewed to hold up their Sequential until they resolve |

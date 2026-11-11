@@ -1,4 +1,5 @@
-"""Tests for the build plan of a cloned scenario in modkit.ops.items: plan_definition, plan_details, plan_assets."""
+"""Tests for the build plan of a cloned scenario in modkit.ops.items: plan_definition, plan_details, plan_assets,
+menu_art."""
 import os
 import tempfile
 import unittest
@@ -6,7 +7,9 @@ import unittest
 from modkit.core.gates import CheckError
 from modkit.core.ndfbin import Value
 from modkit.ops.graph import Node, Str, build_graph, decode, encode
-from modkit.ops.items import AssetRule, asset_rule, payload, plan_assets, plan_definition, plan_details
+from modkit.ops.items import (
+    MENU_ART, AssetRule, asset_rule, menu_art, payload, plan_assets, plan_definition, plan_details,
+)
 from modkit.ops.rekey import Rekey, def_path, tag_name_hashes
 
 SOURCE, NEW = "challenge_A", "challenge_B"
@@ -130,6 +133,48 @@ class PlanAssetsTest(TempDirTest):
     def test_every_file_needs_a_rule(self):
         with self.assertRaisesRegex(CheckError, "without a rule: Map/ignored.bin"):
             plan_assets([], self.root, ("Map",), self.RULES, SOURCE, NEW)
+
+
+class MenuArtTest(TempDirTest):
+    """A menu picture from another stock scenario, in place of the template's, at the path the MapConfiguration
+    names."""
+    RULES = (AssetRule(f"PC/Texture/{SOURCE}/MapPackAssets/Textures/*.tgv", "copy", "menu pictures"),)
+
+    def setUp(self):
+        super().setUp()
+        self.template, self.stock = os.path.join(self.root, "template"), os.path.join(self.root, "stock")
+        for name in ("CornerLogo", "MapTexture"):
+            write(self.template, MENU_ART.format(SOURCE, name), f"template {name}".encode())
+        write(self.stock, MENU_ART.format("challenge_C", "CornerLogo"), b"stock CornerLogo")
+        self.items, self.dropped = plan_assets([], self.template, ("PC",), self.RULES, SOURCE, NEW)
+
+    def test_the_stock_picture_ships_at_the_templates_path(self):
+        """CornerLogo is challenge_C's, byte for byte, with challenge_C's file as its source, at the path the template's
+        re-pathed copy had; MapTexture stays the template's; the template's CornerLogo is listed as given up."""
+        items, given_up = menu_art(self.items, {"CornerLogo": ("challenge_C", self.stock)}, SOURCE, NEW)
+        self.assertEqual([it.path for it in items], [it.path for it in self.items])
+        got = {it.path.rsplit("/", 1)[-1]: it for it in items}
+        self.assertEqual(payload(got["CornerLogo.tgv"]), b"stock CornerLogo")
+        self.assertEqual(got["CornerLogo.tgv"].action, "copy")
+        self.assertTrue(got["CornerLogo.tgv"].source.endswith("/" + MENU_ART.format("challenge_C", "CornerLogo")))
+        self.assertEqual(payload(got["MapTexture.tgv"]), b"template MapTexture")
+        self.assertEqual(given_up, [(MENU_ART.format(SOURCE, "CornerLogo"),
+                                     "menu art: challenge_C's CornerLogo ships in its place")])
+
+    def test_no_menu_art_changes_nothing(self):
+        items, given_up = menu_art(self.items, {}, SOURCE, NEW)
+        self.assertEqual([(it.path, it.digest, it.source) for it in items],
+                         [(it.path, it.digest, it.source) for it in self.items])
+        self.assertEqual(given_up, [])
+
+    def test_a_picture_the_template_does_not_ship_fails(self):
+        with self.assertRaisesRegex(CheckError, r"menu art EndgameBlazon: the template's "
+                                                rf"{MENU_ART.format(SOURCE, 'EndgameBlazon')} is not shipped"):
+            menu_art(self.items, {"EndgameBlazon": ("challenge_C", self.stock)}, SOURCE, NEW)
+
+    def test_a_missing_stock_picture_fails(self):
+        with self.assertRaises(FileNotFoundError):
+            menu_art(self.items, {"MapTexture": ("challenge_C", self.stock)}, SOURCE, NEW)
 
 
 if __name__ == "__main__":

@@ -190,16 +190,22 @@ class MenuTexts(unittest.TestCase):
             return (min(e for e, _ in got), max(e for e, _ in got)), (min(z for _, z in got), max(z for _, z in got))
 
         self.assertEqual(len(challenges), 8)
-        self.assertEqual({element: span(element) for element in spans}, {
-            "MissionName": ((9, 20), (3, 5)),
-            "MissionNameInWarningOrder": ((9, 20), (3, 5)),
-            "TitreObjectifs": ((9, 20), (3, 5)),
-            "TexteForcesEnPresence": ((35, 71), (18, 47)),
-            "TextePresentationScenario": ((1037, 1416), (359, 522)),
-            "TexteObjectifs": ((548, 991), (148, 292)),
-            "VictoryOperationOutcomeText": ((147, 295), (47, 79)),
-            "DefeatOperationOutcomeText": ((164, 266), (56, 86)),
-        })
+        self.assertEqual({element: span(element) for element in spans}, MENU_SPANS)
+
+
+# Stock's menu texts (MapConfiguration's DescriptionTextElements) in UTF-16 units, (English, Chinese) min..max per
+# element, over the 8 stock challenges that ship their own SCENARIO_DEFINITION dictionary: MenuTexts measures them, and
+# Twin Strike's menu texts keep inside the English ranges (test_twin_strike_frame.Strings).
+MENU_SPANS = {
+    "MissionName": ((9, 20), (3, 5)),
+    "MissionNameInWarningOrder": ((9, 20), (3, 5)),
+    "TitreObjectifs": ((9, 20), (3, 5)),
+    "TexteForcesEnPresence": ((35, 71), (18, 47)),
+    "TextePresentationScenario": ((1037, 1416), (359, 522)),
+    "TexteObjectifs": ((548, 991), (148, 292)),
+    "VictoryOperationOutcomeText": ((147, 295), (47, 79)),
+    "DefeatOperationOutcomeText": ((164, 266), (56, 86)),
+}
 
 
 class NeverFinishing(unittest.TestCase):

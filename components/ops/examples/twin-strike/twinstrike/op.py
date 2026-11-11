@@ -1036,8 +1036,8 @@ def script(tpl: ndfbin.NdfBin) -> tuple[list[Node], list[Node]]:
 
 
 def content() -> Content:
-    """The op (its own scenario, mod folder, GUID and menu tokens); its buy menu may switch to the factory tabs
-    (PROD_MENU_SWITCH, which its script's HUD restore writes)."""
-    return Content("op", tuple(ITEMS), script, STRINGS, profile.MENU_TOKENS, extra_shapes=EXTRA_SHAPES,
+    """The op (its own scenario, mod folder, GUID and menu tokens, of which the title check holds the two titles);
+    its buy menu may switch to the factory tabs (PROD_MENU_SWITCH, which its script's HUD restore writes)."""
+    return Content("op", tuple(ITEMS), script, STRINGS, profile.TITLE_TOKENS, extra_shapes=EXTRA_SHAPES,
                    scenario=profile.SCENARIO, mod_name=profile.MOD_NAME, menu_renames=profile.MENU_RENAMES,
                    prod_menu_switch=PROD_MENU_SWITCH)

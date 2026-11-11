@@ -2,8 +2,17 @@
 
 The keys are the three dictionaries the profile packs (twinstrike.profile.DICTIONARIES). ENGLISH is {dictionary:
 {token: text}}; the frame shows only the menu, the camp names and the deploy hint, and the rest waits for the mission
-(TS4b), which uses these tokens as they are. Menu tokens (ts_*: profile.MENU_RENAMES) are held to 30 UTF-16 units
-(gate 1). A dialog takes no variables, so no dialog text holds %1..%9; hints and objectives may.
+(TS4b), which uses these tokens as they are. A dialog takes no variables, so no dialog text holds %1..%9; hints and
+objectives may.
+
+The menu texts (SCENARIO_DEFINITION, profile.MENU_RENAMES) take the form of the stock Operations' own: the briefing
+(ts_order) opens with the date, time and order number, then a paragraph to the commander and four numbered points
+(the mission, what comes next, the enemy, your forces), the last two as "- " lists; the forces line (ts_headr) is the
+player's chain of command on two lines; the text under the title (ts_recap) is the background in three past-tense
+paragraphs, ending on what the detachment was ordered to do; the outcomes (ts_vic, ts_def) are one paragraph each to
+the commander. No markup. Each runs inside stock's length range for its element (test_twin_strike_frame.Strings).
+Only the two titles, ts_name and ts_cname (profile.TITLE_TOKENS), are held to 30 UTF-16 units (gate 1's title
+convention, modkit.ops.strings.check_titles).
 
 Simplified Chinese is a later build (design 7). The toolkit's table holds an English and a Chinese text per token and
 requires both (modkit.ops.strings.check_parity: no empty Chinese), so until then STRINGS gives the SC dictionaries the
@@ -26,14 +35,58 @@ BUTTONS: dict[str, tuple[str, str]] = {
 }
 
 ENGLISH: dict[str, dict[str, str]] = {
-    "SCENARIO_DEFINITION": {  # menu tokens (profile.MENU_RENAMES), each text at most 30 UTF-16 units
+    "SCENARIO_DEFINITION": {  # the menu (profile.MENU_RENAMES), in stock's form (the module docstring)
+        # the titles (profile.TITLE_TOKENS): MissionName and TitreObjectifs, each at most 30 UTF-16 units
         "ts_name": "Operation Twin Strike",
         "ts_cname": "OPERATION TWIN STRIKE",
-        "ts_headr": "Take the village. Hold it.",
-        "ts_order": "Take it, hold it, decide.",
-        "ts_recap": "Seize, hold, then decide",
-        "ts_vic": "The road west is open.",
-        "ts_def": "The village is lost.",
+        # TexteForcesEnPresence: the player's chain of command (design 6.1)
+        "ts_headr": "Soviet Army\n79th Guards Tank Division - Forward Detachment",
+        # TextePresentationScenario, the briefing: the story (design 1), the phases (4) and the forces (6.1, 6.3)
+        "ts_order": "July 4, 1989, 04:30 UTC\n"
+                    "Combat Order No. 79/014\n"
+                    "\n"
+                    "Comrade commander, two weeks into the war, the division's advance hangs on a road-junction "
+                    "village at the western edge of the twin towns. It opens the road west.\n"
+                    "\n"
+                    "1. Seize the village from the north. The division's guns can fire a preparation on it: keep your "
+                    "assault out while they fire.\n"
+                    "\n"
+                    "2. Once the village falls, the division's reserve is yours. Hold it against NATO's two blows: a "
+                    "US armoured battalion up both roads from the south, then a West German Panzer battalion "
+                    "assembling south of the village. Front offers release for one tactical nuclear strike on that "
+                    "assembly area. The decision is yours.\n"
+                    "\n"
+                    "3. Intel indicates hostile forces include:\n"
+                    "- A West German Panzergrenadier company in the village, with Marders, Leopard 1A5s and Milan "
+                    "teams.\n"
+                    "- A US armoured task force of M1A1HA Abrams and M2A2 Bradleys, with recon and heavy air defence.\n"
+                    "- A West German Panzer battalion of Leopard 2A4s and Marders.\n"
+                    "- NATO fighter sweeps.\n"
+                    "\n"
+                    "4. Under your command, the forward detachment of the 79th Guards Tank Division:\n"
+                    "- T-80BV tanks, motor rifles in BMP-2s, engineers, scouts, Shilkas, 2S1s and Ka-29s.\n"
+                    "- The division's 2S7M and BM-27 batteries, on call.\n"
+                    "- In reserve: T-80U tanks, Ka-50 and Mi-24V helicopters, Tunguska, Osa and Kub air defence.",
+        # TexteObjectifs, under the title: the background (design 1), ending on the detachment's orders
+        "ts_recap": "Two weeks into the war, the Soviet advance was still rolling west. The next bound of the 79th "
+                    "Guards Tank Division hung on one road junction: a small village on the western edge of a pair of "
+                    "towns, whose road led west. The division sent its forward detachment to seize it.\n"
+                    "\n"
+                    "NATO could not let the road go. A US armoured battalion was ordered to counter-attack at once, up "
+                    "both roads from the south, behind a recon screen and under heavy air defence. A West German "
+                    "Panzer battalion was to assemble south of the village for a second, heavier blow.\n"
+                    "\n"
+                    "Soviet doctrine of the time planned nuclear strikes against exactly this: an enemy reserve "
+                    "concentrating to counter-attack. Front command stood ready to release one tactical nuclear strike "
+                    "on the assembly area. The forward detachment was to take the village, hold it against both blows, "
+                    "and decide whether to ask for the strike.",
+        # VictoryOperationOutcomeText and DefeatOperationOutcomeText: true of every win and every loss (design 4.2, 5.8)
+        "ts_vic": "Comrade commander, the village is ours. Both NATO counter-attacks failed to retake it, and the road "
+                  "west lies open to the division. Front will remember the forward detachment that held the "
+                  "junction.\n",
+        "ts_def": "Comrade commander, we do not hold the village, and the road west stays closed. The forward "
+                  "detachment was spent for nothing. Front will want to know why a Guards tank division's vanguard "
+                  "could not take and hold one village.\n",
     },
     "Scripting/Dialog": {
         # design 5.4: the preparation fire, asked again every 2 minutes until fired or the village falls

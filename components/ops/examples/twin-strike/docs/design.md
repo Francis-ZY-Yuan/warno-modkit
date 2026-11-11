@@ -450,6 +450,9 @@ fuel or ammunition. Each sweep is its own group, in its own branch, so none hold
   - v0.1 snapped a one-key path over the village before LoadingDone instead. The deployment phase's start lost it, and
     the camera sat on the ground [[2026-11-11-twin-strike-opening-camera]].
 - **Text.** English. Simplified Chinese is a later build; the toolkit's glyph gate is ready for it.
+- **The Operations menu** takes stock's form: a briefing dated July 1989 in four numbered points, the forces line, the
+  background and the outcome texts, at stock's lengths. Its emblems are RedJuggernaut's (the 79th Guards Tank
+  Division's star, flag and Guards badge); its map picture is still Survivors'.
 - **Screenshots** for the README: the assault on the village under fire, the counter-attack's columns on the tactical
   map, the mushroom cloud over ASSEMBLY, and the end screen.
 

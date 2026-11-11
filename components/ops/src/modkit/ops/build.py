@@ -41,7 +41,7 @@ from modkit.ops.leveldesign import (
     LD_FILE, LD_SHARED, ZONE_FILES, LdItem, derived_menu_order, leveldesign_graph, scenario_guid, zone_area,
 )
 from modkit.ops.packs import verify_packs, write_loose, write_packs
-from modkit.ops.profile import Content, OpProfile, extracted
+from modkit.ops.profile import STOCK_ASSETS, Content, OpProfile, extracted
 from modkit.ops.rekey import Rekey, ScalarEdit, def_path, dump_rows
 from modkit.ops.script import BRICK_DEFAULT
 from modkit.ops.strings import LANGS, StringError, payloads
@@ -142,12 +142,16 @@ def plan_details(profile: OpProfile, content: Content) -> list[Item]:
 def plan_assets(profile: OpProfile, content: Content) -> tuple[list[Item], list[tuple[str, str]]]:
     """Each of the profile's dictionaries in every language from the content's string table (SC from the Chinese
     column, the other seven from the English; named by content.sources), plus the template's files by the profile's
-    asset rules. Returns (items, dropped)."""
+    asset rules, each menu picture of the profile's menu art taken from its stock scenario instead
+    (modkit.ops.items.menu_art). Returns (items, dropped: the template's files not shipped)."""
     t, blobs = profile.template, payloads(content.strings)
     dics = [(f"Localisation/{content.scenario}/{name}-{lang}.dic", blobs[(name, lang)], content.sources.dic(name, lang))
             for name in profile.dictionaries for lang in LANGS]
-    return ops_items.plan_assets(dics, t.path("assets"), t.asset_subtrees, profile.asset_rules, t.source,
-                                 content.scenario)
+    items, dropped = ops_items.plan_assets(dics, t.path("assets"), t.asset_subtrees, profile.asset_rules, t.source,
+                                           content.scenario)
+    art = {name: (stock, extracted(STOCK_ASSETS.format(stock))) for name, stock in profile.menu_art.items()}
+    items, given_up = ops_items.menu_art(items, art, t.source, content.scenario)
+    return items, dropped + given_up
 
 
 def pack_order(profile: OpProfile) -> tuple[str, ...]:

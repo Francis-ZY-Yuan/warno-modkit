@@ -4,9 +4,9 @@
   its GUID and menu-token prefix, the Definition kinds re-keyed and dropped, and the script objects a generated
   script copies.
 * An ``OpProfile`` holds everything that differs between two ops built from one template: the GUID namespace, the map
-  the op moves to, the re-keying edits, the dictionaries and asset rules, the gates' settings, how the mod folder is
-  written, and the extension points (extra packs, loose files, Config.ini and manifest rows, gates and review
-  outputs), plus the reviewed-pending gate failures.
+  the op moves to, the re-keying edits, the dictionaries, asset rules and menu art, the gates' settings, how the mod
+  folder is written, and the extension points (extra packs, loose files, Config.ini and manifest rows, gates and
+  review outputs), plus the reviewed-pending gate failures.
 * A ``Content`` is one build of an op: its LevelDesign items, its script, its string table and its identity (scenario
   id and mod folder).
 * A clone of Survivors whose player is Soviet takes the stock Soviet-player camp shape: ``SOVIET_PLAYER_CAMP_ROWS``,
@@ -35,6 +35,7 @@ from modkit.ops.script import BRICK_FORCE_HIDE, Templates
 from modkit.ops.strings import Table
 
 PACKS = ("Definition", "Details", "Assets")   # the scenario packs every build writes, in this order
+STOCK_ASSETS = "scenarios/{}"   # a stock challenge's Assets folder in the extraction, by scenario id (STOCK_PATHS)
 
 
 def extracted(rel: str) -> str:
@@ -255,6 +256,11 @@ class OpProfile:
     # Config.ini's ID, the mod's Steam Workshop ID: 0 until its first upload (the bytes are then the template's), then the
     # item's ID, so a rebuild keeps it (packaging.check_mod_id: a non-negative integer that fits in a uint64).
     mod_id: int = 0
+    # The menu pictures taken from another stock Operation: a picture's name (MapConfiguration's
+    # DescriptionTextureElements: CornerLogo, MissionCountry, EndgameBlazon, MapTexture) -> the stock scenario whose
+    # file ships in its place, at the path the re-keyed MapConfiguration names (modkit.ops.items.menu_art; the
+    # scenario's Assets folder is STOCK_ASSETS). Empty: the template's own pictures, as the asset rules copy them.
+    menu_art: Mapping[str, str] = field(default_factory=dict)
     # --- extension points
     extra_config_rows: tuple[str, ...] = ()                     # whole lines under Config.ini's [Config]
     extra_manifest_rows: tuple[tuple[str, str, str], ...] = ()  # (name, action, source) rows of MANIFEST.tsv

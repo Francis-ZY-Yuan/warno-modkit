@@ -80,8 +80,9 @@ def check_titles(table: Table, tokens: Iterable[str], limit: int = 30) -> None:
 
     A toolkit convention, not a game limit: no stock text shows one. Stock's menu titles (MissionName, TitreObjectifs)
     run 9..20 English units, but its briefing (TextePresentationScenario) runs 1037..1416 and its other menu texts
-    35..991 (test_gates_stock.MenuTexts). Name only the tokens to hold to it (``Content.menu_tokens``); the examples
-    name all seven of theirs, so their briefings stay short too."""
+    35..991 (test_gates_stock.MenuTexts). Name only the tokens to hold to it (``Content.menu_tokens``): Open Door and
+    the probes name all seven of theirs, so their briefings stay short too; Twin Strike names its two titles, and its
+    other menu texts take stock's lengths."""
     titles = table.get(TITLE_DICT, {})
     for token in tokens:
         if token not in titles:

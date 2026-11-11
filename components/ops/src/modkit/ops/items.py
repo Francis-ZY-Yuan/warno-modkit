@@ -131,3 +131,26 @@ def plan_assets(dics: Iterable[tuple[str, bytes, str]], src_dir: str, subtrees: 
             raw = read_file(os.path.join(src_dir, *inner.split("/")))
             items.append(mem_item("Assets", repath(inner, source, scenario), raw, "copy", rel_source(src_dir, inner)))
     return items, dropped
+
+
+MENU_ART = "PC/Texture/{}/MapPackAssets/Textures/{}.tgv"
+"""A scenario's menu picture in its Assets, by scenario id and picture name: the file behind its MapConfiguration's
+DescriptionTextureElements entry of that name (FileName ScenariosData:/<scenario>/MapPackAssets/Textures/<name>.png)."""
+
+
+def menu_art(items: Iterable[Item], art: Mapping[str, tuple[str, str]], source: str, scenario: str
+             ) -> tuple[list[Item], list[tuple[str, str]]]:
+    """The planned Assets `items` with each menu picture `art` names (picture name -> (stock scenario, that scenario's
+    Assets folder)) copied from that scenario in place of the template's: the same inner path, which the re-keyed
+    MapConfiguration names, now holding the stock scenario's file byte for byte, with that file as its source.
+    Returns (items, the template's pictures given up: (inner path, why), listed with the dropped files)."""
+    out, given_up = list(items), []
+    for name, (stock, stock_dir) in art.items():
+        mine, theirs = MENU_ART.format(scenario, name), MENU_ART.format(stock, name)
+        at = [k for k, it in enumerate(out) if it.pack == "Assets" and it.path == mine]
+        check(len(at) == 1, f"menu art {name}: the template's {MENU_ART.format(source, name)} is not shipped, so there "
+                            f"is no menu picture to replace (the asset rules must copy it)")
+        raw = read_file(os.path.join(stock_dir, *theirs.split("/")))
+        out[at[0]] = mem_item("Assets", mine, raw, "copy", rel_source(stock_dir, theirs))
+        given_up.append((MENU_ART.format(source, name), f"menu art: {stock}'s {name} ships in its place"))
+    return out, given_up

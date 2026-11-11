@@ -40,6 +40,11 @@ It installs beside Open Door and the probes: each has its own scenario, GUID, mo
 Strike its own menu order, `OrderToChainMission` derived from its scenario GUID
 (`modkit.ops.leveldesign.derived_menu_order`) [[content-identity-unique]].
 
+Its Operations menu reads as a stock Operation's: a dated briefing in four numbered points, the forces line, the
+background under the title and the two outcome texts, each in stock's form and length (`twinstrike/strings.py`), under
+the emblems of RedJuggernaut, the 79th Guards Tank Division's stock Operation (`profile.MENU_ART`, the toolkit's
+`OpProfile.menu_art`). The map picture is still Survivors'.
+
 ## The op
 
 | Phase | What happens | Ends when |

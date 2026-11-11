@@ -14,6 +14,7 @@ import dataclasses
 import io
 import math
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -21,6 +22,7 @@ import textwrap
 import unittest
 import uuid
 
+from test_gates_stock import MENU_SPANS
 from twin_strike_support import (
     GAME, LAYOUT_DATA, OUT_ROOT, SCRIPT_DATA, TWIN_STRIKE, build_main, build_profile, gru, quiet_build,
 )
@@ -30,11 +32,13 @@ from modkit.ops import INGAME_DIC, gates, leveldesign
 from modkit.ops import testing as ops_testing
 from modkit.ops.bricks import unit_path
 from modkit.ops.files import read_file
-from modkit.ops.graph import decode, walk
+from modkit.ops.graph import decode, nodes_of, walk
+from modkit.ops.items import MENU_ART
 from modkit.ops.maps import CAMPATHS_FILE, START_CAMERA_MIN_HEIGHT, TWIN_CITIES, view_centre
 from modkit.ops.profile import (
-    SOVIET_PLAYER_CAMP_ROWS, SOVIET_PLAYER_DECK_SWAP, SOVIET_PLAYER_SIDES, SURVIVORS, extracted,
+    SOVIET_PLAYER_CAMP_ROWS, SOVIET_PLAYER_DECK_SWAP, SOVIET_PLAYER_SIDES, STOCK_ASSETS, SURVIVORS, extracted,
 )
+from modkit.ops.rekey import def_path
 from modkit.ops.script import BRICK_DEFAULT, PRODUCTION_DECK
 from modkit.ops.shapes import GRU_WORLD, TRANSPORTER_SHAPE
 from modkit.ops.strings import LANGS
@@ -44,6 +48,16 @@ from twinstrike import CONTENTS, forces, map as ts_map, op, profile, strings
 
 OUT = os.path.join(OUT_ROOT, "op")
 GD = "$/GDScript"
+# Each menu token's element of MapConfiguration's DescriptionTextElements: Survivors' own, re-keyed (Build checks it).
+MENU_ELEMENTS = {"ts_name": "MissionName", "ts_cname": "TitreObjectifs", "ts_headr": "TexteForcesEnPresence",
+                 "ts_order": "TextePresentationScenario", "ts_recap": "TexteObjectifs",
+                 "ts_vic": "VictoryOperationOutcomeText", "ts_def": "DefeatOperationOutcomeText"}
+MENU_PICTURES = ("MapTexture", "CornerLogo", "MissionCountry", "EndgameBlazon")  # DescriptionTextureElements
+
+
+def units(text: str) -> int:
+    """`text`'s length in UTF-16 code units, as the game measures it."""
+    return len(text.encode("utf-16-le", "surrogatepass")) // 2
 
 
 def item(name: str):
@@ -88,7 +102,7 @@ class LazyPaths(unittest.TestCase):
 class Identity(unittest.TestCase):
     def test_identity(self):
         """challenge_OperationTwinStrike in TwinStrike, uuid5 GUID under warno-twinstrike, menu prefix ts, title
-        "Operation Twin Strike"."""
+        "Operation Twin Strike"; the title check holds the two titles only."""
         c = op.content()
         self.assertEqual(sorted(CONTENTS), ["op"])
         self.assertEqual((c.name, c.scenario, c.mod_name), ("op", "challenge_OperationTwinStrike", "TwinStrike"))
@@ -96,9 +110,12 @@ class Identity(unittest.TestCase):
                          uuid.uuid5(uuid.NAMESPACE_URL, "warno-twinstrike/challenge_OperationTwinStrike").bytes)
         self.assertEqual(c.menu_renames, tuple((f"op13_{k}", f"ts_{k}") for k in
                                                ("name", "order", "headr", "cname", "recap", "vic", "def")))
-        self.assertEqual(c.menu_tokens, tuple(dict(c.menu_renames).values()))
-        self.assertEqual(sorted(strings.STRINGS["SCENARIO_DEFINITION"]), sorted(c.menu_tokens))
+        self.assertEqual(profile.MENU_TOKENS, tuple(dict(c.menu_renames).values()))
+        self.assertEqual(sorted(strings.STRINGS["SCENARIO_DEFINITION"]), sorted(profile.MENU_TOKENS))
+        self.assertEqual(c.menu_tokens, profile.TITLE_TOKENS)
+        self.assertEqual(profile.TITLE_TOKENS, ("ts_name", "ts_cname"))
         self.assertEqual(strings.ENGLISH["SCENARIO_DEFINITION"]["ts_name"], "Operation Twin Strike")
+        self.assertEqual(strings.ENGLISH["SCENARIO_DEFINITION"]["ts_cname"], "OPERATION TWIN STRIKE")
         self.assertEqual(CONTENTS["op"]().scenario, profile.SCENARIO)
 
     def test_installs_beside_open_door_and_the_probes(self):
@@ -131,9 +148,12 @@ class Profile(unittest.TestCase):
 
     def test_settings(self):
         """Survivors on Twin Cities: no map Details copied (the cut and the camera are generated), the cut's and the
-        camera's stock shape sources, the five extra gates, and the end funnel's export."""
+        camera's stock shape sources, the five extra gates, the end funnel's export, and RedJuggernaut's three menu
+        emblems with Survivors' map picture."""
         p = profile.profile()
         self.assertIs(p.template, SURVIVORS)
+        self.assertEqual(p.menu_art, dict.fromkeys(("CornerLogo", "MissionCountry", "EndgameBlazon"),
+                                                   "challenge_RedJuggernaut"))
         self.assertEqual((p.map_details, p.map_copies, p.ground_z), (TWIN_CITIES.details, (), TWIN_CITIES.ground_z))
         self.assertEqual(p.map_strings, {"_3x3_Railway": "_3x3_TwinCities"})
         self.assertEqual(p.map_trans, {"Railway": "TwinCities"})
@@ -339,6 +359,28 @@ class Strings(unittest.TestCase):
     def test_dialogs_take_no_variables(self):
         for tok, text in strings.ENGLISH["Scripting/Dialog"].items():
             self.assertNotRegex(text, r"%\d", tok)
+
+    def test_menu_texts_in_stocks_form(self):
+        """The menu's five texts that are not titles each run inside stock's English range for their element
+        (test_gates_stock.MENU_SPANS), without markup or placeholders. The briefing opens with its date and time, its
+        order number and a blank line, and holds stock's four numbered points; the forces line is two lines; the text
+        under the title is three paragraphs."""
+        menu = strings.ENGLISH["SCENARIO_DEFINITION"]
+        self.assertEqual(set(menu), set(MENU_ELEMENTS))
+        for tok in sorted(set(menu) - set(profile.TITLE_TOKENS)):
+            (lo, hi), _ = MENU_SPANS[MENU_ELEMENTS[tok]]
+            with self.subTest(token=tok):
+                self.assertTrue(lo <= units(menu[tok]) <= hi, f"{tok}: {units(menu[tok])} units, stock {lo}-{hi}")
+                self.assertNotRegex(menu[tok], r"#\w+\{|%\d")
+        for tok in profile.TITLE_TOKENS:
+            self.assertLessEqual(units(menu[tok]), 30)
+        lines = menu["ts_order"].split("\n")
+        self.assertRegex(lines[0], r"^July [0-9]{1,2}, 1989, [0-9]{2}:[0-9]{2} UTC$")   # design 1: early July 1989
+        self.assertRegex(lines[1], r"^Combat Order No\. \S+$")
+        self.assertEqual(lines[2], "")
+        self.assertEqual([line[:3] for line in lines if re.match(r"\d\. ", line)], ["1. ", "2. ", "3. ", "4. "])
+        self.assertEqual(menu["ts_headr"].count("\n"), 1)
+        self.assertEqual(menu["ts_recap"].count("\n\n"), 2)
 
     @paths.skip_unless_extracted("glad_201602", "Localisation", "Core")
     def test_buttons_are_ingame_tokens_in_every_language(self):
@@ -564,6 +606,56 @@ class Build(unittest.TestCase):
         strings_ = [s.decode("latin-1") for s in nb.strings]
         self.assertIn("OP_BASE_RJ_Player", strings_)
         self.assertNotIn("OP_NORTH_SURV_PLAYER", strings_)
+
+    def pack(self, name: str) -> dict[str, bytes]:
+        path = os.path.join(OUT, "TwinStrike", "Scenarios", f"{profile.SCENARIO}_{name}.dat")
+        return {e.path: edat.read_entry(path, e) for e in edat.read_index(path)}
+
+    def map_configuration(self):
+        return decode(self.pack("Definition")[def_path("MapConfiguration", "ndfbin", profile.SCENARIO)])[0]
+
+    def test_menu_texts_land_on_their_elements(self):
+        """MapConfiguration's DescriptionTextElements name each ts_* menu token at its element (MENU_ELEMENTS; the
+        warning order's name is ts_name too), so the briefing shows as the briefing and the titles as titles."""
+        nb = self.map_configuration()
+        (info,) = [nd for nd in nodes_of(nb) if nd.cls == "TChallengeMapInfo"]
+        got = {nb.strings[key.v].decode(): int.from_bytes(tok.v, "little")
+               for key, tok in dict(info.props)["DescriptionTextElements"].v}
+        want = {element: trad.token_key(tok) for tok, element in MENU_ELEMENTS.items()}
+        want["MissionNameInWarningOrder"] = trad.token_key("ts_name")
+        self.assertEqual({element: got.get(element) for element in want}, want)
+
+    def test_menu_art_is_red_juggernauts(self):
+        """The menu pictures' FileNames are Survivors' re-keyed, unchanged: ScenariosData:/<scenario>/MapPackAssets/
+        Textures/<name>.png. Behind them, the Assets pack's CornerLogo, MissionCountry and EndgameBlazon are
+        RedJuggernaut's files byte for byte and MapTexture is Survivors'; MANIFEST.tsv names each one's source and lists
+        Survivors' three as given up."""
+        def file_names(nb) -> set[str]:
+            return {nb.strings[dict(nd.props)["FileName"].v].decode() for nd in nodes_of(nb)
+                    if nd.cls == "TUIAutoRegisteredResourceTexture"}
+
+        stock_mc = def_path("MapConfiguration", "ndfbin", SURVIVORS.source)
+        survivors = decode(read_file(os.path.join(SURVIVORS.path("definition"), *stock_mc.split("/"))))[0]
+        mine = file_names(self.map_configuration())
+        self.assertEqual(mine, {name.replace(SURVIVORS.source, profile.SCENARIO) for name in file_names(survivors)})
+        self.assertEqual(mine, {f"ScenariosData:/{profile.SCENARIO}/MapPackAssets/Textures/{name}.png"
+                                for name in MENU_PICTURES})
+        assets = self.pack("Assets")
+        with open(os.path.join(OUT, "MANIFEST.tsv"), encoding="utf-8") as fh:
+            rows = {r[1]: r for r in (line.rstrip("\n").split("\t") for line in fh)}
+        for name in MENU_PICTURES:
+            stock = profile.MENU_ART.get(name, SURVIVORS.source)
+            folder = extracted(STOCK_ASSETS.format(stock))
+            with self.subTest(picture=name, stock=stock):
+                self.assertEqual(assets[MENU_ART.format(profile.SCENARIO, name)],
+                                 read_file(os.path.join(folder, *MENU_ART.format(stock, name).split("/"))))
+                row = rows[MENU_ART.format(profile.SCENARIO, name)]
+                self.assertEqual((row[0], row[3], row[4]),
+                                 ("Assets", "copy", f"extracted/scenarios/{stock}/{MENU_ART.format(stock, name)}"))
+        given_up = {k: r[3:] for k, r in rows.items() if r[0] == "-" and "MapPackAssets" in k}
+        self.assertEqual(given_up, {f"extracted/scenarios/{SURVIVORS.source}/{MENU_ART.format(SURVIVORS.source, n)}":
+                                    ["drop", f"menu art: challenge_RedJuggernaut's {n} ships in its place"]
+                                    for n in profile.MENU_ART})
 
 
 if __name__ == "__main__":
