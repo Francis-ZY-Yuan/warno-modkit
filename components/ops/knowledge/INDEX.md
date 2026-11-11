@@ -40,7 +40,7 @@ A mechanism filed under two topics is listed under both.
 - [zone-capture-command-units](mechanisms/zone-capture-command-units.md): Only command units capture a zone, and an enemy command unit inside makes it neutral at once (PLAYED, verified 201602 2026-11-06)
 - [zone-lookup-by-point](mechanisms/zone-lookup-by-point.md): Zone conditions find their zone by a tag's point, and a point in no zone fails silently (PLAYED, verified 201602 2026-11-06)
 - [arrival-end-in-zone](mechanisms/arrival-end-in-zone.md): Every player arrival entry must end inside a deployment zone of its side or a command zone (STOCK, verified 201602 2026-11-04)
-- [start-camera-before-loading-done](mechanisms/start-camera-before-loading-done.md): Snap a start camera before LoadingDone, or the camera starts in a map corner (STOCK, verified 201602 2026-11-11)
+- [start-camera-before-loading-done](mechanisms/start-camera-before-loading-done.md): An Operation that opens in the deployment phase sets its opening camera after LoadingDone, a move then a snap to its last key (STOCK, verified 201602 2026-11-11)
 
 ### Units and orders
 
@@ -126,19 +126,22 @@ The game's own words in this component's trials, the mechanism behind them, and 
 | The game crashed while loading the Operation, at the same place every time | [ai-grid-tiles-playable-zone](mechanisms/ai-grid-tiles-playable-zone.md) | `modkit.ops.gates.check_details_generators` |
 | The helicopter and its infantry stayed apart again | [helicopter-boarding](mechanisms/helicopter-boarding.md) | none yet |
 | The helicopter spawned without its infantry and flew off by script | [helicopter-boarding](mechanisms/helicopter-boarding.md) | none yet |
+| The opening camera sat on the ground somewhere | [start-camera-before-loading-done](mechanisms/start-camera-before-loading-done.md) | `modkit.ops.maps.check_camera_paths` |
 | The opening camera was off, and the whole map was playable | [ai-grid-tiles-playable-zone](mechanisms/ai-grid-tiles-playable-zone.md) | `modkit.ops.gates.check_details_generators` |
-| The opening camera was off, and the whole map was playable | [start-camera-before-loading-done](mechanisms/start-camera-before-loading-done.md) | none yet |
+| The opening camera was off, and the whole map was playable | [start-camera-before-loading-done](mechanisms/start-camera-before-loading-done.md) | `modkit.ops.maps.check_camera_paths` |
 | The SEAD aircraft card added at 8:00 was not seen in the buy menu | [add-unit-to-deck](mechanisms/add-unit-to-deck.md) | none yet |
 | The Soviet player found no supply trucks or supply helicopters to buy | [soviet-player-camp](mechanisms/soviet-player-camp.md) | none yet |
 | WARNO has stopped working, right after Launch battle | [dialog-button-ingame-dictionary](mechanisms/dialog-button-ingame-dictionary.md) | `modkit.ops.gates.check_tokens` |
-| WARNO has stopped working, right after Launch battle | [start-camera-before-loading-done](mechanisms/start-camera-before-loading-done.md) | none yet |
+| WARNO has stopped working, right after Launch battle | [start-camera-before-loading-done](mechanisms/start-camera-before-loading-done.md) | `modkit.ops.maps.check_camera_paths` |
 | WARNO has stopped working, right after Launch battle | `crash-dump-names-the-error` (core) | `modkit.core.crashdump.in_flight` |
 
 ## Trials, newest first
 
 - 2026-11-11 [2026-11-11-twin-strike-play1](trials/2026-11-11-twin-strike-play1.md): play, mixed. The division's guns drove toward the front and died; the release dialog never showed after the fire plan was fired
+- 2026-11-11 [2026-11-11-twin-strike-opening-camera](trials/2026-11-11-twin-strike-opening-camera.md): play, fail. The opening camera sat on the ground somewhere
 - 2026-11-11 [2026-11-11-twin-strike-launch1-duplicate-menu-order](trials/2026-11-11-twin-strike-launch1-duplicate-menu-order.md): play, fail. Map pack configuration error : Duplicate OrderToChainMission 1001 in map pack '{the Operations pack's GUID}'.
 - 2026-11-11 [2026-11-11-probe3b-play1-no-supply](trials/2026-11-11-probe3b-play1-no-supply.md): play, fail. The Soviet player found no supply trucks or supply helicopters to buy
+- 2026-11-11 [2026-11-11-opening-camera-stock-survey](trials/2026-11-11-opening-camera-stock-survey.md): survey, pass
 - 2026-11-10 [2026-11-10-probe3-play1-effect-crash](trials/2026-11-10-probe3-play1-effect-crash.md): play, fail. The game crashed during the deploy phase, at the effect steps
 - 2026-11-06 [2026-11-06-spawns-and-deck-survey](trials/2026-11-06-spawns-and-deck-survey.md): re, pass
 - 2026-11-06 [2026-11-06-probe2-play-run-a](trials/2026-11-06-probe2-play-run-a.md): play, pass

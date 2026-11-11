@@ -19,8 +19,9 @@ items() is every LevelDesign item the map gives the op:
   C0_FOB_UK_2, SigurdsStrike C0_FOB_TCH_1): no deck holds one.
 Zone conditions find their zone by a tag's point [[zone-lookup-by-point]]: the village zone's item stands inside its
 polygon, and every lane point on a road its column keeps to [[fast-move-and-attack-keeps-roads]].
-CAMERA is the op's start camera, a one-key camera path over the village (modkit.ops.maps.StartCamera): it ships in
-place of the layout's camera paths, and the script snaps to it before LoadingDone.
+CAMERA is the op's opening camera (modkit.ops.maps.OpeningCamera): a move from high over the cut down to a view of the
+Soviet box and the village, then a snap to its last key, both run right after LoadingDone. Its paths ship in place of
+the layout's camera paths, held to the camera gate.
 
 `python -m twinstrike.map overlay OUT.png` (from this example's folder) draws every point, the cut, the zones, the
 arrivals and the routes on Twin Cities' Preview picture, for review (never committed: it is the game's picture).
@@ -34,7 +35,7 @@ from collections.abc import Sequence
 from modkit.core import paths
 from modkit.core.gates import CheckError
 from modkit.ops.leveldesign import LdItem
-from modkit.ops.maps import TWIN_CITIES, Cut, StartCamera
+from modkit.ops.maps import TWIN_CITIES, CameraKey, Cut, OpeningCamera
 from modkit.ops.shapes import Minimap
 from modkit.ops.zones import rect_polygon
 
@@ -123,13 +124,33 @@ NATO_DZ = (6, 490, 210, 520)
 RL_N = ((73, 152), (78, 182))
 AC_N = ((125, 152), (125, 180))
 FOB_UNIT = "FOB_SOV"
-# The start camera [[start-camera-before-loading-done]]: the layout's own camera paths stand north of the cut (camp0
-# over (186, 91) px) or off the map's south edge (camp1), so the op ships its own, a one-key path over the village,
-# facing south as the player attacks. It keeps camp0's view: 297,725 world above the map's ground_z (camp0's eye at z
-# 317,387.5) and 37 degrees down (camp0's direction z -0.602). Its eye stands over (69, 222.7) px, inside the cut.
-CAMERA_HEIGHT = 297725.0
-CAMERA_PITCH_DEG = 37.0
-CAMERA = StartCamera(TWIN_CITIES, "TS_Start", POINTS["VILLAGE"], (0.0, 1.0), CAMERA_HEIGHT, CAMERA_PITCH_DEG)
+# The opening camera [[start-camera-before-loading-done]]. The layout's own camera paths stand north of the cut (camp0
+# over (186, 91) px) or off the map's south edge (camp1), so the op ships its own: right after LoadingDone the camera
+# flies TS_Open in OPENING_S, then snaps to TS_Start, its last key, and the deployment phase opens there. Each key is
+# given by the view it shows (CameraKey: the point it looks at, its heading, its height above ground_z and how far it
+# looks down), all 40 degrees down, the pitch of stock's start cameras (BlackHorsesLastStand, Gotterdammerung and
+# TheKitzingenRuse 40.0, BackhandBlow 39.7, RedJuggernaut 39.3):
+# - high and wide: 720,000 above the ground over the cut's north-east, looking south-south-west at its middle, the
+#   whole cut ahead (stock's highest opening views stand 754,000-781,000 up: Gotterdammerung, TheKitzingenRuse,
+#   TheHydra);
+# - on the way down, turning to the south;
+# - the playable view: 400,000 up, facing south as the player attacks, centred on y 245 px, where the layout's own
+#   camp0 view of this deployment zone centres (244.8), and on x 105, between the village (x 69) and the middle of
+#   the Soviet box (x 125): the box in the near part of the view, the village beyond it. Eleven of stock's twelve
+#   deployment-phase Operations hand the camera over 312,898 to 604,542 above the ground, 34.7 to 40 degrees down,
+#   where their opening move ends (RunningTheGauntlet's convoy close-up, 119,565, aside); stock's lowest start camera
+#   stands 376,057 up (the camera gate's floor).
+# The eyes stand at (179.7, 13.5), (129.6, 39.2) and (105, 58.8) px: over the map, north of the cut.
+OPENING_KEYS = (
+    CameraKey((130.0, 345.0), (-0.15, 1.0), 720000.0, 40.0),
+    CameraKey((112.0, 290.0), (-0.07, 1.0), 540000.0, 40.0),
+    CameraKey((105.0, 245.0), (0.0, 1.0), 400000.0, 40.0),
+)
+# Eight seconds, easing in and out (BaseCamera's camera-path mover ramps 2 s each way). Stock's opening moves mostly
+# take 5 to 20 s a path (Gotterdammerung 5, Marauders 8-12, TheKitzingenRuse 7-17, DelayedRetribution and TheHydra 20;
+# RedJuggernaut's first 34, beside its dialogs).
+OPENING_S = 8.0
+CAMERA = OpeningCamera(CUT, "TS_Open", "TS_Start", OPENING_KEYS, OPENING_S)
 
 
 def items() -> list[LdItem]:

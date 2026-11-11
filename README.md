@@ -130,8 +130,8 @@ built and played.
 
 - **One map is ready.** Geisa is the only stock map with its facts recorded; another map takes a declaration of its
   stock files and a probe first.
-- **The opening camera** starts in a map corner in Open Door and the probes: they don't snap a start camera. Twin
-  Strike's frame snaps one, not yet played.
+- **The opening camera** starts in a map corner in Open Door and the probes: they set none. Twin Strike flies a
+  stock-style opening move after LoadingDone, not yet played; v0.1's snap before LoadingDone left it on the ground.
 - **Game updates:** each mechanism records the game build it was last verified on. After an update, `warno-setup`
   re-checks your corpus and rules, and every mod should be rebuilt and played again.
 - **Windows:** the share installer is a Windows `.cmd`.

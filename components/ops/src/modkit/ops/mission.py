@@ -308,15 +308,21 @@ def difficulty(ctx: Ctx, diff: Node, knobs: Mapping[str, tuple[int, int, int]], 
 
 def script_frame(tpl: ndfbin.NdfBin, templates: ops_script.Templates, ctx: Ctx, deploy: ops_script.DeployPhase,
                  beats: Sequence[Beat], *, camp_rows: Sequence[CampRow], folder: str, start_delay_s: float,
-                 prod_menu_switch: int, flags: Sequence[str] = ()) -> tuple[list[Node], list[Node]]:
+                 prod_menu_switch: int, flags: Sequence[str] = (),
+                 opening: Sequence[Node] = ()) -> tuple[list[Node], list[Node]]:
     """A mission's GDScript around its `beats`, on the skeleton of the template `tpl` (its objects named by
     `templates`). Returns (roots, exports):
 
       RootDescriptor: CampList, EffetMap = Sequential[WaitDuration `start_delay_s`, Main], GameRules (`deploy`'s)
       Main (<folder>/Main): SetDeck per `camp_rows` row (S#117-#120), the HUD hidden (S#121), `deploy.setup`,
-        LoadingDone (S#122), the HUD restored with the deployment's (S#296 + DEPLOY_HUD; `prod_menu_switch`), then
+        LoadingDone (S#122), `opening`, the HUD restored with the deployment's (S#296 + DEPLOY_HUD;
+        `prod_menu_switch`), then
         Simultaneous[ the load beats (t None), deploy.refresh,
                       Sequential[ deploy.launched, Simultaneous[ one Sequential[wait t, beat] per timed beat ] ] ]
+
+    `opening` is what runs between LoadingDone and the HUD's return, the HUD still hidden: an opening camera
+    (maps.OpeningCamera.cutscenes), where DelayedRetribution (#64, #65 before #67's HUD), GloryOrAttrition (#61, #62
+    before #63) and TheHydra (#72 before #73) run theirs. None by default.
 
     With no timed beat, deploy.launched stands alone in Main's Simultaneous. The beats are built in their order, the
     load beats first; then each name of `flags` (the variables several beats read) is declared, an integer at 0, so
@@ -333,6 +339,7 @@ def script_frame(tpl: ndfbin.NdfBin, templates: ops_script.Templates, ctx: Ctx, 
         Node("TGDDescriptorForceDisplayUIElement", template_scalars(tpl, templates.hud_hide)),  # S#121
         *deploy.setup,
         Node("TGDDescriptorLoadingDone"),                                                       # S#122
+        *opening,                                                                               # R#64-#65
         Node("TGDDescriptorForceDisplayUIElement",                                              # S#296 + DEPLOY_HUD
              ops_script.hud_restore(tpl, templates, True, prod_menu_switch)),
         g_simul([*load, deploy.refresh, battle]),

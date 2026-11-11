@@ -48,7 +48,7 @@ A fact holds for the build it was last verified on. After a game update, a recor
 - [seteffect-never-finishes](../components/ops/knowledge/mechanisms/seteffect-never-finishes.md) (ops): SetEffect and other lasting actions never finish, so nothing after them in a Sequential ever runs (PLAYED, 2026-11-06)
 - [soviet-player-camp](../components/ops/knowledge/mechanisms/soviet-player-camp.md) (ops): A clone of Survivors loads and plays with a Soviet player in the stock PACT-player camp shape (PROBED, 2026-11-11)
 - [spawn-and-create-units](../components/ops/knowledge/mechanisms/spawn-and-create-units.md) (ops): SpawnUnits reveals pre-placed units; CreateUnitOnPosition makes new ones at a tag (PLAYED, 2026-11-06)
-- [start-camera-before-loading-done](../components/ops/knowledge/mechanisms/start-camera-before-loading-done.md) (ops): Snap a start camera before LoadingDone, or the camera starts in a map corner (STOCK, 2026-11-11)
+- [start-camera-before-loading-done](../components/ops/knowledge/mechanisms/start-camera-before-loading-done.md) (ops): An Operation that opens in the deployment phase sets its opening camera after LoadingDone, a move then a snap to its last key (STOCK, 2026-11-11)
 - [vanished-removal](../components/ops/knowledge/mechanisms/vanished-removal.md) (ops): KillAllUnit with Vanished removes units at once; count them before you remove them (PLAYED, 2026-11-06)
 - [wave-ends-with-attack](../components/ops/knowledge/mechanisms/wave-ends-with-attack.md) (ops): An AI-less wave stops at its last waypoint unless its route ends with an Attack on the player's units (STOCK, 2026-11-11)
 - [weapons-jammed-effect](../components/ops/knowledge/mechanisms/weapons-jammed-effect.md) (ops): The "weapons jammed" effect only zeroes weapon ranges; to keep a unit silent, empty its ammunition (STOCK, 2026-11-03)
@@ -58,8 +58,10 @@ A fact holds for the build it was last verified on. After a game update, a recor
 ### Trials run on it
 
 - 2026-11-11 [2026-11-11-twin-strike-play1](../components/ops/knowledge/trials/2026-11-11-twin-strike-play1.md) (ops): play, mixed
+- 2026-11-11 [2026-11-11-twin-strike-opening-camera](../components/ops/knowledge/trials/2026-11-11-twin-strike-opening-camera.md) (ops): play, fail
 - 2026-11-11 [2026-11-11-twin-strike-launch1-duplicate-menu-order](../components/ops/knowledge/trials/2026-11-11-twin-strike-launch1-duplicate-menu-order.md) (ops): play, fail
 - 2026-11-11 [2026-11-11-probe3b-play1-no-supply](../components/ops/knowledge/trials/2026-11-11-probe3b-play1-no-supply.md) (ops): play, fail
+- 2026-11-11 [2026-11-11-opening-camera-stock-survey](../components/ops/knowledge/trials/2026-11-11-opening-camera-stock-survey.md) (ops): survey, pass
 - 2026-11-10 [2026-11-10-probe3-play1-effect-crash](../components/ops/knowledge/trials/2026-11-10-probe3-play1-effect-crash.md) (ops): play, fail
 - 2026-11-06 [2026-11-06-spawns-and-deck-survey](../components/ops/knowledge/trials/2026-11-06-spawns-and-deck-survey.md) (ops): re, pass
 - 2026-11-06 [2026-11-06-probe2-play-run-a](../components/ops/knowledge/trials/2026-11-06-probe2-play-run-a.md) (ops): play, pass

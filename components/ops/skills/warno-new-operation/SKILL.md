@@ -88,11 +88,12 @@ base directory; `components/ops/examples/` in a clone):
 | MoveAndAttack for a road march | Columns drove through the woods ([[fast-move-and-attack-keeps-roads]]) | FastMoveAndAttack |
 | Scripted infantry boarding a helicopter | Failed twice ([[helicopter-boarding]]) | Create or reveal the squad at the landing zone |
 | Waiting for the battle to end itself | Only the script ends it ([[mission-ends-only-by-script]]) | One end funnel, every ending through it |
+| A camera snap before LoadingDone in an Operation that opens in the deployment phase | The camera sat on the ground ([[start-camera-before-loading-done]]) | The opening move and the snap to its last key, after LoadingDone |
 
-The opening camera starts in a map corner unless the script snaps a start camera
-([[start-camera-before-loading-done]]). Open Door and the probes don't, and their play sheets say so. Twin Strike's
-frame does, not yet played: a one-key path (`modkit.ops.maps.StartCamera`, shipped as the camera paths file) and
-`bricks.g_camera` right before LoadingDone.
+The opening camera starts at the engine's default, in a map corner or on the ground, unless the script sets one
+([[start-camera-before-loading-done]]). Open Door and the probes don't, and their play sheets say so. Twin Strike does,
+not yet played: `modkit.ops.maps.OpeningCamera` ships a move and its end as the camera paths file, held to the camera
+gate, and its two `bricks.g_camera` cutscenes run right after LoadingDone (`mission.script_frame`'s `opening`).
 
 ## References
 

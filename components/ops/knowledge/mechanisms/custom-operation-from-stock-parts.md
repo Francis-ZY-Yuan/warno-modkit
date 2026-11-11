@@ -18,8 +18,8 @@ trials: [2026-11-02-new-scenario-id-loads, 2026-11-02-kreide-op-playtest-1, 2026
 **Gotchas.**
 - Survivors is the usual template because the script alone decides its outcome, but it has no deployment phase and
   its player never buys ([[deployment-phase-recipe]]).
-- The AI grid must match the playable zone ([[ai-grid-tiles-playable-zone]]), and the opening camera needs a snap
-  ([[start-camera-before-loading-done]]).
+- The AI grid must match the playable zone ([[ai-grid-tiles-playable-zone]]), and the opening camera needs a script,
+  run after `LoadingDone` in an Operation that opens in the deployment phase ([[start-camera-before-loading-done]]).
 - A fourth camp, AI-controlled, on the player's side works (the first probe's decoys).
 
 <!-- referenced-by:start -->

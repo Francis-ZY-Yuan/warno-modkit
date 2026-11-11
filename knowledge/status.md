@@ -56,7 +56,7 @@ How far each mechanism is proven: `PLAYED` worked in a real play; `PROBED` loade
 - [script-effects-self-contained](../components/ops/knowledge/mechanisms/script-effects-self-contained.md) (ops): A script may launch only a self-contained effect, one that takes no parameters
 - [scripted-air-sweep](../components/ops/knowledge/mechanisms/scripted-air-sweep.md) (ops): Hidden aircraft revealed, sent over a circle and sent home once spent give an AI-less camp air sweeps
 - [scripted-economy](../components/ops/knowledge/mechanisms/scripted-economy.md) (ops): A script sets the player's points, a zero income, one-time grants and a later income in stock's own nodes
-- [start-camera-before-loading-done](../components/ops/knowledge/mechanisms/start-camera-before-loading-done.md) (ops): Snap a start camera before LoadingDone, or the camera starts in a map corner
+- [start-camera-before-loading-done](../components/ops/knowledge/mechanisms/start-camera-before-loading-done.md) (ops): An Operation that opens in the deployment phase sets its opening camera after LoadingDone, a move then a snap to its last key
 - [wave-ends-with-attack](../components/ops/knowledge/mechanisms/wave-ends-with-attack.md) (ops): An AI-less wave stops at its last waypoint unless its route ends with an Attack on the player's units
 - [weapons-jammed-effect](../components/ops/knowledge/mechanisms/weapons-jammed-effect.md) (ops): The "weapons jammed" effect only zeroes weapon ranges; to keep a unit silent, empty its ammunition
 

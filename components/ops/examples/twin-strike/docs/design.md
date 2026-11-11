@@ -436,7 +436,19 @@ fuel or ammunition. Each sweep is its own group, in its own branch, so none hold
   - the fire-mission, fire-plan and release dialogs are two-button choices whose labels come from the in-game
     dictionary ✓ [[dialog-button-ingame-dictionary]].
 - **Labels.** Objective labels are pinned to VILLAGE, the two boxes and ASSEMBLY.
-- **Camera.** It snaps to the village before LoadingDone ◐ [[start-camera-before-loading-done]].
+- **Camera.** The deployment phase opens with a short camera move, where stock opens its deployment-phase Operations:
+  right after LoadingDone, before the HUD returns ◐ [[start-camera-before-loading-done]].
+  - `TS_Open`, three keys in 8 s, easing in and out, Escape skips it: from 720,000 world units above the ground over
+    the cut's north-east, looking south-south-west at its middle (an operational view of the whole cut), down and
+    west, turning south, to the playable view.
+  - `TS_Start`, its last key, snapped after it, so a skipped move ends there too: 400,000 up, 40 degrees down, facing
+    south, centred on (105, 245) px, where the layout's own deployment camera centres its view: the Soviet box near,
+    the village beyond.
+  - Eleven of stock's twelve deployment-phase Operations hand the camera over 312,898 to 604,542 up, 34.7 to 40
+    degrees down, and its start cameras stand 376,057 up or more; the camera gate holds every key above that, every
+    eye over the map and the last view inside the cut.
+  - v0.1 snapped a one-key path over the village before LoadingDone instead. The deployment phase's start lost it, and
+    the camera sat on the ground [[2026-11-11-twin-strike-opening-camera]].
 - **Text.** English. Simplified Chinese is a later build; the toolkit's glyph gate is ready for it.
 - **Screenshots** for the README: the assault on the village under fire, the counter-attack's columns on the tactical
   map, the mushroom cloud over ASSEMBLY, and the end screen.

@@ -76,6 +76,10 @@ them), and every written pack is read back. Twin Strike adds six extra gates (`t
 | `menu-order` | its menu order is no stock Operation's |
 | `fire-range` | each fire's battery is created at `TS_GunSpawn`, outside the cut, past the ground vision of every unit you can field, with every target inside each battery's range band (`modkit.ops.gates.check_fire_range`) |
 
+The opening camera's paths file is held to the camera gate when the build plans it (`modkit.ops.maps.check_camera_paths`):
+stock's key shape, the move then its last key, every eye over the map and at least 376,057 world units above the
+ground (stock's lowest start camera), and the last view inside the cut.
+
 A failed gate prints one `FAILED:` line and exits 1.
 
 ## Install and play
@@ -102,7 +106,9 @@ announces itself with a hint, so what you see can be matched to the sheet. (The 
 2. Does the buy menu open on the BATTLEGROUP view, with the Ka-29s, the Ural and Mi-8TZ supply and the start cards in
    it without switching? Is the switch to the GROUPS view still there? Do the engineers and scouts come in their
    MT-LBs and UAZs?
-3. Is the start camera over the village, looking south? Do you start with 2,000 points and no income?
+3. Does the deploy screen open with a camera move of about 8 s, from high over the whole cut down to a view facing
+   south, your deployment box in the near part of it and the village beyond? Does Escape skip straight to that view?
+   Do you start with 2,000 points and no income?
 
 **The guns** (no gun stands on the map: each fire's battery appears north of the cut, out of sight, and is removed)
 4. Do you ever see a 2S7M or a BM-27 on the map or the minimap?
@@ -168,15 +174,16 @@ announces itself with a hint, so what you see can be matched to the sheet. (The 
 - The strike: a self-contained script effect [[script-effects-self-contained]] (the nuke impact effects crash a script
   [[scripted-nuke-effect]]), then KillAllUnit on the units a circle detects.
 - The endings: [[mission-ends-only-by-script]]; the difficulty: [[difficulty-branches]].
-- The start camera: a one-key camera path over the village, snapped before LoadingDone
-  [[start-camera-before-loading-done]].
+- The opening camera: after LoadingDone, a three-key move from high over the cut down to the Soviet box and the
+  village, then a snap to its last key, as stock opens a deployment-phase Operation; a snap before LoadingDone, as v0.1
+  shipped, left the camera on the ground [[start-camera-before-loading-done]].
 
 ## Layout
 
 - `build.py`: the command line (`modkit.ops.build.cli` over Twin Strike's profile and `CONTENTS`)
 - `twinstrike/profile.py`: the identity and the profile (Survivors on the cut, the Soviet-player camps, the re-keying,
   the extra gates, the review picture)
-- `twinstrike/map.py`: the cut, the named places, the zones, the arrivals, the FOBs and the start camera;
+- `twinstrike/map.py`: the cut, the named places, the zones, the arrivals, the FOBs and the opening camera;
   `python -m twinstrike.map overlay OUT.png` draws them on Twin Cities' Preview
 - `twinstrike/forces.py`: the player's deck (start cards, locks, reserve, command units), the force tables, the scale
   knob and the share thresholds

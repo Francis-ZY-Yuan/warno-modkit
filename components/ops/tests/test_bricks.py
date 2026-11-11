@@ -136,6 +136,16 @@ class DialogTest(unittest.TestCase):
                                        ("VisibleByAlliedOfSpecifiedCamp", TRUE)])
         self.assertEqual(start.cls, "TGDDescriptorCutsceneStartCameraPath")
 
+    def test_camera_move(self):
+        """With seconds, the same cutscene flies the path in that time: TimeInSecond after the name, as
+        DelayedRetribution #92 (camera_intro, 20 s) writes it, still easing in and out and skippable with Escape."""
+        cam = bricks.g_camera("TS_Open", 8.0)
+        self.assertEqual(shape(cam), ("TGDDescriptorEncapsuleCutscene", ["SubActions", "BlockPlayerActions"]))
+        (move,) = cam.props[0][1]
+        self.assertEqual(move.props, [("CameraPathName", Str("TS_Open")), ("TimeInSecond", f32(8.0)),
+                                      ("AccelerationActivated", TRUE), ("DecelerationActivated", TRUE),
+                                      ("CanBeSkippedWithEscape", TRUE), ("VisibleByAlliedOfSpecifiedCamp", TRUE)])
+
     def test_ammo(self):
         """SetAmmo in stock's two forms: refilled, MaxAmmoRatio 100 then Units (HoldUntilRelieved #281); emptied, Units
         only (Survivors #1332)."""

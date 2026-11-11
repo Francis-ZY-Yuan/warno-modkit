@@ -2,11 +2,11 @@
 loads with every unit in place. The mission on it is test_twin_strike_mission's.
 
 `Identity`, `Profile`, `Items`, `Ranges`, `Camera` and `Strings` need no stock data: the identity beside Open Door and
-the probes, the profile's settings, where every item stands and in which camp, the guns' bands, the start camera's
-geometry and the string table. `Script` builds the frame's script from Survivors' and pins its shapes: the camps, the
-setup before LoadingDone (the village's owner, the start camera), the deck's adds and locks and the groups of the
-pre-placed units. `Build` builds the op through its build.py front end, every gate included. Classes that read the stock
-extraction or the game install skip without them."""
+the probes, the profile's settings, where every item stands and in which camp, the guns' bands, the opening camera's
+keys and the string table. `Script` builds the frame's script from Survivors' and pins its shapes: the camps, the
+setup before LoadingDone (the village's owner), the opening camera after it, the deck's adds and locks and the groups
+of the pre-placed units. `Build` builds the op through its build.py front end, every gate included. Classes that read
+the stock extraction or the game install skip without them."""
 from __future__ import annotations
 
 import contextlib
@@ -22,15 +22,16 @@ import unittest
 import uuid
 
 from twin_strike_support import (
-    GAME, LAYOUT_DATA, OUT_ROOT, SCRIPT_DATA, TWIN_STRIKE, build_main, gru, quiet_build,
+    GAME, LAYOUT_DATA, OUT_ROOT, SCRIPT_DATA, TWIN_STRIKE, build_main, build_profile, gru, quiet_build,
 )
 from modkit.core import edat, paths, trad
 from modkit.core.gates import CheckError
 from modkit.ops import INGAME_DIC, gates, leveldesign
+from modkit.ops import testing as ops_testing
 from modkit.ops.bricks import unit_path
 from modkit.ops.files import read_file
 from modkit.ops.graph import decode, walk
-from modkit.ops.maps import CAMPATHS_FILE, TWIN_CITIES
+from modkit.ops.maps import CAMPATHS_FILE, START_CAMERA_MIN_HEIGHT, TWIN_CITIES, view_centre
 from modkit.ops.profile import (
     SOVIET_PLAYER_CAMP_ROWS, SOVIET_PLAYER_DECK_SWAP, SOVIET_PLAYER_SIDES, SURVIVORS, extracted,
 )
@@ -241,45 +242,67 @@ class Ranges(unittest.TestCase):
 
 
 class Camera(unittest.TestCase):
-    def test_geometry(self):
-        """A one-key path looking down 37 degrees at the village, facing south; its eye over (69, 222.7) px, inside the
-        cut and north of the village, 297,725 world above the map's ground."""
-        eye, direction = ts_map.CAMERA.key()
-        self.assertAlmostEqual(math.hypot(*direction), 1.0)
-        self.assertAlmostEqual(math.degrees(math.asin(-direction[2])), 37.0)
-        self.assertEqual(direction[0], 0.0)
-        self.assertGreater(direction[1], 0.0)
-        self.assertAlmostEqual(eye[2], TWIN_CITIES.ground_z + 297725.0)
-        ex, ey = ts_map.CAMERA.eye_px()
-        self.assertAlmostEqual(ex, 69.0)
-        self.assertAlmostEqual(ey, 222.67, places=2)
-        x0, y0, x1, y1 = ts_map.CUT_PX
-        self.assertTrue(x0 <= ex <= x1 and y0 <= ey <= y1)
-        # the view's centre line meets the ground at the village
-        t = (eye[2] - TWIN_CITIES.ground_z) / -direction[2]
-        self.assertAlmostEqual(TWIN_CITIES.world_to_px((eye[0] + t * direction[0], eye[1] + t * direction[1]))[1],
-                               ts_map.POINTS["VILLAGE"][1])
+    """The opening camera [[start-camera-before-loading-done]]: TS_Open, three keys flown in OPENING_S, then TS_Start,
+    its last key."""
 
-    def test_the_file_holds_the_one_path(self):
+    def test_the_move_comes_down_and_turns_south(self):
+        """Each key 40 degrees down, from 720,000 to 400,000 above the ground, never below stock's lowest start camera;
+        the eyes over the map north of the cut, moving west and south, the heading turning to due south; 6 to 10 s."""
+        keys = ts_map.CAMERA.path_keys()
+        self.assertEqual(len(keys), 3)
+        heights = [eye[2] - TWIN_CITIES.ground_z for eye, _ in keys]
+        self.assertEqual([round(h) for h in heights], [720000, 540000, 400000])
+        self.assertGreaterEqual(min(heights), START_CAMERA_MIN_HEIGHT)
+        eyes = [TWIN_CITIES.world_to_px(eye[:2]) for eye, _ in keys]
+        for (ex, ey), (eye, d) in zip(eyes, keys):
+            self.assertAlmostEqual(math.degrees(math.asin(-d[2])), 40.0)
+            self.assertTrue(0 <= ex <= 768 and 0 <= ey < ts_map.CUT_PX[1])
+        self.assertEqual([round(c, 1) for e in eyes for c in e], [179.7, 13.5, 129.6, 39.2, 105.0, 58.8])
+        self.assertTrue(eyes[0][0] > eyes[1][0] > eyes[2][0] and eyes[0][1] < eyes[1][1] < eyes[2][1])
+        headings = [math.degrees(math.atan2(d[1], d[0])) for _, d in keys]
+        self.assertTrue(headings[0] > headings[1] > headings[2] == 90.0)
+        self.assertTrue(6.0 <= ts_map.OPENING_S <= 10.0)
+
+    def test_the_last_view_has_the_soviet_box_near_and_the_village_beyond(self):
+        """The last view centres on (105, 245) px: inside the cut, between the village and the Soviet box's middle on
+        x, south of the box and north of the village; the eye stands north of the box, so the box is in the view."""
+        last = ts_map.OPENING_KEYS[-1]
+        cx, cy = TWIN_CITIES.world_to_px(view_centre(ts_map.CAMERA.path_keys()[-1], TWIN_CITIES.ground_z))
+        self.assertAlmostEqual(cx, 105.0)
+        self.assertAlmostEqual(cy, 245.0)
+        self.assertEqual((last.at_px, last.facing), ((105.0, 245.0), (0.0, 1.0)))
+        bx0, by0, bx1, by1 = ts_map.SOV_DZ
+        vx, vy = ts_map.POINTS["VILLAGE"]
+        self.assertTrue(vx < cx < (bx0 + bx1) / 2 and by1 < cy < vy)
+        _, eye_y = TWIN_CITIES.world_to_px(ts_map.CAMERA.path_keys()[-1][0][:2])
+        self.assertLess(eye_y, by0)
+
+    def test_the_file_holds_the_move_and_its_end(self):
+        """TS_Open (three keys) then TS_Start, one key, the move's last; the camera gate passes it."""
         (it,) = ts_map.CAMERA.items()
         self.assertEqual((it.pack, it.path, it.action, it.fixture),
                          ("Details", CAMPATHS_FILE, "generate", "CamPaths_LevelDesign.txt"))
         nb, _, _ = decode(b"".join(it.chunks()))
-        self.assertEqual([nb.cname(ob.cls) for ob in nb.objects], ["TCameraPath", "TCameraPathKey", "TCameraPathKey"])
-        self.assertEqual(nb.strings, [b"TS_Start"])
+        self.assertEqual([nb.cname(ob.cls) for ob in nb.objects],
+                         ["TCameraPath", *["TCameraPathKey"] * 6, "TCameraPath", "TCameraPathKey", "TCameraPathKey"])
+        self.assertEqual(nb.strings, [b"TS_Open", b"TS_Start"])
+        self.assertEqual(ts_map.CAMERA.check(b"".join(it.chunks())),
+                         "TS_Open (3 keys) then TS_Start, its last key: every eye over the map, at least 400,000 above "
+                         "the ground (stock's lowest start camera 376,057), the last view centred on (105.0, 245.0) "
+                         "px, inside the cut")
 
     @LAYOUT_DATA
-    def test_it_keeps_the_layouts_own_view(self):
-        """The layout's camp0 camera (its eye's z, how far it looks down) is the start camera's: 297,725 above the
-        map's ground_z and 37 degrees down, to within rounding."""
+    def test_the_last_view_centres_where_camp0_does(self):
+        """The layout's own camp0 camera, the deployment view of the stock zone the Soviet box is cut from, centres its
+        view 244.8 px down the map; the last view centres there too, to within half a pixel."""
         nb, _, _ = decode(read_file(extracted(f"{TWIN_CITIES.details}/{CAMPATHS_FILE}")))
         props = [{nb.pname(pi): v for pi, v in ob.props} for ob in nb.objects]
         (camp0,) = [p for ob, p in zip(nb.objects, props)
                     if nb.cname(ob.cls) == "TCameraPath" and nb.strings[p["Name"].v] == b"camp0"]
-        (z,) = [props[k.v.index]["Coord"].v[2] for k in camp0["PositionKeyVector"].v]
-        (dz,) = [props[k.v.index]["Coord"].v[2] for k in camp0["DirectionKeyVector"].v]
-        self.assertAlmostEqual(z - TWIN_CITIES.ground_z, ts_map.CAMERA_HEIGHT, delta=1.0)
-        self.assertAlmostEqual(math.degrees(math.asin(-dz)), ts_map.CAMERA_PITCH_DEG, delta=0.05)
+        (eye,) = [props[k.v.index]["Coord"].v for k in camp0["PositionKeyVector"].v]
+        (d,) = [props[k.v.index]["Coord"].v for k in camp0["DirectionKeyVector"].v]
+        _, cy = TWIN_CITIES.world_to_px(view_centre((eye, d), TWIN_CITIES.ground_z))
+        self.assertAlmostEqual(cy, ts_map.OPENING_KEYS[-1].at_px[1], delta=0.5)
 
 
 class Strings(unittest.TestCase):
@@ -351,21 +374,29 @@ class Script(unittest.TestCase):
         self.assertEqual(decks, [(name, deck) for name, _, deck in SOVIET_PLAYER_CAMP_ROWS])
         self.assertEqual(decks[0], ("joueur", "OP_BASE_RJ_Player"))
 
-    def test_setup_ends_with_the_village_owner_and_the_start_camera(self):
-        """Before LoadingDone: the deployment's setup, then NATO owns the village's zone (RedJuggernaut #73's place),
-        then the camera snaps to TS_Start (bricks.g_camera) [[start-camera-before-loading-done]]."""
+    def test_setup_ends_with_the_village_owner_and_the_camera_opens_after_loading_done(self):
+        """Before LoadingDone: the deployment's setup, then NATO owns the village's zone (RedJuggernaut #73's place).
+        After it, before the HUD returns, the opening camera, where DelayedRetribution opens (#64, #65 before #67):
+        the camera flies TS_Open in OPENING_S, then snaps to TS_Start [[start-camera-before-loading-done]]. Nothing
+        before LoadingDone moves the camera: the deployment phase, which starts there, loses it."""
         kids = subs(self.main)
         names = [k.cls.removeprefix("TGDDescriptor") for k in kids]
         self.assertEqual(names, ["SetDeck"] * 4 + ["ForceDisplayUIElement", "ChangeProductionType",
                                                    "SetRessourceForTeam", "SetIncomeToTeam",
-                                                   "SetCommandZoneOwnerAndForceConvergence", "EncapsuleCutscene",
-                                                   "LoadingDone", "ForceDisplayUIElement", "Simultaneous"])
-        owner, camera = kids[8], kids[9]
+                                                   "SetCommandZoneOwnerAndForceConvergence", "LoadingDone",
+                                                   "EncapsuleCutscene", "EncapsuleCutscene", "ForceDisplayUIElement",
+                                                   "Simultaneous"])
+        owner, move, end = kids[8], kids[10], kids[11]
         self.assertEqual(last(prop(owner, "Camp")), "ordinateur_SOV")
         self.assertEqual([last(t) for t in prop(owner, "Positions")], [op.VILLAGE_ZONE])
-        (start,) = subs(camera)
-        self.assertEqual((start.cls, prop(start, "CameraPathName").text),
-                         ("TGDDescriptorCutsceneStartCameraPath", ts_map.CAMERA.name))
+        (fly,), (snap,) = subs(move), subs(end)
+        self.assertEqual([(n.cls, prop(n, "CameraPathName").text) for n in (fly, snap)],
+                         [("TGDDescriptorCutsceneStartCameraPath", "TS_Open"),
+                          ("TGDDescriptorCutsceneStartCameraPath", "TS_Start")])
+        self.assertEqual((ts_map.CAMERA.move, ts_map.CAMERA.end), ("TS_Open", "TS_Start"))
+        self.assertEqual((prop(fly, "TimeInSecond").v, prop(snap, "TimeInSecond")), (ts_map.OPENING_S, None))
+        self.assertEqual([prop(n, "CanBeSkippedWithEscape").v for n in (fly, snap)], [1, 1])
+        self.assertEqual(of(list(walk(kids[:9])), "Camera"), [])
         self.assertEqual([k for k, _ in kids[7].props], ["Camp"])        # no income: stock leaves the amount out
         self.assertEqual(prop(kids[6], "Quantite").v, op.DEPLOY_POINTS)
         self.assertEqual(prop(kids[5], "ProductionType").v, PRODUCTION_DECK)   # the buy menu's BATTLEGROUP view
@@ -375,8 +406,8 @@ class Script(unittest.TestCase):
         wait for "Launch battle" (the start hint beside it) before the timed beats (test_twin_strike_mission). The HUD
         restore leaves the buy menu's switch at Default."""
         kids = subs(self.main)
-        self.assertNotIn(("ShowProdMenuSwitchMenuTypeButtons"), [p for p, _ in kids[11].props])
-        *_, refresh, battle = subs(kids[12])
+        self.assertNotIn(("ShowProdMenuSwitchMenuTypeButtons"), [p for p, _ in kids[-2].props])
+        *_, refresh, battle = subs(kids[-1])
         launched = subs(battle)[0]
         self.assertEqual(refresh.export, profile.REFRESH_EXPORT)
         self.assertEqual(launched.cls, "TGDDescriptorCompetition")
@@ -388,7 +419,7 @@ class Script(unittest.TestCase):
         """AddUnitToDeck for every start card, the motor rifles carried by their BMP-2s, and then for the Soviet
         player's supply; then, last and beside each other, one LockDeckUnit per locked type, each until ts_fallen = 1
         [[add-unit-to-deck]]."""
-        deck = subs(subs(self.main)[12])[0]
+        deck = subs(subs(self.main)[-1])[0]
         *adds, locks = subs(deck)
         got = [(prop(n, "TypeUnit").path, prop(n, "NbUnitsToAdd").v,
                 prop(n, "Transporter").path if prop(n, "Transporter") else None) for n in adds]
@@ -410,7 +441,7 @@ class Script(unittest.TestCase):
         """The garrison's group from its 14 Camp_3 spawns, then, as stock gives a garrison in a camp with no AI: HOLD
         POSITION when idle and Aggressive when fired on (Survivors #188/#189's place), and a Hold smart order at the
         village, last (RedJuggernaut #249)."""
-        union, idle, shot, hold = subs(subs(subs(self.main)[12])[1])
+        union, idle, shot, hold = subs(subs(subs(self.main)[-1])[1])
         self.assertEqual((last(prop(union, "GroupDestination")), [last(s) for s in prop(union, "ListGroupSource")]),
                          (op.GARRISON, [it.name for it in spawns("garrison")]))
         self.assertEqual((idle.cls, last(prop(idle, "Group")), prop(idle, "IdleBehavior").v),
@@ -475,11 +506,35 @@ class Build(unittest.TestCase):
                      "gate 3 zone-layout: 3 zones and 2 arrivals laid out by stock's rules",
                      "gate 3 fire-range: TS_GunSpawn 4,577 GRU N of the playable zone, inside the map, past the "
                      "player's longest ground vision, 4,250 GRU (MiG_23ML_SOV); 10 battery-target pairs on 4 targets",
-                     "gate 5 package: all 43 entries lie under challenge_OperationTwinStrike; no Gameplay file"):
+                     "gate 5 package: all 43 entries lie under challenge_OperationTwinStrike; no Gameplay file",
+                     "CamPaths_LevelDesign 10 objects vs 35 stock files"):   # gate 2: canonical, stock shapes
             self.assertIn(line, self.log)
 
+    def test_the_shipped_camera_passes_the_camera_gate(self):
+        """The camera gate on the camera paths file read back from the written Details pack, where the game reads it:
+        the move and its end, every eye over the map and 400,000 or more above the ground, the last view in the cut."""
+        path = os.path.join(OUT, "TwinStrike", "Scenarios", f"{profile.SCENARIO}_Details.dat")
+        entries = {e.path: edat.read_entry(path, e) for e in edat.read_index(path)}
+        self.assertIn("the last view centred on (105.0, 245.0) px, inside the cut",
+                      ts_map.CAMERA.check(entries[CAMPATHS_FILE]))
+
+    def test_the_camera_gate_fails_a_key_at_ground_level(self):
+        """The camera gate's proof (it passes this build, above): the same op with the opening move's middle key
+        brought down to the ground fails the build with the gate's line, before anything is written."""
+        keys = list(ts_map.OPENING_KEYS)
+        keys[1] = dataclasses.replace(keys[1], height=0.0)
+        ground = dataclasses.replace(ts_map.CAMERA, keys=tuple(keys))
+        bad = dataclasses.replace(build_profile(), extra_items=(ts_map.CUT.items, ground.items))
+        out = os.path.join(OUT_ROOT, "bad-camera")
+        with self.assertRaisesRegex(CheckError, r"^camera path TS_Open key 1: its eye stands 0 above the ground, below "
+                                                r"stock's lowest start camera \(376,057, BlackHorsesLastStand's "
+                                                r"camera_start\)$"):
+            ops_testing.quiet_build(bad, op.content(), out)
+        self.assertFalse(os.path.exists(out))
+        remove_out(out)
+
     def test_details_are_all_generated(self):
-        """The cut's three files and the start camera's are generated; nothing of the layout is copied."""
+        """The cut's three files and the opening camera's are generated; nothing of the layout is copied."""
         with open(os.path.join(OUT, "MANIFEST.tsv"), encoding="utf-8") as fh:
             rows = [line.rstrip("\n").split("\t") for line in fh]
         details = {r[1]: r[3] for r in rows[1:] if r[0] == "Details"}

@@ -487,12 +487,15 @@ def check_fixture(item: Item, path: str, *, bless: bool, summary: bool, root: st
 # --------------------------------------------------------------------------- the generated files' table layout
 
 IMPORT_RULES = ("trie", "preorder")
+CAMERA_PATH = "TCameraPath"   # a camera paths file's path object: each one an unexported root (check_canonical)
 
 
 def check_canonical(raw: bytes, shared: frozenset[str], what: str, *, import_rule: str) -> None:
     """Table layout of a generated file read back: CLAS/PROP/STRG and import indices in first-use order, TRAN = IMPR
     then EXPR preorder, PROP owners (one per (name, class) except `shared` names, owned by their first class), ref
-    classes, TOPO = exported + unreferenced, one CHNK, a single unexported root (#0).
+    classes, TOPO = exported + unreferenced, one CHNK, a single unexported root (#0). A camera paths file is the one
+    stock layout with more: one unexported root per path, every root a TCameraPath and #0 the first (all 35 stock
+    CamPaths_LevelDesign files hold two paths or more, each its own root).
 
     `import_rule` is the IMPR tree's rule. 'trie', stock's: the tree is the trie of the import paths inserted in index
     order, so when first uses interleave two folders, later imports join the earlier folder's node (TheWingedHussars
@@ -564,7 +567,9 @@ def check_canonical(raw: bytes, shared: frozenset[str], what: str, *, import_rul
     exported = {i for _, i in ndfbin.tree_paths(nb, nb.exports)}
     free = set(range(len(nb.objects))) - referenced
     check(nb.topo == sorted(exported | free), f"{what}: TOPO is not exported + unreferenced")
-    check(free - exported == {0}, f"{what}: unexported roots {sorted(free - exported)}, expected only #0")
+    roots = sorted(free - exported)
+    if not (roots and roots[0] == 0 and all(nb.cname(nb.objects[i].cls) == CAMERA_PATH for i in roots)):
+        check(roots == [0], f"{what}: unexported roots {roots}, expected only #0")
     check(nb.chnk == [(0, len(nb.objects))], f"{what}: CHNK {nb.chnk}")
 
 

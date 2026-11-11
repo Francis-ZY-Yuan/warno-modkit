@@ -6,8 +6,9 @@ menu tokens (ts_*: twinstrike.profile), so it installs beside Open Door and the 
 Build it with `python build.py --content op`. The player is Soviet [[soviet-player-camp]].
 
   Main: SetDeck x4, HUD hidden, deployment setup (DEPLOY_POINTS and no income; the buy menu on its BATTLEGROUP view;
-        the village zone given to NATO, as RedJuggernaut gives the enemy its zones, #73), the start camera (CAMERA, a
-        one-key path over the village), LoadingDone, HUD restored, then
+        the village zone given to NATO, as RedJuggernaut gives the enemy its zones, #73), LoadingDone, the opening
+        camera (CAMERA: a move from high over the cut down to the Soviet box and the village, then a snap to its last
+        key) [[start-camera-before-loading-done]], HUD restored, then
         Simultaneous[ the load beats (the deck, the garrison's group and orders, the difficulty, the end funnel),
                       the Groupe_Joueur refresh loop,
                       Sequential[ wait for "Launch battle" (the start hint ts_hdep, naming the village),
@@ -65,7 +66,7 @@ from modkit.ops import mission as ops_mission
 from modkit.ops import script as ops_script
 from modkit.ops import shapes
 from modkit.ops.bricks import (
-    c_all, c_any, c_none, c_team, c_type, g_and, g_attack, g_camera, g_choice, g_cmp, g_collect, g_compete, g_count,
+    c_all, c_any, c_none, c_team, c_type, g_and, g_attack, g_choice, g_cmp, g_collect, g_compete, g_count,
     g_detect, g_fx, g_grant, g_hint, g_idle_roe, g_if, g_ignored, g_income, g_kill, g_losses, g_modify, g_or,
     g_planes_spent, g_roe, g_seq, g_set, g_simul, g_smart_hold, g_spawn, g_union, g_units_in_zones, g_until, g_vanish,
     g_wait, g_zone_control, g_zone_owner, unit_path,
@@ -1011,24 +1012,27 @@ BEATS: list[Beat] = [
 def deploy_phase(tpl: ndfbin.NdfBin, ctx: Ctx) -> ops_script.DeployPhase:
     """The deployment phase (modkit.ops.script.deploy_phase): DEPLOY_POINTS and START_INCOME (none, written with no
     amount), the buy menu on the profile's PRODUCTION_TYPE (its BATTLEGROUP view), the profile's refresh, the start hint
-    ts_hdep until "Launch battle"; its setup then gives the village's zone to NATO and snaps the start camera, the last
-    nodes before LoadingDone."""
+    ts_hdep until "Launch battle"; its setup then gives the village's zone to NATO, the last node before LoadingDone.
+    The camera is set after LoadingDone (script's opening): the deployment phase, which starts there, loses a snap made
+    here."""
     deploy = ops_script.deploy_phase(tpl, profile.TEMPLATES, ctx.camp(PLAYER), ctx.group(GROUPE_JOUEUR), [],
                                      points=DEPLOY_POINTS, income=START_INCOME, hint="ts_hdep",
                                      refresh_export=profile.REFRESH_EXPORT, refresh_s=profile.REFRESH_S,
                                      production_type=profile.PRODUCTION_TYPE)
-    setup = (*deploy.setup, g_zone_owner(ctx.camp(ENEMY), [ctx.tag(VILLAGE_ZONE)]), g_camera(CAMERA.name))
+    setup = (*deploy.setup, g_zone_owner(ctx.camp(ENEMY), [ctx.tag(VILLAGE_ZONE)]))
     return dataclasses.replace(deploy, setup=setup)
 
 
 def script(tpl: ndfbin.NdfBin) -> tuple[list[Node], list[Node]]:
     """The op's GDScript (layout in the module docstring; modkit.ops.mission.script_frame), from Survivors' GDScript
-    template `tpl`: FLAGS are declared even before a beat writes them, and the end funnel is exported."""
+    template `tpl`: FLAGS are declared even before a beat writes them, the end funnel is exported, and the opening
+    camera (CAMERA's move, then its snap) runs right after LoadingDone, before the HUD returns
+    [[start-camera-before-loading-done]]."""
     ctx = Ctx()
     return ops_mission.script_frame(tpl, profile.TEMPLATES, ctx, deploy_phase(tpl, ctx), BEATS,
                                     camp_rows=profile.CAMP_ROWS, folder=profile.FOLDER,
                                     start_delay_s=profile.START_DELAY_S, prod_menu_switch=PROD_MENU_SWITCH,
-                                    flags=FLAGS)
+                                    flags=FLAGS, opening=CAMERA.cutscenes())
 
 
 def content() -> Content:

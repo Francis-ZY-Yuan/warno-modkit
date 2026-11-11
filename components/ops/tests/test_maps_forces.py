@@ -1,63 +1,23 @@
-"""Tests for modkit.ops.maps (the stock map record, the start camera and the review overlay) and modkit.ops.forces
-(force tables)."""
+"""Tests for modkit.ops.maps (the stock map record and the review overlay; its opening camera is
+test_opening_camera's) and modkit.ops.forces (force tables)."""
 from __future__ import annotations
 
 import csv
-import math
 import os
 import shutil
 import tempfile
 import unittest
 
-from modkit.core import ndfbin, paths
-from modkit.core.gates import CheckError
+from modkit.core import paths
 from modkit.ops.forces import (
     GEISA_SOVIET_ROWS, ForceRow, formation, group_rows, group_total, rows_of, scaled, share_count,
 )
 from modkit.ops.files import read_file
-from modkit.ops.graph import build_graph, decode
+from modkit.ops.graph import decode
 from modkit.ops.leveldesign import LdItem
-from modkit.ops.maps import CAMERA_SHAPE_SOURCES, CAMPATHS_FILE, GEISA, GEISA_BOXES, GEISA_POINTS, StartCamera
+from modkit.ops.maps import GEISA, GEISA_BOXES, GEISA_POINTS
 from modkit.ops.profile import Content, extracted
-from modkit.ops.zones import camera_paths_graph, point_in_polygon
-
-
-class StartCameraTest(unittest.TestCase):
-    """modkit.ops.maps.StartCamera on Geisa's frame (synthetic: no stock data)."""
-
-    def test_key(self):
-        """The eye stands back from the point along the view, `height` above ground_z; the direction is a unit vector
-        `pitch_deg` down, heading along `facing` (normalised)."""
-        cam = StartCamera(GEISA, "C", (100.0, 300.0), (3.0, 4.0), 100000.0, 30.0)
-        eye, d = cam.key()
-        self.assertAlmostEqual(math.hypot(*d), 1.0)
-        self.assertAlmostEqual(d[2], -0.5)
-        self.assertAlmostEqual(d[0] / d[1], 0.75)
-        self.assertAlmostEqual(eye[2], GEISA.ground_z + 100000.0)
-        t = 100000.0 / 0.5
-        self.assertAlmostEqual(eye[0] + t * d[0], 100.0 * GEISA.world_per_px, places=3)
-        self.assertAlmostEqual(eye[1] + t * d[1], 300.0 * GEISA.world_per_px, places=3)
-        ex, ey = cam.eye_px()
-        self.assertLess(ex, 100.0)
-        self.assertLess(ey, 300.0)
-
-    def test_bad_facing_or_pitch(self):
-        for facing, pitch in (((0.0, 0.0), 30.0), ((0.0, 1.0), 0.0), ((0.0, 1.0), 90.0)):
-            with self.subTest(facing=facing, pitch=pitch), self.assertRaises(CheckError):
-                StartCamera(GEISA, "C", (1.0, 1.0), facing, 1000.0, pitch).key()
-
-    def test_items_ship_the_one_path(self):
-        """One generated Details item, CamPaths_LevelDesign.ndfbin, dumped; its file is camera_paths_graph's of the one
-        key, and decodes to one TCameraPath named after the camera."""
-        cam = StartCamera(GEISA, "Op_Start", (100.0, 300.0), (0.0, 1.0), 300000.0, 37.0)
-        (it,) = cam.items()
-        self.assertEqual((it.pack, it.path, it.action, it.fixture),
-                         ("Details", CAMPATHS_FILE, "generate", "CamPaths_LevelDesign.txt"))
-        self.assertIn("start camera Op_Start", it.source)
-        eye, d = cam.key()
-        _, _, image = decode(b"".join(it.chunks()))
-        self.assertEqual(image, ndfbin.encode_image(build_graph(camera_paths_graph([("Op_Start", [eye], [d])]), [])))
-        self.assertEqual(set(CAMERA_SHAPE_SOURCES), {CAMPATHS_FILE})
+from modkit.ops.zones import point_in_polygon
 
 
 class Geisa(unittest.TestCase):

@@ -32,9 +32,11 @@ ai-grid-tiles-playable-zone):
   playable zone is a rectangle, the layout's grid keeps ``gates.check_grid_subset`` under it, and the shipped AI grid
   is that cut, byte for byte. It replaces ``gates.grid_gate`` for an op on a cut.
 
-**A start camera** (``StartCamera``) is a one-key camera path the script snaps to right before LoadingDone
-(``bricks.g_camera``), so the battle opens on the op's own ground and not in a map corner: ``StartCamera.items`` ships
-it as the Details file ``CamPaths_LevelDesign.ndfbin`` in place of the map's own camera paths.
+**An opening camera** (``OpeningCamera``) is a camera move the script runs right after LoadingDone, then a snap to its
+last key (``bricks.g_camera``), so a deployment phase opens on the op's own ground and not at the engine's default
+camera: ``OpeningCamera.items`` ships the two paths as the Details file ``CamPaths_LevelDesign.ndfbin`` in place of the
+map's own camera paths, held to the camera gate (``check_camera_paths``: stock's key shape, every eye over the map and
+at least stock's lowest start camera above the ground, the last view inside the cut).
 
 Named places are content, not map facts: each op keeps its own. The ones more than one example op uses on Geisa are
 kept once here, read-only (``GEISA_POINTS``, ``GEISA_BOXES``).
@@ -51,9 +53,11 @@ from types import MappingProxyType
 
 from modkit.core import tgv
 from modkit.core.gates import check
+from modkit.core.ndfbin import encode_image
+from modkit.ops.bricks import g_camera
 from modkit.ops.files import read_file
 from modkit.ops.gates import IA_GRID_FILES, PLAYABLE_FILE, check_grid_subset, shipped_details
-from modkit.ops.graph import build_graph, encode
+from modkit.ops.graph import Node, build_graph, decode, encode
 from modkit.ops.items import Item, mem_item
 from modkit.ops.leveldesign import LdItem
 from modkit.ops.profile import Content, ExtraGate, extracted
@@ -310,62 +314,167 @@ class Cut:
                 f"(seams up to {self.map.grid_seam:,.0f} world)")
 
 
-# --------------------------------------------------------------------------- the start camera
+# --------------------------------------------------------------------------- the opening camera
 
 CAMPATHS_FILE = "CamPaths_LevelDesign.ndfbin"   # the Details file of a scenario's camera paths
 # The stock files whose shapes a generated camera paths file may use (OpProfile.shape_sources).
 CAMERA_SHAPE_SOURCES: Mapping[str, tuple[str, ...]] = MappingProxyType({
     CAMPATHS_FILE: (f"scenarios/*/{CAMPATHS_FILE}", f"kreide_op/*/{CAMPATHS_FILE}")})
+# Stock's lowest start camera: BlackHorsesLastStand's camera_start (#145), its eye 376,057.125 world units above the
+# Center z of its playable zone. Every key of the five start cameras stock snaps right before LoadingDone stands
+# 376,057 to 773,047 above its ground (the ops knowledge record start-camera-before-loading-done). Every key of an
+# opening camera stands at least this high (check_camera_paths).
+START_CAMERA_MIN_HEIGHT = 376057.125
+DIRECTION_TOLERANCE = 1e-3   # how far a key's direction may be from unit length (stock's are unit to float32 rounding)
+PATH_PROPS = ["PositionKeyVector", "DirectionKeyVector", "Name"]   # a stock TCameraPath's properties, in order
+Key = tuple[tuple[float, float, float], tuple[float, float, float]]   # (the eye's position, the unit view direction)
 
 
 @dataclass(frozen=True)
-class StartCamera:
-    """An op's start camera on `map`: a one-key camera path named `name`, looking down `pitch_deg` at the point
-    `at_px` (minimap px) from `height` world units above the map's ground_z, its view heading along `facing` (a
-    minimap-px vector: (0, 1) faces south). The camera starts in a map corner unless the script snaps one before
-    LoadingDone (the ops knowledge record start-camera-before-loading-done); stock's own start paths are one-key
-    (DelayedRetribution's camera_intro_end, RedJuggernaut's and Gotterdammerung's CamStart).
-
-    * ``items`` is an ``OpProfile.extra_items`` entry: the Details file CAMPATHS_FILE holding this one path
-      (zones.camera_paths_graph), generated and dumped. The profile then ships no CAMPATHS_FILE among its
-      ``map_copies``, and names CAMERA_SHAPE_SOURCES among its ``shape_sources``.
-    * The script snaps to it with ``bricks.g_camera(name)`` right before LoadingDone."""
-    map: StockMap
-    name: str
+class CameraKey:
+    """One key of a camera path, by the view it gives: looking down `pitch_deg` at `at_px` (minimap px) from `height`
+    world units above the map's ground_z, heading along `facing` (a minimap-px vector: (0, 1) faces south)."""
     at_px: tuple[float, float]
     facing: tuple[float, float]
     height: float
     pitch_deg: float
 
-    def key(self) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
-        """The path's one key: (the eye's position, the unit view direction), world units. The eye stands back from
-        `at_px` along the view, so the view's centre line meets the ground (ground_z) there."""
-        tx, ty = self.map.px_to_world(self.at_px)
+    def key(self, on: StockMap) -> Key:
+        """The key on the map `on`, world units: the eye stands back from `at_px` along the view, so the view's centre
+        line meets the ground (ground_z) there."""
+        tx, ty = on.px_to_world(self.at_px)
         fx, fy = self.facing
         norm = math.hypot(fx, fy)
-        check(norm > 0, f"start camera {self.name}: facing {self.facing} has no heading")
+        check(norm > 0, f"camera key at {self.at_px}: facing {self.facing} has no heading")
         pitch = math.radians(self.pitch_deg)
-        check(0 < pitch < math.pi / 2, f"start camera {self.name}: pitch {self.pitch_deg} is not between 0 and 90")
+        check(0 < pitch < math.pi / 2, f"camera key at {self.at_px}: pitch {self.pitch_deg} is not between 0 and 90")
         d = (math.cos(pitch) * fx / norm, math.cos(pitch) * fy / norm, -math.sin(pitch))
         reach = self.height / math.sin(pitch)
-        return (tx - d[0] * reach, ty - d[1] * reach, self.map.ground_z + self.height), d
+        return (tx - d[0] * reach, ty - d[1] * reach, on.ground_z + self.height), d
 
-    def eye_px(self) -> tuple[float, float]:
-        """Where the eye stands over the map, minimap px."""
-        eye, _ = self.key()
-        return self.map.world_to_px(eye[:2])
+
+def view_centre(key: Key, ground_z: float) -> tuple[float, float]:
+    """Where a key's view centre line meets the ground (ground_z), world units. The direction must look down."""
+    (x, y, z), (dx, dy, dz) = key
+    t = (ground_z - z) / dz
+    return x + t * dx, y + t * dy
+
+
+def read_camera_paths(raw: bytes) -> dict[str, list[Key]]:
+    """The paths of a camera paths file, name -> its keys, held to stock's key shape first: every object a TCameraPath
+    (PositionKeyVector, DirectionKeyVector and Name, in that order) or a TCameraPathKey (one vec3 Coord), each path's
+    two key lists one key or more and of one length, and the file zones.camera_paths_graph's of its own values, byte
+    for byte (as gates.check_details_generators rebuilds every stock one)."""
+    nb, _, image = decode(raw)
+    props = [{nb.pname(pi): v for pi, v in ob.props} for ob in nb.objects]
+    paths: dict[str, list[Key]] = {}
+    for i, (ob, p) in enumerate(zip(nb.objects, props)):
+        cls = nb.cname(ob.cls)
+        if cls == "TCameraPathKey":
+            coord = p.get("Coord")
+            check(list(p) == ["Coord"] and coord.tag == 0x0B and len(coord.v) == 3,
+                  f"camera paths #{i}: a TCameraPathKey holds one vec3 Coord in stock, not {list(p)}")
+            continue
+        check(cls == "TCameraPath", f"camera paths #{i}: {cls} is no stock camera path object")
+        check(list(p) == PATH_PROPS, f"camera paths #{i}: a stock TCameraPath holds {PATH_PROPS}, not {list(p)}")
+        name = nb.strings[p["Name"].v].decode("latin-1")
+        pos, dirs = ([props[k.v.index]["Coord"].v for k in p[vec].v] for vec in PATH_PROPS[:2])
+        check(len(pos) == len(dirs) >= 1, f"camera path {name}: {len(pos)} position and {len(dirs)} direction keys; "
+                                          f"stock's are one or more, as many of each")
+        check(name not in paths, f"camera path {name} is named twice")
+        paths[name] = list(zip(pos, dirs))
+    graph = camera_paths_graph([(name, [e for e, _ in keys], [d for _, d in keys]) for name, keys in paths.items()])
+    check(encode_image(build_graph(graph, [])) == image, "the camera paths file is not in stock's layout "
+                                                         "(zones.camera_paths_graph does not rebuild it)")
+    return paths
+
+
+def check_camera_paths(raw: bytes, on: StockMap, box_px: tuple[float, float, float, float], move: str,
+                       end: str) -> str:
+    """The camera gate, on a camera paths file as it ships (the game reads it as the scenario's Details file
+    CAMPATHS_FILE) for an opening camera on `on` that flies `move` and then snaps to `end`:
+    - the file holds the two paths and nothing else, each in stock's key shape (read_camera_paths); `move` has two
+      keys or more, and `end` is one key, the move's last, as stock ends an opening move (DelayedRetribution's
+      camera_intro_end #79 is camera_intro #92's last key; GloryOrAttrition #74 and #96, TheHydra #168 and #167);
+    - every key looks down, its direction a unit vector;
+    - every key's eye stands over the map (0 to its minimap size on both axes), at least START_CAMERA_MIN_HEIGHT above
+      its ground_z (stock's lowest start camera);
+    - the last key's view centre lies inside `box_px` (minimap px: the op's cut).
+    Returns the build log's line."""
+    min_height = START_CAMERA_MIN_HEIGHT
+    paths = read_camera_paths(raw)
+    check(set(paths) == {move, end}, f"the camera paths file holds {sorted(paths)}, not the opening's {move} and {end}")
+    check(len(paths[move]) >= 2, f"camera path {move}: one key is a snap, not a move")
+    check(paths[end] == paths[move][-1:], f"camera path {end} is not the one key {move} ends on")
+    w, h = (n * on.world_per_px for n in on.minimap_px)
+    low = math.inf
+    for name, keys in paths.items():
+        for k, ((x, y, z), d) in enumerate(keys):
+            where = f"camera path {name} key {k}"
+            check(abs(math.hypot(*d) - 1.0) <= DIRECTION_TOLERANCE and d[2] < 0,
+                  f"{where}: its direction {d} is not a unit vector looking down")
+            check(0 <= x <= w and 0 <= y <= h, f"{where}: its eye at {on.world_to_px((x, y))} px is off the map")
+            check(z - on.ground_z >= min_height,
+                  f"{where}: its eye stands {z - on.ground_z:,.0f} above the ground, below stock's lowest start "
+                  f"camera ({min_height:,.0f}, BlackHorsesLastStand's camera_start)")
+            low = min(low, z - on.ground_z)
+    cx, cy = on.world_to_px(view_centre(paths[move][-1], on.ground_z))
+    x0, y0, x1, y1 = box_px
+    check(x0 <= cx <= x1 and y0 <= cy <= y1, f"camera path {move}: its last view centres on ({cx:.1f}, {cy:.1f}) px, "
+                                             f"outside the cut x {x0:g}..{x1:g}, y {y0:g}..{y1:g} px")
+    return (f"{move} ({len(paths[move])} keys) then {end}, its last key: every eye over the map, at least {low:,.0f} "
+            f"above the ground (stock's lowest start camera {min_height:,.0f}), the last view centred on "
+            f"({cx:.1f}, {cy:.1f}) px, inside the cut")
+
+
+@dataclass(frozen=True)
+class OpeningCamera:
+    """An op's opening camera on `cut`'s map, set where stock sets a deployment-phase Operation's opening view (the ops
+    knowledge record start-camera-before-loading-done): right after LoadingDone the camera flies the path `move`
+    through `keys` in `seconds`, easing in and out, the player's actions blocked and Escape skipping it; then it snaps
+    to the one-key path `end`, the move's last key, so a skipped move ends there too (DelayedRetribution's #64/#92
+    then #65/#79). The script then restores the HUD, and the deployment phase opens on the last key's view.
+
+    * ``items`` is an ``OpProfile.extra_items`` entry: the Details file CAMPATHS_FILE holding the two paths
+      (zones.camera_paths_graph), generated, held to check_camera_paths when a build plans it (a failure fails the
+      build with one FAILED line) and dumped. The profile then ships no CAMPATHS_FILE among its ``map_copies``, and
+      names CAMERA_SHAPE_SOURCES among its ``shape_sources``.
+    * ``cutscenes`` are the script's two nodes, run right after LoadingDone (mission.script_frame's `opening`)."""
+    cut: Cut
+    move: str
+    end: str
+    keys: tuple[CameraKey, ...]
+    seconds: float
+
+    def path_keys(self) -> list[Key]:
+        """The move's keys on the cut's map, world units."""
+        return [k.key(self.cut.map) for k in self.keys]
+
+    def paths(self) -> list[tuple[str, list, list]]:
+        """zones.camera_paths_graph's input: the move, then the end, its last key."""
+        keys = self.path_keys()
+        return [(self.move, [e for e, _ in keys], [d for _, d in keys]), (self.end, [keys[-1][0]], [keys[-1][1]])]
 
     def details(self) -> bytes:
-        """The camera paths file: this one path."""
-        eye, direction = self.key()
-        return encode(build_graph(camera_paths_graph([(self.name, [eye], [direction])]), []), CAMPATHS_FILE)
+        """The camera paths file: the two paths."""
+        return encode(build_graph(camera_paths_graph(self.paths()), []), CAMPATHS_FILE)
+
+    def check(self, raw: bytes) -> str:
+        """check_camera_paths of a camera paths file for this camera, inside the cut's box. Returns its line."""
+        return check_camera_paths(raw, self.cut.map, self.cut.box_px, self.move, self.end)
+
+    def cutscenes(self) -> tuple[Node, Node]:
+        """The move (bricks.g_camera with `seconds`), then the snap to its last key (bricks.g_camera)."""
+        return g_camera(self.move, self.seconds), g_camera(self.end)
 
     def items(self, content: Content | None = None) -> list[Item]:
-        """The camera paths file as a planned item (an OpProfile.extra_items entry): generated, dumped as
-        CamPaths_LevelDesign.txt."""
-        x, y = self.at_px
-        return [mem_item("Details", CAMPATHS_FILE, self.details(), "generate",
-                         f"generated (start camera {self.name} on x {x:g}, y {y:g} px)",
+        """The camera paths file as a planned item (an OpProfile.extra_items entry): generated, held to check first,
+        dumped as CamPaths_LevelDesign.txt."""
+        raw = self.details()
+        self.check(raw)
+        x, y = self.keys[-1].at_px
+        return [mem_item("Details", CAMPATHS_FILE, raw, "generate",
+                         f"generated (opening camera {self.move} then {self.end}, ending on x {x:g}, y {y:g} px)",
                          fixture=CAMPATHS_FILE.replace(".ndfbin", ".txt"))]
 
 # --------------------------------------------------------------------------- the overlay

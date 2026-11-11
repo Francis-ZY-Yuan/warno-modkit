@@ -225,14 +225,17 @@ def g_dialog(token: str) -> Node:
         ])])])
 
 
-def g_camera(path: str) -> Node:
-    """The camera snaps to the camera path `path` (a CamPaths_LevelDesign path of the scenario's Details), with the
-    player's actions blocked while it moves: EncapsuleCutscene[CutsceneStartCameraPath], stock order (R#65/#79). A
-    one-key path is a snap. RedJuggernaut (#74/#127) and Gotterdammerung (#92/#148) start the camera so, beside their
-    intro video, right before LoadingDone: placed there it is the start camera."""
+def g_camera(path: str, seconds: float | None = None) -> Node:
+    """The camera runs the camera path `path` (a CamPaths_LevelDesign path of the scenario's Details), easing in and
+    out, skippable with Escape, with the player's actions blocked while it moves: EncapsuleCutscene[
+    CutsceneStartCameraPath], stock order. With no `seconds`, a one-key path is a snap (DelayedRetribution #65/#79,
+    camera_intro_end); with `seconds`, the camera flies a path of two keys or more in that time (DelayedRetribution
+    #92, camera_intro: 2 keys in 20 s). DelayedRetribution, GloryOrAttrition and TheHydra open so, right after
+    LoadingDone: the move, then a snap to its last key."""
+    timed = [("TimeInSecond", f32(seconds))] if seconds is not None else []
     return Node("TGDDescriptorEncapsuleCutscene", [("SubActions", [
         Node("TGDDescriptorCutsceneStartCameraPath", [
-            ("CameraPathName", Str(path)), ("AccelerationActivated", TRUE), ("DecelerationActivated", TRUE),
+            ("CameraPathName", Str(path)), *timed, ("AccelerationActivated", TRUE), ("DecelerationActivated", TRUE),
             ("CanBeSkippedWithEscape", TRUE), ("VisibleByAlliedOfSpecifiedCamp", TRUE)])]),
         ("BlockPlayerActions", TRUE)])
 

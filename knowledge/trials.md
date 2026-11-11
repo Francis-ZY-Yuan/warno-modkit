@@ -4,8 +4,10 @@
 Every attempt, with its kind and outcome. Back to [the map](README.md).
 
 - 2026-11-11 [2026-11-11-twin-strike-play1](../components/ops/knowledge/trials/2026-11-11-twin-strike-play1.md) (ops): play, mixed
+- 2026-11-11 [2026-11-11-twin-strike-opening-camera](../components/ops/knowledge/trials/2026-11-11-twin-strike-opening-camera.md) (ops): play, fail
 - 2026-11-11 [2026-11-11-twin-strike-launch1-duplicate-menu-order](../components/ops/knowledge/trials/2026-11-11-twin-strike-launch1-duplicate-menu-order.md) (ops): play, fail
 - 2026-11-11 [2026-11-11-probe3b-play1-no-supply](../components/ops/knowledge/trials/2026-11-11-probe3b-play1-no-supply.md) (ops): play, fail
+- 2026-11-11 [2026-11-11-opening-camera-stock-survey](../components/ops/knowledge/trials/2026-11-11-opening-camera-stock-survey.md) (ops): survey, pass
 - 2026-11-10 [2026-11-10-probe3-play1-effect-crash](../components/ops/knowledge/trials/2026-11-10-probe3-play1-effect-crash.md) (ops): play, fail
 - 2026-11-06 [2026-11-06-spawns-and-deck-survey](../components/ops/knowledge/trials/2026-11-06-spawns-and-deck-survey.md) (ops): re, pass
 - 2026-11-06 [2026-11-06-probe2-play-run-a](../components/ops/knowledge/trials/2026-11-06-probe2-play-run-a.md) (ops): play, pass
