@@ -202,6 +202,31 @@ docs/case-study.md                how the Open Door example was built
 NOTICE                            the notice below, in full
 ```
 
+## Prior art and credits
+
+warno-modkit builds on earlier work by the Eugen modding community.
+- **Wargame:** Eugen's binary formats were documented and implemented publicly for the Wargame games by
+  moddingSuite (is-consulting/moddingSuite and the kilivan4iK fork) and ev1313's wgrd tools, among others.
+- **Current WARNO builds:** [murmax/WarnoArmyGeneralFramework](https://github.com/murmax/WarnoArmyGeneralFramework)
+  builds standalone Army General campaigns.
+- **What was used:** that framework's source and moddingSuite's format notes were a reference for several format
+  details here (compression modes, value tags, archive checksums and alignment, dictionary key order).
+- **Two practices followed:** this toolkit follows two of the framework's practices. It clones a stock scenario to a
+  new identity rather than overriding it, and it pins each build to the exact game files it was checked against.
+- **The code:** the code in this repository is its own standard-library implementation, checked against the files of
+  a WARNO install.
+
+Related projects, as of November 2026:
+- [sneadtristen6/R.U.S.E-2.0-Project](https://github.com/sneadtristen6/R.U.S.E-2.0-Project) authors Operation
+  mission scripts for Eugen's R.U.S.E.
+- PiggiesAndBear's ndfbin editors edit WARNO's compiled unit and deck data, and the same author's agent skill covers
+  WARNO NDF modding.
+- [dary1337/YSM_Installer](https://github.com/dary1337/YSM_Installer) installs and activates WARNO mods.
+- [Ulibos/ndf-parse](https://github.com/Ulibos/ndf-parse) parses NDF text.
+- Eugen Systems' own modding tools and manuals document the mod layout this toolkit packages for.
+
+If we have missed or misdescribed a project, see [MAINTAINERS.md](MAINTAINERS.md).
+
 ## Notice
 
 warno-modkit is unofficial. It is not affiliated with, endorsed by, or supported by Eugen Systems. WARNO is a

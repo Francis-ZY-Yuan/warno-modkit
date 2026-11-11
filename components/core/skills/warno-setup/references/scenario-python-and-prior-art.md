@@ -31,7 +31,10 @@ Read these before building something they already do. None of them ships game da
 
 | tool | licence | what it covers |
 | --- | --- | --- |
-| murmax / WarnoArmyGeneralFramework | MIT | Compiles YAML into an Army General campaign mod by cloning stock script graphs; readers for CNDF, edat, `.xyz` and Python 2 marshal; renames every cloned identity. The closest prior art |
+| murmax / WarnoArmyGeneralFramework | MIT | Compiles YAML into an Army General campaign mod by cloning stock script graphs; readers and writers for CNDF, edat and dictionaries; readers for TGV, `.xyz` and Python 2 marshal; installs and activates its builds; renames every cloned identity. The closest prior art. It stops at the Army General layer: no scripted tactical Operations |
+| sneadtristen6 / R.U.S.E-2.0-Project | GPL-3.0 | Authors Operation mission scripts for Eugen's older game R.U.S.E. (goals, events, reinforcements, strikes) and checks them before a test launch; the same idea one game back, built with an AI agent |
+| PiggiesAndBear's ndfbin editors | Apache-2.0 | Edit WARNO's compiled unit and deck data (ndfbin) directly; the same author publishes an agent skill for WARNO NDF modding |
+| dary1337 / YSM_Installer | Apache-2.0 | One-click installer that activates a WARNO mod in the Mod Center's list |
 | Ulibos / ndf-parse | MIT | Parses and edits NDF **text** in mod folders; no ndfbin, GDScript or scenario support |
 | moddingSuite (the kilivan4iK fork) | MIT | .NET viewer and editor for ndfbin in older builds; documents the value tags; version-2 archives only |
 
