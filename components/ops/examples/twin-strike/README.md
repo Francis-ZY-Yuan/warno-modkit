@@ -4,6 +4,21 @@ Early July 1989. A Soviet tank division's forward detachment must seize a road-j
 Twin Cities, then hold it against two NATO blows, and decide whether to ask Front for one tactical nuclear strike on the
 second. You play the Soviets.
 
+> **v0 demo.** Twin Strike has been played once. The fixes from that play are built but not yet played:
+> - transports for the infantry;
+> - the battlegroup view of the buy menu;
+> - hidden division guns;
+> - garrison and wave orders;
+> - the release dialog;
+> - the economy;
+> - NATO fighter sweeps.
+>
+> Known issues:
+> - RedJuggernaut's stock cards still show in the buy menu beside the op's own (the op is getting its own deck).
+> - The division's guns are created outside the playable area, which no stock scenario does, so a fire may not land.
+>
+> Tell us what you see: each play becomes a record in the knowledge base.
+
 Twin Strike is the toolkit's showcase example: a clone of the stock challenge Survivors (`modkit.ops.profile.SURVIVORS`)
 moved onto a cut of the stock map Twin Cities (`modkit.ops.maps.TWIN_CITIES`, `twinstrike.map.CUT`)
 [[custom-operation-from-stock-parts]] [[ai-grid-tiles-playable-zone]], with the player's camp flipped to the stock

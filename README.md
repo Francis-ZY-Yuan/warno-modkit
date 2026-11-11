@@ -7,6 +7,19 @@ It is built from **components**. Each one is a Claude Code plugin holding skills
 the Python scripts they run, worked examples, and a knowledge base of what the game really does, which grows with
 every launch, play and stock survey. Components build on each other by importing, never by copying.
 
+**What's new here.** As far as we know (November 2026), this is the first public toolkit that builds complete
+scripted single-player Operations for WARNO outside Eugen's editor. One tactical mission can hold decision dialogs,
+scripted fires, deck changes and difficulty branches. The nearest earlier work does the same for Eugen's older game
+R.U.S.E.; see [Prior art and credits](#prior-art-and-credits).
+
+Before you launch, the toolkit also:
+- checks every active mod, Workshop items included, for a clashing menu order, map GUID or scenario id;
+- runs the game's own load-time checks, derived from your WARNO.exe, as a gate.
+
+**Status: v0.1, an early demo.** It works end to end: the showcase Operation, [Twin Strike](components/ops/examples/twin-strike/README.md),
+builds, loads and plays. But it has been played only once, so expect rough edges. Play reports and issues are welcome:
+every play becomes a record in the knowledge base, and the next version gets better.
+
 Unofficial, and not affiliated with Eugen Systems; see [Notice](#notice).
 
 ## Components
