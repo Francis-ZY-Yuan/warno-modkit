@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "title": "Storyboard sample",
+  "eyebrow": "warno-modkit · modkit.ops.storyboard · test sample",
+  "chips": [["Map", "Twin Cities · stock SM_SU_03 cut"], ["Phases", "2"]],
+  "lede": "A two-phase sample on the stock small layout of Twin Cities: {sov:the player} takes the village, then {nato:the counter-attack} comes from the north. Every mark kind is drawn **once at least**.",
+  "styles": {"sov": "#e2543e", "nato": "#4e92e3", "fires": "#e9a53b", "nuke": "#b98af2"},
+  "map": {
+    "name": "_3x3_TwinCities",
+    "layout": "twincities_op/SM_SU_3x3_TwinCities_03_Details",
+    "crop": "playable",
+    "deployments": {"0": {"style": "nato", "label": "North deployment"}, "1": {"style": "sov", "label": "South deployment · you"}},
+    "zone_names": {"AutoName_5": "Village", "AutoName_8": "Crossroads", "AutoName_6": "Left twin"},
+    "default_picture": "minimap"
+  },
+  "phases": [
+    {"id": "1", "name": "Assault", "time": "~10 min", "summary": "Take {sov:the village}.",
+     "details": ["Preparation fire first.", "It falls when the garrison is down to a quarter."]},
+    {"id": "2", "name": "Counter-attack", "time": "~12 min", "summary": "{nato:Battalion 1} attacks from the north."}
+  ],
+  "start_phase": "1",
+  "marks": [
+    {"kind": "units", "style": "nato", "at": [69, 377], "count": 3, "label": {"text": "garrison", "at": [100, 350]}, "title": "The village garrison"},
+    {"kind": "arrow", "style": "sov", "points": [[216, 640], [150, 520], [72, 400]], "phases": ["1"], "label": {"text": "assault", "at": [160, 560]}, "title": "The assault"},
+    {"kind": "ring", "style": "fires", "at": [69, 377], "r": 30, "dashed": true, "phases": ["1"], "label": null, "title": "Preparation fire"},
+    {"kind": "arrow", "style": "nato", "points": [[216, 200], [150, 260], [80, 350]], "dashed": true, "phases": ["2"], "title": "The counter-attack"},
+    {"kind": "label", "style": "nuke", "at": [300, 230], "text": "ASSEMBLY", "size": "large", "phases": ["2"]},
+    {"kind": "arc", "style": "nuke", "from": [330, 700], "to": [330, 250], "bend": [420, 470], "phases": ["2"]},
+    {"kind": "burst", "style": "nuke", "at": [330, 250], "phases": ["2"], "title": "The strike"}
+  ],
+  "sections": [
+    {"heading": "Objectives", "intro": "One objective per phase.", "tables": [
+      {"columns": ["ID", "Objective", "Counter"], "rows": [["P1", "Take the village", "Enemy left: N"], ["B1", "Break battalion 1", 31]]}]},
+    {"heading": "Order of battle", "oob": [
+      {"title": "Player", "tag": "Alliance 1", "style": "sov", "groups": [
+        {"name": "Forward detachment", "when": "deck, at start", "note": "Stock units only.", "units": [[10, "T-80BV", "T80BV_SOV"], [2, "Scouts"]]}]},
+      {"title": "AI", "tag": "Alliance 0", "style": "nato", "groups": [
+        {"name": "Garrison", "when": "pre-placed", "units": [[3, "Leopard 1A5", "Leopard_1A5_RFA"]]}]}]},
+    {"heading": "What is proven", "tables": [
+      {"columns": ["Piece", "State"], "rows": [["The generator", {"mark": "ok", "text": "tested"}], ["This page", {"mark": "half", "text": "built"}], ["Play", {"mark": "open", "text": "open"}]]}]}
+  ],
+  "footer": ["Coordinates are minimap px of the full map; the crop is the layout's playable zone."]
+}

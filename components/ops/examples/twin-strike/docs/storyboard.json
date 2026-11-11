@@ -1,0 +1,185 @@
+{
+  "version": 1,
+  "title": "Operation Twin Strike",
+  "eyebrow": "warno-modkit · showcase Operation · design",
+  "chips": [
+    ["Map", "Twin Cities · the far-left village, a 216 × 378 px cut"],
+    ["Player", "Soviet"],
+    ["Target", "35–40 min"],
+    ["State", "design only · probe 3 awaits play"]
+  ],
+  "lede": "Early July 1989, two weeks into the war. A Soviet tank division's forward detachment ({sov:you}) must seize a road-junction village on the western edge of a pair of towns. {nato:NATO} answers twice: a US armoured battalion counter-attacks at once, then a West German Panzer battalion assembles just south of the village for a heavier blow. Soviet doctrine of the day planned nuclear strikes against exactly that, a reserve massing to counter-attack, and Front command offers you release for {nuke:one tactical nuclear strike}. You may also refuse it and fight. **One concentrated battle:** the map is cut to the village and its fields, and everything happens there.",
+  "styles": {"sov": "#e2543e", "nato": "#4e92e3", "fires": "#e9a53b", "nuke": "#b98af2"},
+  "map": {
+    "name": "_3x3_TwinCities",
+    "layout": "twincities_op/SM_SU_3x3_TwinCities_03_Details",
+    "crop": [0, 146, 216, 524],
+    "deployments": {
+      "0": {"style": "sov", "label": "Soviet deployment · you", "area": [[40, 158], [210, 158], [210, 212], [40, 212]]},
+      "1": {"style": "nato", "label": "NATO deployment", "area": [[6, 490], [210, 490], [210, 520], [6, 520]]}
+    },
+    "command_zones": [{"stock": "AutoName_5", "name": "Village"}],
+    "default_picture": "satellite"
+  },
+  "phases": [
+    {"id": "0", "name": "Deploy", "time": "3 min",
+     "summary": "Buy and place the forward detachment in the north zone.",
+     "details": ["Deck base: RedJuggernaut's 79th Guards Tank Division, topped up by script, with four Ka-29s.",
+                 "Two FOBs already stand in the zone, placed on the map: no deck can carry one.",
+                 "The defence cards stay locked until the village falls."]},
+    {"id": "1", "name": "Assault", "time": "~10 min · deadline 20",
+     "summary": "Take the village from its pre-placed West German garrison.",
+     "details": ["The division's 2S7Ms offer one preparation fire on the village, when you call it. Keep your own troops out.",
+                 "The village falls when the garrison is down to a quarter and a Soviet command unit is inside. The map flips to red.",
+                 "No fall by 20 min: the battle is lost."]},
+    {"id": "2", "name": "Unlock", "time": "~2 min",
+     "summary": "Front releases the division's reserve: T-80U, Tunguska, Osa, Mi-24, Ka-50, Su-25T, Su-24M.",
+     "details": ["A hint reports NATO recon moving north."]},
+    {"id": "3", "name": "Counter-attack", "time": "~12 min · cap 15",
+     "summary": "US battalion 1 comes from the south edge on two lanes, recon first, with heavy AA.",
+     "details": ["Fire missions: rockets or heavy guns, then BOX W or BOX C.",
+                 "Once per battle, the division fire plan: every battery on whichever box holds more NATO vehicles.",
+                 "It ends when battalion 1 is broken or after 15 min with the village held. Its survivors withdraw."]},
+    {"id": "4", "name": "Surprise", "time": "~5 min",
+     "summary": "A West German Panzer battalion appears at ASSEMBLY, about 5,200 GRU south of the village. It attacks in 05:00.",
+     "details": ["Front asks: request nuclear release, or fight it conventionally."]},
+    {"id": "5", "name": "Strike and hold", "time": "5 min, or up to 20",
+     "summary": "Released: a 30 s warning, a 2S7M carrier round, the mushroom cloud, and every NATO unit in the zone dies. Hold 5 min.",
+     "details": ["Withheld: battalion 2 attacks north into the village. Hold until it breaks or the village falls, up to 20 min.",
+                 "Both roads can reach the top grade. The end text names your choice."]}
+  ],
+  "start_phase": "1",
+  "marks": [
+    {"kind": "label", "style": "sov", "at": [8, 438], "text": "THE VILLAGE", "size": "large", "phases": []},
+
+    {"kind": "units", "style": "sov", "at": [125, 172], "count": 3, "phases": ["0", "1"],
+     "title": "The forward detachment deploys in the north zone (alliance 0)."},
+    {"kind": "units", "style": "nato", "at": [69, 377], "count": 3, "phases": ["0", "1"],
+     "label": {"text": "West German garrison", "at": [12, 417]},
+     "title": "Pre-placed garrison: Panzergrenadiere, Marder 1A3, Milan, Leopard 1A5, Gepard, Fernspäher (14)."},
+
+    {"kind": "arrow", "style": "sov", "points": [[110, 215], [98, 256], [90, 292], [84, 324]], "phases": ["1"],
+     "label": {"text": "assault", "at": [102, 282]},
+     "title": "South across the fields and into the village from the north."},
+    {"kind": "ring", "style": "fires", "at": [69, 377], "r": 30, "dashed": true, "phases": ["1"],
+     "label": {"text": "preparation fire", "at": [104, 412]},
+     "title": "The division's 2S7Ms hit the village once, when you call it. The rockets cannot reach that close."},
+    {"kind": "units", "style": "fires", "at": [15, 158], "count": 3, "phases": ["1", "3", "4", "5"],
+     "label": {"text": "division guns", "at": [27, 162]},
+     "title": "In an allied AI camp, in the Soviet rear: 2S7M Malka x6, BM-27 Uragan x6. They fire only on your call."},
+    {"kind": "units", "style": "sov", "at": [62, 198], "count": 1, "phases": [],
+     "label": {"text": "FOB", "at": [70, 202]},
+     "title": "FOB_W: a Soviet FOB, placed on the map in your camp from the start."},
+    {"kind": "units", "style": "sov", "at": [188, 198], "count": 1, "phases": [],
+     "label": {"text": "FOB", "at": [166, 202]},
+     "title": "FOB_E: a Soviet FOB, placed on the map in your camp from the start."},
+    {"kind": "arrow", "style": "sov", "dashed": true, "points": [[58, 214], [48, 262], [42, 310], [44, 344]], "phases": ["1"],
+     "label": {"text": "Ka-29s", "at": [6, 290]},
+     "title": "Ka-29 x4: rocket and gun runs on the garrison. Its one Gepard and the Milans are the threat."},
+
+    {"kind": "ring", "style": "sov", "at": [69, 377], "r": 40, "dashed": false, "phases": ["2", "3", "4", "5"],
+     "title": "The village is yours: the script forces its owner, and the map shows it red."},
+    {"kind": "label", "style": "sov", "at": [112, 350], "text": "reserve unlocks", "size": "small", "phases": ["2"]},
+    {"kind": "units", "style": "nato", "at": [115, 470], "count": 2, "phases": ["2"],
+     "label": {"text": "recon screen", "at": [128, 474]},
+     "title": "Battalion 1's recon screen leads on both lanes: M3A2 Bradley CFV, scouts, OH-58D."},
+
+    {"kind": "arrow", "style": "nato", "points": [[60, 512], [66, 490], [65, 460], [66, 428]], "phases": ["3"],
+     "label": {"text": "west lane", "at": [8, 480]},
+     "title": "West lane: straight north up the main road, into the village's south side."},
+    {"kind": "arrow", "style": "nato", "points": [[163, 512], [171, 486], [180, 455], [186, 424], [176, 411], [150, 409], [124, 408], [106, 406]], "phases": ["3"],
+     "label": {"text": "centre lane", "at": [124, 426]},
+     "title": "Centre lane: up the east road, east of the stream, then west across it into the village. US battalion 1: 30 M1A1HA, Bradleys, heavy AA."},
+    {"kind": "arrow", "style": "sov", "dashed": true, "points": [[124, 222], [124, 290], [118, 360], [112, 432]], "phases": ["3"],
+     "label": {"text": "Ka-50s", "at": [130, 300]},
+     "title": "Ka-50 x4, unlocked with the reserve: tank hunting over both lanes, against battalion 1's Vulcans, Chaparrals, Avengers and Stingers."},
+    {"kind": "ring", "style": "fires", "at": [65, 470], "r": 16, "dashed": true, "phases": ["3"],
+     "label": {"text": "BOX W", "at": [85, 474]},
+     "title": "Fire box on the west lane, about 11,000 GRU from the guns."},
+    {"kind": "ring", "style": "fires", "at": [180, 455], "r": 16, "dashed": true, "phases": ["3"],
+     "label": {"text": "BOX C", "at": [136, 440]},
+     "title": "Fire box on the centre lane, about 11,800 GRU from the guns."},
+
+    {"kind": "ring", "style": "nuke", "at": [156, 500], "r": 24, "dashed": true, "phases": ["4", "5"],
+     "title": "The nuke zone: radius R, tuned to the effect's size in probe 3."},
+    {"kind": "units", "style": "nato", "at": [156, 500], "count": 4, "phases": ["4"],
+     "title": "Battalion 2: Leopard 2A4 x28, Marder 1A3 with Panzergrenadiere x8, Gepard, Roland, Luchs (52)."},
+    {"kind": "label", "style": "nuke", "at": [106, 470], "text": "ASSEMBLY", "size": "large", "phases": ["4", "5"]},
+    {"kind": "label", "style": "nuke", "at": [70, 456], "text": "battalion 2 · attacks in 05:00", "size": "small", "phases": ["4"]},
+
+    {"kind": "arc", "style": "nuke", "from": [18, 167], "to": [154, 478], "bend": [200, 290], "phases": ["5"],
+     "title": "The carrier round: one 2S7M shell, fired 2 s before the strike."},
+    {"kind": "burst", "style": "nuke", "at": [156, 500], "phases": ["5"],
+     "title": "Released: the game's tactical-nuke effect, then every NATO unit inside the zone dies."},
+    {"kind": "arrow", "style": "nuke", "points": [[148, 486], [150, 440], [142, 404], [134, 388]], "phases": ["5"], "dashed": true,
+     "label": {"text": "if withheld: battalion 2 attacks", "at": [8, 454]},
+     "title": "Withheld: battalion 2 attacks north into the village when the countdown runs out."}
+  ],
+  "sections": [
+    {"heading": "Objectives and end", "intro": "With CheckEndGame off, only the script ends the battle.",
+     "tables": [
+       {"columns": ["ID", "Objective", "Counter"], "rows": [
+         ["P1", "Take the village", "Enemy left in the village: N"],
+         ["P2", "Hold the village", "Hold: mm:ss"],
+         ["B1", "Break the first battalion", "Battalion 1 tanks destroyed: N / 31"],
+         ["B2", "Deal with the second battalion", "The countdown, then Battalion 2: N left"]]},
+       {"columns": ["Result", "When"], "rows": [
+         ["Total victory", "Village held; both battalions broken, by any means"],
+         ["Major victory", "Village held"],
+         ["Minor victory", "Village held, but more than half of what you bought is lost"],
+         ["Defeat", "No fall by 20 min; NATO owns the village for 60 s; or no Soviet unit in it for 3 min"]]}
+     ]},
+    {"heading": "Order of battle", "intro": "One counter is one vehicle or squad, at the in-game counts. Every unit is vanilla. Counts are at scale 1×; one knob moves them all. All of it fights inside the 216 × 378 px cut.",
+     "oob": [
+       {"title": "Soviet · you", "tag": "Alliance 0 · REDFOR · PACT", "style": "sov", "groups": [
+         {"name": "Forward detachment", "when": "deck, at start", "note": "On top of RedJuggernaut's own 79th Guards Tank Division cards.", "units": [
+           [10, "T-80BV", "T80BV_SOV"], [2, "T-80BV command", "T80BV_CMD_SOV"],
+           [8, "BMP-2 with motor rifles x8", "BMP_2_SOV · MotRifles_SOV"], [1, "BMP-2 command", "BMP_2_CMD_SOV"],
+           [2, "Flamethrower engineers", "Engineers_Flam_SOV"], [2, "BRM-1 recon", "BRM_1_SOV"], [2, "Scouts", "Scout_SOV"],
+           [2, "ZSU-23-4 Shilka", "ZSU_23_Shilka_SOV"], [1, "Strela-10", "MTLB_Strela10_SOV"], [4, "2S1 Gvozdika", "2S1_Gvozdika_SOV"],
+           [4, "Ka-29", "Ka_29_SOV"]]},
+         {"name": "Division reserve", "when": "unlocks when the village falls", "note": "", "units": [
+           [10, "T-80U", "T80U_SOV"], [1, "T-80U command", "T80U_CMD_SOV"], [2, "2K22 Tunguska", "Tunguska_2K22_SOV"],
+           [2, "9K33 Osa", "Osa_9K33M3_SOV"], [4, "Mi-24V (AT)", "Mi_24V_AT_SOV"], [4, "Ka-50 (the game has no Ka-52)", "Ka_50_SOV"], [2, "Su-25T", "Su_25T_SOV"],
+           [2, "Su-24M (cluster)", "Su_24M_clu_SOV"], [4, "BRDM-2 Konkurs", "BRDM_2_Konkurs_SOV"], [4, "Motor rifles (Metis)", "MotRifles_Metis_SOV"]]},
+         {"name": "Supply", "when": "placed on the map · yours from the start", "note": "No deck can carry a FOB, so both stand on the map in your camp, as stock's Marauders and SigurdsStrike place theirs.", "units": [
+           [2, "FOB, at FOB_W and FOB_E in the north zone", "FOB_SOV"]]},
+         {"name": "Division artillery", "when": "scripted · ally camp · at GUNS, the cut's north-west corner", "note": "It fires only on your call: the preparation fire, fire missions, the fire plan and the strike's carrier round.", "units": [
+           [6, "2S7M Malka, 203 mm, reach 7,000–35,000 GRU: every target", "2S7M_Malka_SOV"],
+           [6, "BM-27 Uragan, 220 mm, reach 10,000–35,000 GRU: the boxes and ASSEMBLY, not the village", "BM27_Uragan_SOV"]]}
+       ]},
+       {"title": "NATO · AI", "tag": "Alliance 1 · BLUFOR · all scripted", "style": "nato", "groups": [
+         {"name": "Village garrison", "when": "West German · pre-placed · 14", "note": "", "units": [
+           [4, "Panzergrenadiere", "Panzergrenadier_IFV_RFA"], [3, "Marder 1A3", "Marder_1A3_RFA"], [2, "Milan teams", "ATteam_Milan_2_RFA"],
+           [3, "Leopard 1A5", "Leopard_1A5_RFA"], [1, "Gepard", "Gepard_1A2_RFA"], [1, "Fernspäher", "Fernspaher_RFA"]]},
+         {"name": "Battalion 1", "when": "US armoured task force · 67", "note": "Waves from the south edge on both lanes: the recon screen first, then tank company teams with their air defence.", "units": [
+           [30, "M1A1HA Abrams", "M1A1HA_Abrams_US"], [1, "M1A1HA command", "M1A1HA_Abrams_CMD_US"],
+           [10, "M2A2 Bradley with rifles (AT4) x9", "M2A2_Bradley_IFV_US · Rifles_half_AT4_US"],
+           [3, "M3A2 Bradley CFV", "M3A2_Bradley_CFV_US"], [3, "Scouts", "Scout_US"], [2, "OH-58D Kiowa Warrior", "OH58D_Kiowa_Warrior_US"],
+           [2, "M163 Vulcan", "M163_PIVADS_US"], [2, "M48 Chaparral", "M48_Chaparral_MIM72F_US"], [2, "M998 Avenger", "M998_Avenger_US"],
+           [3, "Stinger teams", "MANPAD_Stinger_C_US"]]},
+         {"name": "Battalion 2", "when": "West German Panzerbataillon · 52", "note": "It appears at ASSEMBLY, in the NATO zone, once battalion 1 is beaten. It is the strike's target.", "units": [
+           [28, "Leopard 2A4", "Leopard_2A4_RFA"], [1, "Leopard 2A3 command", "Leopard_2A3_CMD_RFA"],
+           [8, "Marder 1A3 with Panzergrenadiere x8", "Marder_1A3_RFA · Panzergrenadier_IFV_RFA"],
+           [3, "Gepard", "Gepard_1A2_RFA"], [2, "Roland", "Marder_Roland_2_RFA"], [2, "Luchs", "Luchs_A1_RFA"]]}
+       ]}
+     ]},
+    {"heading": "What is proven", "intro": "The marks follow the design.",
+     "tables": [
+       {"columns": ["Piece", "State", "Note"], "rows": [
+         ["Waves, road orders, detectors, counters, dialogs, hidden batteries, scripted end", {"mark": "ok", "text": "played"}, "Probes 1 and 2"],
+         ["Cards added mid-battle; lock then unlock; transport cards", {"mark": "half", "text": "stock / built"}, "Probe 3 tests them with a Soviet player"],
+         ["Your helicopter cards: Ka-29 at the start, Ka-50 at the fall", {"mark": "half", "text": "stock"}, "RedJuggernaut's player deck flies Mi-8s, Mi-2s and Mi-24s; stock adds aircraft cards mid-battle"],
+         ["Your FOBs, placed on the map in your camp", {"mark": "half", "text": "stock"}, "Marauders and SigurdsStrike place the player's FOB this way. Fallback: create them by script at launch, played."],
+         ["Soviet player camp on RedJuggernaut's deck", {"mark": "open", "text": "open"}, "Stock precedent: RedJuggernaut, Götterdämmerung"],
+         ["The nuke effect from a script", {"mark": "open", "text": "open"}, "fx_impact_sol_Tactical_Nuke: the game's own effect, which no weapon uses"],
+         ["The kill leaving wrecks (Penetration)", {"mark": "open", "text": "open"}, "Fallback: Vanished, played"],
+         ["The cut: a 40-tile box of SM_SU_03's own AI grid", {"mark": "half", "text": "shape played"}, "The grid-subset shape played on Geisa in probe 1; this cut is not built yet. Fallback: SM_SU_03's whole zone."],
+         ["Battle size, about 130 units at the peak, in a small box", {"mark": "open", "text": "open"}, "The scale knob comes down if the frame rate suffers or columns jam"]]}
+     ]}
+  ],
+  "footer": [
+    "The map is the game's own minimap and satellite view, cropped to the op's cut of the stock SM_SU_03 layout (x 0–216, y 146–524 minimap px). The village's command zone is exact, from the stock files; the deployment zones are the op's own boxes. The lanes, boxes and places are drawn by eye.",
+    "Source: components/ops/examples/twin-strike/docs/design.md and storyboard.json in warno-modkit."
+  ]
+}

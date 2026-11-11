@@ -1,0 +1,515 @@
+"""Tests for Twin Strike's frame (examples/twin-strike: twinstrike.profile, .strings and .op, and build.py): the op
+loads with every unit in place. The mission on it is test_twin_strike_mission's.
+
+`Identity`, `Profile`, `Items`, `Ranges`, `Camera` and `Strings` need no stock data: the identity beside Open Door and
+the probes, the profile's settings, where every item stands and in which camp, the guns' bands, the start camera's
+geometry and the string table. `Script` builds the frame's script from Survivors' and pins its shapes: the camps, the
+setup before LoadingDone (the village's owner, the start camera), the deck's adds and locks and the groups of the
+pre-placed units. `Build` builds the op through its build.py front end, every gate included. Classes that read the stock
+extraction or the game install skip without them."""
+from __future__ import annotations
+
+import contextlib
+import dataclasses
+import io
+import math
+import os
+import subprocess
+import sys
+import tempfile
+import textwrap
+import unittest
+import uuid
+
+from twin_strike_support import (
+    GAME, LAYOUT_DATA, OUT_ROOT, SCRIPT_DATA, TWIN_STRIKE, build_main, gru, quiet_build,
+)
+from modkit.core import edat, paths, trad
+from modkit.core.gates import CheckError
+from modkit.ops import INGAME_DIC, gates, leveldesign
+from modkit.ops.bricks import unit_path
+from modkit.ops.files import read_file
+from modkit.ops.graph import decode, walk
+from modkit.ops.maps import CAMPATHS_FILE, TWIN_CITIES
+from modkit.ops.profile import (
+    SOVIET_PLAYER_CAMP_ROWS, SOVIET_PLAYER_DECK_SWAP, SOVIET_PLAYER_SIDES, SURVIVORS, extracted,
+)
+from modkit.ops.script import BRICK_DEFAULT, PRODUCTION_DECK
+from modkit.ops.shapes import GRU_WORLD, TRANSPORTER_SHAPE
+from modkit.ops.strings import LANGS
+from modkit.ops.testing import cmp_of, last, of, prop, remove_out, subs, token
+from modkit.ops.zones import point_in_polygon
+from twinstrike import CONTENTS, forces, map as ts_map, op, profile, strings
+
+OUT = os.path.join(OUT_ROOT, "op")
+GD = "$/GDScript"
+
+
+def item(name: str):
+    (it,) = [x for x in op.ITEMS if x.name == name]
+    return it
+
+
+def px(it) -> tuple[float, float]:
+    return TWIN_CITIES.world_to_px((it.x, it.y))
+
+
+def spawns(group: str):
+    return [it for it in op.ITEMS if it.addon == "Spawn" and it.group == group]
+
+
+class LazyPaths(unittest.TestCase):
+    def test_unconfigured_import_and_build(self):
+        """Importing the example resolves no path; build.py with neither the extraction nor the game folder
+        configured prints one FAILED line naming warno-setup and exits 1, no traceback, nothing written."""
+        with tempfile.TemporaryDirectory() as tmp:
+            out = os.path.join(tmp, "out")
+            code = textwrap.dedent(f"""
+                import runpy, sys
+                from modkit.core import paths
+                paths._code_dirs = lambda: []          # only the working folder (empty) is searched
+                sys.path.insert(0, {str(TWIN_STRIKE)!r})
+                import twinstrike, twinstrike.forces, twinstrike.map, twinstrike.op, twinstrike.profile
+                import twinstrike.strings
+                sys.argv = ["build.py", "--content", "op", "--out", {out!r}]
+                runpy.run_path({str(TWIN_STRIKE / "build.py")!r}, run_name="__main__")
+            """)
+            env = {k: v for k, v in os.environ.items() if not k.startswith("MODKIT_")}
+            r = subprocess.run([sys.executable, "-c", code], cwd=tmp, env=env, capture_output=True, text=True,
+                               encoding="utf-8", errors="replace")
+            self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+            self.assertNotIn("Traceback", r.stderr)
+            (line,) = r.stderr.strip().splitlines()
+            self.assertTrue(line.startswith("FAILED: ") and "warno-setup" in line, line)
+            self.assertFalse(os.path.exists(out))
+
+
+class Identity(unittest.TestCase):
+    def test_identity(self):
+        """challenge_OperationTwinStrike in TwinStrike, uuid5 GUID under warno-twinstrike, menu prefix ts, title
+        "Operation Twin Strike"."""
+        c = op.content()
+        self.assertEqual(sorted(CONTENTS), ["op"])
+        self.assertEqual((c.name, c.scenario, c.mod_name), ("op", "challenge_OperationTwinStrike", "TwinStrike"))
+        self.assertEqual(leveldesign.scenario_guid(c.scenario, profile.GUID_NAMESPACE),
+                         uuid.uuid5(uuid.NAMESPACE_URL, "warno-twinstrike/challenge_OperationTwinStrike").bytes)
+        self.assertEqual(c.menu_renames, tuple((f"op13_{k}", f"ts_{k}") for k in
+                                               ("name", "order", "headr", "cname", "recap", "vic", "def")))
+        self.assertEqual(c.menu_tokens, tuple(dict(c.menu_renames).values()))
+        self.assertEqual(sorted(strings.STRINGS["SCENARIO_DEFINITION"]), sorted(c.menu_tokens))
+        self.assertEqual(strings.ENGLISH["SCENARIO_DEFINITION"]["ts_name"], "Operation Twin Strike")
+        self.assertEqual(CONTENTS["op"]().scenario, profile.SCENARIO)
+
+    def test_installs_beside_open_door_and_the_probes(self):
+        """Twin Strike's scenario, GUID, mod folder and menu-token prefix are its own: no Open Door or probe content
+        shares one [[content-identity-unique]]."""
+        from open_door_support import CONTENTS as OPEN_DOOR
+        from open_door_support import profile as od_profile
+        from probes import CONTENTS as PROBES
+        mine = op.content()
+        prefix = mine.menu_tokens[0].split("_")[0]
+        for name, make in (*OPEN_DOOR.items(), *PROBES.items()):
+            other = make()
+            with self.subTest(content=name):
+                self.assertNotEqual(other.scenario, mine.scenario)
+                self.assertNotEqual(other.mod_name, mine.mod_name)
+                self.assertNotEqual(other.menu_tokens[0].split("_")[0], prefix)
+        self.assertNotEqual(profile.GUID_NAMESPACE, od_profile.GUID_NAMESPACE)
+
+
+class Profile(unittest.TestCase):
+    def test_the_soviet_player_shape(self):
+        """The camps, sides and menu deck are modkit.ops.profile's Soviet-player shape, not a copy."""
+        self.assertIs(profile.CAMP_ROWS, SOVIET_PLAYER_CAMP_ROWS)
+        self.assertIs(profile.CAMPS, SOVIET_PLAYER_SIDES)
+        self.assertIs(profile.DECK_SWAP, SOVIET_PLAYER_DECK_SWAP)
+        self.assertEqual(profile.CAMPS[profile.PLAYER], "joueur")
+        self.assertEqual({side: profile.camp_index(side) for side in profile.CAMPS},
+                         {"Soviet": 0, "SovietAlly": 1, "NATO2": 2, "NATO": 3})
+        self.assertEqual(set(profile.CAMP_TOKENS), {name for name, _, _ in SOVIET_PLAYER_CAMP_ROWS})
+
+    def test_settings(self):
+        """Survivors on Twin Cities: no map Details copied (the cut and the camera are generated), the cut's and the
+        camera's stock shape sources, the five extra gates, and the end funnel's export."""
+        p = profile.profile()
+        self.assertIs(p.template, SURVIVORS)
+        self.assertEqual((p.map_details, p.map_copies, p.ground_z), (TWIN_CITIES.details, (), TWIN_CITIES.ground_z))
+        self.assertEqual(p.map_strings, {"_3x3_Railway": "_3x3_TwinCities"})
+        self.assertEqual(p.map_trans, {"Railway": "TwinCities"})
+        self.assertIs(p.deck_swap, SOVIET_PLAYER_DECK_SWAP)
+        self.assertEqual((p.player_camp, p.enemy_camp), ("joueur", "ordinateur_SOV"))
+        self.assertEqual([g.name for g in p.extra_gates], ["units", "no-template-name", "grid", "zone-layout",
+                                                           "menu-order", "fire-range"])
+        self.assertEqual(profile.PRODUCTION_TYPE, PRODUCTION_DECK)
+        self.assertEqual(p.extra_items, (ts_map.CUT.items, ts_map.CAMERA.items))
+        self.assertLessEqual({"out/PlayableZone.ndfbin", "out/IAStratZone.ndfbin", "out/IAStrat_PathCache.ndfbin",
+                              CAMPATHS_FILE}, set(p.shape_sources))
+        self.assertEqual(p.end_exports, (f"{GD}/TS/EndFunnel",))
+
+
+class Items(unittest.TestCase):
+    def test_every_item_is_inside_the_cut_and_named_once(self):
+        """Every item but the guns' spawn tag, which stands north of the cut, out of the player's sight."""
+        x0, y0, x1, y1 = ts_map.CUT_PX
+        names = [it.name for it in op.ITEMS]
+        self.assertEqual(len(names), len(set(names)))
+        for it in op.ITEMS:
+            with self.subTest(item=it.name):
+                x, y = px(it)
+                self.assertEqual(x0 <= x <= x1 and y0 <= y <= y1, it.name != op.GUN_SPAWN, (x, y))
+        self.assertLess(px(item(op.GUN_SPAWN))[1], y0)
+
+    def test_the_map_items_are_kept(self):
+        self.assertEqual(op.ITEMS[:len(ts_map.items())], ts_map.items())
+
+    def test_garrison(self):
+        """Design 6.3's garrison, pre-placed and auto-spawned in the NATO camp (Camp_3), every unit of each row at its
+        post, inside the village's command zone and its detector circle, facing the Soviet box."""
+        garrison = spawns("garrison")
+        self.assertEqual([it.unit for it in garrison],
+                         [r.descriptor for r in forces.force_rows("garrison") for _ in range(r.count)])
+        zone, ring = item(op.VILLAGE_ZONE), item(op.VILLAGE_RING)
+        radius = ring.radius_gru * GRU_WORLD
+        for it in garrison:
+            with self.subTest(item=it.name):
+                self.assertEqual((it.ranking, it.camp, it.disable_auto_spawn), ("Camp_3", 3, False))
+                self.assertEqual(it.rotation, op.GARRISON_FACING)
+                self.assertTrue(point_in_polygon(it.x, it.y, list(zone.polygon)))
+                self.assertLess(math.dist((it.x, it.y), (ring.x, ring.y)), radius)
+        self.assertTrue(-math.pi < op.GARRISON_FACING < 0)   # world y grows south: a negative heading faces north
+
+    def test_no_gun_is_preplaced(self):
+        """The division artillery is created for each fire at GUN_SPAWN (a Name tag), never pre-placed: no Spawn item
+        holds a 2S7M or a BM-27, and nothing stands in the player's AI ally's camp (Camp_1)."""
+        self.assertEqual([it for it in op.ITEMS if it.unit in ("2S7M_Malka_SOV", "BM27_Uragan_SOV")], [])
+        self.assertEqual([it for it in op.ITEMS if it.ranking == "Camp_1"], [])
+        self.assertEqual((item(op.GUN_SPAWN).addon, px(item(op.GUN_SPAWN))), ("Name", ts_map.POINTS["GUN_SPAWN"]))
+
+    def test_fobs_ring_and_tags(self):
+        """The FOBs are the map's, in the player's camp, as forces' rows say; the village's circle is 40 px round
+        VILLAGE; a Name tag stands at each place the mission names."""
+        fobs = [it for it in op.ITEMS if it.addon == "Spawn" and it.unit == forces.FOB_UNIT]
+        self.assertEqual([(it.ranking, px(it)) for it in fobs],
+                         [("Camp_0", ts_map.POINTS[r.spawn]) for r in forces.ROWS if r.group == "fob"])
+        ring = item(op.VILLAGE_RING)
+        self.assertEqual(px(ring), ts_map.POINTS["VILLAGE"])
+        self.assertAlmostEqual(ring.radius_gru * GRU_WORLD / TWIN_CITIES.world_per_px, op.VILLAGE_RING_PX)
+        for name, point in op.TAGS.items():
+            self.assertEqual((item(name).addon, px(item(name))), ("Name", ts_map.POINTS[point]))
+        self.assertLessEqual({"GUN_SPAWN", "ASSEMBLY", "BOX_W", "BOX_C", "VILLAGE"}, set(op.TAGS.values()))
+        self.assertEqual({op.BOX_TAGS[k]: op.TAGS[op.BOX_TAGS[k]] for k in op.BOX_TAGS},
+                         {"TS_BoxW": "BOX_W", "TS_BoxC": "BOX_C"})
+
+    def test_the_ring_counts_the_village_only(self):
+        """The circle stays inside the village's command zone from north to south and reaches neither fire box nor
+        the centre lane's turn."""
+        zone = item(op.VILLAGE_ZONE)
+        ys = [TWIN_CITIES.world_to_px(p)[1] for p in zone.polygon]
+        vx, vy = ts_map.POINTS["VILLAGE"]
+        self.assertTrue(min(ys) <= vy - op.VILLAGE_RING_PX and vy + op.VILLAGE_RING_PX <= max(ys))
+        for place in ("BOX_W", "BOX_C", "TURN_C"):
+            self.assertGreater(math.dist(ts_map.POINTS[place], (vx, vy)), op.VILLAGE_RING_PX)
+
+
+class Ranges(unittest.TestCase):
+    """Design 3's bands: the 2S7M fires at 7,000-35,000 GRU, the BM-27 at 10,000-35,000. From GUN_SPAWN every target
+    of each battery lies inside its band, with a wide margin (the fire-range gate checks the built files)."""
+
+    MARGIN = 2000.0
+
+    def check_band(self, battery: str, low: float, targets: tuple[str, ...]):
+        for target in targets:
+            d = gru(ts_map.POINTS["GUN_SPAWN"], ts_map.POINTS[target])
+            with self.subTest(battery=battery, target=target):
+                self.assertTrue(low + self.MARGIN <= d <= 35000 - self.MARGIN, d)
+
+    def test_heavy_guns_reach_the_village_the_boxes_and_assembly(self):
+        self.check_band(op.HEAVY, 7000.0, ("VILLAGE", "BOX_W", "BOX_C", "ASSEMBLY"))
+
+    def test_rockets_reach_the_boxes(self):
+        self.check_band(op.ROCKETS, 10000.0, ("BOX_W", "BOX_C"))
+
+    def test_out_of_the_players_sight(self):
+        """North of the cut by more than the longest ground vision of any unit the player can field (4,250 GRU, the
+        unit database's; the gate re-reads it), inside the map."""
+        x, y = ts_map.POINTS["GUN_SPAWN"]
+        edge = ts_map.CUT_PX[1] - 0.5          # the cut's north edge, the tile edge at y 145.6 (Cut.box)
+        self.assertGreater(gru((x, y), (x, edge)), 4250.0)
+        self.assertTrue(0 <= x <= TWIN_CITIES.minimap_px[0] and 0 <= y <= TWIN_CITIES.minimap_px[1])
+        x0, _, x1, _ = ts_map.CUT_PX
+        self.assertTrue(x0 <= x <= x1)
+
+
+class Camera(unittest.TestCase):
+    def test_geometry(self):
+        """A one-key path looking down 37 degrees at the village, facing south; its eye over (69, 222.7) px, inside the
+        cut and north of the village, 297,725 world above the map's ground."""
+        eye, direction = ts_map.CAMERA.key()
+        self.assertAlmostEqual(math.hypot(*direction), 1.0)
+        self.assertAlmostEqual(math.degrees(math.asin(-direction[2])), 37.0)
+        self.assertEqual(direction[0], 0.0)
+        self.assertGreater(direction[1], 0.0)
+        self.assertAlmostEqual(eye[2], TWIN_CITIES.ground_z + 297725.0)
+        ex, ey = ts_map.CAMERA.eye_px()
+        self.assertAlmostEqual(ex, 69.0)
+        self.assertAlmostEqual(ey, 222.67, places=2)
+        x0, y0, x1, y1 = ts_map.CUT_PX
+        self.assertTrue(x0 <= ex <= x1 and y0 <= ey <= y1)
+        # the view's centre line meets the ground at the village
+        t = (eye[2] - TWIN_CITIES.ground_z) / -direction[2]
+        self.assertAlmostEqual(TWIN_CITIES.world_to_px((eye[0] + t * direction[0], eye[1] + t * direction[1]))[1],
+                               ts_map.POINTS["VILLAGE"][1])
+
+    def test_the_file_holds_the_one_path(self):
+        (it,) = ts_map.CAMERA.items()
+        self.assertEqual((it.pack, it.path, it.action, it.fixture),
+                         ("Details", CAMPATHS_FILE, "generate", "CamPaths_LevelDesign.txt"))
+        nb, _, _ = decode(b"".join(it.chunks()))
+        self.assertEqual([nb.cname(ob.cls) for ob in nb.objects], ["TCameraPath", "TCameraPathKey", "TCameraPathKey"])
+        self.assertEqual(nb.strings, [b"TS_Start"])
+
+    @LAYOUT_DATA
+    def test_it_keeps_the_layouts_own_view(self):
+        """The layout's camp0 camera (its eye's z, how far it looks down) is the start camera's: 297,725 above the
+        map's ground_z and 37 degrees down, to within rounding."""
+        nb, _, _ = decode(read_file(extracted(f"{TWIN_CITIES.details}/{CAMPATHS_FILE}")))
+        props = [{nb.pname(pi): v for pi, v in ob.props} for ob in nb.objects]
+        (camp0,) = [p for ob, p in zip(nb.objects, props)
+                    if nb.cname(ob.cls) == "TCameraPath" and nb.strings[p["Name"].v] == b"camp0"]
+        (z,) = [props[k.v.index]["Coord"].v[2] for k in camp0["PositionKeyVector"].v]
+        (dz,) = [props[k.v.index]["Coord"].v[2] for k in camp0["DirectionKeyVector"].v]
+        self.assertAlmostEqual(z - TWIN_CITIES.ground_z, ts_map.CAMERA_HEIGHT, delta=1.0)
+        self.assertAlmostEqual(math.degrees(math.asin(-dz)), ts_map.CAMERA_PITCH_DEG, delta=0.05)
+
+
+class Strings(unittest.TestCase):
+    def test_english_only_in_both_columns(self):
+        """The SC column is the English text until the Chinese build: plain ASCII (the glyph gate's printable set)."""
+        for dic, tokens in strings.STRINGS.items():
+            for tok, (en, zh) in tokens.items():
+                with self.subTest(token=tok):
+                    self.assertEqual(en, zh)
+                    self.assertTrue(all(" " <= ch <= "~" or ch == "\n" for ch in en), en)
+                    trad.token_key(tok)
+        self.assertEqual(set(strings.STRINGS), set(profile.DICTIONARIES))
+
+    def test_every_token_is_ts_and_unique(self):
+        toks = [t for tokens in strings.ENGLISH.values() for t in tokens]
+        self.assertEqual(len(toks), len(set(toks)))
+        self.assertTrue(all(t.startswith("ts_") for t in toks))
+
+    def test_what_the_whole_op_needs(self):
+        """The camp names, the start hint, every phase's hint, the objectives P1, P2, B1 and B2 with their labels, the
+        five choice dialogs and every ending (design 4.2, 5.8)."""
+        loc, dialog = strings.ENGLISH["Scripting/Localization"], strings.ENGLISH["Scripting/Dialog"]
+        self.assertLessEqual(set(profile.CAMP_TOKENS.values()), set(loc))
+        self.assertLessEqual({"ts_hdep", "ts_hph1", "ts_hprep", "ts_hfall", "ts_hph3", "ts_hbn2", "ts_hrel",
+                              "ts_hph5"}, set(loc))
+        for obj in ("ts_p1", "ts_p2", "ts_b1", "ts_b2", "ts_b2n"):
+            self.assertLessEqual({obj, f"{obj}l"}, set(loc))
+        self.assertEqual(set(strings.BUTTONS), {"ts_dprep", "ts_dfire1", "ts_dfire2", "ts_dplan", "ts_drel"})
+        self.assertLessEqual(set(strings.BUTTONS), set(dialog))
+        self.assertLessEqual({f"ts_d{g}{s}" for g in ("tot", "maj", "min") for s in "rw"}, set(dialog))
+        self.assertLessEqual({"ts_dfail", "ts_dlost", "ts_dempty"}, set(dialog))
+        self.assertIn("VILLAGE", loc["ts_hdep"])
+
+    def test_dialogs_take_no_variables(self):
+        for tok, text in strings.ENGLISH["Scripting/Dialog"].items():
+            self.assertNotRegex(text, r"%\d", tok)
+
+    @paths.skip_unless_extracted("glad_201602", "Localisation", "Core")
+    def test_buttons_are_ingame_tokens_in_every_language(self):
+        """Every dialog button is a token of the game's INTERFACE_INGAME dictionary in all 8 languages
+        [[dialog-button-ingame-dictionary]]."""
+        for lang in LANGS:
+            keys = gates.ingame_keys(os.path.join(str(paths.extracted_root()), INGAME_DIC.format(lang=lang)))
+            for dialog, pair in strings.BUTTONS.items():
+                for button in pair:
+                    with self.subTest(lang=lang, button=button):
+                        self.assertIn(trad.token_key(button), keys)
+
+
+@SCRIPT_DATA
+class Script(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        tpl, _, _ = decode(read_file(SURVIVORS.gdscript()))
+        cls.roots, cls.exports = op.content().script(tpl)
+        cls.nodes = list(walk(cls.roots))
+        (cls.main,) = [nd for nd in cls.nodes if nd.export == f"{GD}/TS/Main"]
+
+    def test_camps(self):
+        """The RootDescriptor's CampList: Survivors' four camps with the Soviet-player scalars, each named by its token;
+        Main's SetDecks give each its deck."""
+        (root,) = [nd for nd in self.nodes if nd.export == f"{GD}/RootDescriptor"]
+        camps = prop(root, "CampList")
+        self.assertEqual([last(c) for c in camps], [name for name, _, _ in SOVIET_PLAYER_CAMP_ROWS])
+        for camp, (name, scalars, _) in zip(camps, SOVIET_PLAYER_CAMP_ROWS):
+            self.assertEqual([(p, v.v) for p, v in camp.props[:-1]], [(p, v) for p, _, v in scalars])
+            self.assertEqual(token(prop(camp, "PlayerName")), profile.CAMP_TOKENS[name])
+        decks = [(last(prop(n, "Camp")), prop(n, "DeckIdentifier").text) for n in subs(self.main)[:4]]
+        self.assertEqual(decks, [(name, deck) for name, _, deck in SOVIET_PLAYER_CAMP_ROWS])
+        self.assertEqual(decks[0], ("joueur", "OP_BASE_RJ_Player"))
+
+    def test_setup_ends_with_the_village_owner_and_the_start_camera(self):
+        """Before LoadingDone: the deployment's setup, then NATO owns the village's zone (RedJuggernaut #73's place),
+        then the camera snaps to TS_Start (bricks.g_camera) [[start-camera-before-loading-done]]."""
+        kids = subs(self.main)
+        names = [k.cls.removeprefix("TGDDescriptor") for k in kids]
+        self.assertEqual(names, ["SetDeck"] * 4 + ["ForceDisplayUIElement", "ChangeProductionType",
+                                                   "SetRessourceForTeam", "SetIncomeToTeam",
+                                                   "SetCommandZoneOwnerAndForceConvergence", "EncapsuleCutscene",
+                                                   "LoadingDone", "ForceDisplayUIElement", "Simultaneous"])
+        owner, camera = kids[8], kids[9]
+        self.assertEqual(last(prop(owner, "Camp")), "ordinateur_SOV")
+        self.assertEqual([last(t) for t in prop(owner, "Positions")], [op.VILLAGE_ZONE])
+        (start,) = subs(camera)
+        self.assertEqual((start.cls, prop(start, "CameraPathName").text),
+                         ("TGDDescriptorCutsceneStartCameraPath", ts_map.CAMERA.name))
+        self.assertEqual([k for k, _ in kids[7].props], ["Camp"])        # no income: stock leaves the amount out
+        self.assertEqual(prop(kids[6], "Quantite").v, op.DEPLOY_POINTS)
+        self.assertEqual(prop(kids[5], "ProductionType").v, PRODUCTION_DECK)   # the buy menu's BATTLEGROUP view
+
+    def test_after_loading_done(self):
+        """Main's Simultaneous: the frame's two load beats first (the mission's after them), the refresh loop, then the
+        wait for "Launch battle" (the start hint beside it) before the timed beats (test_twin_strike_mission). The HUD
+        restore leaves the buy menu's switch at Default."""
+        kids = subs(self.main)
+        self.assertNotIn(("ShowProdMenuSwitchMenuTypeButtons"), [p for p, _ in kids[11].props])
+        *_, refresh, battle = subs(kids[12])
+        launched = subs(battle)[0]
+        self.assertEqual(refresh.export, profile.REFRESH_EXPORT)
+        self.assertEqual(launched.cls, "TGDDescriptorCompetition")
+        (hint,) = of(list(walk([launched])), "LDHint")
+        self.assertEqual(token(prop(hint, "Info")), "ts_hdep")
+        self.assertEqual(op.PROD_MENU_SWITCH, BRICK_DEFAULT)
+
+    def test_deck_adds_and_locks(self):
+        """AddUnitToDeck for every start card, the motor rifles carried by their BMP-2s, and then for the Soviet
+        player's supply; then, last and beside each other, one LockDeckUnit per locked type, each until ts_fallen = 1
+        [[add-unit-to-deck]]."""
+        deck = subs(subs(self.main)[12])[0]
+        *adds, locks = subs(deck)
+        got = [(prop(n, "TypeUnit").path, prop(n, "NbUnitsToAdd").v,
+                prop(n, "Transporter").path if prop(n, "Transporter") else None) for n in adds]
+        self.assertEqual(got, [(unit_path(u), n, unit_path(t) if t else None)
+                               for u, n, t in (*forces.START_ADDS, *forces.SUPPLY)])
+        self.assertTrue(all(last(prop(n, "Camp")) == "joueur" for n in adds))
+        self.assertEqual(locks.cls, "TGDDescriptorSimultaneous")
+        units = []
+        for race in subs(locks):
+            wait, lock = subs(race)
+            self.assertEqual(race.cls, "TGDDescriptorCompetition")
+            self.assertEqual(cmp_of(prop(wait, "Condition")), (op.FALLEN, 0, 1))
+            (deck_unit,) = prop(lock, "Units")
+            units.append(prop(deck_unit, "Unit").path)
+        self.assertEqual(units, [unit_path(u) for u in forces.START_LOCKS])
+        self.assertIn(TRANSPORTER_SHAPE, op.content().extra_shapes)
+
+    def test_the_garrison_holds_the_village(self):
+        """The garrison's group from its 14 Camp_3 spawns, then, as stock gives a garrison in a camp with no AI: HOLD
+        POSITION when idle and Aggressive when fired on (Survivors #188/#189's place), and a Hold smart order at the
+        village, last (RedJuggernaut #249)."""
+        union, idle, shot, hold = subs(subs(subs(self.main)[12])[1])
+        self.assertEqual((last(prop(union, "GroupDestination")), [last(s) for s in prop(union, "ListGroupSource")]),
+                         (op.GARRISON, [it.name for it in spawns("garrison")]))
+        self.assertEqual((idle.cls, last(prop(idle, "Group")), prop(idle, "IdleBehavior").v),
+                         ("TGDDescriptorSetIdleROEBehavior", op.GARRISON, 2))
+        self.assertEqual((shot.cls, last(prop(shot, "Group")), prop(shot, "ShotReactionBehavior").v),
+                         ("TGDDescriptorSetShotReactionROEBehavior", op.GARRISON, 2))
+        self.assertEqual([(k, v.v if hasattr(v, "v") else last(v)) for k, v in hold.props],
+                         [("Position", "TS_Village"), ("SmartOrderType", 2), ("UnitGroup", op.GARRISON)])
+        self.assertEqual(hold.cls, "TGDDescriptorLaunchSmartOrder")
+
+    def test_exports(self):
+        """The names the mission uses are exported: the flag, the groups, the circle and the tags."""
+        exported = {nd.export for nd in self.exports}
+        for var in (op.FALLEN, op.GROUPE_JOUEUR, op.GARRISON, op.HEAVY, op.ROCKETS, op.GUNS, op.STRIKER):
+            self.assertIn(f"{GD}/TS/Variables/{var}", exported)
+        self.assertIn(f"{GD}/GdItems/CircularZones/{op.VILLAGE_RING}", exported)
+        for name in op.TAGS:
+            self.assertIn(f"{GD}/GdItems/Tags/{name}", exported)
+
+
+@SCRIPT_DATA
+@LAYOUT_DATA
+@GAME
+class Build(unittest.TestCase):
+    """The op built through build.py's front end (every gate, the extra four included) into a temporary folder."""
+
+    @classmethod
+    def setUpClass(cls):
+        remove_out(OUT)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            cls.code = build_main(["--content", "op", "--out", OUT])
+        cls.log = out.getvalue()
+
+    @classmethod
+    def tearDownClass(cls):
+        remove_out(OUT)
+
+    def test_builds(self):
+        self.assertEqual(self.code, 0, self.log)
+        self.assertTrue(os.path.isfile(os.path.join(OUT, "TwinStrike", "Config.ini")))
+        self.assertTrue(os.path.isfile(os.path.join(OUT, profile.OVERLAY)))
+        dumps = set(os.listdir(os.path.join(OUT, "dumps")))
+        self.assertLessEqual({"GDScript.txt", "LevelDesign.txt", "PlayableZone.txt", "IAStratZone.txt",
+                              "IAStrat_PathCache.txt", "CamPaths_LevelDesign.txt"}, dumps)
+
+    def test_the_gates_that_hold_the_frame(self):
+        """Every standard gate passes (the end funnel holding all nine endings; the script-effects gate holding the
+        strike's look and the dressing; the garrison the one smart-ordered group), and the extra gates: the 55 unit
+        types the op names (the supply's, the carriers', the Kubs' and the fighters' among them), no Survivors name,
+        the cut's 40 tiles, the zones and arrivals, and the fire range: GUN_SPAWN out of the player's sight, its 10
+        battery-target pairs in range."""
+        for line in ("1 player reinforcement locations and 1 aerial corridors",
+                     "12 never-finishing script actions",              # the three locks and the nine endings
+                     "1 HUD restores with the buy-menu switch Default",
+                     "9 TriggerEndGame, each under $/GDScript/TS/EndFunnel",
+                     "13 script effect launches, each a self-contained GameFx effect",
+                     "1 smart-ordered groups, none ordered again after its smart order",
+                     "gate 3 units: 55 unit descriptors exist",
+                     "gate 3 no-template-name: 15 re-keyed or generated dumps without Survivors",
+                     "gate 3 grid: 40 AI tiles and 1,560 path costs of twincities_op/SM_SU_3x3_TwinCities_03_Details",
+                     "gate 3 zone-layout: 3 zones and 2 arrivals laid out by stock's rules",
+                     "gate 3 fire-range: TS_GunSpawn 4,577 GRU N of the playable zone, inside the map, past the "
+                     "player's longest ground vision, 4,250 GRU (MiG_23ML_SOV); 10 battery-target pairs on 4 targets",
+                     "gate 5 package: all 43 entries lie under challenge_OperationTwinStrike; no Gameplay file"):
+            self.assertIn(line, self.log)
+
+    def test_details_are_all_generated(self):
+        """The cut's three files and the start camera's are generated; nothing of the layout is copied."""
+        with open(os.path.join(OUT, "MANIFEST.tsv"), encoding="utf-8") as fh:
+            rows = [line.rstrip("\n").split("\t") for line in fh]
+        details = {r[1]: r[3] for r in rows[1:] if r[0] == "Details"}
+        self.assertEqual(rows[0][:4], ["pack", "inner_path", "bytes", "action"])
+        self.assertEqual({k: details[k] for k in (*gates.IA_GRID_FILES, gates.PLAYABLE_FILE, CAMPATHS_FILE)},
+                         dict.fromkeys((*gates.IA_GRID_FILES, gates.PLAYABLE_FILE, CAMPATHS_FILE), "generate"))
+        self.assertEqual(set(details.values()), {"generate"})
+
+    def test_the_fire_range_gate_fails_a_spawn_out_of_range(self):
+        """The fire-range gate's proof (it passes this build, above): the same op with GUN_SPAWN moved south of the
+        cut, (65, 700) px, 176 px from it, past every unit's sight, but BOX W 8,000 GRU off, inside the BM-27's 10,000
+        GRU minimum, fails the build with the gate's line."""
+        moved = tuple(dataclasses.replace(it, x=65 * TWIN_CITIES.world_per_px, y=700 * TWIN_CITIES.world_per_px)
+                      if it.name == op.GUN_SPAWN else it for it in op.ITEMS)
+        bad = dataclasses.replace(op.content(), items=moved)
+        out = os.path.join(OUT_ROOT, "bad-spawn")
+        with self.assertRaisesRegex(CheckError, r"(?s)fire range:\n.*TS_BoxW is 8,000 GRU from TS_GunSpawn, outside "
+                                                r"BM27_Uragan_SOV's ShootOnPosition band \(10,000-35,000 GRU\)"):
+            quiet_build(bad, out)
+        remove_out(out)
+
+    def test_the_menu_deck_is_rjs(self):
+        """MapConfiguration's LocalPlayerDeck is OP_BASE_RJ_Player (SOVIET_PLAYER_DECK_SWAP), Survivors' is gone."""
+        path = os.path.join(OUT, "TwinStrike", "Scenarios", f"{profile.SCENARIO}_Definition.dat")
+        entries = {e.path: edat.read_entry(path, e) for e in edat.read_index(path)}
+        nb, _, _ = decode(entries[f"NDF/Scenarios/MapConfiguration/{profile.SCENARIO}.ndfbin"])
+        strings_ = [s.decode("latin-1") for s in nb.strings]
+        self.assertIn("OP_BASE_RJ_Player", strings_)
+        self.assertNotIn("OP_NORTH_SURV_PLAYER", strings_)
+
+
+if __name__ == "__main__":
+    unittest.main()

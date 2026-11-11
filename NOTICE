@@ -1,0 +1,27 @@
+warno-modkit NOTICE
+
+Unofficial. warno-modkit is a community toolkit. It is not affiliated with, endorsed by, or supported by Eugen
+Systems. WARNO is a trademark of Eugen Systems; its name is used here only to say what the toolkit works with.
+
+No game data. This repository contains no files, tables, text, images, sounds or other data from WARNO, apart
+from the screenshots in `docs/screenshots/`: pictures of mods made with this toolkit, taken in the game. The
+game's art in them belongs to Eugen Systems; they are here only to show what the toolkit makes. The tools
+work only on your own copy of the game: they read your install to build what they need on your machine, and the
+mods they help you make contain modified Eugen game data, which stays subject to Eugen's end-user licence agreement
+for WARNO. Do not commit or redistribute what the tools extract.
+
+Your own WARNO.exe is read, never changed. The analysis tools read your own WARNO.exe, read-only, to find the
+load-time checks a mod must pass, and read the error message in your own crash dumps. They write nothing to the
+executable and do nothing else with it.
+
+Single-player scope. Everything here is for single-player scenario mods. Nothing in this repository modifies
+WARNO.exe, or touches multiplayer, matchmaking or online play.
+
+No warranty, and not legal advice. The tools and this notice are provided as they are. Nothing here is legal
+advice. Back up your saves and your mod folder before installing anything.
+
+Licence. The MIT licence in `LICENSE` covers this repository's own code and text only. It grants nothing over WARNO,
+its executable or its data, which stay with Eugen Systems.
+
+Releases. Releases come only from this repository and its Steam Workshop items. Other copies are not maintained by
+this project.

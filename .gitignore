@@ -1,0 +1,9 @@
+.venv/
+build/
+ai_docs/
+modkit.local.toml
+__pycache__/
+*.pyc
+.idea/
+*.egg-info/
+modkit-data/

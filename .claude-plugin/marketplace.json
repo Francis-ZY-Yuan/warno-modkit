@@ -1,0 +1,19 @@
+{
+  "name": "warno-modkit",
+  "description": "Claude Code plugins for WARNO modding: skills, the scripts they run, worked examples, and a knowledge base of what the game does.",
+  "owner": {
+    "name": "warno-modkit contributors"
+  },
+  "plugins": [
+    {
+      "name": "warno-core",
+      "source": "./components/core",
+      "description": "WARNO modding foundations: setup from your own install, file formats, load-time gates, crash triage, packaging and the knowledge base."
+    },
+    {
+      "name": "warno-ops",
+      "source": "./components/ops",
+      "description": "Build, gate and playtest custom scripted Operations (scenario mods) for WARNO, with worked examples."
+    }
+  ]
+}

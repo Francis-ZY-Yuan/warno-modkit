@@ -1,0 +1,10 @@
+visibility = "public"
+
+# The history scan (repocheck --history) requires every commit's author and committer to be this identity, and both
+# dates to carry this UTC offset. Commit with TZ=UTC. `allow` lists identities of future outside contributors, as
+# { name = "...", email = "..." } entries.
+[identity]
+name = "warno-modkit contributors"
+email = "noreply@example.invalid"
+offset = "+0000"
+allow = []

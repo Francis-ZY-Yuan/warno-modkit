@@ -1,0 +1,142 @@
+# The reviewed allowlist: a finding passes only on an exact path + text entry with a reason.
+# Reasons start with a category (format tag, mask, key, published constant, generic term).
+
+[[allow]]
+path = "components/core/src/modkit/core/crashdump.py"
+text = "0xE06D7363"
+reason = "published constant: the exception code of every MSVC C++ throw"
+
+[[allow]]
+path = "components/core/tests/test_crashdump.py"
+text = "0xE06D7363"
+reason = "published constant: the exception code of every MSVC C++ throw"
+
+[[allow]]
+path = "components/core/tests/test_crashdump.py"
+text = "0x19930520"
+reason = "published constant: the signature word of an MSVC C++ throw record"
+
+[[allow]]
+path = "components/core/src/modkit/core/ndfbin.py"
+text = "0xABABABAB"
+reason = "format tag: ndfbin object end marker"
+
+[[allow]]
+path = "components/core/src/modkit/core/ndfbin.py"
+text = "0xBBBBBBBB"
+reason = "format tag: ndfbin object reference marker"
+
+[[allow]]
+path = "components/core/src/modkit/core/ndfbin.py"
+text = "0xAAAAAAAA"
+reason = "format tag: ndfbin import reference marker"
+
+[[allow]]
+path = "components/core/src/modkit/core/ndfbin.py"
+text = "0xFFFFFFFF"
+reason = "format tag: ndfbin no-index value"
+
+[[allow]]
+path = "components/core/src/modkit/core/tgv.py"
+text = "0xFFFFFFFF"
+reason = "mask: 32-bit CRC mask"
+
+[[allow]]
+path = "components/core/src/modkit/core/trad.py"
+text = "0x8000000000000000"
+reason = "key: the trad charset row key"
+
+[[allow]]
+path = "components/core/src/modkit/core/ndfrules.py"
+text = "rva"
+reason = "generic term: no exe-specific value"
+
+[[allow]]
+path = "components/core/src/modkit/core/ndfrules.py"
+text = "slot"
+reason = "generic term: no exe-specific value"
+
+[[allow]]
+path = "components/core/src/modkit/core/ndfrules.py"
+text = "vtable"
+reason = "generic term: no exe-specific value"
+
+[[allow]]
+path = "components/core/src/modkit/core/ndfrules.py"
+text = "vtables"
+reason = "generic term: no exe-specific value"
+
+[[allow]]
+path = "components/core/src/modkit/core/pedis.py"
+text = "rva"
+reason = "generic term: no exe-specific value"
+
+[[allow]]
+path = "components/core/src/modkit/core/pexref.py"
+text = "rva"
+reason = "generic term: no exe-specific value"
+
+[[allow]]
+path = "components/core/src/modkit/core/pexref.py"
+text = "rvas"
+reason = "generic term: no exe-specific value"
+
+[[allow]]
+path = "components/core/tests/test_ndfrules.py"
+text = "slot"
+reason = "generic term: no exe-specific value"
+
+[[allow]]
+path = "components/core/tests/test_ndfrules.py"
+text = "vtable"
+reason = "generic term: no exe-specific value"
+
+[[allow]]
+path = "components/core/tests/test_ndfrules.py"
+text = "vtables"
+reason = "generic term: no exe-specific value"
+
+[[allow]]
+path = "components/core/src/modkit/core/crashdump.py"
+text = "rva"
+reason = "generic term: no exe-specific value"
+
+[[allow]]
+path = "components/core/src/modkit/core/hygiene.py"
+text = "slot"
+reason = "generic term: the rule's own description of what it flags"
+
+[[allow]]
+path = "components/core/src/modkit/core/hygiene.py"
+text = "slots"
+reason = "generic term: the rule's own description of what it flags"
+
+[[allow]]
+path = "components/core/tests/test_hygiene_tightened.py"
+text = "slot"
+reason = "generic term: test name for the numbered form"
+
+[[allow]]
+path = "components/core/tests/test_hygiene.py"
+text = "rva"
+reason = "generic term: named in a test comment"
+
+[[allow]]
+path = "components/core/tests/test_hygiene.py"
+text = "vtables"
+reason = "generic term: named in a test comment"
+
+[[allow]]
+path = "components/ops/src/modkit/ops/bricks.py"
+text = "0xFFFFFFFF"
+reason = "format tag: NbExecutions uint32 max, a script loop that repeats until something else ends it"
+
+[[allow]]
+path = "components/ops/tests/test_bricks.py"
+text = "0xFFFFFFFF"
+reason = "format tag: NbExecutions uint32 max, a script loop that repeats until something else ends it"
+
+[[allow]]
+path = "components/ops/src/modkit/ops/script.py"
+text = "0xFFFFFFFF"
+reason = "format tag: NbExecutions uint32 max, a script loop that repeats until something else ends it"

@@ -1,0 +1,6 @@
+{
+  "name": "warno-core",
+  "version": "0.1.0",
+  "author": {"name": "warno-modkit contributors"},
+  "description": "WARNO modding foundations: setup from your own install, file formats, load-time gates, crash triage, packaging and the knowledge base."
+}

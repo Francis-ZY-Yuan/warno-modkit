@@ -1,0 +1,34 @@
+---
+id: mod-version-and-config-lines
+title: A mod is active only with Gen/Version.ndf, and its [Config] hashes mark it outdated after an update
+status: PLAYED
+last_verified: 201602 2026-11-06
+source: play
+topics: [mod-packaging, game-updates]
+shapes: [modkit.core.packaging.VERSION_NDF, modkit.core.packaging.CONFIG_INI]
+trials: [2026-11-02-same-name-pack-override, 2026-11-02-new-scenario-id-loads, 2026-11-02-workshop-publishing-survey, 2026-11-06-probe2-play-run-a]
+stock_precedent: every current (201602) Workshop mod ships the same one-line Gen/Version.ndf
+---
+**What the game does.** The Mod Center lists a mod folder that holds only `Config.ini` and `Scenarios/` as
+outdated, and an outdated mod cannot be activated. Add `Gen/Version.ndf` (one line naming the game build, as in
+every current Workshop mod) and an empty `[Config]` section, and the same folder is active, with the scenario-type
+icon. At startup the game rewrites the activated-mods line of your `mod\Config.ini`.
+
+`[Config]` holds one `<cluster>=<md5>` line per game cluster the mod replaces: the md5 of the stock file it was
+built against. When a game update changes that cluster, the hash stops matching and the mod is force-disabled as
+outdated until it is rebuilt.
+
+**Gotchas.**
+- A scenario-only mod has an empty `[Config]`, so an update cannot make it outdated by hash. It can still break,
+  since its packs depend on stock class schemas, map item GUIDs, dictionary tokens and cloned files. After each
+  update: re-extract, rebuild, set the new build in `Gen/Version.ndf` and `ModGenVersion`, and play it again.
+- Whether the value in `Gen/Version.ndf` must equal the running build is not known.
+
+<!-- referenced-by:start -->
+## Referenced by
+
+- Trials: [2026-11-02-new-scenario-id-loads](../../../ops/knowledge/trials/2026-11-02-new-scenario-id-loads.md), [2026-11-02-same-name-pack-override](../trials/2026-11-02-same-name-pack-override.md), [2026-11-02-workshop-publishing-survey](../trials/2026-11-02-workshop-publishing-survey.md), [2026-11-06-probe2-play-run-a](../../../ops/knowledge/trials/2026-11-06-probe2-play-run-a.md)
+- Shapes: [`modkit.core.packaging.VERSION_NDF`](../../src/modkit/core/packaging.py), [`modkit.core.packaging.CONFIG_INI`](../../src/modkit/core/packaging.py)
+- Skills: [`components/core/skills/warno-launch-triage/SKILL.md`](../../skills/warno-launch-triage/SKILL.md), [`components/core/skills/warno-setup/SKILL.md`](../../skills/warno-setup/SKILL.md), [`components/core/skills/warno-ship/SKILL.md`](../../skills/warno-ship/SKILL.md), [`components/core/skills/warno-ship/references/workshop-publishing.md`](../../skills/warno-ship/references/workshop-publishing.md)
+- Records: [workshop-upload-folder](workshop-upload-folder.md)
+<!-- referenced-by:end -->

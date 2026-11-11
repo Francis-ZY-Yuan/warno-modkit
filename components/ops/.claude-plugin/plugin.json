@@ -1,0 +1,7 @@
+{
+  "name": "warno-ops",
+  "version": "0.1.0",
+  "author": {"name": "warno-modkit contributors"},
+  "description": "Build, gate and playtest custom scripted Operations (scenario mods) for WARNO, with worked examples.",
+  "dependencies": ["warno-core"]
+}

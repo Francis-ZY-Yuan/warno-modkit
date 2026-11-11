@@ -1,0 +1,1045 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open Door storyline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: an operations-room planning overlay. Portrait map on the left, phase order on the right; stacks on phones. Single deliberate dark theme. */
+:root {
+  --bg: #11161a;
+  --panel: #182026;
+  --rule: #2b353d;
+  --ink: #dde3e6;
+  --muted: #8e9aa2;
+  --friendly: #5aa9ff;
+  --hostile: #ff5a4e;
+  --fires: #ffb21f;
+  --air: #43e0cf;
+  --halo: #0a0d10;
+  --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color-scheme: dark;
+}
+html, body { background: var(--bg); color: var(--ink); }
+body {
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.5;
+  padding-block: 20px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 18px; }
+
+header { display: grid; gap: 4px; border-bottom: 1px solid var(--rule); padding-bottom: 14px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(34px, 6vw, 54px); line-height: 1; letter-spacing: .01em; margin: 0; text-transform: uppercase; text-wrap: balance; }
+.lede { margin: 6px 0 0; max-width: 68ch; color: var(--muted); }
+.lede strong { color: var(--ink); font-weight: 500; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; }
+.seg button {
+  font-family: var(--display); font-weight: 600; font-size: 16px; letter-spacing: .04em; text-transform: uppercase;
+  background: transparent; color: var(--muted); border: 0; border-right: 1px solid var(--rule);
+  padding: 6px 12px; cursor: pointer;
+}
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.seg button:focus-visible { outline: 2px solid var(--friendly); outline-offset: -2px; }
+.ctl-label { font-family: var(--mono); font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+
+.main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 400px); gap: 22px; align-items: start; }
+@media (max-width: 900px) { .main { grid-template-columns: minmax(0, 1fr); } }
+
+.mapbox { background: var(--halo); border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; }
+#map { display: block; width: 100%; height: auto; max-height: 88vh; margin: 0 auto; }
+.mapnote { font-family: var(--mono); font-size: 11.5px; color: var(--muted); padding: 8px 12px; border-top: 1px solid var(--rule); }
+
+/* SVG styling */
+#map text { font-family: var(--display); font-weight: 600; paint-order: stroke; stroke: var(--halo); stroke-width: 4px; stroke-linejoin: round; }
+#map .t-town { font-size: 13px; fill: var(--ink); font-weight: 500; letter-spacing: .03em; }
+#map .t-zone { font-size: 17px; letter-spacing: .06em; }
+#map .t-unit { font-size: 15px; }
+#map .t-small { font-size: 13px; }
+.f-blue { fill: var(--friendly); } .f-red { fill: var(--hostile); } .f-amber { fill: var(--fires); } .f-cyan { fill: var(--air); } .f-ink { fill: var(--ink); } .f-muted { fill: var(--muted); }
+.s-blue { stroke: var(--friendly); } .s-red { stroke: var(--hostile); } .s-amber { stroke: var(--fires); } .s-cyan { stroke: var(--air); }
+.arrow { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.thick { stroke-width: 8; }
+.med { stroke-width: 5; }
+.thin { stroke-width: 3; }
+.dash { stroke-dasharray: 10 8; }
+.dot { stroke-dasharray: 2 7; }
+.box { fill: url(#hatch-amber); stroke: var(--fires); stroke-width: 2.5; }
+.zone-flank { fill: rgba(255,90,78,.10); stroke: var(--hostile); stroke-width: 2.5; stroke-dasharray: 6 5; }
+.screen { fill: none; stroke: var(--friendly); stroke-width: 6; stroke-linecap: round; }
+.zone-sack { fill: url(#hatch-red); stroke: var(--hostile); stroke-width: 1.5; stroke-dasharray: 4 4; opacity: .8; }
+.zone-hide { fill: rgba(90,169,255,.12); stroke: var(--friendly); stroke-width: 2; stroke-dasharray: 6 5; }
+.zone-neck { fill: rgba(221,227,230,.08); stroke: var(--ink); stroke-width: 2.5; stroke-dasharray: 7 5; }
+.anvil { fill: none; stroke: var(--friendly); stroke-width: 7; stroke-linecap: round; }
+.anvil-ticks { fill: none; stroke: var(--friendly); stroke-width: 7; stroke-dasharray: 3 14; stroke-dashoffset: 0; transform: translate(-9px, 0); }
+.pl { fill: none; stroke: var(--ink); stroke-width: 2.5; stroke-dasharray: 14 6 3 6; opacity: .85; }
+.layer { transition: opacity .25s ease; }
+#map[data-view="all"] .detail { display: none; }
+#map [hidden] { display: none; }
+@media (prefers-reduced-motion: reduce) { .layer { transition: none; } }
+
+/* Phase panel */
+.panel { display: grid; gap: 14px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 64px); }
+@media (max-width: 900px) { .panel { position: static; } }
+ol.phases { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.phase {
+  border: 1px solid var(--rule); border-radius: 4px; background: var(--panel);
+  padding: 10px 12px 12px; cursor: pointer; display: grid; gap: 4px;
+}
+.phase:focus-visible { outline: 2px solid var(--friendly); outline-offset: 2px; }
+.phase[aria-current="true"] { border-color: var(--ink); box-shadow: inset 3px 0 0 var(--ink); }
+.ph-head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.ph-num { font-family: var(--display); font-weight: 700; font-size: 22px; line-height: 1; color: var(--muted); min-width: 1.1em; }
+.phase[aria-current="true"] .ph-num { color: var(--ink); }
+.ph-name { font-family: var(--display); font-weight: 700; font-size: 20px; line-height: 1.1; text-transform: uppercase; letter-spacing: .03em; }
+.ph-time { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-left: auto; font-variant-numeric: tabular-nums; }
+.phase p { margin: 0; font-size: 14px; color: var(--muted); }
+.phase[aria-current="true"] p { color: var(--ink); }
+.ph-detail { display: grid; gap: 4px; margin: 4px 0 0; padding: 0; list-style: none; font-size: 13.5px; }
+.ph-detail li { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 8px; align-items: start; color: var(--muted); }
+.phase[aria-current="true"] .ph-detail li { color: var(--ink); }
+.sw { width: 12px; height: 12px; border-radius: 2px; margin-top: 4px; }
+.sw.blue { background: var(--friendly); } .sw.red { background: var(--hostile); } .sw.amber { background: var(--fires); } .sw.cyan { background: var(--air); }
+
+.legend { border: 1px solid var(--rule); border-radius: 4px; padding: 10px 12px; display: grid; gap: 6px; font-size: 13px; }
+.legend h2 { margin: 0 0 2px; font-family: var(--mono); font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.lg-row { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 10px; align-items: center; }
+.lg-row svg { width: 44px; height: 14px; overflow: visible; }
+
+/* NATO unit counters (Units overlay) */
+#map[data-counters="off"] #units { display: none; }
+#map[data-counters="on"] .dup { display: none; }
+.ctr { cursor: pointer; }
+.ctr .fr { fill: rgba(10,13,16,.9); stroke: var(--friendly); stroke-width: 2.2; }
+.ctr .gl { fill: none; stroke: var(--friendly); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ctr .gf { fill: var(--friendly); }
+.ctr.hid .fr, .ctr.hid .gl { stroke-dasharray: 4 3; }
+.ctr.hid { opacity: .78; }
+.ctr.dashed .fr, .ctr.dashed .gl { stroke-dasharray: 4 3; }
+.ctr.red .fr { stroke: var(--hostile); }
+.ctr.red .gl { stroke: var(--hostile); }
+.ctr.red .gf { fill: var(--hostile); }
+#map .ctr.red .ech, #map .ctr.red .ln2 { fill: var(--hostile); }
+.ctr.red:hover .fr, .ctr.red.sel .fr { stroke: var(--ink); }
+#map .ctr .ech { font-family: var(--mono); font-size: 11px; font-weight: 600; fill: var(--friendly); stroke-width: 3px; }
+#map .ctr .ln1 { font-size: 14px; fill: var(--ink); }
+#map .ctr .ln2 { font-size: 12.5px; font-weight: 500; fill: var(--friendly); }
+.ctr:hover .fr, .ctr.sel .fr { stroke: var(--ink); stroke-width: 2.6; }
+.ctr:focus { outline: none; }
+.ctr:focus-visible .fr { stroke: var(--fires); stroke-width: 2.8; }
+.unitinfo { border-top: 1px solid var(--rule); padding: 10px 12px 12px; display: grid; gap: 6px; font-size: 13.5px; }
+.unitinfo[hidden] { display: none; }
+.unitinfo .ui-title { font-family: var(--display); font-weight: 700; font-size: 19px; text-transform: uppercase; letter-spacing: .03em; line-height: 1.1; }
+.unitinfo .ui-meta { color: var(--muted); }
+.unitinfo ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+.unitinfo li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; border-bottom: 1px dotted var(--rule); padding-bottom: 3px; }
+.unitinfo li:last-child { border-bottom: 0; }
+.unitinfo li code { grid-column: 1 / -1; font-family: var(--mono); font-size: 11.5px; color: var(--muted); overflow-wrap: anywhere; }
+.unitinfo .q { font-family: var(--mono); font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.decoy { fill: none; stroke: var(--friendly); stroke-width: 1.8; stroke-dasharray: 3 2; }
+.decoy-in { fill: none; stroke: var(--friendly); stroke-width: 1.4; }
+
+/* Boards below the map: objectives, forces */
+.board { display: grid; gap: 12px; border-top: 1px solid var(--rule); padding-top: 18px; }
+.board > h2 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 28px; line-height: 1.05; text-transform: uppercase; letter-spacing: .03em; }
+.board-lede { margin: 0; max-width: 80ch; color: var(--muted); }
+.board-lede strong { color: var(--ink); font-weight: 500; }
+.cols { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.cols.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cols.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 1060px) { .cols, .cols.three { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .cols, .cols.two, .cols.three { grid-template-columns: minmax(0, 1fr); } }
+.step { display: grid; gap: 4px; }
+.step + .step { border-top: 1px solid var(--rule); padding-top: 8px; }
+.step .when { font-family: var(--mono); font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--friendly); }
+.step .when.red { color: var(--hostile); }
+.step .when.air { color: var(--air); }
+.step .when.amb { color: var(--fires); }
+.card { border: 1px solid var(--rule); border-radius: 4px; background: var(--panel); padding: 10px 12px 12px; display: grid; gap: 10px; align-content: start; }
+.card h3 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 19px; line-height: 1.1; text-transform: uppercase; letter-spacing: .03em; display: flex; gap: 8px; align-items: baseline; }
+.card h3 .n { color: var(--muted); }
+.card h4 { margin: 4px 0 0; font-family: var(--mono); font-size: 11.5px; font-weight: 500; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+.obj { display: grid; gap: 1px; font-size: 13.5px; }
+.obj .tag { font-family: var(--mono); font-size: 11px; letter-spacing: .07em; text-transform: uppercase; }
+.tag.pri { color: var(--friendly); } .tag.bon { color: var(--fires); } .tag.lose { color: var(--hostile); }
+.obj .name { font-family: var(--display); font-weight: 600; font-size: 16.5px; letter-spacing: .03em; text-transform: uppercase; line-height: 1.15; }
+.obj .eff { color: var(--muted); }
+.obj .eff b { color: var(--ink); font-weight: 500; }
+.tbl { overflow-x: auto; border: 1px solid var(--rule); border-radius: 4px; }
+.tbl table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+.tbl th, .tbl td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+.tbl th { font-family: var(--mono); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+.tbl tr:last-child td { border-bottom: 0; }
+.tbl td.k { font-family: var(--display); font-weight: 600; font-size: 16px; white-space: nowrap; }
+.roster { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: 13.5px; }
+.roster li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; border-bottom: 1px dotted var(--rule); padding-bottom: 2px; }
+.roster li:last-child { border-bottom: 0; }
+.roster .q { font-family: var(--mono); font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.roster .u { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+.note { font-size: 13px; color: var(--muted); margin: 0; }
+.note b { color: var(--ink); font-weight: 500; }
+
+/* Review tabs */
+.tabs {
+  position: sticky; top: 0; z-index: 10; background: var(--bg);
+  display: flex; flex-wrap: wrap; gap: 0 4px; border-bottom: 1px solid var(--rule);
+  padding-top: env(safe-area-inset-top, 0px); margin-top: -6px;
+}
+.tabs button {
+  font-family: var(--display); font-weight: 600; font-size: 18px; letter-spacing: .04em; text-transform: uppercase;
+  background: transparent; color: var(--muted); border: 0; border-bottom: 3px solid transparent;
+  padding: 10px 10px 8px; cursor: pointer;
+}
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--fires); }
+.tabs button:hover { color: var(--ink); }
+.tabs button:focus-visible { outline: 2px solid var(--friendly); outline-offset: -2px; }
+.tabpanel { display: grid; gap: 18px; }
+.tabpanel[hidden] { display: none; }
+
+/* Rendered docs */
+.doc-head { display: grid; gap: 4px; max-width: 90ch; }
+.doc-title { margin: 0; font-family: var(--display); font-weight: 700; font-size: clamp(26px, 4vw, 34px); line-height: 1.05; text-transform: uppercase; letter-spacing: .02em; }
+.doc-note { margin: 2px 0 0; color: var(--muted); }
+.marks { font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 4px 0 0; }
+.doc-layout { display: grid; grid-template-columns: minmax(0, 250px) minmax(0, 80ch); gap: 28px; align-items: start; }
+#tab-roster .doc-layout { grid-template-columns: minmax(0, 220px) minmax(0, 1fr); }
+@media (max-width: 900px) { .doc-layout, #tab-roster .doc-layout { grid-template-columns: minmax(0, 1fr); gap: 14px; } }
+.toc { position: sticky; top: 62px; max-height: calc(100vh - 80px); overflow-y: auto; font-size: 13px; border-left: 1px solid var(--rule); padding-left: 12px; }
+@media (max-width: 900px) { .toc { position: static; max-height: none; border-left: 0; padding-left: 0; border: 1px solid var(--rule); border-radius: 4px; padding: 8px 12px; } .toc ul ul { display: none; } }
+.toc-list, .toc-list ul { list-style: none; margin: 0; padding: 0; }
+.toc-list > li { margin: 6px 0 0; }
+.toc-list > li > a { font-family: var(--display); font-weight: 600; font-size: 15px; letter-spacing: .03em; text-transform: uppercase; color: var(--ink); }
+.toc-list ul { padding-left: 10px; }
+.toc-list ul li { margin: 3px 0 0; }
+.toc a { color: var(--muted); text-decoration: none; }
+.toc a:hover { color: var(--ink); text-decoration: underline; }
+.doc { font-size: 15px; line-height: 1.62; min-width: 0; overflow-wrap: break-word; }
+.doc h2, .doc h3, .doc h4 { scroll-margin-top: 64px; font-family: var(--display); text-transform: uppercase; letter-spacing: .03em; line-height: 1.1; }
+.doc h2 { font-size: 26px; font-weight: 700; margin: 34px 0 10px; padding-top: 16px; border-top: 1px solid var(--rule); }
+.doc > h2:first-child, .doc > p:first-child + h2 { margin-top: 8px; }
+.doc h3 { font-size: 20px; font-weight: 600; margin: 26px 0 8px; }
+.doc h4 { font-size: 17px; font-weight: 600; margin: 20px 0 6px; color: var(--muted); }
+.doc p { margin: 0 0 10px; }
+.doc ul, .doc ol { margin: 0 0 12px; padding-left: 1.3em; }
+.doc li { margin: 3px 0; }
+.doc li > ul, .doc li > ol { margin: 3px 0 4px; }
+.doc li::marker { color: var(--muted); }
+.doc strong { color: var(--ink); font-weight: 600; }
+.doc code { font-family: var(--mono); font-size: .86em; background: rgba(221,227,230,.07); border: 1px solid var(--rule); border-radius: 3px; padding: 0 4px; overflow-wrap: anywhere; }
+.doc pre { font-family: var(--mono); font-size: 12.5px; background: var(--panel); border: 1px solid var(--rule); border-radius: 4px; padding: 10px 12px; overflow-x: auto; }
+.doc pre code { background: none; border: 0; padding: 0; }
+.doc blockquote { margin: 0 0 12px; padding: 4px 14px; border-left: 3px solid var(--fires); color: var(--muted); }
+.doc .tbl { margin: 4px 0 14px; }
+.doc .tbl td { font-size: 13.5px; line-height: 1.45; }
+.doc hr { border: 0; border-top: 1px solid var(--rule); margin: 20px 0; }
+.mk { font-family: var(--body); font-size: .86em; border-radius: 3px; padding: 0 5px; border: 1px solid currentColor; white-space: normal; }
+.mk b { font-family: var(--mono); font-weight: 600; font-size: .92em; }
+.mk.f { color: var(--friendly); }
+.mk.c { color: var(--fires); }
+.mk.v { color: var(--air); }
+.mk.i { color: var(--muted); }
+.doc h2 .mk, .doc h3 .mk, .doc h4 .mk { text-transform: none; letter-spacing: 0; font-size: 13px; font-weight: 400; vertical-align: 3px; }
+.ok { color: var(--air); font-weight: 600; }
+.unk { color: var(--hostile); font-family: var(--mono); font-weight: 600; }
+
+.ctl-pick { font-family: var(--mono); font-size: 12px; color: var(--muted); max-width: 100%; }
+.foot { font-family: var(--mono); font-size: 12px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 12px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Mission design &middot; _4x3_geisa &middot; Fulda Gap, mid-July 1989</div>
+    <h1>Operation Open Door</h1>
+    <p class="lede">Three weeks into the war, NATO holds a salient across the border at Geisa. It knows a Soviet counter-stroke is coming to retake Fulda, and lets it in. <strong>NATO holds the north road firmly. In the centre and south, a worn rearguard gives ground and draws the Soviets out onto open ground in front of an anvil far to the rear, while a screen in the forests keeps Soviet recon away from the hidden reserves. Then you pick the moment to shut the door</strong> behind the forward detachment of the 5th Guards Tank Army's lead division, a reinforced T-80BV battalion racing for a deep objective. Pick a phase to see its moves. The objectives and the forces follow below the map. This is the full design (<code>design.md</code>); the example builds its playable core, phases 1 to 4 without the decoys, probes, strikes, air assault, Apaches and relief.</p>
+  </header>
+
+
+  <div class="tabpanel" id="tab-story">
+  <div class="controls">
+    <span class="ctl-label">Phase</span>
+    <div class="seg" role="group" aria-label="Phase">
+      <button type="button" id="v-all" data-view="all" aria-pressed="true">Overview</button>
+      <button type="button" id="v-1" data-view="1" aria-pressed="false">1 Screen</button>
+      <button type="button" id="v-2" data-view="2" aria-pressed="false">2 Sack</button>
+      <button type="button" id="v-3" data-view="3" aria-pressed="false">3 Close</button>
+      <button type="button" id="v-4" data-view="4" aria-pressed="false">4 Cauldron</button>
+    </div>
+    <span class="ctl-label">Unit counters</span>
+    <div class="seg" role="group" aria-label="Unit counters">
+      <button type="button" id="c-on" data-counters="on" aria-pressed="true">On</button>
+      <button type="button" id="c-off" data-counters="off" aria-pressed="false">Off</button>
+    </div>
+    <span class="ctl-label">Base map</span>
+    <input type="file" id="base-file" class="ctl-pick" accept="image/*" aria-label="Load a picture of Geisa (od_overlay.png from the build)">
+  </div>
+
+  <div class="main">
+    <div class="mapbox">
+      <svg id="map" viewBox="0 0 768 1024" role="img" aria-label="Geisa map with the Open Door storyline: Soviet axis from the north-east, NATO anvil in the west and a held shoulder on the north road; Soviet recon probes on forest tracks meet a NATO screen; an air assault and two armoured jaws close two necks.">
+        <defs>
+          <pattern id="hatch-amber" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <rect width="8" height="8" fill="rgba(255,178,31,.10)"/>
+            <line x1="0" y1="0" x2="0" y2="8" stroke="rgba(255,178,31,.55)" stroke-width="2.5"/>
+          </pattern>
+          <pattern id="hatch-red" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">
+            <rect width="10" height="10" fill="rgba(255,90,78,.08)"/>
+            <line x1="0" y1="0" x2="0" y2="10" stroke="rgba(255,90,78,.35)" stroke-width="2"/>
+          </pattern>
+          <marker id="ah-red" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" style="fill: var(--hostile)"/>
+          </marker>
+          <marker id="ah-blue" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" style="fill: var(--friendly)"/>
+          </marker>
+          <marker id="ah-cyan" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" style="fill: var(--air)"/>
+          </marker>
+          <!-- Decoy: armour symbol (ellipse in a frame), dashed frame = dummy -->
+          <symbol id="decoy" viewBox="0 0 18 12" overflow="visible">
+            <rect class="decoy" x="1" y="1" width="16" height="10" rx="1" style="fill: rgba(10,13,16,.75)"/>
+            <ellipse class="decoy-in" cx="9" cy="6" rx="5" ry="2.6"/>
+          </symbol>
+        </defs>
+
+        <rect x="0" y="0" width="768" height="1024" fill="var(--panel)"/>
+        <image id="base" x="0" y="0" width="768" height="1024" preserveAspectRatio="none" hidden/>
+        <rect x="0" y="0" width="768" height="1024" fill="rgba(10,13,16,.28)"/>
+
+        <!-- Always-on context: zones, towns, phase line -->
+        <g id="context">
+          <polygon class="zone-sack" points="140,318 196,334 214,394 300,398 300,440 280,540 322,628 304,700 186,772 132,722 150,600 160,480 142,392"/>
+          <text class="t-zone f-red" x="176" y="514">KILL ZONE</text>
+          <text class="t-small f-red" x="176" y="530">open ground</text>
+
+          <ellipse class="zone-hide" cx="352" cy="270" rx="34" ry="14"/>
+          <text class="t-zone f-blue" x="352" y="238" text-anchor="middle">RESERVE N</text>
+          <ellipse class="zone-hide" cx="522" cy="740" rx="40" ry="28"/>
+          <text class="t-zone f-blue" x="522" y="745" text-anchor="middle">HIDE S</text>
+          <text class="t-small f-muted" x="420" y="284" text-anchor="middle">north road</text>
+          <text class="t-small f-muted" x="226" y="388">passage road</text>
+
+          <ellipse class="zone-neck" cx="395" cy="401" rx="30" ry="22"/>
+          <text class="t-zone f-ink" x="395" y="446" text-anchor="middle">NECK MID</text>
+          <circle class="zone-neck" cx="468" cy="600" r="27"/>
+          <text class="t-zone f-ink" x="436" y="604" text-anchor="end">NECK S</text>
+
+          <path class="pl" d="M 598 40 Q 640 150 664 232 Q 700 340 706 470 Q 690 545 648 592 Q 628 650 664 712"/>
+          <text class="t-zone f-ink" x="712" y="342" text-anchor="middle">PL BLUE</text>
+
+          <path class="anvil" d="M 200 298 Q 156 302 118 318 Q 128 400 138 480 Q 134 580 116 655 Q 106 724 98 792"/>
+          <text class="t-zone f-blue" x="16" y="470">ANVIL</text>
+          <text class="t-small f-blue" x="16" y="486">far back,</text>
+          <text class="t-small f-blue" x="16" y="501">old border</text>
+
+          <path class="anvil" d="M 512 252 Q 536 272 532 306"/>
+          <text class="t-zone f-blue" x="500" y="236" text-anchor="end">SHOULDER</text>
+          <text class="t-small f-blue" x="500" y="251" text-anchor="end">holds firm</text>
+
+          <text class="t-town" x="676" y="214">Town NE</text>
+          <text class="t-town" x="662" y="626">Town SE</text>
+          <text class="t-town" x="20" y="700">Town SW</text>
+          <text class="t-town" x="708" y="500">Village E</text>
+
+          <text class="t-small f-red" x="664" y="20" text-anchor="middle">ENTRY &#9660;</text>
+          <text class="t-small f-red dup" x="760" y="420" text-anchor="end">ENTRY &#9664;</text>
+          <text class="t-small f-blue" x="10" y="770">&#9664; REAR</text>
+        </g>
+
+        <!-- Phase 1: The Screen -->
+        <g class="layer" data-phase="1">
+          <g class="detail">
+          <rect class="box" x="626" y="206" width="66" height="52" rx="2"/>
+          <rect class="box" x="672" y="452" width="58" height="46" rx="2"/>
+          <rect class="box" x="614" y="566" width="64" height="50" rx="2"/>
+          <text class="t-unit f-amber" x="606" y="214" text-anchor="end">Soviet opening barrage, H-hour</text>
+
+          <!-- Decoys left in the rearguard's positions (8) -->
+          <g class="dup">
+          <use href="#decoy" x="700" y="230" width="18" height="12"/>
+          <use href="#decoy" x="722" y="230" width="18" height="12"/>
+          <use href="#decoy" x="711" y="246" width="18" height="12"/>
+          <use href="#decoy" x="686" y="508" width="18" height="12"/>
+          <use href="#decoy" x="708" y="508" width="18" height="12"/>
+          <use href="#decoy" x="618" y="544" width="18" height="12"/>
+          <use href="#decoy" x="640" y="544" width="18" height="12"/>
+          <use href="#decoy" x="662" y="544" width="18" height="12"/>
+          <text class="t-small f-blue" x="744" y="278" text-anchor="end">decoys</text>
+          <text class="t-small f-blue" x="612" y="554" text-anchor="end">decoys</text>
+          </g>
+          </g>
+
+          <path class="arrow med s-red" d="M 592 12 Q 606 120 648 206" marker-end="url(#ah-red)"/>
+          <path class="arrow med s-red" d="M 764 470 L 736 474" marker-end="url(#ah-red)"/>
+          <path class="arrow med s-red" d="M 764 596 Q 724 596 690 594" marker-end="url(#ah-red)"/>
+          <text class="t-unit f-red dup" x="604" y="70">39th GMRD</text>
+          <text class="t-unit f-red dup" x="604" y="86">1st echelon</text>
+
+          <path class="arrow thin s-blue dash" d="M 650 248 Q 606 258 562 274" marker-end="url(#ah-blue)"/>
+          <path class="arrow thin s-blue dash" d="M 690 478 Q 600 440 520 404 Q 420 408 300 414 Q 220 418 160 432" marker-end="url(#ah-blue)"/>
+          <path class="arrow thin s-blue dash" d="M 636 606 Q 566 598 506 606 Q 440 630 340 650 Q 230 656 148 650" marker-end="url(#ah-blue)"/>
+          <text class="t-unit f-blue" x="600" y="384" text-anchor="end">Rearguard falls back</text>
+        </g>
+
+        <!-- Phase 2: The Sack -->
+        <g class="layer" data-phase="2">
+          <path class="arrow thick s-red" d="M 604 16 Q 650 200 608 322 Q 568 388 506 398 Q 410 406 300 412 Q 230 418 176 438" marker-end="url(#ah-red)"/>
+          <path class="arrow thick s-red" d="M 764 330 Q 684 382 604 450 Q 548 498 522 540 Q 482 600 424 630 Q 344 656 270 650 Q 212 648 166 646" marker-end="url(#ah-red)"/>
+          <path class="arrow med s-red" d="M 660 234 Q 612 250 568 268" marker-end="url(#ah-red)"/>
+          <text class="t-small f-red dup" x="548" y="204">fixing attack</text>
+          <text class="t-unit f-red" x="742" y="362" text-anchor="end">5th GTA lead division</text>
+          <text class="t-unit f-red" x="742" y="378" text-anchor="end">forward detachment</text>
+
+          <g class="detail">
+          <!-- PL GREEN: the rearguard's short stand at the neck villages -->
+          <path class="pl" d="M 382 352 Q 388 380 395 401 Q 446 430 452 470 Q 462 540 468 600 Q 474 640 470 670"/>
+          <text class="t-zone f-ink" x="448" y="524" text-anchor="end">PL GREEN</text>
+          <text class="t-small f-blue" x="395" y="462" text-anchor="middle">Tm B &middot; stand 2:00</text>
+          <text class="t-small f-blue" x="452" y="572" text-anchor="end">Tm C &middot; stand 2:00</text>
+
+          <!-- Recon probes on the forest tracks, each met by a screen post -->
+          <path class="arrow thin s-red dash" d="M 566 128 Q 486 126 420 124 Q 422 146 432 162" marker-end="url(#ah-red)"/>
+          <path class="screen" d="M 426 178 L 448 164"/>
+          <text class="t-small f-red dup" x="492" y="114" text-anchor="middle">recon probe</text>
+          <text class="t-small f-blue dup" x="456" y="184">screen</text>
+
+          <path class="arrow thin s-red dash" d="M 544 360 Q 514 336 480 328" marker-end="url(#ah-red)"/>
+          <path class="screen" d="M 470 313 L 470 339"/>
+
+          <path class="arrow thin s-red dash" d="M 432 640 Q 440 664 446 682" marker-end="url(#ah-red)"/>
+          <path class="screen" d="M 437 696 L 461 688"/>
+          <text class="t-small f-red dup" x="426" y="676" text-anchor="end">recon probe</text>
+          <text class="t-small f-blue dup" x="432" y="712" text-anchor="end">screen</text>
+
+          <path class="arrow thin s-red dash" d="M 622 622 Q 602 648 596 672" marker-end="url(#ah-red)"/>
+          <path class="screen" d="M 580 680 L 606 686"/>
+
+          <ellipse class="zone-flank" cx="512" cy="622" rx="20" ry="14"/>
+          <text class="t-small f-red dup" x="536" y="604">flank guard?</text>
+
+          <g transform="translate(36 836)">
+            <rect x="0" y="0" width="170" height="44" rx="3" fill="rgba(10,13,16,.88)" stroke="var(--ink)" stroke-width="1.5"/>
+            <text class="t-small f-ink" x="10" y="18">Corps: spring the trap?</text>
+            <text class="t-small f-ink" x="10" y="35">[ NOW ]   [ WAIT ]</text>
+          </g>
+          </g>
+        </g>
+
+        <!-- Phase 3: Close the Door -->
+        <g class="layer" data-phase="3">
+          <path class="arrow thin s-cyan dash" d="M 440 8 Q 432 220 404 372" marker-end="url(#ah-cyan)"/>
+          <text class="t-unit f-cyan" x="448" y="100">Air assault</text>
+          <text class="t-small f-cyan" x="448" y="116">3rd AD UH-60A + air cav</text>
+          <text class="t-small f-cyan" x="412" y="362">LZ</text>
+
+          <path class="arrow thick s-blue" d="M 356 286 Q 374 306 380 330 Q 384 352 386 374" marker-end="url(#ah-blue)"/>
+          <path class="arrow thick s-blue" d="M 528 722 Q 552 698 540 668 Q 522 632 494 612" marker-end="url(#ah-blue)"/>
+          <text class="t-unit f-blue dup" x="370" y="330" text-anchor="end">3rd AD &middot; M1A1HA</text>
+          <text class="t-unit f-blue dup" x="522" y="794" text-anchor="middle">Pz.Kp &middot; Leopard 2A4</text>
+
+          <path class="arrow med s-blue dot" d="M 400 426 Q 426 510 462 572"/>
+          <text class="t-small f-blue" x="380" y="500" text-anchor="end">door shut</text>
+
+          <g class="detail">
+          <rect class="box" x="430" y="368" width="58" height="42" rx="2"/>
+          <rect class="box" x="514" y="536" width="58" height="42" rx="2"/>
+          <rect class="box" x="626" y="206" width="66" height="52" rx="2"/>
+          <text class="t-small f-amber" x="500" y="462">Higher-echelon</text>
+          <text class="t-small f-amber" x="500" y="476">bomb strikes</text>
+          <text class="t-small f-amber" x="698" y="271">Interdiction</text>
+          </g>
+        </g>
+
+        <!-- Phase 4: The Cauldron -->
+        <g class="layer" data-phase="4">
+          <text class="t-zone f-red" x="150" y="740">POCKET</text>
+          <path class="arrow med s-red dash" d="M 200 452 Q 290 424 360 408" marker-end="url(#ah-red)"/>
+          <path class="arrow med s-red dash" d="M 210 640 Q 340 622 444 606" marker-end="url(#ah-red)"/>
+          <text class="t-small f-red" x="236" y="680">breakout</text>
+
+          <path class="arrow thick s-red" d="M 764 290 Q 650 330 560 372 Q 500 396 430 402" marker-end="url(#ah-red)"/>
+          <path class="arrow thick s-red" d="M 764 566 Q 646 600 566 578 Q 526 580 500 594" marker-end="url(#ah-red)"/>
+          <text class="t-unit f-red dup" x="742" y="270" text-anchor="end">Relief &middot; T-80U</text>
+
+          <!-- Apaches from a holding point behind the anvil into the pocket -->
+          <path class="arrow med s-cyan" d="M 34 586 Q 92 560 176 486" marker-end="url(#ah-cyan)"/>
+          <path class="arrow med s-cyan" d="M 34 600 Q 100 660 184 706" marker-end="url(#ah-cyan)"/>
+          <text class="t-unit f-cyan dup" x="12" y="552">AH-64A</text>
+          <text class="t-small f-cyan dup" x="12" y="567">Apaches</text>
+
+          <g class="detail">
+          <rect class="box" x="368" y="380" width="54" height="44" rx="2"/>
+          <rect class="box" x="442" y="574" width="52" height="52" rx="2"/>
+          <text class="t-small f-amber" x="452" y="470">Relief opens with</text>
+          <text class="t-small f-amber" x="452" y="484">a barrage on the necks</text>
+
+          <!-- J-SEAD on the pocket's air defence, then Wild Weasels -->
+          <rect class="box" x="226" y="458" width="44" height="30" rx="2"/>
+          <rect class="box" x="214" y="584" width="44" height="30" rx="2"/>
+          <text class="t-small f-amber dup" x="248" y="452" text-anchor="middle">J-SEAD</text>
+          <path class="arrow thin s-cyan dash" d="M 300 1016 Q 290 840 246 708" marker-end="url(#ah-cyan)"/>
+          <text class="t-small f-cyan dup" x="300" y="890">F-4G Wild Weasels</text>
+          <text class="t-small f-cyan dup" x="300" y="905">hunt the pocket's radars</text>
+          </g>
+        </g>
+
+        <!-- NATO unit counters, drawn by script for the selected phase -->
+        <g id="units" aria-label="NATO unit counters"></g>
+      </svg>
+      <div class="unitinfo" id="unitinfo" aria-live="polite" hidden></div>
+      <div class="mapnote">Moves: the overview shows the main moves only; pick a phase to see its fires, recon probes and decision points. Unit counters follow APP-6: blue rectangles are NATO, red diamonds Soviet, dashed frames hidden or conditional. The overview shows the opening laydown; each phase shows both sides' groups. Tap a counter for its full composition, or switch counters off to see the moves alone. Drawn on Geisa's own minimap, north up. The real Geisa lies just inside the GDR, so the old border probably runs near the west edge (unverified). Zones are sketches; the build takes exact polygons from the map's Details pack.</div>
+    </div>
+
+    <aside class="panel">
+      <ol class="phases" id="phases">
+        <li class="phase" tabindex="0" data-view="1" aria-current="false">
+          <div class="ph-head"><span class="ph-num">1</span><span class="ph-name">The Screen</span><span class="ph-time">H to H+12</span></div>
+          <p>The last company team of a worn 8th Infantry Division brigade holds the salient's forward edge (PL BLUE) against the rebuilt 39th GMRD, bleeds it, then gives the line up. The withdrawal toward the old border has to look like a spent force falling back. The north road is the exception: a shoulder dug in at its east mouth, with forest on both flanks, never yields.</p>
+          <ul class="ph-detail">
+            <li><span class="sw amber"></span><span>Soviet opening barrage on PL BLUE at H-hour.</span></li>
+            <li><span class="sw blue"></span><span>The rearguard falls back through the passage and the defile, makes one short stand at PL GREEN in the neck villages, then goes on to the anvil, far back near the west edge. Team A, in Town NE, falls back into the shoulder.</span></li>
+            <li><span class="sw blue"></span><span>A counter-recon screen holds each forest track: cavalry scouts on the trip-wire and a reinforced infantry platoon with an anti-tank team. 3rd AD mech infantry hold the north tracks; two platoons of the Leopard company's Panzergrenadiere guard their hide in the south.</span></li>
+            <li><span class="sw blue"></span><span>Make it look real: kill first-echelon units and let the Soviets burn the 8 decoys (8th ID M1s with broken tracks and dead guns, left in the fighting positions) before you yield. The better the lie, the more of the main body walks in.</span></li>
+          </ul>
+        </li>
+        <li class="phase" tabindex="0" data-view="2" aria-current="false">
+          <div class="ph-head"><span class="ph-num">2</span><span class="ph-name">The Sack</span><span class="ph-time">H+12 to ~H+28</span></div>
+          <p>The forward detachment of the 5th Guards Tank Army's lead division, a reinforced T-80BV battalion, pours down the two open lanes, the passage (mid) and the defile, and out onto open ground, where the anvil kills them at long range. A fixing attack hits the shoulder, which has to hold. The M1A1HA company team waits behind it on the north road, the Leopards wait in HIDE S, and the hammer's cards stay locked.</p>
+          <ul class="ph-detail">
+            <li><span class="sw blue"></span><span>First, Teams B and C make a 2-minute stand at PL GREEN in the neck villages, then break contact for the anvil. A beaten force that fights twice is easier to believe.</span></li>
+            <li><span class="sw red"></span><span>Recon probes push down the forest tracks toward the reserves. The screen has to kill them, or slow them until you spring the trap.</span></li>
+            <li><span class="sw red"></span><span>A probe that reaches a reserve exposes it: a Soviet force blocks that jaw's path, and a tank company stays out of the sack. Holding PL BLUE past H+12 exposes HIDE S the same way.</span></li>
+            <li><span class="sw amber"></span><span>No Soviet shelling: the guns are moving up behind an advance that thinks NATO is beaten.</span></li>
+            <li><span class="sw blue"></span><span>Corps asks: spring the trap now, or wait for a bigger catch?</span></li>
+          </ul>
+        </li>
+        <li class="phase" tabindex="0" data-view="3" aria-current="false">
+          <div class="ph-head"><span class="ph-num">3</span><span class="ph-name">Close the Door</span><span class="ph-time">on your call</span></div>
+          <p>The 3rd AD's own UH-60As land its air cav troopers, with an Apache pair overhead, just north of the passage village and cut the middle lane (NECK MID). The M1A1HA company team swings south from behind the shoulder, through the central forest, to link up with them. The reinforced Leopard 2A4 company drives out of the southern forest to the defile (NECK S).</p>
+          <ul class="ph-detail">
+            <li><span class="sw cyan"></span><span>One lift, flown in over NATO-held forest.</span></li>
+            <li><span class="sw amber"></span><span>Higher-echelon bomb strikes on a few named boxes: the approaches east of both necks, plus interdiction at the Town NE junction to delay the next echelon.</span></li>
+          </ul>
+        </li>
+        <li class="phase" tabindex="0" data-view="4" aria-current="false">
+          <div class="ph-head"><span class="ph-num">4</span><span class="ph-name">The Cauldron</span><span class="ph-time">to the end</span></div>
+          <p>The pocket tries to break out east through the necks while a T-80U relief force hits them from outside. Hold both necks and grind the pocket down until it surrenders.</p>
+          <ul class="ph-detail">
+            <li><span class="sw amber"></span><span>The relief opens its attack with one barrage on the necks, announced before impact.</span></li>
+            <li><span class="sw amber"></span><span>NATO's assault on the pocket opens with a J-SEAD strike on its air defence.</span></li>
+            <li><span class="sw cyan"></span><span>F-4G Wild Weasel cards unlock to finish the radars. Then an AH-64A company comes in over the anvil to kill the trapped tanks, plus a second company if the pocket is blind.</span></li>
+            <li><span class="sw red"></span><span>Grade = share of the main body destroyed or captured, against what escaped.</span></li>
+          </ul>
+        </li>
+      </ol>
+
+      <div class="legend">
+        <h2>Legend</h2>
+        <div class="lg-row"><svg viewBox="0 0 44 14" aria-hidden="true"><line x1="2" y1="7" x2="34" y2="7" stroke="var(--hostile)" stroke-width="5" stroke-linecap="round"/><path d="M33 1 L43 7 L33 13 z" fill="var(--hostile)"/></svg><span>Soviet axis, attack or relief</span></div>
+        <div class="lg-row"><svg viewBox="0 0 44 14" aria-hidden="true"><line x1="2" y1="7" x2="34" y2="7" stroke="var(--friendly)" stroke-width="5" stroke-linecap="round"/><path d="M33 1 L43 7 L33 13 z" fill="var(--friendly)"/></svg><span>NATO move (dashed: withdrawal)</span></div>
+        <div class="lg-row"><svg viewBox="0 0 44 14" aria-hidden="true"><line x1="2" y1="7" x2="34" y2="7" stroke="var(--hostile)" stroke-width="3" stroke-dasharray="7 5" stroke-linecap="round"/><path d="M33 2 L42 7 L33 12 z" fill="var(--hostile)"/></svg><span>Soviet recon probe on a forest track</span></div>
+        <div class="lg-row"><svg viewBox="0 0 44 14" aria-hidden="true"><line x1="22" y1="1" x2="22" y2="13" stroke="var(--friendly)" stroke-width="6" stroke-linecap="round"/></svg><span>Counter-recon screen post</span></div>
+        <div class="lg-row"><svg viewBox="0 0 44 14" aria-hidden="true"><line x1="2" y1="7" x2="34" y2="7" stroke="var(--air)" stroke-width="3" stroke-dasharray="7 5" stroke-linecap="round"/><path d="M33 1 L43 7 L33 13 z" fill="var(--air)"/></svg><span>Air assault lift; Wild Weasels</span></div>
+        <div class="lg-row"><svg viewBox="0 0 44 14" aria-hidden="true"><line x1="2" y1="7" x2="34" y2="7" stroke="var(--air)" stroke-width="5" stroke-linecap="round"/><path d="M33 1 L43 7 L33 13 z" fill="var(--air)"/></svg><span>Apache attack</span></div>
+        <div class="lg-row"><svg viewBox="0 0 44 14" aria-hidden="true"><use href="#decoy" x="13" y="1" width="18" height="12"/></svg><span>Decoy tank (dashed frame)</span></div>
+        <div class="lg-row"><svg viewBox="0 0 44 24" style="height:24px" aria-hidden="true"><rect x="1" y="5" width="20" height="14" fill="rgba(10,13,16,.9)" stroke="var(--friendly)" stroke-width="1.6"/><path d="M 1 5 L 21 19 M 1 19 L 21 5" fill="none" stroke="var(--friendly)" stroke-width="1.3"/><ellipse cx="11" cy="12" rx="6" ry="3.4" fill="none" stroke="var(--friendly)" stroke-width="1.3"/><path d="M 34 1 L 44 12 L 34 23 L 24 12 Z" fill="rgba(10,13,16,.9)" stroke="var(--hostile)" stroke-width="1.6"/><ellipse cx="34" cy="12" rx="5" ry="3" fill="none" stroke="var(--hostile)" stroke-width="1.3"/></svg><span>Unit counters (APP-6): blue rectangle = NATO, red diamond = Soviet. Inside: ellipse = armour, X = infantry, both = mech, slash = recon, dome = air defence, dot = guns, bowtie = helicopters. A dashed frame means hidden or conditional. Above the frame: ●●● platoon, I company, II battalion, X brigade.</span></div>
+        <div class="lg-row"><svg viewBox="0 0 44 14" aria-hidden="true"><rect x="2" y="1" width="40" height="12" fill="url(#hatch-amber)" stroke="var(--fires)" stroke-width="2"/></svg><span>Scripted bombing or shelling box</span></div>
+        <div class="lg-row"><svg viewBox="0 0 44 14" aria-hidden="true"><line x1="2" y1="7" x2="42" y2="7" stroke="var(--friendly)" stroke-width="7" stroke-linecap="round"/></svg><span>Held line: anvil and shoulder</span></div>
+        <div class="lg-row"><svg viewBox="0 0 44 14" aria-hidden="true"><line x1="2" y1="7" x2="42" y2="7" stroke="var(--ink)" stroke-width="2.5" stroke-dasharray="10 4 2 4"/></svg><span>Phase line</span></div>
+      </div>
+    </aside>
+  </div>
+
+  <section class="board" aria-labelledby="obj-h">
+    <h2 id="obj-h">Objectives</h2>
+    <p class="board-lede"><strong>The aim is the catch:</strong> trap the lead division's forward detachment and destroy or capture as much of them as you can without losing the anvil. Primary objectives are the plan's steps, shown one phase at a time. Only the anvil can lose the mission; any other failed step costs part of the catch, and a dialog says so. <strong>Every bonus changes the fight that follows</strong>, not just the score.</p>
+    <div class="cols">
+      <div class="card">
+        <h3><span class="n">1</span>The Screen</h3>
+        <div class="obj"><span class="tag pri">Primary</span><span class="name">Sell the retreat</span><span class="eff">Fight on PL BLUE, then yield it by H+12. <b>Held past H+12:</b> HIDE S is exposed.</span></div>
+        <div class="obj"><span class="tag pri">Primary &middot; to the end</span><span class="name">Hold the anvil</span><span class="eff">At all costs. <b>Lost, or Soviets reach the rear exit:</b> defeat.</span></div>
+        <div class="obj"><span class="tag pri">Primary &middot; to the spring</span><span class="name">Hold the shoulder</span><span class="eff"><b>Lost:</b> the north road opens and RESERVE N is revealed early, under attack.</span></div>
+        <div class="obj"><span class="tag bon">Bonus</span><span class="name">Make them pay</span><span class="eff">Destroy 15 first-echelon units before PL BLUE falls. <b>+1 credibility.</b></span></div>
+        <div class="obj"><span class="tag bon">Bonus</span><span class="name">Let them burn the decoys</span><span class="eff">4 of the 8 decoys destroyed while PL BLUE still holds. <b>+1 credibility.</b></span></div>
+      </div>
+      <div class="card">
+        <h3><span class="n">2</span>The Sack</h3>
+        <div class="obj"><span class="tag pri">Primary</span><span class="name">Let them in</span><span class="eff">"Soviet vehicles in the sack: n / S_min." At S_min, Corps asks whether to spring the trap. <b>Not answered by H+30:</b> Corps springs it anyway.</span></div>
+        <div class="obj"><span class="tag bon">Bonus</span><span class="name">Keep the reserves hidden</span><span class="eff">No reserve exposed before the spring. <b>Done:</b> both jaws go in with no Soviet force blocking them. <b>Exposed:</b> a blocking force at that neck, and a tank company stays out of the sack.</span></div>
+        <div class="obj"><span class="tag bon">Bonus</span><span class="name">Make a stand at PL GREEN</span><span class="eff">Hold a neck village for 2:00 once the Soviets reach it, then break contact. <b>+1 credibility:</b> a company waiting at Town NE comes in after all.</span></div>
+        <p class="note">The anvil and the shoulder objectives carry on.</p>
+      </div>
+      <div class="card">
+        <h3><span class="n">3</span>Close the Door</h3>
+        <div class="obj"><span class="tag pri">Primary</span><span class="name">Shut the door</span><span class="eff">Hold NECK MID and NECK S: your units in each, no Soviets, for a short while. <b>Until both are sealed:</b> Soviets that slip out count as escaped.</span></div>
+        <p class="note">The air-assault teams only have to hold NECK MID until the M1A1HA arrive.</p>
+      </div>
+      <div class="card">
+        <h3><span class="n">4</span>The Cauldron</h3>
+        <div class="obj"><span class="tag pri">Primary</span><span class="name">Reduce the pocket</span><span class="eff">It surrenders once its vehicles fall to about 35 % of what was sealed in, with both necks held. A long backstop (out of fuel and ammunition) stops it stalling.</span></div>
+        <div class="obj"><span class="tag pri">Primary &middot; to the end</span><span class="name">Keep the door shut</span><span class="eff">Hold both necks against the relief. <b>A neck falls:</b> the pocket reopens until you retake it.</span></div>
+        <div class="obj"><span class="tag bon">Bonus</span><span class="name">Blind the pocket</span><span class="eff">Its air defence down to one vehicle or none. <b>Done:</b> the Apaches come at once, and a second company follows.</span></div>
+        <div class="obj"><span class="tag bon">Bonus</span><span class="name">Break the relief</span><span class="eff">Destroy 16 relief tanks. <b>Done:</b> the relief's last wave is called off.</span></div>
+      </div>
+    </div>
+
+    <div class="cols two">
+      <div class="card">
+        <h3>Credibility: how much walks in</h3>
+        <p class="note">Three bonuses score a point each: the two in Phase 1 and the stand at PL GREEN. Any two bring the whole main body in. The score is read when the main body is released and again when the stand ends, and a dialog says what the Soviets made of it.</p>
+        <div class="tbl"><table>
+          <thead><tr><th>Score</th><th>Soviet reading</th><th>What happens</th></tr></thead>
+          <tbody>
+            <tr><td class="k">3</td><td>"NATO is routed"</td><td>The whole main body comes in, and one recon probe fewer goes into the forests.</td></tr>
+            <tr><td class="k">2</td><td>"NATO is broken"</td><td>The whole main body comes into the sack.</td></tr>
+            <tr><td class="k">1</td><td>"Probably broken"</td><td>One of the three T-80BV companies waits at Town NE, then joins the relief against the necks.</td></tr>
+            <tr><td class="k">0</td><td>"Too easy"</td><td>Two companies wait, and an extra recon probe goes into the forests.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <h3>Grade</h3>
+        <p class="note">Catch = main-body vehicles destroyed or captured &divide; main-body vehicles in play. Companies held back by low credibility or an exposed reserve still count in that total, so the lie and the screen both raise the ceiling.</p>
+        <div class="tbl"><table>
+          <thead><tr><th>Grade</th><th>Needs</th></tr></thead>
+          <tbody>
+            <tr><td class="k">Total victory</td><td>Catch &ge; 70 %, with the anvil, the shoulder and both necks held</td></tr>
+            <tr><td class="k">Major victory</td><td>Catch &ge; 40 %</td></tr>
+            <tr><td class="k">Minor victory</td><td>The anvil held</td></tr>
+          </tbody>
+        </table></div>
+        <p class="note">Targets scale with difficulty: Make them pay 10 / 15 / 20 kills, decoys 3 / 4 / 5, relief tanks 11 / 16 / 20, surrender at 45 / 35 / 25 %.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="board" aria-labelledby="forces-h">
+    <h2 id="forces-h">Forces and deck</h2>
+    <p class="board-lede">All vanilla units, each one checked against the game's own data. <strong>One designer-tuned deck:</strong> the stock 3rd Armored Division operation deck, reshaped by the script as the plan unfolds. Everything else arrives by script. Counts are for Medium; a squad and its carrier count as two units.</p>
+    <div class="cols three">
+      <div class="card">
+        <h3>Your deck, phase by phase</h3>
+        <div class="step"><span class="when">Base &middot; 3rd AD operation deck</span>
+          <ul class="roster">
+            <li><span>2-32nd Armor: M1A1 Abrams, M1A1(HA) command tank</span><span class="q">15 + 1</span></li>
+            <li><span>M901 ITV &middot; M106A2 mortar</span><span class="q">3 &middot; 4</span></li>
+            <li><span>Mech rifles &middot; M113 ACAV &middot; M60 HMG</span><span class="q">4 &middot; 3 &middot; 1</span></li>
+            <li><span>PIVADS &middot; Chaparral &middot; Stinger</span><span class="q">2 &middot; 2 &middot; 1</span></li>
+            <li><span>4-7th Cavalry: M3A1 CFV &middot; Scouts</span><span class="q">8 &middot; 4</span></li>
+            <li><span>M35 supply</span><span class="q">12</span></li>
+          </ul></div>
+        <div class="step"><span class="when">Start &middot; added</span>
+          <ul class="roster">
+            <li><span>8th ID rearguard, worn: M1 Abrams</span><span class="q">6</span></li>
+            <li><span>Mech rifles in M113A3 &middot; M901 ITV</span><span class="q">6 &middot; 3</span></li>
+            <li><span>M113 Dragon &middot; AH-1F Cobra</span><span class="q">2 &middot; 2</span></li>
+            <li><span>TOW-2 teams &middot; Engineers (Dragon)</span><span class="q">4 &middot; 2</span></li>
+            <li><span>Forest infantry: 3rd AD rifles (Dragon) &middot; Flash engineers</span><span class="q">6 &middot; 2</span></li>
+            <li><span>Forest infantry: Panzergrenadiere &middot; Milan 2</span><span class="q">6 &middot; 2</span></li>
+            <li><span>A-10A [AT] locked: no air corridor yet</span><span class="q">&ndash;</span></li>
+          </ul></div>
+        <div class="step"><span class="when">The spring &middot; added</span>
+          <ul class="roster">
+            <li><span>M1A1(HA) &middot; Leopard 2A4</span><span class="q">4 &middot; 4</span></li>
+            <li><span>OH-58D Kiowa Warrior</span><span class="q">2</span></li>
+            <li><span>A-10A [AT] unlocked</span><span class="q">2</span></li>
+          </ul></div>
+        <div class="step"><span class="when air">Pocket sealed &middot; added</span>
+          <ul class="roster">
+            <li><span>F-4G Wild Weasel (5 Shrikes)</span><span class="q">3</span></li>
+            <li><span>EF-111A Raven jammer</span><span class="q">1</span></li>
+            <li><span>AH-64A Apache, once the Apaches arrive</span><span class="q">2</span></li>
+          </ul></div>
+        <p class="note">Why this base: the 11th ACR deck's badge and its German second-line infantry don't fit a story that no longer has the 11th ACR in it. The 3rd AD deck brings its own 2-32nd Armor and 4-7th Cavalry, which are just right for the anvil and the screen.</p>
+      </div>
+
+      <div class="card">
+        <h3>NATO by script</h3>
+        <div class="step"><span class="when">Start</span>
+          <ul class="roster">
+            <li><span>Decoys: M1 Abrams, broken tracks, weapons out of action</span><span class="q">8</span></li>
+          </ul>
+          <p class="note">Real tanks: the script gives them the game's own broken-track and jammed-weapons criticals, so they can't move or fire. They sit in a fourth, AI-controlled camp; you can't command them, and they don't count in your losses.</p></div>
+        <div class="step"><span class="when">The spring &middot; revealed</span>
+          <ul class="roster">
+            <li><span>North jaw, a 3rd AD company team: M1A1(HA) incl. CO</span><span class="q">11</span></li>
+            <li><span>M2A2 Bradley + rifles &middot; M3A1 CFV</span><span class="q">4 + 4 &middot; 2</span></li>
+            <li><span>PIVADS &middot; FIST-V</span><span class="q">1 &middot; 1</span></li>
+            <li><span>South jaw, a reinforced 5. Pz company: Leopard 2A4 incl. CO</span><span class="q">8</span></li>
+            <li><span>Marder 1A2 + Panzergrenadiere</span><span class="q">3 + 3</span></li>
+            <li><span>Gepard &middot; Luchs</span><span class="q">1 &middot; 1</span></li>
+          </ul></div>
+        <div class="step"><span class="when air">The codeword &middot; air assault</span>
+          <ul class="roster">
+            <li><span>Air cav platoon (reinforced): UH-60A</span><span class="q">4</span></li>
+            <li><span>Air cav troopers &middot; AH-64A overwatch</span><span class="q">4 &middot; 2</span></li>
+          </ul></div>
+        <div class="step"><span class="when air">Phase 4 &middot; air</span>
+          <ul class="roster">
+            <li><span>J-SEAD: V Corps MLRS, scripted strike</span><span class="q">&ndash;</span></li>
+            <li><span>AH-64A [ATGM], 16 Hellfire each</span><span class="q">4</span></li>
+            <li><span>Second company if the pocket is blind</span><span class="q">+4</span></li>
+          </ul>
+          <p class="note">Company size: 6 / 4 / 3 by difficulty. 4 Apaches bring 64 Hellfires per sortie.</p></div>
+      </div>
+
+      <div class="card">
+        <h3>Soviet, all scripted</h3>
+        <div class="step"><span class="when amb">H-hour &middot; hidden battery, 8th Guards Army</span>
+          <ul class="roster">
+            <li><span>BM-27 Uragan &middot; 2S3M Akatsiya</span><span class="q">2 &middot; 4</span></li>
+          </ul></div>
+        <div class="step"><span class="when red">1st echelon &middot; worn 39th GMRD battalion (&minus;) + tank coy &middot; &asymp; 36</span>
+          <ul class="roster">
+            <li><span>T-80B</span><span class="q">10</span></li>
+            <li><span>BMP-2 + motor rifles</span><span class="q">8 + 8</span></li>
+            <li><span>BRDM-2 &middot; BRDM-2 Konkurs &middot; recon squads</span><span class="q">2 &middot; 2 &middot; 2</span></li>
+            <li><span>Shilka &middot; Strela-1 &middot; BMP-1K command</span><span class="q">2 &middot; 1 &middot; 1</span></li>
+          </ul></div>
+        <div class="step"><span class="when red">Recon probes &middot; 15&ndash;25</span>
+          <ul class="roster">
+            <li><span>BRM-1K, BRDM-2 and a recon squad per probe</span><span class="q">3&ndash;5</span></li>
+            <li><span>On Hard, some add a T-80BV platoon</span><span class="q">+3</span></li>
+          </ul></div>
+        <div class="step"><span class="when red">Main body &middot; forward detachment, reinforced T-80BV battalion &middot; &asymp; 69</span>
+          <ul class="roster">
+            <li><span>T-80BV, three companies of 10 + command</span><span class="q">30 + 1</span></li>
+            <li><span>Motor rifle company: BMP-2 + squads &middot; BRDM-2 Konkurs</span><span class="q">10 + 9 &middot; 3</span></li>
+            <li><span>2S3M battery (moving up, silent) &middot; MT-LB supply &middot; BMP-1K</span><span class="q">6 &middot; 3 &middot; 1</span></li>
+            <li><span>Air defence: Tunguska &middot; Osa &middot; Strela-10</span><span class="q">2 &middot; 2 &middot; 2</span></li>
+          </ul></div>
+        <div class="step"><span class="when red">Relief &middot; follow-on division&rsquo;s forward detachment, reinforced T-80U battalion &middot; &asymp; 55+</span>
+          <ul class="roster">
+            <li><span>T-80U, three companies of 10 + command</span><span class="q">30 + 1</span></li>
+            <li><span>Motor rifle company: BMP-2 + squads</span><span class="q">10 + 9</span></li>
+            <li><span>Tunguska &middot; Strela-10</span><span class="q">3 &middot; 2</span></li>
+            <li><span>Mi-24V, if scripted helicopters work</span><span class="q">4</span></li>
+            <li><span>T-80BV companies held back by low credibility or an exposed reserve</span><span class="q">0&ndash;20</span></li>
+          </ul></div>
+        <p class="note"><b>Wild Weasels only hit radar air defence</b> (the Osa and Tunguska). The Strela-10s carry no radar, so your guns have to find them.</p>
+      </div>
+    </div>
+  </section>
+  </div>
+
+  <div class="foot">Operation Open Door &middot; storyline map &middot; the full design is docs/design.md; the example builds the playable core (phases 1&ndash;4)</div>
+</div>
+
+
+<script>
+(function () {
+  const svg = document.getElementById('map');
+  const layers = svg.querySelectorAll('.layer');
+  const viewBtns = document.querySelectorAll('[data-view]');
+  const phaseCards = document.querySelectorAll('.phase');
+
+  // ---- Unit counters, APP-6 style: blue rectangles NATO, red diamonds Soviet. Medium counts; positions in minimap px.
+  // at: phase -> [x, y, label side (r, l, b, t, be, te), extra label dy]. 'all' is the opening laydown.
+  // hid: phases where a NATO group is still hidden. cond: only appears if a rule fires (dashed).
+  // full: phases that show the short composition lines (default: every phase view; never the overview).
+  const P1 = ['all', '1'], P12 = ['all', '1', '2'], P1234 = ['all', '1', '2', '3', '4'];
+  function at(phases, pos) { const o = {}; phases.forEach(function (p) { o[p] = pos; }); return o; }
+  const UNITS = [
+    // NATO
+    { sym: 'mech', ech: '●●●', name: 'TM A · 8 ID', short: ['M1 2 · rifles 2 · ITV'],
+      title: 'Team A, 8th Infantry Division (rearguard)', meta: 'Platoon-sized: the rearguard is the brigade\'s last company team, split across the three towns. Worn (Experience 0). Fights in Town NE, then falls back into the shoulder at H+12.',
+      comp: [ ['M1 Abrams', 2, 'M1_Abrams_US'], ['Mech rifles in M113A3', 2, 'Rifles_US + M113A3_US'], ['M901 ITV', 1, 'M901_TOW_US'] ],
+      at: at(P1, [664, 240, 'l', -4]) },
+    { sym: 'mech', ech: '●●●', name: 'TM B · 8 ID', short: ['M1 2 · rifles 2 · ITV · Dragon'],
+      title: 'Team B, 8th Infantry Division (rearguard)', meta: 'Worn. Fights in Village E, falls back through the passage, stands at NECK MID (PL GREEN) for about 2 minutes, then goes on to the anvil.',
+      comp: [ ['M1 Abrams', 2, 'M1_Abrams_US'], ['Mech rifles in M113A3', 2, 'Rifles_US + M113A3_US'], ['M901 ITV', 1, 'M901_TOW_US'], ['M113 Dragon', 1, 'M113_Dragon_US'] ],
+      at: at(P1, [700, 470, 'l']) },
+    { sym: 'mech', ech: '●●●', name: 'TM C · 8 ID', short: ['M1 2 · rifles 2 · ITV · Dragon'],
+      title: 'Team C, 8th Infantry Division (rearguard)', meta: 'Worn. Fights in Town SE, falls back through the defile, stands at NECK S (PL GREEN) for about 2 minutes, then goes on to the anvil.',
+      comp: [ ['M1 Abrams', 2, 'M1_Abrams_US'], ['Mech rifles in M113A3', 2, 'Rifles_US + M113A3_US'], ['M901 ITV', 1, 'M901_TOW_US'], ['M113 Dragon', 1, 'M113_Dragon_US'] ],
+      at: at(P1, [645, 590, 'l']) },
+    { sym: 'avn', ech: '●●', name: 'AH-1F · 8 ID', short: ['Cobra 2'],
+      title: '8th ID attack helicopters', meta: 'Cover the rearguard\'s withdrawal, then rearm behind the anvil.',
+      comp: [ ['AH-1F Cobra (TOW)', 2, 'AH1F_Cobra_US'] ],
+      at: at(P1, [604, 430, 'l']) },
+    { sym: 'mech', ech: '●●●', name: 'SHOULDER · 3 AD', short: ['M1A1 3 · rifles 4 · TOW 2', 'eng 2 · Stinger'], full: ['1', '2'],
+      title: 'Shoulder team, 3rd Armored Division (a reinforced platoon)', meta: 'Dug in at the north road\'s east mouth. Never yields. Team A of the 8th ID joins it at H+12.',
+      comp: [ ['M1A1 Abrams', 3, 'M1A1_Abrams_US'], ['Mech rifles', 4, 'Rifles_US'], ['TOW-2 team', 2, 'ATteam_TOW2_US'], ['Engineers (Dragon)', 2, 'Engineers_Dragon_US'], ['Stinger team', 1, 'MANPAD_Stinger_C_US'] ],
+      at: at(P1234, [548, 292, 'r', -8]) },
+    { sym: 'inf', ech: '●●●', name: 'SCREEN · NORTH TRACK', short: ['M3A1 2 · rifles 3 · Flash'],
+      title: 'Screen post, north forest track', meta: '4-7th Cavalry eyes, 3rd AD infantry teeth. Also covers the shoulder\'s back.',
+      comp: [ ['M3A1 Bradley CFV', 2, 'M3A1_Bradley_CFV_US'], ['Mech rifles (Dragon), dismounted', 3, 'Rifles_half_Dragon_US'], ['Engineers (M202 Flash)', 1, 'Engineers_Flash_US'] ],
+      at: at(P12, [440, 177, 'l']) },
+    { sym: 'inf', ech: '●●●', name: 'SCREEN · CENTRAL TRACK', short: ['M3A1 2 · scouts · rifles 3', 'Flash'],
+      title: 'Screen post, central forest track', meta: 'Guards the M1A1HA\'s own route to NECK MID.',
+      comp: [ ['M3A1 Bradley CFV', 2, 'M3A1_Bradley_CFV_US'], ['Scouts', 1, 'Scout_US'], ['Mech rifles (Dragon), dismounted', 3, 'Rifles_half_Dragon_US'], ['Engineers (M202 Flash)', 1, 'Engineers_Flash_US'] ],
+      at: at(P12, [470, 326, 'r']) },
+    { sym: 'inf', ech: '●●●', name: 'SCREEN · SW TRACK', short: ['M3A1 2 · PzGren 3 · Milan'],
+      title: 'Screen post, south-west track', meta: 'A platoon of the Leopard company\'s Panzergrenadiere, dismounted to guard their hide. Their Marders stay in HIDE S.',
+      comp: [ ['M3A1 Bradley CFV', 2, 'M3A1_Bradley_CFV_US'], ['Panzergrenadiere, dismounted', 3, 'Panzergrenadier_IFV_RFA'], ['Milan 2 team', 1, 'ATteam_Milan_2_RFA'] ],
+      at: at(P12, [449, 692, 'l']) },
+    { sym: 'inf', ech: '●●●', name: 'SCREEN · SE TRACK', short: ['M3A1 2 · scouts', 'PzGren 3 · Milan'],
+      title: 'Screen post, south-east track', meta: 'Faces the track from Town SE toward HIDE S\'s east side.',
+      comp: [ ['M3A1 Bradley CFV', 2, 'M3A1_Bradley_CFV_US'], ['Scouts', 1, 'Scout_US'], ['Panzergrenadiere, dismounted', 3, 'Panzergrenadier_IFV_RFA'], ['Milan 2 team', 1, 'ATteam_Milan_2_RFA'] ],
+      at: at(P12, [593, 683, 'r']) },
+    { sym: 'armor', ech: '●●●', name: 'E-2-32 · NORTH', short: ['M1A1 4 · TOW 2 · ACAV'], full: ['1'],
+      title: 'Anvil north: a platoon of Team E, 2-32nd Armor (3rd AD)', meta: 'Ties the anvil into the central forest\'s south-west corner.',
+      comp: [ ['M1A1 Abrams', 4, 'M1A1_Abrams_US'], ['TOW-2 team', 2, 'ATteam_TOW2_US'], ['M113 ACAV', 1, 'M113_ACAV_US'] ],
+      at: at(P1234, [172, 300, 'b']) },
+    { sym: 'armor', ech: '●●●', name: 'E-2-32 · CENTRE', short: ['M1A1(HA) CO · M1A1 4', 'ITV 3 · ACAV · M60'], full: ['1'],
+      title: 'Anvil centre: Team E, 2-32nd Armor (3rd AD), with the company commander', meta: 'The longest sightlines onto the lane exits across the kill zone.',
+      comp: [ ['M1A1(HA) command tank', 1, 'M1A1HA_Abrams_CMD_US'], ['M1A1 Abrams', 4, 'M1A1_Abrams_US'], ['M901A1 ITV', 3, 'M901A1_ITW_US'], ['M113 ACAV', 1, 'M113_ACAV_US'], ['M60 HMG team', 1, 'HMGteam_M60_US'] ],
+      at: at(P1234, [138, 470, 'r']) },
+    { sym: 'armor', ech: '●●●', name: 'E-2-32 · SOUTH', short: ['M1A1 4 · ACAV · Chaparral 2'], full: ['1'],
+      title: 'Anvil south at Town SW: a platoon of Team E, 2-32nd Armor (3rd AD)', meta: 'Anchors the anvil on Town SW.',
+      comp: [ ['M1A1 Abrams', 4, 'M1A1_Abrams_US'], ['M113 ACAV', 1, 'M113_ACAV_US'], ['M48 Chaparral', 2, 'M48_Chaparral_MIM72F_US'] ],
+      at: at(P1234, [116, 655, 'r']) },
+    { sym: 'arty', ech: '●●●', name: 'SUPPORT · 2-32', short: ['M106 4 · PIVADS 2 · scouts 2'], full: ['1'],
+      title: 'Anvil support: 2-32nd Armor\'s mortar platoon and attachments', meta: 'Mortars, gun air defence and the anvil\'s observation posts.',
+      comp: [ ['M106A2 mortar', 4, 'M106A2_HOWZ_US'], ['M163 PIVADS', 2, 'M163_PIVADS_US'], ['Scouts (OPs)', 2, 'Scout_US'] ],
+      at: at(P1234, [62, 560, 'r']) },
+    { sym: 'supply', ech: '', name: 'TRAINS · 3 AD', short: ['M35 supply 12 · M577 · CPs'], full: ['1'],
+      title: 'Trains and command', meta: 'Behind the anvil, near the rear exit.',
+      comp: [ ['M35 supply truck', 12, 'M35_supply_US'], ['M577 command post', 1, 'M577_US'], ['M1025 Humvee CP', 2, 'M1025_Humvee_CMD_US'] ],
+      at: at(P1234, [60, 905, 'r']) },
+    { sym: 'mech', ech: '●●●', name: '8 ID REMNANTS', short: ['Tm B + C · Cobras'], full: ['2'],
+      title: '8th ID rearguard, regrouped behind the anvil', meta: 'Whatever survives of Teams B and C after the withdrawal and the PL GREEN stand, plus the Cobras.',
+      comp: [ ['M1 Abrams', '≤ 4', 'M1_Abrams_US'], ['Mech rifles in M113A3', '≤ 4', 'Rifles_US + M113A3_US'], ['M901 ITV', '≤ 2', 'M901_TOW_US'], ['M113 Dragon', '≤ 2', 'M113_Dragon_US'], ['AH-1F Cobra', 2, 'AH1F_Cobra_US'] ],
+      at: at(['2', '3', '4'], [70, 610, 'r']) },
+    { sym: 'armor', ech: 'I', name: 'TM · 3 AD', short: ['M1A1HA 11 · M2A2 4 · M3A1 2'], hid: ['all', '1', '2'],
+      title: 'North jaw: 3rd Armored Division M1A1HA company team', meta: 'Hidden at RESERVE N behind the shoulder until the spring, then swings south through the central forest to NECK MID.',
+      comp: [ ['M1A1(HA) Abrams', 10, 'M1A1HA_Abrams_US'], ['M1A1(HA) command tank', 1, 'M1A1HA_Abrams_CMD_US'], ['M2A2 Bradley + rifles (AT4)', '4 + 4', 'M2A2_Bradley_IFV_US + Rifles_half_AT4_US'], ['M3A1 Bradley CFV', 2, 'M3A1_Bradley_CFV_US'], ['M163 PIVADS', 1, 'M163_PIVADS_US'], ['M981 FIST-V', 1, 'M981_FISTV_US'] ],
+      at: { all: [352, 270, 'b'], 1: [352, 270, 'b'], 2: [352, 270, 'b'], 3: [382, 330, 'r'], 4: [428, 398, 'r'] } },
+    { sym: 'armor', ech: 'I', name: 'PZ.KP · 5 PZ', short: ['Leopard 2A4 8 · Marder 3', 'Gepard · Luchs'], hid: ['all', '1', '2'],
+      title: 'South jaw: a reinforced Panzer company, 5. Panzerdivision', meta: 'Leopard 2A4 with a Panzergrenadier platoon in Marders, a Gepard and a Luchs. Hidden in HIDE S until the spring, then drives north on forest tracks to NECK S. The grenadier company\'s other two platoons man the south screen posts.',
+      comp: [ ['Leopard 2A4', 7, 'Leopard_2A4_RFA'], ['Leopard 2A4 command tank', 1, 'Leopard_2A4_CMD_RFA'], ['Marder 1A2 + Panzergrenadiere', '3 + 3', 'Marder_1A2_RFA + Panzergrenadier_IFV_RFA'], ['Gepard', 1, 'Gepard_1A2_RFA'], ['Luchs', 1, 'Luchs_A1_RFA'] ],
+      at: { all: [522, 716, 'b', 38], 1: [522, 716, 'b', 38], 2: [522, 716, 'b', 38], 3: [530, 662, 'r'], 4: [494, 606, 'b'] } },
+    { sym: 'inf', ech: '●●●', name: 'AIR CAV · 3 AD', short: ['UH-60A 4 · troopers 4 · AH-64 2'], full: ['3'],
+      title: 'Air assault: a reinforced air cav platoon, 3rd AD aviation brigade', meta: 'Lands at LZ MID on the codeword and holds the passage village until the M1A1HA arrive. The troopers carry M16s, an M60 and LAWs; the Apache pair does the tank-killing.',
+      comp: [ ['UH-60A Black Hawk', 4, 'UH60A_Black_Hawk_US'], ['Air cav troopers', 4, 'AeroRifles_US'], ['AH-64A [ATGM] overwatch', 2, 'AH64_Apache_emp1_US'] ],
+      at: { 3: [372, 374, 'l', -12], 4: [370, 418, 'l'] } },
+    { sym: 'avn', ech: 'I', name: 'AH-64A · 3 AD', short: ['4 (+4 if the pocket is blind)', '16 Hellfire each'],
+      title: 'Apache company, 3rd AD attack helicopter battalion', meta: 'Arrives once the pocket\'s air defence is down to one vehicle, or 5 min after sealing. 6 / 4 / 3 by difficulty.',
+      comp: [ ['AH-64A [ATGM]', 4, 'AH64_Apache_emp1_US'], ['Second company if B4 is done', '+4', 'AH64_Apache_emp1_US'], ['AH-64A cards to buy', 2, 'AH64_Apache_US'] ],
+      at: { 4: [290, 530, 'r'] } },
+    { sym: 'air', ech: '', name: 'SEAD · DECK CARDS', short: ['F-4G 3 · EF-111A 1', 'J-SEAD: V Corps MLRS'],
+      title: 'Suppression of the pocket\'s air defence', meta: 'The J-SEAD strike is scripted. The F-4Gs (Shrikes) only hit radar air defence (Osa, Tunguska); the Strela-10s need guns.',
+      comp: [ ['F-4G Wild Weasel', 3, 'F4_Wild_Weasel_US'], ['EF-111A Raven (jammer)', 1, 'EF111_Raven_US'], ['J-SEAD fire mission', 'script', 'M270_MLRS_cluster_US (fallback)'] ],
+      at: { 4: [330, 975, 'r'] } },
+
+    // Soviet (all scripted spawns)
+    { red: true, sym: 'arty', ech: 'I', name: 'ARTY · 8 GDS ARMY', short: ['BM-27 2 · 2S3M 4', 'hidden, script-fired'],
+      title: 'Soviet army artillery, a battery-sized detachment (hidden corner)', meta: 'Script-fired: it opens the mission on PL BLUE and opens the relief\'s attack on the necks. The AI never moves it.',
+      comp: [ ['BM-27 Uragan', 2, 'BM27_Uragan_SOV'], ['2S3M Akatsiya', 4, '2S3M_Akatsiya_SOV'] ],
+      at: at(['all', '1', '4'], [735, 60, 'be']) },
+    { red: true, sym: 'mech', ech: 'I', name: 'MR COY · 39 GMRD', short: ['T-80B 4 · BMP-2 3 + MR 3', 'BRDM-2 · Shilka'],
+      title: 'First echelon, north company group (a worn 39th GMRD battalion with a tank company)', meta: 'Attacks Town NE behind the opening barrage; its survivors then fix the shoulder.',
+      comp: [ ['T-80B', 4, 'T80B_SOV'], ['BMP-2 + motor rifles', '3 + 3', 'BMP_2_SOV + MotRifles_SOV'], ['BRDM-2', 1, 'BRDM_2_SOV'], ['ZSU-23-4 Shilka', 1, 'ZSU_23_Shilka_SOV'] ],
+      at: { all: [600, 110, 'r', 10], 1: [600, 110, 'l'] } },
+    { red: true, sym: 'mech', ech: 'I', name: 'MR COY · 39 GMRD', short: ['T-80B 3 · BMP-2 3 + MR 3', 'Konkurs · BRDM-2 · scouts'],
+      title: 'First echelon, east company group (39th GMRD)', meta: 'Attacks Village E.',
+      comp: [ ['T-80B', 3, 'T80B_SOV'], ['BMP-2 + motor rifles', '3 + 3', 'BMP_2_SOV + MotRifles_SOV'], ['BRDM-2 Konkurs', 1, 'BRDM_2_Konkurs_SOV'], ['BRDM-2', 1, 'BRDM_2_SOV'], ['Recon squad', 1, 'Scout_SOV'] ],
+      at: at(P1, [746, 470, 'te']) },
+    { red: true, sym: 'mech', ech: 'I', name: 'MR COY · 39 GMRD', short: ['T-80B 3 · BMP-2 2 + MR 2', 'Konkurs · Shilka · Strela-1'],
+      title: 'First echelon, south-east company group (39th GMRD)', meta: 'Attacks Town SE, with the battalion\'s command group.',
+      comp: [ ['T-80B', 3, 'T80B_SOV'], ['BMP-2 + motor rifles', '2 + 2', 'BMP_2_SOV + MotRifles_SOV'], ['BRDM-2 Konkurs', 1, 'BRDM_2_Konkurs_SOV'], ['ZSU-23-4 Shilka', 1, 'ZSU_23_Shilka_SOV'], ['BRDM-2 Strela-1', 1, 'BRDM_Strela_1_SOV'], ['Recon squad', 1, 'Scout_SOV'], ['BMP-1K command', 1, 'BMP_1_CMD_SOV'] ],
+      at: at(P1, [746, 600, 'be', 4]) },
+    { red: true, sym: 'mech', ech: 'I', name: 'FIXING · 39 GMRD', short: ['1st echelon survivors'],
+      title: 'Fixing attack on the shoulder', meta: 'What is left of the 39th GMRD north group keeps the shoulder busy, so it can\'t fire into the passage.',
+      comp: [ ['T-80B (survivors)', '≤ 4', 'T80B_SOV'], ['BMP-2 + motor rifles (survivors)', '≤ 3 + 3', 'BMP_2_SOV + MotRifles_SOV'] ],
+      at: { 2: [640, 250, 'l'] } },
+    { red: true, sym: 'armor', ech: 'I', name: 'TK COY · T-80BV', short: ['T-80BV 10 + FD command'],
+      title: 'Forward detachment, lead tank company', meta: 'The 5th GTA lead division\'s forward detachment, a reinforced T-80BV battalion, races through the passage for a deep objective. This company leads, with the detachment commander.',
+      comp: [ ['T-80BV', 10, 'T80BV_SOV'], ['T-80BV command (detachment commander)', 1, 'T80BV_CMD_SOV'] ],
+      at: { 2: [255, 425, 'l'], 3: [255, 425, 'l'] } },
+    { red: true, sym: 'armor', ech: 'I', name: 'TK COY · T-80BV', short: ['T-80BV 10'],
+      title: 'Forward detachment, second tank company', meta: 'Through the defile and into the south of the kill zone.',
+      comp: [ ['T-80BV', 10, 'T80BV_SOV'] ],
+      at: { 2: [230, 700, 'b'], 3: [230, 700, 'b'] } },
+    { red: true, sym: 'armor', ech: 'I', name: 'TK COY · T-80BV', short: ['T-80BV 10'],
+      title: 'Forward detachment, third tank company', meta: 'Following through the passage. If credibility is low, this company is the one held back at Town NE (then the second as well, at 0).',
+      comp: [ ['T-80BV', 10, 'T80BV_SOV'] ],
+      at: { 2: [500, 400, 'b'], 3: [500, 400, 'b', -6] } },
+    { red: true, sym: 'mech', ech: 'I', name: 'MR COY · BMP-2', short: ['BMP-2 10 + MR 9 · Konkurs 3'],
+      title: 'Forward detachment, motor rifle company (reinforced)', meta: 'Comes down the defile behind the tanks, with the Konkurs section, the command BMP and supply.',
+      comp: [ ['BMP-2 + motor rifles', '10 + 9', 'BMP_2_SOV + MotRifles_SOV'], ['BRDM-2 Konkurs', 3, 'BRDM_2_Konkurs_SOV'], ['BMP-1K command', 1, 'BMP_1_CMD_SOV'], ['MT-LB supply', 3, 'MTLB_supply_SOV'] ],
+      at: { 2: [560, 520, 'r'], 3: [330, 600, 'b'] } },
+    { red: true, sym: 'ad', ech: 'I', name: 'AIR DEFENCE', short: ['Tunguska 2 · Osa 2 · Strela-10 2'], full: ['2', '3'],
+      title: 'Forward detachment air defence battery (Pocket_AD)', meta: 'Moves into the sack with the main body. In phase 4 the J-SEAD strike, the Wild Weasels and your guns have to clear it before the Apaches go in (B4).',
+      comp: [ ['2K22 Tunguska', 2, 'Tunguska_2K22_SOV'], ['9K33 Osa', 2, 'Osa_9K33M3_SOV'], ['MT-LB Strela-10', 2, 'MTLB_Strela10_SOV'] ],
+      at: { 2: [290, 540, 'r'], 3: [290, 540, 'r'], 4: [330, 480, 'r'] } },
+    { red: true, sym: 'arty', ech: 'I', name: 'BTRY · 2S3M', short: ['moving up, silent'],
+      title: 'Forward detachment\'s attached battery', meta: 'Moving up behind an advance that thinks NATO is beaten, so there are no scripted fires in the sack.',
+      comp: [ ['2S3M Akatsiya', 6, '2S3M_Akatsiya_SOV'] ],
+      at: { 2: [690, 430, 'l'], 3: [690, 430, 'l'] } },
+    { red: true, cond: true, sym: 'armor', ech: 'I', name: 'HELD BACK?', short: ['T-80BV coy if credibility < 2'],
+      title: 'Held-back tank company (only if credibility is below 2)', meta: 'Waits at the Town NE junction, outside the sack, and joins the relief in phase 4. Two companies if credibility is 0. A successful stand at PL GREEN sends one of them into the sack after all.',
+      comp: [ ['T-80BV', 10, 'T80BV_SOV'] ],
+      at: { 2: [720, 180, 'l'] } },
+    { red: true, cond: true, sym: 'armor', ech: 'I', name: 'FLANK GUARD?', short: [],
+      title: 'Flank guard (only if HIDE S is exposed)', meta: 'A T-80BV company with the detachment\'s Konkurs section takes post at the defile facing south. It comes from a held-back company if there is one; otherwise it leaves the main body and stays out of the sack.',
+      comp: [ ['T-80BV', 10, 'T80BV_SOV'], ['BRDM-2 Konkurs', 3, 'BRDM_2_Konkurs_SOV'] ],
+      at: { 2: [512, 622, 'b'] } },
+    { red: true, sym: 'armor', ech: 'II', name: 'POCKET N · FD (−)', short: ['T-80BV ≤ 21'],
+      title: 'Trapped: the forward detachment\'s northern part', meta: 'Survivors of the lead and third tank companies. Cut off at 25 % fuel; tries to break out toward NECK MID.',
+      comp: [ ['T-80BV (survivors), incl. command', '≤ 21', 'T80BV_SOV'] ],
+      at: { 4: [200, 430, 'l'] } },
+    { red: true, sym: 'mech', ech: 'II', name: 'POCKET S · FD (−)', short: ['T-80BV ≤ 10 · BMP-2 ≤ 10'],
+      title: 'Trapped: the forward detachment\'s southern part', meta: 'Survivors of the second tank company and the motor rifle company. Tries to break out toward NECK S.',
+      comp: [ ['T-80BV (survivors)', '≤ 10', 'T80BV_SOV'], ['BMP-2 + motor rifles (survivors)', '≤ 10 + 9', 'BMP_2_SOV + MotRifles_SOV'], ['BRDM-2 Konkurs', '≤ 3', 'BRDM_2_Konkurs_SOV'], ['2S3M (caught moving up)', '≤ 6', '2S3M_Akatsiya_SOV'] ],
+      at: { 4: [300, 628, 'r'] } },
+    { red: true, sym: 'armor', ech: 'II', name: 'RELIEF N · T-80U (−)', short: ['T-80U 20 + cmd · Tunguska 2'],
+      title: 'Relief, northern part: two tank companies of the follow-on division\'s forward detachment (a reinforced T-80U battalion)', meta: 'Hits NECK MID from the north-east behind the relief barrage. T-80BV companies held back earlier join it.',
+      comp: [ ['T-80U', 20, 'T80U_SOV'], ['T-80U command', 1, 'T80U_CMD_SOV'], ['2K22 Tunguska', 2, 'Tunguska_2K22_SOV'], ['MT-LB Strela-10', 1, 'MTLB_Strela10_SOV'] ],
+      at: { 4: [640, 330, 'b'] } },
+    { red: true, sym: 'mech', ech: 'II', name: 'RELIEF S · T-80U (−)', short: ['T-80U 10 · BMP-2 10 + MR 9'],
+      title: 'Relief, southern part: a tank company and the motor rifle company of the T-80U forward detachment', meta: 'Hits NECK S from the east. Breaking the relief (B5) calls off its last wave.',
+      comp: [ ['T-80U', 10, 'T80U_SOV'], ['BMP-2 + motor rifles', '10 + 9', 'BMP_2_SOV + MotRifles_SOV'], ['2K22 Tunguska', 1, 'Tunguska_2K22_SOV'], ['MT-LB Strela-10', 1, 'MTLB_Strela10_SOV'], ['Mi-24V, only if scripted helicopter spawns work', 4, 'Mi_24V_AT_SOV'] ],
+      at: { 4: [640, 575, 't'] } },
+  ];
+  // Soviet recon probes on the four forest tracks (phase 2).
+  [ [500, 124, 'r'], [548, 380, 'b'], [400, 650, 'l'], [626, 648, 'r'] ].forEach(function (p) {
+    UNITS.push({ red: true, sym: 'recon', ech: '●●●', name: 'RECON', short: [],
+      title: 'Recon probe on a forest track', meta: 'From the lead division\'s recon battalion. A probe that stays ~20 s in a reserve\'s ring exposes it (§5.8). On Hard some probes add a T-80BV platoon.',
+      comp: [ ['BRM-1K', 1, 'BRM_1_SOV'], ['BRDM-2', 1, 'BRDM_2_SOV'], ['Recon squad', 1, 'Scout_SOV or HvyScout_SOV'] ],
+      at: { 2: p } });
+  });
+  // Decoys: one dashed counter per town, 8 hulls in all.
+  [ ['Town NE', 734, 240, 'b', 2, 1], ['Village E', 712, 518, 'b', 1, 1], ['Town SE', 650, 550, 'l', 1, 2] ].forEach(function (d) {
+    UNITS.push({ sym: 'armor', decoy: true, ech: '', name: 'DECOYS ×' + (d[4] + d[5]), short: [],
+      title: 'Decoys, ' + d[0], meta: 'Real 8th ID M1s with broken tracks and their weapons out of action (stock critical effects), in their own AI-controlled camp: they cannot move or fire, and you do not command them. Only kills before PL BLUE falls count (B2).',
+      comp: [ ['M1 Abrams, broken tracks, weapons out', d[4] + d[5], 'M1_Abrams_US'] ],
+      at: at(P1, [d[1], d[2], d[3]]) });
+  });
+
+  const NS = 'http://www.w3.org/2000/svg';
+  const unitsG = document.getElementById('units');
+  const info = document.getElementById('unitinfo');
+  const INFO_HINT = '<div class="ui-meta">Tap a counter for its full composition. Counts are for Medium difficulty.</div>';
+  function mk(tag, attrs, parent) {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  // Frame half-sizes: NATO rectangle 36 x 24; Soviet (hostile) diamond 40 x 40.
+  // Glyphs fill the rectangle, or the square inside the diamond (+-10).
+  function glyph(g, sym, red) {
+    const a = red ? 10 : 18, b = red ? 10 : 12;
+    const X = 'M ' + -a + ' ' + -b + ' L ' + a + ' ' + b + ' M ' + -a + ' ' + b + ' L ' + a + ' ' + -b;
+    const ell = function () { mk('ellipse', { cx: 0, cy: 0, rx: red ? 9 : 11, ry: red ? 5 : 6, class: 'gl' }, g); };
+    if (sym === 'armor') ell();
+    else if (sym === 'mech') { mk('path', { d: X, class: 'gl' }, g); ell(); }
+    else if (sym === 'inf') mk('path', { d: X, class: 'gl' }, g);
+    else if (sym === 'recon') mk('path', { d: 'M ' + -a + ' ' + b + ' L ' + a + ' ' + -b, class: 'gl' }, g);
+    else if (sym === 'arty') mk('circle', { cx: 0, cy: 0, r: 4.2, class: 'gf' }, g);
+    else if (sym === 'ad') mk('path', { d: 'M -11 8 Q 0 -10 11 8', class: 'gl' }, g);
+    else if (sym === 'avn') mk('path', { d: 'M -11 -6 L 11 6 L 11 -6 L -11 6 Z', class: 'gl' }, g);
+    else if (sym === 'supply') mk('path', { d: 'M -18 6 L 18 6', class: 'gl' }, g);
+    else if (sym === 'air') mk('path', { d: 'M -11 1 L 11 1 M 0 -7 L 0 8 M -5 8 L 5 8', class: 'gl' }, g);
+  }
+
+  function showInfo(u) {
+    const rows = u.comp.map(function (c) {
+      return '<li><span>' + c[0] + '</span><span class="q">&times; ' + c[1] + '</span><code>' + c[2] + '</code></li>';
+    }).join('');
+    info.innerHTML = '<div class="ui-title">' + u.title + '</div><div class="ui-meta">' + u.meta + '</div><ul>' + rows + '</ul>';
+  }
+
+  function renderUnits(v) {
+    unitsG.textContent = '';
+    info.innerHTML = INFO_HINT;
+    UNITS.forEach(function (u) {
+      const pos = u.at[v];
+      if (!pos) return;
+      const x = pos[0], y = pos[1], side = pos[2], extra = pos[3] || 0;
+      const hidden = u.hid && u.hid.includes(v);
+      const cls = 'ctr' + (u.red ? ' red' : '') + (hidden ? ' hid' : '') + (u.decoy || u.cond ? ' dashed' : '');
+      const g = mk('g', { class: cls, transform: 'translate(' + x + ' ' + y + ')', tabindex: 0, role: 'button', 'aria-label': u.title }, unitsG);
+      const hw = u.red ? 20 : 18, hh = u.red ? 20 : 12;
+      if (u.red) mk('path', { d: 'M 0 -20 L 20 0 L 0 20 L -20 0 Z', class: 'fr' }, g);
+      else mk('rect', { x: -hw, y: -hh, width: 2 * hw, height: 2 * hh, class: 'fr' }, g);
+      glyph(g, u.sym, u.red);
+      if (u.ech) mk('text', { x: 0, y: -hh - 3, 'text-anchor': 'middle', class: 'ech' }, g).textContent = u.ech;
+      // The overview shows names only; a phase view adds the short composition where it fits.
+      const showShort = v !== 'all' && (!u.full || u.full.includes(v));
+      const lines = [u.name + (hidden ? ' · HIDDEN' : '')].concat(showShort ? u.short : []);
+      const n = lines.length;
+      let anchor = 'start', lx = hw + 5, ly = -1;
+      if (side === 'l') { anchor = 'end'; lx = -hw - 5; }
+      else if (side === 'b' || side === 'be') { anchor = side === 'b' ? 'middle' : 'end'; lx = side === 'b' ? 0 : hw - 2; ly = hh + 16; }
+      else if (side === 't' || side === 'te') { anchor = side === 't' ? 'middle' : 'end'; lx = side === 't' ? 0 : hw - 2; ly = -hh - 8 - (u.ech ? 12 : 0) - (n - 1) * 14; }
+      ly += extra;
+      lines.forEach(function (t, i) {
+        mk('text', { x: lx, y: ly + i * 14, 'text-anchor': anchor, class: i ? 'ln2' : 'ln1' }, g).textContent = t;
+      });
+      function pick() {
+        unitsG.querySelectorAll('.ctr.sel').forEach(function (n) { n.classList.remove('sel'); });
+        g.classList.add('sel');
+        showInfo(u);
+      }
+      g.addEventListener('click', pick);
+      g.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+    });
+  }
+
+  function setCounters(c) {
+    svg.setAttribute('data-counters', c);
+    info.hidden = c !== 'on';
+    document.querySelectorAll('.seg button[data-counters]').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.counters === c));
+    });
+    try { localStorage.setItem('opendoor-counters', c); } catch (e) {}
+  }
+  document.querySelectorAll('.seg button[data-counters]').forEach(function (b) {
+    b.addEventListener('click', function () { setCounters(b.dataset.counters); });
+  });
+  let counters = 'on';
+  try { counters = localStorage.getItem('opendoor-counters') || 'on'; } catch (e) {}
+  setCounters(counters === 'off' ? 'off' : 'on');
+
+  function setView(v) {
+    svg.setAttribute('data-view', v);
+    layers.forEach(function (g) {
+      const show = v === 'all' || g.dataset.phase === v;
+      if (show) g.removeAttribute('hidden'); else g.setAttribute('hidden', '');
+    });
+    document.querySelectorAll('.seg button[data-view]').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.view === v));
+    });
+    phaseCards.forEach(function (c) {
+      c.setAttribute('aria-current', String(c.dataset.view === v));
+    });
+    renderUnits(v);
+    try { localStorage.setItem('opendoor-view', v); } catch (e) {}
+  }
+
+  // The base map is the game's own picture, so it is not shipped: load one from your install. The op's build writes
+  // od_overlay.png (Geisa's Preview with every item); any picture of Geisa's minimap at 768 x 1024 or a multiple works.
+  document.getElementById('base-file').addEventListener('change', function (e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const img = document.getElementById('base');
+    img.setAttribute('href', URL.createObjectURL(file));
+    img.removeAttribute('hidden');
+  });
+
+  viewBtns.forEach(function (el) {
+    el.addEventListener('click', function () { setView(el.dataset.view); });
+    if (el.classList.contains('phase')) {
+      el.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setView(el.dataset.view); }
+      });
+    }
+  });
+
+  let start = 'all';
+  try { start = localStorage.getItem('opendoor-view') || 'all'; } catch (e) {}
+  if (!['all', '1', '2', '3', '4'].includes(start)) start = 'all';
+  setView(start);
+
+})();
+</script>
