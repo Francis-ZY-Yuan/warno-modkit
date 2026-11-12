@@ -26,6 +26,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+# What fetches a declared stock file an extraction lacks (one made before a component declared it, say).
+SETUP_FIX = ("run python -m modkit.core.setup check, then python -m modkit.core.setup extract (the warno-setup "
+             "skill)")
+
 
 @dataclass(frozen=True)
 class Stock:

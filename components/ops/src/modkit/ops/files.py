@@ -6,17 +6,13 @@ import os
 from typing import Iterable
 
 from modkit.core import paths
+from modkit.core.stock import SETUP_FIX  # what fetches a missing stock file; gates and storyboard import it from here
 
 
 def long_path(path: str) -> str:
     """Absolute path usable beyond MAX_PATH on Windows (some voice file names are ~95 chars)."""
     path = os.path.abspath(path)
     return "\\\\?\\" + path if os.name == "nt" and not path.startswith("\\\\?\\") else path
-
-
-# What fetches a declared stock file an extraction lacks (one made before a component declared it, say).
-SETUP_FIX = ("run python -m modkit.core.setup check, then python -m modkit.core.setup extract (the warno-setup "
-             "skill)")
 
 
 def _missing(path: str, exc: FileNotFoundError) -> FileNotFoundError:

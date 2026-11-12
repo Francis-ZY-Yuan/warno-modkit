@@ -30,4 +30,13 @@ STOCK_PATHS = (
       for name in ("_2x2_Hesse_2vs2_CONQ", "_3x3_Kreide_10vs10_CONQ", "_3x3_UrbanFrontlines_10vs10_CONQ")),
     Stock("basemaps/_4x2_Isura/data", packs=("_4x2_Isura_Definition",), latest=True, include=("NDF/Maps/*.txn",),
           why="one stock map's own NDF files (MapConstante, MapDefinition, MapLoader): ndfrules' corpus"),
+
+    # The game's own dictionaries, which glossary.stock_dictionaries finds with every other stock dictionary.
+    Stock("localisation", packs=("ZZ_1",), include=("Localisation/*.dic",),
+          why="the game's own dictionaries in all eight languages (menus, options, maps, units, unit names: "
+              "Localisation/Localisation/*, Localisation/Gameplay/Unit/Names/NAMES_*), the newest copy of each; the "
+              "older archives' AllPlatforms/ copies, each with a newer twin here, are left out. Read through "
+              "glossary.stock_dictionaries: the game's own text for a term or a token in every language "
+              "(modkit.core.glossary), and, with the scenarios' dictionaries, the characters ops' glyph gate admits "
+              "in each language (gates.check_strings)"),
 )

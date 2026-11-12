@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import argparse
 import functools
-import glob
 import os
 import re
 import sys
@@ -30,6 +29,7 @@ from typing import Callable, Mapping, Sequence
 
 from modkit.core import edat, gamebuild, ndfbin, ndfrules, paths, trad, txntag
 from modkit.core.gates import CheckError, check, run_gate, unfired
+from modkit.core.glossary import stock_dictionaries
 from modkit.core.ndfbin import Value
 from modkit.core.packaging import clean_out, write_manifest, write_mod_files
 from modkit.ops import INGAME_DIC
@@ -220,11 +220,6 @@ def plan(profile: OpProfile, content: Content) -> Plan:
 
 
 # --------------------------------------------------------------------------- gates
-
-def sc_dictionaries() -> list[str]:
-    """Every stock Simplified-Chinese dictionary of the extraction: the characters the game's font has."""
-    return sorted(glob.glob(os.path.join(str(paths.extracted_root()), "**", "*-SC.dic"), recursive=True))
-
 
 def check_generated(profile: OpProfile, content: Content, items: list[Item], run: GateRun | None = None) -> str:
     """Gate 2 on every generated ndfbin: canonical layout, only stock shapes (plus the content's admitted ones on
@@ -422,7 +417,7 @@ def build(profile: OpProfile, content: Content, out_dir: str) -> list[Item]:
           f"{content.mod_name}), {len(content.items)} LevelDesign items"
           + ("" if content.script is not None else "; the template's script"))
     print("gate 1 strings: " + str(g("strings", gates.check_strings, content.name, content.strings,
-                                     profile.dictionaries, content.menu_tokens, sc_dictionaries())))
+                                     profile.dictionaries, content.menu_tokens, stock_dictionaries("SC"))))
     p = plan(profile, content)
     print(f"gate 2 generated: {check_generated(profile, content, p.items, g)}")
     script = check_script(profile, content, p, g)

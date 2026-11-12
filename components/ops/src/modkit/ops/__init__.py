@@ -46,7 +46,8 @@ STOCK_PATHS = (
           rename=(r"Localisation/Localisation/Core/(INTERFACE_INGAME-[A-Za-z]+\.dic)", r"\1"),
           why="the game's INTERFACE_INGAME dictionaries (the glyph gate and the in-game key check)"),
     *(Stock(f"scenarios/{family}_*", packs=("{}_Assets",), include=("*-SC.dic", *more, MENU_PICTURES),
-            why="every stock scenario's Chinese dictionaries: the characters the glyph gate admits (gates.check_strings)"
+            why="every stock scenario's Chinese dictionaries: with the game's own (core's localisation), the "
+                "characters the glyph gate admits (gates.check_strings)"
                 + ("; the challenges' English menu texts: the stock lengths the title convention is measured against "
                    "(strings.check_titles)" if more else "")
                 + "; its menu pictures: what the TGV writer round-trips byte for byte (core's test_tgv), and what a "
