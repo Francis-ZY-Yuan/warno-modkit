@@ -190,15 +190,15 @@ left)
 18. Were the supply trucks (Ural-4320 ×4) and supply helicopters (Mi-8TZ ×2) on the HQ page from the start, and could
     they deliver supply to your units?
 
-**A restart**
-21. Restart the mission once from the in-game menu. Does it load again with no error, and does the deck show the same
-    five pages, the reserve locked again?
-
 **The new pieces**
 19. NATO fighters: did two F-15Cs come over BOX W about 2:30 into phase 3, and two over BOX C at 6:00? Did they leave
     once spent?
 20. The empty-village warning: did it show only after your units had been out of the village's zone for 20 s, while P2
     counted the empty clock?
+
+**A restart**
+21. Restart the mission once from the in-game menu. Does it load again with no error, and does the deck show the same
+    five pages, the reserve locked again?
 
 ## What the op stands on
 
