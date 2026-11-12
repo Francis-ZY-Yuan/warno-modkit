@@ -112,10 +112,11 @@ ROWS: tuple[ForceRow, ...] = tuple(
     # --- the player's, not in the deck (design 6.2): two FOBs in the Soviet box, pre-placed in the player's camp
     rows_of("fob", "Soviet", "FOB_W", "forward detachment FOB", (FOB_UNIT, 1), fixed=True)
     + rows_of("fob", "Soviet", "FOB_E", "forward detachment FOB", (FOB_UNIT, 1), fixed=True)
-    # the division artillery, no longer pre-placed: each fire creates its battery at GUN_SPAWN, north of the cut out of
-    # the player's sight, in the unused NATO2 camp (fogged for the player), and removes it after (design 5.4)
-    + rows_of("guns_heavy", "NATO2", "GUN_SPAWN", "division artillery: 2S7M battery", ("2S7M_Malka_SOV", 6), fixed=True)
-    + rows_of("guns_rockets", "NATO2", "GUN_SPAWN", "division artillery: BM-27 battery", ("BM27_Uragan_SOV", 6),
+    # the division artillery, no longer pre-placed: each fire creates its battery at GUN_SPAWN, the cut's north-west
+    # corner, in the player's allied camp (SovietAlly: the player's units never engage it), and removes it after (5.4)
+    + rows_of("guns_heavy", "SovietAlly", "GUN_SPAWN", "division artillery: 2S7M battery", ("2S7M_Malka_SOV", 6),
+              fixed=True)
+    + rows_of("guns_rockets", "SovietAlly", "GUN_SPAWN", "division artillery: BM-27 battery", ("BM27_Uragan_SOV", 6),
               fixed=True)
     # --- NATO (design 6.3). The garrison is pre-placed in and around the village; both battalions are created by
     # the script (TS4b): battalion 1 in waves at both lane entries (its rows' spawn is the west entry, nominally),

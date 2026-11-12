@@ -13,8 +13,8 @@ The op plays on a cut of the stock layout SM_SU_3x3_TwinCities_03 (twinstrike.ma
 playable zone and AI grid [[ai-grid-tiles-playable-zone]], and the op its own start camera (twinstrike.map.CAMERA) in
 place of the layout's camera paths, so the profile copies none of the map's Details. Its extra gates: the unit
 database, no leftover template name, the cut's grid gate, the zone layout, the menu order against stock's and the
-fire range of the batteries each fire creates north of the cut. Nothing
-here resolves a path at import: the extraction and the game folder are read when a build runs.
+fire range of the batteries each fire creates in the allied camp. Nothing here resolves a path at import: the
+extraction and the game folder are read when a build runs.
 """
 from __future__ import annotations
 
@@ -206,12 +206,13 @@ GUN_SPAWN_TAG = "TS_GunSpawn"
 # every unit it names exists in the game's unit database; no file it re-keys or generates still names the template;
 # the shipped playable zone and AI grid are the cut's (CUT.gate(), in place of gates.grid_gate); read from the
 # Details it ships, the zones and arrivals keep stock's layout rules; its menu order is no stock Operation's; and the
-# batteries created at GUN_SPAWN_TAG stand outside the cut, out of the player's sight, with every target in range.
+# batteries created at GUN_SPAWN_TAG are in the player's alliance, so the player's units never engage them, with every
+# target in range from where they stand (the driver's own gate 3 holds every created unit inside the playable zone).
 EXTRA_GATES: tuple[ExtraGate, ...] = (
     ExtraGate("units", unit_gate),
     ExtraGate("no-template-name", template_name_gate(SURVIVORS.source.removeprefix("challenge_"))),
     CUT.gate(),
     ExtraGate("zone-layout", zone_layout_gate),
     ExtraGate("menu-order", menu_order_gate),
-    ExtraGate("fire-range", fire_range_gate(GUN_SPAWN_TAG, TWIN_CITIES, CAMPS[PLAYER])),
+    ExtraGate("fire-range", fire_range_gate(GUN_SPAWN_TAG, CAMPS[PLAYER])),
 )

@@ -27,7 +27,7 @@ How far each mechanism is proven: `PLAYED` worked in a real play; `PROBED` loade
 - [objective-counters](../components/ops/knowledge/mechanisms/objective-counters.md) (ops): Objective text shows live counters from a variable list
 - [operation-menu-registration](../components/ops/knowledge/mechanisms/operation-menu-registration.md) (ops): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden
 - [script-container-semantics](../components/ops/knowledge/mechanisms/script-container-semantics.md) (ops): How script containers run their children, and when each action finishes
-- [scripted-fires](../components/ops/knowledge/mechanisms/scripted-fires.md) (ops): A battery created just before its ShootOnPosition fires; pre-placed allied guns drove toward the front instead
+- [scripted-fires](../components/ops/knowledge/mechanisms/scripted-fires.md) (ops): A battery created just before its ShootOnPosition fires; created where the player's units can reach, it must be in their alliance
 - [seteffect-never-finishes](../components/ops/knowledge/mechanisms/seteffect-never-finishes.md) (ops): SetEffect and other lasting actions never finish, so nothing after them in a Sequential ever runs
 - [spawn-and-create-units](../components/ops/knowledge/mechanisms/spawn-and-create-units.md) (ops): SpawnUnits reveals pre-placed units; CreateUnitOnPosition makes new ones at a tag
 - [vanished-removal](../components/ops/knowledge/mechanisms/vanished-removal.md) (ops): KillAllUnit with Vanished removes units at once; count them before you remove them
@@ -62,6 +62,7 @@ How far each mechanism is proven: `PLAYED` worked in a real play; `PROBED` loade
 
 ## FAILED
 
+- [created-units-stand-in-zone](../components/ops/knowledge/mechanisms/created-units-stand-in-zone.md) (ops): A script cannot hide a unit outside the playable zone; a unit created there stands on the zone's edge, where the player's units see and engage it
 - [helicopter-boarding](../components/ops/knowledge/mechanisms/helicopter-boarding.md) (ops): Scripted infantry boarding of a helicopter does not work
 - [scripted-nuke-effect](../components/ops/knowledge/mechanisms/scripted-nuke-effect.md) (ops): A script cannot launch the tactical-nuke impact effect; the game crashes
 

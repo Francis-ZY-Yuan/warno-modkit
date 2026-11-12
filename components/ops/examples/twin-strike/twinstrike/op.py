@@ -25,8 +25,8 @@ What stands from the start (LevelDesign, every item in ITEMS):
 - NATO's fighters, pre-placed hidden in the NATO camp in its deployment zone, one set per sweep (air_items);
 - the detector circles [[detector-circles-only]]: the village's (VILLAGE_RING), the two fire boxes' (BOX_RINGS) and
   the strike zone's (STRIKE_RING, radius R); Name tags at the places the mission orders units to or fires on (TAGS),
-  among them GUN_SPAWN north of the cut, where each fire's battery is created; B2's label (BN2_PIN) and the
-  dressing's spots (DRESSING).
+  among them GUN_SPAWN in the cut's north-west corner, where each fire's battery is created; B2's label (BN2_PIN) and
+  the dressing's spots (DRESSING).
 
 The phases, every one with a deadline (design 4.2), each a timed beat from "Launch battle" that waits for its flag:
 - phase 1 (phase1, H+0:00): P1 on the village, its count and the fall (the garrison left in the circle at or below
@@ -47,8 +47,9 @@ The phases, every one with a deadline (design 4.2), each a timed beat from "Laun
   fighter sweep comes with it;
 - phase 5 (phase5, from PH5): the end clock (5 min after a strike; after withholding until battalion 2 is broken, up
   to 20 min), then the grade (grade: Total, Minor or Major, released or withheld).
-The guns fire through fire(): one fire at a time (BUSY), each battery created at GUN_SPAWN in the NATO2 camp (fogged
-for the player), kept off its camp's AI, ordered, then removed FIRE_HOLD_S later (salvo) [[scripted-fires]].
+The guns fire through fire(): one fire at a time (BUSY), each battery created at GUN_SPAWN in the player's allied camp
+(SovietAlly: the player's units never engage it), kept off its camp's AI, ordered, then removed FIRE_HOLD_S later
+(salvo) [[scripted-fires]].
 The end funnel (end_funnel) is the one ending node: every ending writes END through shapes.set_end.
 
 The composed pieces are modkit.ops.mission's: the script frame, the lanes and waves, the re-ask loop, the zone
@@ -136,7 +137,7 @@ EXTRA_SHAPES = (TRANSPORTER_SHAPE,                                   # the infan
 SIDES = profile.CAMPS                  # side -> camp export name (modkit.ops.profile.SOVIET_PLAYER_SIDES)
 PLAYER = profile.PLAYER                # "Soviet": joueur, the player
 ENEMY = "NATO"                         # ordinateur_SOV: the garrison, both battalions and the fighters
-GUN_CAMP = "NATO2"                     # ordinateur_DDR, the unused Alliance 1 camp: each fire's battery, fogged
+GUN_CAMP = "SovietAlly"                # Allie, the player's AI ally: each fire's battery, never engaged by the player
 # Flags several beats read, declared at 0 (script_frame's flags), each written once (but BUSY, a lock).
 FALLEN = "ts_fallen"                   # 1: the village has fallen (phase 1's end); the deck's locks lift
 END = "ts_end"                         # the ending (ENDINGS), written only through shapes.set_end: the first stands
@@ -235,7 +236,7 @@ FINAL_LEG_S = 120.0
 # AI, orders ShootOnPosition FIRE_LEAD_S later (probe 1's battery fired 20 s after its create), and removes it
 # (Vanished) FIRE_HOLD_S after the order: one ShootOnPosition fires one salvo (the 2S7M's and the BM-27's ammunition:
 # NbSalvosShootOnPosition 1), after its deployment (5 s, 10 s), its aiming time (30 s, 25 s), its shots (3 shells 5 s
-# apart, 16 rockets 1.5 s apart) and their flight (about 11 s from GUN_SPAWN). A created battery comes with full
+# apart, 16 rockets 1.5 s apart) and their flight (under 11 s from GUN_SPAWN). A created battery comes with full
 # ammunition, and stock never empties artillery, so no SetAmmo.
 FIRE_LEAD_S = 20.0
 FIRE_HOLD_S = 90.0
@@ -566,12 +567,13 @@ BATTERIES: dict[str, tuple[tuple[str, int], ...]] = {
 
 def salvo(ctx: Ctx, battery: str, target: str) -> list[Node]:
     """One fire of `battery` (a BATTERIES key) on the Name tag `target` [[scripted-fires]]: its rows created into its
-    own group at GUN_SPAWN in the NATO2 camp, fogged for the player (CreateUnitOnPosition, probe 1's played shape), kept
-    off the camp's AI (AddIgnoredUnitByScript, TheDieburgSalient #143's form), FIRE_LEAD_S (probe 1's lead time), then
-    ShootOnPosition on `target`, non-blocking, so an order that never ends holds nothing (GiveOrderStandard OrderType 31:
-    TheWingedHussars #362 and Marauders #1341 on CommandPoints, Survivors #1231/#1232 on Name tags), FIRE_HOLD_S for
-    the salvo to land, then the battery removed (KillAllUnit, Vanished [[vanished-removal]]). Created guns come with
-    full ammunition: no SetAmmo."""
+    own group at GUN_SPAWN, inside the playable zone [[created-units-stand-in-zone]], in the player's allied camp, which
+    the player's units never engage (CreateUnitOnPosition, probe 1's played shape), kept off the camp's AI
+    (AddIgnoredUnitByScript, TheDieburgSalient #143's form), FIRE_LEAD_S (probe 1's lead time), then ShootOnPosition on
+    `target`, non-blocking, so an order that never ends holds nothing (GiveOrderStandard OrderType 31: TheWingedHussars
+    #362 and Marauders #1341 on CommandPoints, Survivors #1231/#1232 on Name tags), FIRE_HOLD_S for the salvo to land,
+    then the battery removed (KillAllUnit, Vanished [[vanished-removal]]). Created guns come with full ammunition: no
+    SetAmmo."""
     group, spawn = ctx.group(battery), ctx.tag(GUN_SPAWN)
     return [*(create(ctx, GUN_CAMP, group, n, spawn, unit_path(unit)) for unit, n in BATTERIES[battery]),
             g_ignored(group), g_wait(FIRE_LEAD_S), order(group, SHOOT_ON_POSITION, ctx.tag(target)),

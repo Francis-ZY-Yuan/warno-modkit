@@ -298,7 +298,8 @@ def check_script(profile: OpProfile, content: Content, p: Plan, run: GateRun | N
         f"restores with the buy-menu switch "
         f"{'Default' if content.prod_menu_switch == BRICK_DEFAULT else 'ForceHide'} (Content.prod_menu_switch); "
         f"{g('script-effects', gates.check_script_effects, payload(gd))} script effect launches, each a "
-        f"self-contained GameFx effect")
+        f"self-contained GameFx effect; {g('created-in-zone', gates.check_created_in_zone, roots, details)} "
+        f"CreateUnitOnPosition, each inside the shipped playable zone")
     lines += run_extra_gates(profile, items, content, g)
     return lines
 

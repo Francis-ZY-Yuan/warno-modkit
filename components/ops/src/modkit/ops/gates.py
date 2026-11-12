@@ -11,7 +11,8 @@ reviewed-pending entry for one:
    ``check_references``, the arrivals and tiers (``check_arrivals``, ``check_tiers``), ``check_objective_pins``,
    ``check_never_finishing``, ``check_end_funnel``, ``check_empty_group_guard``, ``check_dialog_text``,
    ``check_rules``, ``check_zone_tags``, ``check_smart_orders``, ``check_prod_menu_switch``, ``check_script_effects``
-   (every effect the script launches is a self-contained GameFx effect);
+   (every effect the script launches is a self-contained GameFx effect), ``check_created_in_zone`` (every unit the
+   script creates stands inside the playable zone);
 4. every re-keyed file differs from stock only by its dump rows: ``check_dump_diff``;
 5. the package is scenario-only and ships no Gameplay file: ``check_package``;
 6. every written pack reads back (``modkit.ops.packs.verify_packs``).
@@ -22,10 +23,10 @@ under the playable zone (``check_grid``: stock's rule; ``check_grid_subset``: a 
 zones and arrivals (``check_zone_layout``: stock's clauses, plus the generator conventions a profile asks for), no
 leftover template name in a re-keyed or generated file (``check_no_template_name``), every named unit against the
 unit database (``check_units`` over ``unit_database``), the Operation's menu order against stock's
-(``check_menu_order`` over ``stock_menu_orders``), and where a script's created batteries fire from
-(``check_fire_range``: out of the player's sight, every target in range). ``grid_gate``, ``zone_layout_gate``,
-``template_name_gate``, ``unit_gate``, ``menu_order_gate`` and ``fire_range_gate`` are ready-made extra gates: they
-read the Details and other files the build plans to ship.
+(``check_menu_order`` over ``stock_menu_orders``), and the batteries a script creates for the player's fires
+(``check_fire_range``: in the player's alliance, every target in range from where they stand). ``grid_gate``,
+``zone_layout_gate``, ``template_name_gate``, ``unit_gate``, ``menu_order_gate`` and ``fire_range_gate`` are
+ready-made extra gates: they read the Details and other files the build plans to ship.
 """
 from __future__ import annotations
 
@@ -1877,7 +1878,6 @@ WEAPON_DATABASE = "GameData/Generated/Gameplay/Gfx/WeaponDescriptor.ndf"
 AMMO_DATABASE = ("GameData/Generated/Gameplay/Gfx/Ammunition.ndf",
                  "GameData/Generated/Gameplay/Gfx/AmmunitionMissiles.ndf")
 DECK_DATABASE = ("GameData/Generated/Gameplay/Decks/Decks.ndf", "GameData/Generated/Gameplay/Decks/DeckPacks.ndf")
-GROUND_VISION = "EVisionRange/Standard"   # a unit's vision range for units on the ground (VisionRangesGRU)
 _HEAD = re.compile(r"(?m)^(?:export )?(\w+) is \w+")
 
 
@@ -1898,19 +1898,6 @@ def top_blocks(text: str) -> Iterable[tuple[str, str]]:
     heads = list(_HEAD.finditer(text))
     for head, after in zip(heads, [*heads[1:], None]):
         yield head.group(1), text[head.start():after.start() if after else len(text)]
-
-
-def ground_vision(archive: str | None = None, *, minimum: int = 1001) -> dict[str, float]:
-    """{unit path: its ground vision range in GRU} over the unit database: each unit's VisionRangesGRU entry for
-    GROUND_VISION (its TScannerConfigurationDescriptor). A unit with none (a FOB) is left out. Fewer than `minimum`
-    units means the file was not read right."""
-    out = {}
-    for name, body in top_blocks(database_text(unit_archive(archive), UNIT_DATABASE[0])):
-        m = re.search(rf"\(\s*{re.escape(GROUND_VISION)}\s*,\s*([\d.]+)\s*\)", body)
-        if name.startswith("Descriptor_Unit_") and m:
-            out[UNIT_PREFIX + name] = float(m.group(1))
-    check(len(out) >= minimum, f"only {len(out)} units with a ground vision range found, want at least {minimum}")
-    return out
 
 
 def shoot_on_position_bands(archive: str | None = None) -> dict[str, tuple[float, float]]:
@@ -1959,13 +1946,17 @@ def stock_deck_packs(identifier: str, archive: str | None = None) -> list[tuple[
     return deck_packs(*(database_text(archive, inner) for inner in DECK_DATABASE), identifier)
 
 
-# --------------------------------------------------------------------------- scripted fires from out of sight
-# A create-fire-vanish battery [[scripted-fires]]: for each fire the script creates a battery at one spawn tag outside
-# the playable zone, orders it to ShootOnPosition, and removes it after. check_fire_range holds that spawn to the
-# rules that keep the battery unseen and every target in range, read where the game reads them (the shipped script,
-# LevelDesign and playable zone) and from the unit database.
+# --------------------------------------------------------------------------- units a script creates, and its fires
+# A unit CreateUnitOnPosition makes outside the playable zone stands on the zone's edge, at the point nearest its
+# position, where the player's units see and engage it [[created-units-stand-in-zone]]; stock creates every unit inside
+# the zone. check_created_in_zone (gate 3, every op) holds a script to that. A create-fire-vanish battery
+# [[scripted-fires]] is created for each fire, ordered to ShootOnPosition and removed after: check_fire_range holds it
+# to the player's alliance, so the player's units never engage it, and every target to its range band from where it
+# stands, read where the game reads them (the shipped script, LevelDesign and playable zone) and from the unit
+# database.
 
 FIRE_ORDER = 31   # EOrderType ShootOnPosition (shapes.SHOOT_ON_POSITION: shapes imports maps, which imports this module)
+CREATE = "TGDDescriptorCreateUnitOnPosition"
 
 
 def _bare(unit: str) -> str:
@@ -1973,57 +1964,97 @@ def _bare(unit: str) -> str:
     return unit.removeprefix(UNIT_PREFIX).removeprefix("Descriptor_Unit_")
 
 
+def playable_ring(raw: bytes) -> list[tuple[float, float]] | None:
+    """The ring of a PlayableZone file's one area (world units, closed), or None when the file holds no area: the
+    whole map is then playable (stock: Survivors, RedJuggernaut, Gotterdammerung and ClosingTheTrap ship such a file).
+    The game refuses a file with more than one."""
+    nb, _, _ = decode(raw)
+    areas = sum(nb.cname(ob.cls) == "TMapArea" for ob in nb.objects)
+    check(areas <= 1, f"{areas} playable zones in one PlayableZone file; the game takes one")
+    return read_playable_polygon(raw) if areas else None
+
+
+def stands_at(at: tuple[float, float], ring: Sequence | None) -> tuple[float, float]:
+    """Where a unit created at `at` (world units) stands: at `at` inside the playable zone `ring` (anywhere when
+    `ring` is None, a whole-map zone), else at the zone's point nearest `at` [[created-units-stand-in-zone]]."""
+    if ring is None or point_in_polygon(*at, ring):
+        return at
+    return nearest_on_polygon(*at, ring)[1]
+
+
+def created_violations(roots: Iterable[Node], ld_raw: bytes | None,
+                       ring: Sequence | None) -> tuple[int, list[str]]:
+    """(The CreateUnitOnPosition nodes reachable from `roots`, one line per one whose Position names no item of the
+    LevelDesign `ld_raw` or an item outside the playable zone `ring`): check_created_in_zone's rule, without
+    raising."""
+    from modkit.ops.shapes import GRU_WORLD   # shapes imports maps, which imports this module
+    by_guid = {it["GUID"]: it for it in read_ld_items(ld_raw)} if ld_raw else {}
+    count, bad = 0, []
+    for nd in walk(roots):
+        if nd.cls != CREATE:
+            continue
+        count += 1
+        props = dict(nd.props)
+        unit = _bare(props["TypeUnit"].path) if isinstance(props.get("TypeUnit"), Imp) else "a unit"
+        it = by_guid.get(tag_guid(props.get("Position")))
+        if it is None:
+            bad.append(f"a CreateUnitOnPosition of {unit} names no LevelDesign item")
+            continue
+        at = it["pos"][:2]
+        stand = stands_at(at, ring)
+        if stand != at:
+            bad.append(f"{unit} is created at {it['Name']}, {math.dist(at, stand) / GRU_WORLD:,.0f} GRU "
+                       f"{compass(at[0] - stand[0], at[1] - stand[1])} of the playable zone: it stands on the zone's "
+                       f"edge, where the player's units see and engage it")
+    return count, bad
+
+
+def check_created_in_zone(roots: Iterable[Node], details: Mapping[str, bytes]) -> int:
+    """Gate 3: every CreateUnitOnPosition of the script (reachable from `roots`) names an item of the shipped
+    out/LevelDesign whose point lies inside the shipped playable zone (out/PlayableZone; a file with no area makes the
+    whole map playable). A unit created outside stands on the zone's edge, seen and engaged by the player's units
+    [[created-units-stand-in-zone]]; stock's 300 CreateUnitOnPosition all stand inside. `details`: inner path -> the
+    Details bytes the build ships. Returns the number of CreateUnitOnPosition."""
+    roots = list(roots)
+    if not any(nd.cls == CREATE for nd in walk(roots)):
+        return 0
+    playable = details.get(PLAYABLE_FILE)
+    check(playable is not None, f"the script creates units but the mod ships no {PLAYABLE_FILE}")
+    count, bad = created_violations(roots, details.get(LD_FILE), playable_ring(playable))
+    check(not bad, f"{len(bad)} of {count} CreateUnitOnPosition create units outside the playable zone:\n  "
+          + "\n  ".join(dict.fromkeys(bad)) + "\nCreate each inside the zone: the game puts it on the zone's edge.")
+    return count
+
+
 class FireRange(NamedTuple):
-    """What check_fire_range found: the spawn's point (world units), its distance outside the playable zone (GRU) and
-    the direction it lies in from it, the longest ground vision range of the player's units (GRU; None when the
-    unit database gives none) and a unit that has it, and each fire as (battery unit, target, distance GRU, band min,
-    band max)."""
+    """What check_fire_range found: the spawn's point and where its batteries stand (world units: the same point
+    inside the playable zone), the alliance and each battery camp's export name, and each fire as (battery unit,
+    target, distance GRU from where the battery stands, band min, band max)."""
     at: tuple[float, float]
-    outside_gru: float
-    direction: str
-    vision_gru: float | None
-    watcher: str | None
+    stand: tuple[float, float]
+    alliance: int
+    camps: tuple[str, ...]
     fires: tuple[tuple[str, str, float, float, float], ...]
 
 
-def player_units(nb: ndfbin.NdfBin, nodes: Sequence[Node], ld_items: Iterable[dict], player_camp: str,
-                 deck_units: Callable[[str], Iterable[str]]) -> set[str]:
-    """Every unit path the player of the decoded script `nb` (`nodes`: nodes_of(nb)) can field: the units and
-    transports of each deck its SetDeck gives the camp `player_camp` (`deck_units`: deck identifier -> unit paths),
-    every TypeUnit and Transporter an AddUnitToDeck adds to that camp, and every Spawn of `ld_items` (read_ld_items)
-    in that camp's CampList place."""
-    camps = [nd for nd in nodes if nd.export == f"$/GDScript/RootDescriptor/{player_camp}"]
-    check(len(camps) == 1, f"the script exports {len(camps)} camps named {player_camp}")
-    camp, out = camps[0], set()
-    roots = [nd for nd in nodes if isinstance(dict(nd.props).get("CampList"), list)]
-    check(len(roots) == 1 and camp in dict(roots[0].props)["CampList"], f"{player_camp} is not in the CampList")
-    index = [c for c in dict(roots[0].props)["CampList"]].index(camp)
-    for nd in nodes:
-        props = dict(nd.props)
-        if props.get("Camp") is not camp:
-            continue
-        if nd.cls == "TGDDescriptorSetDeck":
-            out |= set(deck_units(nb.strings[props["DeckIdentifier"].v].decode("latin-1")))
-        elif nd.cls == "TGDDescriptorAddUnitToDeck":
-            out |= {props[k].path for k in ("TypeUnit", "Transporter") if isinstance(props.get(k), Imp)}
-    out |= {it["ClassName"] for it in ld_items if it["addon"] == "Spawn" and (it.get("Camp") or 0) == index}
-    return out
+def camp_alliance(camp: Node) -> int:
+    """A TGDVariableCamp's Alliance (absent: 0, as stock leaves the first alliance's out)."""
+    value = dict(camp.props).get("Alliance")
+    return value.v if isinstance(value, Value) else 0
 
 
-def check_fire_range(gd_raw: bytes, ld_raw: bytes, playable_raw: bytes, spawn: str,
-                     bounds: tuple[float, float, float, float], player_camp: str, *, vision: Mapping[str, float],
-                     bands: Mapping[str, tuple[float, float]],
-                     deck_units: Callable[[str], Iterable[str]]) -> FireRange:
-    """Gate: the batteries the script `gd_raw` creates at the Name tag `spawn` fire from where the player cannot see
-    them and reach every target, read from the shipped LevelDesign `ld_raw` and playable zone `playable_raw`:
-      - the spawn lies outside the playable zone and inside `bounds` (the map, world units: x0, y0, x1, y1);
-      - it stands at least as far from the playable zone as the longest ground vision range (`vision`: unit path ->
-        GRU) of every unit the player can field (player_units over `player_camp` and `deck_units`), so none of them
-        sees it from inside the zone; when `vision` knows none of them, the distance is only reported;
-      - at least one battery is created there (CreateUnitOnPosition), each is ordered to ShootOnPosition, and every
-        target of its orders lies inside the ShootOnPosition band (`bands`: unit path -> (min, max) GRU) of every unit
-        type created into that battery's group.
-    Distances in GRU are world units over the circles' GRU_WORLD."""
+def check_fire_range(gd_raw: bytes, ld_raw: bytes, playable_raw: bytes, spawn: str, player_camp: str, *,
+                     bands: Mapping[str, tuple[float, float]]) -> FireRange:
+    """Gate: the batteries the script `gd_raw` creates at the Name tag `spawn` are the player's fires
+    [[scripted-fires]], read from the shipped LevelDesign `ld_raw` and playable zone `playable_raw`:
+      - at least one battery is created there (CreateUnitOnPosition), and each is ordered to ShootOnPosition;
+      - each battery's camp is in the alliance of the player's camp `player_camp` (its export name), so the player's
+        units never engage it: a battery stands inside the playable zone or on its edge, where they see it
+        [[created-units-stand-in-zone]];
+      - every target of its orders lies inside the ShootOnPosition band (`bands`: unit path -> (min, max) GRU) of
+        every unit type created into that battery's group, measured from where the battery stands (stands_at).
+    check_created_in_zone, gate 3, holds the spawn inside the zone. Distances in GRU are world units over the
+    circles' GRU_WORLD."""
     from modkit.ops.shapes import GRU_WORLD   # shapes imports maps, which imports this module
     nb, _, _ = decode(gd_raw)
     nodes = nodes_of(nb)
@@ -2031,27 +2062,24 @@ def check_fire_range(gd_raw: bytes, ld_raw: bytes, playable_raw: bytes, spawn: s
     named = [it for it in items if it["Name"] == spawn]
     check(len(named) == 1, f"fire range: {len(named)} LevelDesign items are named {spawn}, expected 1")
     at, guid = named[0]["pos"][:2], named[0]["GUID"]
+    stand = stands_at(at, playable_ring(playable_raw))
+    players = [nd for nd in nodes if nd.export == f"$/GDScript/RootDescriptor/{player_camp}"]
+    check(len(players) == 1, f"fire range: the script exports {len(players)} camps named {player_camp}")
+    alliance = camp_alliance(players[0])
     by_guid = {it["GUID"]: it for it in items}
     bad: list[str] = []
-    ring = read_playable_polygon(playable_raw)
-    if point_in_polygon(*at, ring):
-        bad.append(f"{spawn} at ({at[0]:,.0f}, {at[1]:,.0f}) lies inside the playable zone")
-    dist, (qx, qy) = nearest_on_polygon(*at, ring)
-    outside, direction = dist / GRU_WORLD, compass(at[0] - qx, at[1] - qy)
-    x0, y0, x1, y1 = bounds
-    if not (x0 <= at[0] <= x1 and y0 <= at[1] <= y1):
-        bad.append(f"{spawn} at ({at[0]:,.0f}, {at[1]:,.0f}) lies outside the map ({x0:,.0f}..{x1:,.0f}, "
-                   f"{y0:,.0f}..{y1:,.0f})")
-    seen = sorted((vision[u], u) for u in player_units(nb, nodes, items, player_camp, deck_units) if u in vision)
-    best, watcher = seen[-1] if seen else (None, None)
-    if best is not None and outside < best:
-        bad.append(f"{spawn} stands {outside:,.0f} GRU {direction} of the playable zone, inside the ground vision "
-                   f"range of the player's {_bare(watcher)} ({best:,.0f} GRU): move it further out")
     created: dict[int, tuple[Node, list[str]]] = {}
+    camps: dict[str, Node] = {}
     for nd in nodes:
         props = dict(nd.props)
-        if nd.cls == "TGDDescriptorCreateUnitOnPosition" and tag_guid(props.get("Position")) == guid:
+        if nd.cls == CREATE and tag_guid(props.get("Position")) == guid:
             created.setdefault(id(props["Group"]), (props["Group"], []))[1].append(props["TypeUnit"].path)
+            camp = props.get("Camp")
+            name = (camp.export or "a camp").rsplit("/", 1)[-1] if isinstance(camp, Node) else "no camp"
+            if not isinstance(camp, Node) or camp_alliance(camp) != alliance:
+                bad.append(f"{_bare(props['TypeUnit'].path)} is created at {spawn} in {name}, outside the player's "
+                           f"alliance ({alliance}): the player's units engage it; create it in a camp of that alliance")
+            camps[name] = camp
     if not created:
         bad.append(f"no battery is created at {spawn} (CreateUnitOnPosition)")
     fires, fired = [], set()
@@ -2067,7 +2095,7 @@ def check_fire_range(gd_raw: bytes, ld_raw: bytes, playable_raw: bytes, spawn: s
         if target is None:
             bad.append(f"a ShootOnPosition of {group.export or 'a battery'} names no LevelDesign item")
             continue
-        d = math.dist(at, target["pos"][:2]) / GRU_WORLD
+        d = math.dist(stand, target["pos"][:2]) / GRU_WORLD
         for unit in sorted(set(types)):
             band = bands.get(unit)
             short = _bare(unit)
@@ -2076,42 +2104,30 @@ def check_fire_range(gd_raw: bytes, ld_raw: bytes, playable_raw: bytes, spawn: s
                 continue
             fires.append((short, target["Name"], d, *band))
             if not band[0] <= d <= band[1]:
-                bad.append(f"{target['Name']} is {d:,.0f} GRU from {spawn}, outside {short}'s ShootOnPosition band "
-                           f"({band[0]:,.0f}-{band[1]:,.0f} GRU): move the spawn")
+                bad.append(f"{target['Name']} is {d:,.0f} GRU from where {short} stands at {spawn}, outside its "
+                           f"ShootOnPosition band ({band[0]:,.0f}-{band[1]:,.0f} GRU): move the spawn")
     bad += [f"{g.export or 'a battery'} is created at {spawn} but never ordered to ShootOnPosition"
             for key, (g, _) in created.items() if key not in fired]
-    check(not bad, "fire range:\n  " + "\n  ".join(bad))
-    return FireRange(at, outside, direction, best, watcher, tuple(fires))
+    check(not bad, "fire range:\n  " + "\n  ".join(dict.fromkeys(bad)))
+    return FireRange(at, stand, alliance, tuple(sorted(camps)), tuple(fires))
 
 
-def fire_range_gate(spawn: str, stock_map: object, player_camp: str) -> Callable[[list[Item], Content], str]:
+def fire_range_gate(spawn: str, player_camp: str) -> Callable[[list[Item], Content], str]:
     """An extra gate (profile.ExtraGate) for an op whose fires come from batteries created at the Name tag `spawn`
-    outside its playable zone [[scripted-fires]]: check_fire_range over the script, LevelDesign and playable zone the
-    build plans to ship, inside `stock_map`'s bounds (a modkit.ops.maps.StockMap: its minimap_px times its
-    world_per_px), with the unit database's ground vision, ShootOnPosition bands and decks; `player_camp` is the
-    player's camp (its export name)."""
+    [[scripted-fires]]: check_fire_range over the script, LevelDesign and playable zone the build plans to ship, with
+    the unit database's ShootOnPosition bands; `player_camp` is the player's camp (its export name)."""
     def gate(items: list[Item], content: Content) -> str:
         inner = def_path("GDScript", "ndfbin", content.scenario)
         gd = [it for it in items if it.pack == "Definition" and it.path == inner]
         check(len(gd) == 1, f"the mod ships {len(gd)} {inner}, expected 1")
         ld, playable = shipped_details(items, LD_FILE), shipped_details(items, PLAYABLE_FILE)
         check(ld is not None and playable is not None, f"the mod ships no {LD_FILE} or no {PLAYABLE_FILE}")
-        width, height = stock_map.minimap_px
-        archive = unit_archive()
-
-        def deck_units(deck: str) -> list[str]:
-            return [unit_path(u) for unit, _, carrier in stock_deck_packs(deck, archive) for u in (unit, carrier) if u]
-
-        r = check_fire_range(b"".join(gd[0].chunks()), ld, playable, spawn,
-                             (0.0, 0.0, width * stock_map.world_per_px, height * stock_map.world_per_px), player_camp,
-                             vision=ground_vision(archive), bands=shoot_on_position_bands(archive),
-                             deck_units=deck_units)
-        seen = (f"past the player's longest ground vision, {r.vision_gru:,.0f} GRU ({_bare(r.watcher)})"
-                if r.vision_gru is not None else "(the unit database gives no ground vision range for the player's "
-                                                 "units)")
+        r = check_fire_range(b"".join(gd[0].chunks()), ld, playable, spawn, player_camp,
+                             bands=shoot_on_position_bands())
+        where = "inside the playable zone" if r.stand == r.at else "on the playable zone's edge"
         margin, what = min((min(d - lo, hi - d), f"{target} from {unit}") for unit, target, d, lo, hi in r.fires)
         targets = len({target for _, target, *_ in r.fires})
-        return (f"{spawn} {r.outside_gru:,.0f} GRU {r.direction} of the playable zone, inside the map, {seen}; "
+        return (f"{spawn}'s batteries in {', '.join(r.camps)}, the player's alliance ({r.alliance}), standing {where}; "
                 f"{len(r.fires)} battery-target pairs on {targets} targets, each inside its band (closest: {what}, "
                 f"{margin:,.0f} GRU inside)")
     return gate

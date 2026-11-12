@@ -15,6 +15,7 @@ A fact holds for the build it was last verified on. After a game update, a recor
 - [content-identity-unique](../components/ops/knowledge/mechanisms/content-identity-unique.md) (ops): Two mods cloned from one template must not share an identity (PLAYED, 2026-11-11)
 - [count-race-forced-owner](../components/ops/knowledge/mechanisms/count-race-forced-owner.md) (ops): Decide a zone by a timed unit count, then force its owner so the map shows it (PLAYED, 2026-11-06)
 - [crash-dump-names-the-error](../components/core/knowledge/mechanisms/crash-dump-names-the-error.md) (core): The crash report's dump names the real error (RE, 2026-11-03)
+- [created-units-stand-in-zone](../components/ops/knowledge/mechanisms/created-units-stand-in-zone.md) (ops): A script cannot hide a unit outside the playable zone; a unit created there stands on the zone's edge, where the player's units see and engage it (FAILED, 2026-11-11)
 - [custom-operation-from-stock-parts](../components/ops/knowledge/mechanisms/custom-operation-from-stock-parts.md) (ops): A custom Operation can be built entirely from cloned stock files plus a generated LevelDesign and GDScript (PLAYED, 2026-11-06)
 - [deployment-phase-recipe](../components/ops/knowledge/mechanisms/deployment-phase-recipe.md) (ops): A deployment phase needs six parts, and buying after the launch needs player arrival entries (PLAYED, 2026-11-03)
 - [detector-circles-only](../components/ops/knowledge/mechanisms/detector-circles-only.md) (ops): DetectUnitDansDetecteur works only on circular zones (PLAYED, 2026-11-06)
@@ -43,7 +44,7 @@ A fact holds for the build it was last verified on. After a game update, a recor
 - [script-effects-self-contained](../components/ops/knowledge/mechanisms/script-effects-self-contained.md) (ops): A script may launch only a self-contained effect, one that takes no parameters (STOCK, 2026-11-10)
 - [scripted-air-sweep](../components/ops/knowledge/mechanisms/scripted-air-sweep.md) (ops): Hidden aircraft revealed, sent over a circle and sent home once spent give an AI-less camp air sweeps (STOCK, 2026-11-11)
 - [scripted-economy](../components/ops/knowledge/mechanisms/scripted-economy.md) (ops): A script sets the player's points, a zero income, one-time grants and a later income in stock's own nodes (STOCK, 2026-11-11)
-- [scripted-fires](../components/ops/knowledge/mechanisms/scripted-fires.md) (ops): A battery created just before its ShootOnPosition fires; pre-placed allied guns drove toward the front instead (PLAYED, 2026-11-11)
+- [scripted-fires](../components/ops/knowledge/mechanisms/scripted-fires.md) (ops): A battery created just before its ShootOnPosition fires; created where the player's units can reach, it must be in their alliance (PLAYED, 2026-11-11)
 - [scripted-nuke-effect](../components/ops/knowledge/mechanisms/scripted-nuke-effect.md) (ops): A script cannot launch the tactical-nuke impact effect; the game crashes (FAILED, 2026-11-10)
 - [seteffect-never-finishes](../components/ops/knowledge/mechanisms/seteffect-never-finishes.md) (ops): SetEffect and other lasting actions never finish, so nothing after them in a Sequential ever runs (PLAYED, 2026-11-06)
 - [soviet-player-camp](../components/ops/knowledge/mechanisms/soviet-player-camp.md) (ops): A clone of Survivors loads and plays with a Soviet player in the stock PACT-player camp shape (PROBED, 2026-11-11)
@@ -60,6 +61,7 @@ A fact holds for the build it was last verified on. After a game update, a recor
 - 2026-11-11 [2026-11-11-twin-strike-play1](../components/ops/knowledge/trials/2026-11-11-twin-strike-play1.md) (ops): play, mixed
 - 2026-11-11 [2026-11-11-twin-strike-opening-camera](../components/ops/knowledge/trials/2026-11-11-twin-strike-opening-camera.md) (ops): play, fail
 - 2026-11-11 [2026-11-11-twin-strike-launch1-duplicate-menu-order](../components/ops/knowledge/trials/2026-11-11-twin-strike-launch1-duplicate-menu-order.md) (ops): play, fail
+- 2026-11-11 [2026-11-11-twin-strike-guns-on-the-edge](../components/ops/knowledge/trials/2026-11-11-twin-strike-guns-on-the-edge.md) (ops): play, mixed
 - 2026-11-11 [2026-11-11-probe3b-play1-no-supply](../components/ops/knowledge/trials/2026-11-11-probe3b-play1-no-supply.md) (ops): play, fail
 - 2026-11-11 [2026-11-11-opening-camera-stock-survey](../components/ops/knowledge/trials/2026-11-11-opening-camera-stock-survey.md) (ops): survey, pass
 - 2026-11-10 [2026-11-10-probe3-play1-effect-crash](../components/ops/knowledge/trials/2026-11-10-probe3-play1-effect-crash.md) (ops): play, fail

@@ -1,9 +1,12 @@
-"""The fire-range gate (modkit.ops.gates.check_fire_range, fire_range_gate) and the unit-database readers it reads:
-ground_vision, shoot_on_position_bands, deck_packs and stock_deck_packs.
+"""The batteries a script creates and its fires: modkit.ops.gates.check_created_in_zone (the driver's gate 3: every unit
+created inside the playable zone), check_fire_range and fire_range_gate (a fire's battery in the player's alliance,
+every target in range from where it stands), and the unit-database readers they read: shoot_on_position_bands,
+deck_packs and stock_deck_packs.
 
-`Readers` reads a small synthetic database archive; `Gate` builds small synthetic scripts, LevelDesigns and playable
-zones with the toolkit and holds the gate's rules both ways. `StockReaders` reads the game's own database and skips
-without it; Twin Strike's tests prove the gate on its build (test_twin_strike_frame)."""
+`Readers` reads a small synthetic database archive; `Gate` and `CreatedInZone` build small synthetic scripts,
+LevelDesigns and playable zones with the toolkit and hold the gates' rules both ways. `StockCreates` runs the in-zone
+gate over every stock script and `StockReaders` reads the game's own database; both skip without their data. Twin
+Strike's tests prove the gates on its build (test_twin_strike_frame)."""
 from __future__ import annotations
 
 import os
@@ -16,7 +19,7 @@ from modkit.core.gates import CheckError
 from modkit.ops import gates
 from modkit.ops.bricks import g_create, g_seq, unit_path
 from modkit.ops.build import details_files
-from modkit.ops.graph import Imp, Node, Str, build_graph, encode
+from modkit.ops.graph import Node, build_graph, decode, encode, nodes_of, u32
 from modkit.ops.leveldesign import LD_FILE, LdItem, gd_tags
 from modkit.ops.shapes import GRU_WORLD, SHOOT_ON_POSITION, order
 from modkit.ops.zones import playable_zone_graph, rect_polygon
@@ -26,6 +29,8 @@ S, NS = "challenge_ModkitTest", "test-a"
 PROFILE = profile(NS)
 G = GRU_WORLD          # world units per GRU
 TOP = 600_000.0        # the synthetic playable zone's north edge, world units
+BOX = (0.0, TOP, 3_000_000.0, TOP + 3_000_000.0)   # the synthetic playable zone, world units (over 40,000 GRU a side)
+CAMPS = {"joueur": 0, "allie": 0, "ordinateur": 1}  # the synthetic camps and their alliances
 
 UNITS = """\
 export Descriptor_Unit_Gun_A is TEntityDescriptor
@@ -139,13 +144,6 @@ class Readers(unittest.TestCase):
         gates.database_text.cache_clear()
         cls.tmp.cleanup()
 
-    def test_ground_vision(self):
-        """Each unit's EVisionRange/Standard entry; a unit with no scanner is left out."""
-        self.assertEqual(gates.ground_vision(self.zip, minimum=2),
-                         {unit_path("Gun_A"): 3000.0, unit_path("Scout_A"): 5000.0})
-        with self.assertRaisesRegex(CheckError, "only 2 units with a ground vision range"):
-            gates.ground_vision(self.zip)
-
     def test_shoot_on_position_bands(self):
         """The band every ShootOnPosition ammunition of the unit reaches: the largest minimum, the smallest maximum;
         an ammunition that cannot shoot on a position does not count, and a unit with none is left out."""
@@ -158,91 +156,145 @@ class Readers(unittest.TestCase):
             gates.deck_packs(DECKS, PACKS, "NO_DECK")
 
 
+def playable(box: tuple[float, float, float, float] | None = BOX) -> bytes:
+    """A PlayableZone file: one area, the rectangle `box`; None: no area (the whole map is playable)."""
+    if box is None:
+        return encode(build_graph([Node("TMapAreaSet", [("Areas", [])])], []), "PlayableZone")
+    x0, y0, x1, y1 = box
+    zone = playable_zone_graph(list(rect_polygon(box)), ((x0 + x1) / 2, (y0 + y1) / 2, 0.0))
+    return encode(build_graph(zone, []), "PlayableZone")
+
+
+def script(spawn_y: float, target_y: float, camp: str = "allie", fire: bool = True,
+           units: tuple[str, ...] = ("Gun_A",)) -> tuple[bytes, bytes]:
+    """(script, LevelDesign) bytes: a battery of `units` created in `camp` at T_Spawn (x 50,000, y `spawn_y`) and,
+    with `fire`, ordered to ShootOnPosition on T_Target (x 50,000, y `target_y`); the camps are CAMPS, each with its
+    Alliance written as stock writes it (left out for 0)."""
+    items = [LdItem("Tags", "T_Spawn", 50_000.0, spawn_y, "Name"),
+             LdItem("Tags", "T_Target", 50_000.0, target_y, "Name")]
+    tags = {k.split("/", 1)[1]: v for k, v in gd_tags(items, S, NS).items()}
+    camps = {name: Node("TGDVariableCamp", [("Alliance", u32(a))] if a else [],
+                        export=f"$/GDScript/RootDescriptor/{name}") for name, a in CAMPS.items()}
+    group = Node("TGDVariableUnitGroup", export="$/GDScript/T/Variables/battery")
+    actions = [g_create(camps[camp], group, 2, tags["T_Spawn"], unit_path(u)) for u in units]
+    actions += [order(group, SHOOT_ON_POSITION, tags["T_Target"])] if fire else []
+    root = Node("TGDDescriptorLaunchEffetStandard", [("CampList", list(camps.values())), ("EffetMap", g_seq(actions))],
+                export="$/GDScript/RootDescriptor")
+    gd = encode(build_graph([root], [root, *camps.values(), *tags.values(), group]), "GDScript")
+    return gd, details_files(PROFILE, items, S)[LD_FILE]
+
+
 class Gate(unittest.TestCase):
-    """check_fire_range on a synthetic op: a 100,000 world square playable zone, a target inside it and a spawn
-    north of it, a player camp with a deck, a card and a pre-placed unit."""
+    """check_fire_range on a synthetic op: a playable zone over 40,000 GRU a side (BOX), a battery created at T_Spawn
+    and fired on T_Target."""
 
-    BOX = (0.0, TOP, 100_000.0, TOP + 100_000.0)     # the playable zone, world units
-    BOUNDS = (0.0, 0.0, 3_000_000.0, 3_000_000.0)
-    VISION = {unit_path("Scout_A"): 5000.0, unit_path("Tank_A"): 2000.0, unit_path("Gun_A"): 3000.0}
     BANDS = {unit_path("Gun_A"): (7000.0, 35000.0), unit_path("Rocket_A"): (10000.0, 35000.0)}
+    IN = TOP + 50_000.0     # a spawn inside the zone
 
-    def build(self, spawn_y: float, target_y: float = TOP + 50_000.0, fire: bool = True,
-              units: tuple[str, ...] = ("Gun_A",)) -> tuple[bytes, bytes, bytes]:
-        """(script, LevelDesign, playable zone) bytes: a battery of `units` created at T_Spawn (x 50,000, y
-        `spawn_y`) and, with `fire`, ordered to ShootOnPosition on T_Target (x 50,000, y `target_y`); the player's
-        camp gets deck DECK_A, the card Tank_A and a pre-placed Base_A."""
-        items = [LdItem("Tags", "T_Spawn", 50_000.0, spawn_y, "Name"),
-                 LdItem("Tags", "T_Target", 50_000.0, target_y, "Name"),
-                 LdItem("Camp_0", "C0_Base", 60_000.0, TOP + 50_000.0, "Spawn", unit="Base_A")]
-        tags = {k.split("/", 1)[1]: v for k, v in gd_tags(items, S, NS).items()}
-        camps = [Node("TGDVariableCamp", export=f"$/GDScript/RootDescriptor/{name}")
-                 for name in ("joueur", "ordinateur")]
-        group = Node("TGDVariableUnitGroup", export="$/GDScript/T/Variables/battery")
-        actions = [Node("TGDDescriptorSetDeck", [("Camp", camps[0]), ("DeckIdentifier", Str("DECK_A"))]),
-                   Node("TGDDescriptorAddUnitToDeck", [("Camp", camps[0]), ("TypeUnit", Imp(unit_path("Tank_A")))]),
-                   *(g_create(camps[1], group, 2, tags["T_Spawn"], unit_path(u)) for u in units)]
-        actions += [order(group, SHOOT_ON_POSITION, tags["T_Target"])] if fire else []
-        root = Node("TGDDescriptorLaunchEffetStandard", [("CampList", camps), ("EffetMap", g_seq(actions))],
-                    export="$/GDScript/RootDescriptor")
-        gd = encode(build_graph([root], [root, *camps, *tags.values(), group]), "GDScript")
-        zone = playable_zone_graph(list(rect_polygon(self.BOX)), (50_000.0, TOP + 50_000.0, 0.0))
-        playable = encode(build_graph(zone, []), "PlayableZone")
-        return gd, details_files(PROFILE, items, S)[LD_FILE], playable
+    def check(self, spawn_y: float, target_y: float, *, zone: bytes | None = None, **kw) -> gates.FireRange:
+        gd, ld = script(spawn_y, target_y, **kw)
+        return gates.check_fire_range(gd, ld, playable() if zone is None else zone, "T_Spawn", "joueur",
+                                      bands=self.BANDS)
 
-    def check(self, *args, vision=None, **kw) -> gates.FireRange:
-        return gates.check_fire_range(*self.build(*args, **kw), "T_Spawn", self.BOUNDS, "joueur",
-                                      vision=self.VISION if vision is None else vision, bands=self.BANDS,
-                                      deck_units=lambda deck: [unit_path("Scout_A"), unit_path("Car_A")])
-
-    def test_passes_out_of_sight_and_in_range(self):
-        """A spawn 6,000 GRU north of the zone, past the Scout's 5,000 (the deck's; the card's and the pre-placed
-        unit's are shorter or none), its target 15,000 GRU off, inside the gun's 7,000-35,000."""
-        r = self.check(TOP - 6000 * G, TOP - 6000 * G + 15000 * G)
-        self.assertAlmostEqual(r.outside_gru, 6000.0, places=3)
-        self.assertEqual((r.direction, r.vision_gru, r.watcher), ("N", 5000.0, unit_path("Scout_A")))
+    def test_passes_in_the_players_alliance_and_in_range(self):
+        """The battery in the player's ally's camp (alliance 0, as the player's), created inside the zone, its target
+        15,000 GRU off, inside the gun's 7,000-35,000; it stands where it is created. In the player's own camp too."""
+        r = self.check(self.IN, self.IN + 15000 * G)
+        self.assertEqual((r.alliance, r.camps, r.stand), (0, ("allie",), r.at))
         ((unit, target, d, lo, hi),) = r.fires
         self.assertEqual((unit, target, lo, hi), ("Gun_A", "T_Target", 7000.0, 35000.0))
         self.assertAlmostEqual(d, 15000.0, places=3)
+        self.assertEqual(self.check(self.IN, self.IN + 15000 * G, camp="joueur").camps, ("joueur",))
+
+    def test_a_battery_outside_the_players_alliance_fails(self):
+        """The same battery in an enemy-alliance camp: the player's units would engage it."""
+        with self.assertRaisesRegex(CheckError, r"Gun_A is created at T_Spawn in ordinateur, outside the player's "
+                                                r"alliance \(0\): the player's units engage it"):
+            self.check(self.IN, self.IN + 15000 * G, camp="ordinateur")
 
     def test_a_target_out_of_range_fails(self):
         """The target 5,000 GRU from the spawn, inside the gun's 7,000 minimum; a battery with a type whose band the
         target misses fails too, by that type."""
+        with self.assertRaisesRegex(CheckError, r"T_Target is 5,000 GRU from where Gun_A stands at T_Spawn, outside "
+                                                r"its ShootOnPosition band \(7,000-35,000 GRU\): move the spawn"):
+            self.check(self.IN, self.IN + 5000 * G)
+        with self.assertRaisesRegex(CheckError, r"T_Target is 8,000 GRU from where Rocket_A stands"):
+            self.check(self.IN, self.IN + 8000 * G, units=("Gun_A", "Rocket_A"))
+
+    def test_the_range_is_measured_from_where_the_battery_stands(self):
+        """A spawn 6,000 GRU north of the zone stands on its edge [[created-units-stand-in-zone]]: a target 12,000
+        GRU from the spawn is 6,000 from the edge, inside the gun's minimum. With a whole-map zone (no area) the same
+        battery stands at its spawn and passes."""
         y = TOP - 6000 * G
-        with self.assertRaisesRegex(CheckError, r"T_Target is 5,000 GRU from T_Spawn, outside Gun_A's ShootOnPosition "
-                                                r"band \(7,000-35,000 GRU\): move the spawn"):
-            self.check(y, y + 5000 * G)
-        with self.assertRaisesRegex(CheckError, r"T_Target is 8,000 GRU from T_Spawn, outside Rocket_A's"):
-            self.check(y, y + 8000 * G, units=("Gun_A", "Rocket_A"))
-
-    def test_in_sight_fails(self):
-        """4,000 GRU north of the zone: inside the Scout's 5,000."""
-        y = TOP - 4000 * G
-        with self.assertRaisesRegex(CheckError, r"T_Spawn stands 4,000 GRU N of the playable zone, inside the ground "
-                                                r"vision range of the player's Scout_A \(5,000 GRU\)"):
-            self.check(y, y + 15000 * G)
-
-    def test_no_vision_known_is_reported_only(self):
-        r = self.check(TOP - 1000 * G, TOP + 10000 * G, vision={})
-        self.assertEqual((r.vision_gru, r.watcher), (None, None))
-
-    def test_inside_the_zone_or_off_the_map_fails(self):
-        with self.assertRaisesRegex(CheckError, "lies inside the playable zone"):
-            self.check(TOP + 50_000.0, TOP + 50_000.0 + 15000 * G, vision={})
-        with self.assertRaisesRegex(CheckError, "lies outside the map"):
-            self.check(-10_000.0, -10_000.0 + 15000 * G, vision={})
+        with self.assertRaisesRegex(CheckError, r"T_Target is 6,000 GRU from where Gun_A stands"):
+            self.check(y, y + 12000 * G)
+        r = self.check(y, y + 12000 * G, zone=playable(None))
+        self.assertEqual(r.stand, r.at)
+        self.assertAlmostEqual(r.fires[0][2], 12000.0, places=3)
 
     def test_a_battery_never_fired_fails(self):
         with self.assertRaisesRegex(CheckError, "battery is created at T_Spawn but never ordered to ShootOnPosition"):
-            self.check(TOP - 6000 * G, fire=False)
+            self.check(self.IN, self.IN, fire=False)
 
-    def test_the_player_units(self):
-        """The deck's units and transports, the cards, the units pre-placed in the player's camp."""
-        gd, ld, _ = self.build(0.0)
-        nb, _, _ = gates.decode(gd)
-        got = gates.player_units(nb, gates.nodes_of(nb), gates.read_ld_items(ld), "joueur",
-                                 lambda deck: [unit_path(f"{deck}_unit")])
-        self.assertEqual(got, {unit_path("DECK_A_unit"), unit_path("Tank_A"), unit_path("Base_A")})
+
+class CreatedInZone(unittest.TestCase):
+    """check_created_in_zone, the driver's gate 3, on the synthetic script: every CreateUnitOnPosition stands inside
+    the shipped playable zone [[created-units-stand-in-zone]]."""
+
+    @staticmethod
+    def check(spawn_y: float, zone: bytes | None = None, ld: bool = True) -> int:
+        gd, ld_raw = script(spawn_y, spawn_y)
+        details = {gates.PLAYABLE_FILE: playable() if zone is None else zone, **({LD_FILE: ld_raw} if ld else {})}
+        return gates.check_created_in_zone(nodes_of(decode(gd)[0]), details)
+
+    def test_inside_passes(self):
+        self.assertEqual(self.check(TOP + 50_000.0), 1)
+
+    def test_outside_fails(self):
+        """4,000 GRU north of the zone: the game would put the battery on the zone's edge."""
+        with self.assertRaisesRegex(CheckError, r"1 of 1 CreateUnitOnPosition create units outside the playable zone:"
+                                                r"\n  Gun_A is created at T_Spawn, 4,000 GRU N of the playable zone: it "
+                                                r"stands on the zone's edge, where the player's units see and engage it"):
+            self.check(TOP - 4000 * G)
+
+    def test_a_whole_map_zone_holds_everything(self):
+        """A PlayableZone file with no area (Survivors, RedJuggernaut): the whole map is playable."""
+        self.assertEqual(self.check(TOP - 4000 * G, zone=playable(None)), 1)
+
+    def test_an_unbound_position_or_no_zone_fails(self):
+        with self.assertRaisesRegex(CheckError, "a CreateUnitOnPosition of Gun_A names no LevelDesign item"):
+            self.check(TOP + 50_000.0, ld=False)
+        gd, ld = script(TOP, TOP)
+        with self.assertRaisesRegex(CheckError, "the script creates units but the mod ships no out/PlayableZone"):
+            gates.check_created_in_zone(nodes_of(decode(gd)[0]), {LD_FILE: ld})
+
+    def test_a_script_that_creates_nothing_needs_no_zone(self):
+        self.assertEqual(gates.check_created_in_zone([Node("TGDDescriptorSequential", [("SubActions", [])])], {}), 0)
+
+
+@paths.skip_unless_extracted("scenarios")
+class StockCreates(unittest.TestCase):
+    """Stock creates every unit inside the playable zone: the in-zone gate passes all 300 CreateUnitOnPosition of the
+    21 stock scenarios that create units, each read with its own LevelDesign and PlayableZone (four ship a zone file
+    with no area: the whole map)."""
+
+    def test_every_stock_create_stands_inside(self):
+        root = str(paths.extracted_root())
+        creates, scenarios, whole = 0, 0, 0
+        for name in sorted(os.listdir(os.path.join(root, "scenarios"))):
+            folder = os.path.join(root, "scenarios", name)
+            gd = os.path.join(folder, "NDF", "Scenarios", "GDScript", f"{name}.ndfbin")
+            if not os.path.isfile(gd):
+                continue
+            details = {}
+            for inner in (LD_FILE, gates.PLAYABLE_FILE):
+                with open(os.path.join(folder, *inner.split("/")), "rb") as fh:
+                    details[inner] = fh.read()
+            with open(gd, "rb") as fh:
+                n = gates.check_created_in_zone(nodes_of(decode(fh.read())[0]), details)
+            creates, scenarios = creates + n, scenarios + (n > 0)
+            whole += gates.playable_ring(details[gates.PLAYABLE_FILE]) is None
+        self.assertEqual((creates, scenarios, whole), (300, 21, 4))
 
 
 @paths.skip_unless_game_dir("Mods", "ModData", "base.zip")
@@ -250,11 +302,9 @@ class StockReaders(unittest.TestCase):
     """The readers over the game's own database, as Twin Strike's fire-range gate reads it."""
 
     def test_the_division_guns(self):
-        bands, vision = gates.shoot_on_position_bands(), gates.ground_vision()
+        bands = gates.shoot_on_position_bands()
         self.assertEqual(bands[unit_path("2S7M_Malka_SOV")], (7000.0, 35000.0))
         self.assertEqual(bands[unit_path("BM27_Uragan_SOV")], (10000.0, 35000.0))
-        self.assertEqual(vision[unit_path("2S7M_Malka_SOV")], 3500.0)
-        self.assertNotIn(unit_path("FOB_SOV"), vision)
 
     def test_a_stock_deck(self):
         """RedJuggernaut's player deck: 26 packs, its heavy scouts in their BMP-1P reco."""

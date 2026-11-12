@@ -144,7 +144,7 @@
            [2, "Su-24M (cluster)", "Su_24M_clu_SOV"], [4, "BRDM-2 Konkurs", "BRDM_2_Konkurs_SOV"], [4, "Motor rifles (Metis)", "MotRifles_Metis_SOV"]]},
          {"name": "Supply", "when": "placed on the map · yours from the start", "note": "No deck can carry a FOB, so both stand on the map in your camp, as stock's Marauders and SigurdsStrike place theirs.", "units": [
            [2, "FOB, at FOB_W and FOB_E in the north zone", "FOB_SOV"]]},
-         {"name": "Division artillery", "when": "scripted · ally camp · at GUNS, the cut's north-west corner", "note": "It fires only on your call: the preparation fire, fire missions, the fire plan and the strike's carrier round.", "units": [
+         {"name": "Division artillery", "when": "scripted · ally camp · at GUN_SPAWN, the cut's north-west corner", "note": "It fires only on your call: the preparation fire, fire missions, the fire plan and the strike's carrier round.", "units": [
            [6, "2S7M Malka, 203 mm, reach 7,000–35,000 GRU: every target", "2S7M_Malka_SOV"],
            [6, "BM-27 Uragan, 220 mm, reach 10,000–35,000 GRU: the boxes and ASSEMBLY, not the village", "BM27_Uragan_SOV"]]}
        ]},

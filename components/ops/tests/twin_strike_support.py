@@ -78,7 +78,7 @@ def _deck_block(identifier: str) -> str:
 def stock_deck(identifier: str) -> list[tuple[str, int, str | None]]:
     """The packs of the stock deck `identifier` as (unit, number, transport or None), in its DeckPackList order: the
     mod SDK's Decks.ndf and DeckPacks.ndf from the extraction, read by the toolkit's reader (gates.deck_packs, which
-    the fire-range gate reads the game's copy with). A deck stock lacks raises LookupError."""
+    gates.stock_deck_packs reads the game's copy with). A deck stock lacks raises LookupError."""
     _deck_block(identifier)
     texts = []
     for name in ("Decks.ndf", "DeckPacks.ndf"):

@@ -12,7 +12,7 @@ Topic `units-and-orders`, declared by ops. Back to [the map](../README.md).
 - [add-unit-to-deck](../../components/ops/knowledge/mechanisms/add-unit-to-deck.md): AddUnitToDeck adds a card at load or mid-battle, a transport card included; added cards show in the battlegroup view (ops, verified 201602)
 - [fast-move-and-attack-keeps-roads](../../components/ops/knowledge/mechanisms/fast-move-and-attack-keeps-roads.md): MoveAndAttack goes cross-country; FastMoveAndAttack and ForceRoad moves keep to roads (ops, verified 201602)
 - [kill-counts-by-type](../../components/ops/knowledge/mechanisms/kill-counts-by-type.md): Kill counts are by unit type, not by group; count a group's survivors instead (ops, verified 201602)
-- [scripted-fires](../../components/ops/knowledge/mechanisms/scripted-fires.md): A battery created just before its ShootOnPosition fires; pre-placed allied guns drove toward the front instead (ops, verified 201602)
+- [scripted-fires](../../components/ops/knowledge/mechanisms/scripted-fires.md): A battery created just before its ShootOnPosition fires; created where the player's units can reach, it must be in their alliance (ops, verified 201602)
 - [seteffect-never-finishes](../../components/ops/knowledge/mechanisms/seteffect-never-finishes.md): SetEffect and other lasting actions never finish, so nothing after them in a Sequential ever runs (ops, verified 201602)
 - [spawn-and-create-units](../../components/ops/knowledge/mechanisms/spawn-and-create-units.md): SpawnUnits reveals pre-placed units; CreateUnitOnPosition makes new ones at a tag (ops, verified 201602)
 - [vanished-removal](../../components/ops/knowledge/mechanisms/vanished-removal.md): KillAllUnit with Vanished removes units at once; count them before you remove them (ops, verified 201602)
@@ -32,6 +32,7 @@ Topic `units-and-orders`, declared by ops. Back to [the map](../README.md).
 
 ### FAILED
 
+- [created-units-stand-in-zone](../../components/ops/knowledge/mechanisms/created-units-stand-in-zone.md): A script cannot hide a unit outside the playable zone; a unit created there stands on the zone's edge, where the player's units see and engage it (ops, verified 201602)
 - [helicopter-boarding](../../components/ops/knowledge/mechanisms/helicopter-boarding.md): Scripted infantry boarding of a helicopter does not work (ops, verified 201602)
 - [scripted-nuke-effect](../../components/ops/knowledge/mechanisms/scripted-nuke-effect.md): A script cannot launch the tactical-nuke impact effect; the game crashes (ops, verified 201602)
 
@@ -58,6 +59,7 @@ Taught by the trials of these mechanisms.
 ## Trials, newest first
 
 - 2026-11-11 [2026-11-11-twin-strike-play1](../../components/ops/knowledge/trials/2026-11-11-twin-strike-play1.md) (ops): play, mixed
+- 2026-11-11 [2026-11-11-twin-strike-guns-on-the-edge](../../components/ops/knowledge/trials/2026-11-11-twin-strike-guns-on-the-edge.md) (ops): play, mixed
 - 2026-11-10 [2026-11-10-probe3-play1-effect-crash](../../components/ops/knowledge/trials/2026-11-10-probe3-play1-effect-crash.md) (ops): play, fail
 - 2026-11-06 [2026-11-06-spawns-and-deck-survey](../../components/ops/knowledge/trials/2026-11-06-spawns-and-deck-survey.md) (ops): re, pass
 - 2026-11-06 [2026-11-06-probe2-play-run-a](../../components/ops/knowledge/trials/2026-11-06-probe2-play-run-a.md) (ops): play, pass

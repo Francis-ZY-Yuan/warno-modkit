@@ -248,14 +248,14 @@ class Shapes(unittest.TestCase):
         for flag in op.FLAGS:
             self.var(flag)
 
-    def test_every_fire_creates_its_battery_out_of_sight(self):
-        """No SetAmmo anywhere. Every fire's battery is created at GUN_SPAWN in the NATO2 camp, into its own group,
+    def test_every_fire_creates_its_battery_in_the_allied_camp(self):
+        """No SetAmmo anywhere. Every fire's battery is created at GUN_SPAWN in the allied camp, into its own group,
         then: AddIgnoredUnitByScript on it, FIRE_LEAD_S, ShootOnPosition non-blocking, FIRE_HOLD_S, KillAllUnit
         Vanished on it; the guns are created nowhere else, and nothing else orders them."""
         self.assertEqual(of(self.nodes, "SetAmmo"), [])
         creates = [n for n in of(self.nodes, "CreateUnitOnPosition") if last(prop(n, "Group")) in op.BATTERIES]
         self.assertEqual({(last(prop(n, "Position")), last(prop(n, "Camp"))) for n in creates},
-                         {(op.GUN_SPAWN, "ordinateur_DDR")})
+                         {(op.GUN_SPAWN, "Allie")})
         fires = 0
         for seq in of(self.nodes, "Sequential"):
             kids = subs(seq)
@@ -514,7 +514,7 @@ class Phase1(unittest.TestCase):
 
     def test_the_preparation_fire(self):
         """The warning at 30 s, the dialog at 40 s and again every 2 min after HOLD FIRE; on FIRE AT WILL the 2S7M
-        battery is created at GUN_SPAWN in the NATO2 camp, kept off its AI, fires FIRE_LEAD_S later on the village's
+        battery is created at GUN_SPAWN in the allied camp, kept off its AI, fires FIRE_LEAD_S later on the village's
         Name tag, and is removed FIRE_HOLD_S after that; the dialog's flag is 0 again."""
         m = run(World(rings=village([(0, 14)]), answers={"ts_dprep": [1, 1, 0]}), 600, "phase1")
         self.assertEqual(m.when("hint", "ts_hprep"), [30])

@@ -275,13 +275,12 @@ class TwinStrikeMapTest(unittest.TestCase):
         self.assertEqual(len(ts_map.items()), len(self.items))
 
     def test_every_point_lies_in_the_cut(self):
-        """Every place but GUN_SPAWN, which stands north of the cut, inside the map (768 x 768 px)."""
+        """Every place, GUN_SPAWN among them: a unit created outside the playable zone stands on its edge
+        [[created-units-stand-in-zone]]."""
         x0, y0, x1, y1 = ts_map.CUT_PX
         for name, (x, y) in ts_map.POINTS.items():
             with self.subTest(point=name):
-                self.assertEqual(x0 < x < x1 and y0 < y < y1, name != "GUN_SPAWN", (name, (x, y)))
-        x, y = ts_map.POINTS["GUN_SPAWN"]
-        self.assertTrue(x0 < x < x1 and 0 < y < y0)
+                self.assertTrue(x0 < x < x1 and y0 < y < y1, (name, (x, y)))
         for it in self.items.values():
             for p in (*(it.polygon or ()), (it.x, it.y), *((it.start, it.end) if it.start else ())):
                 with self.subTest(item=it.name, p=p):
@@ -299,7 +298,7 @@ class TwinStrikeMapTest(unittest.TestCase):
 
     def test_deployment_boxes(self):
         """Soviet (alliance 0) north, NATO (alliance 1) south, both inside the cut and apart; the NATO entries and
-        ASSEMBLY in the NATO box, the FOBs and SOV_ENTRY in the Soviet box, GUNS outside it."""
+        ASSEMBLY in the NATO box, the FOBs and SOV_ENTRY in the Soviet box, GUN_SPAWN outside it."""
         sov, nato = self.items["TS_DZ_Soviet"], self.items["TS_DZ_NATO"]
         self.assertEqual((sov.alliance, nato.alliance), (None, 1))
         self.assertEqual((self.px(sov), self.px(nato)), (ts_map.SOV_DZ, ts_map.NATO_DZ))
@@ -313,7 +312,7 @@ class TwinStrikeMapTest(unittest.TestCase):
             for name in names:
                 with self.subTest(point=name):
                     self.assertTrue(point_in_polygon(*TWIN_CITIES.px_to_world(ts_map.POINTS[name]), zone.polygon))
-        self.assertFalse(point_in_polygon(*TWIN_CITIES.px_to_world(ts_map.POINTS["GUNS"]), sov.polygon))
+        self.assertFalse(point_in_polygon(*TWIN_CITIES.px_to_world(ts_map.POINTS["GUN_SPAWN"]), sov.polygon))
 
     def test_arrivals_end_in_the_soviet_box(self):
         """Both of the player's entries (NumAlliance left out) come in at the cut's north edge, north of the Soviet
@@ -371,26 +370,17 @@ class TwinStrikeMapTest(unittest.TestCase):
         return ts_map.MAP.px_of(it)
 
     def test_the_guns_bands(self):
-        """Design section 3: from GUN_SPAWN, where each fire's battery is created, both the 2S7M (7,000-35,000 GRU) and
-        the BM-27 (10,000-35,000) reach the village, the boxes and ASSEMBLY, the closest 2,865 GRU past the BM-27's
-        minimum; the spot stands 4,577 GRU north of the cut's tile edge (y 145.603)."""
+        """Design section 3: from GUN_SPAWN, the cut's north-west corner, where each fire's battery is created, the
+        2S7M (7,000-35,000 GRU) reaches every target, the BM-27 (10,000-35,000) the boxes and ASSEMBLY but not the
+        village (the plan keeps it off the village); each with at least 500 GRU to spare, which a battery laid out
+        around the point needs."""
         p = ts_map.POINTS
-        got = [round(gru(p["GUN_SPAWN"], p[n])) for n in ("VILLAGE", "BOX_W", "BOX_C", "ASSEMBLY")]
-        self.assertEqual(got, [12865, 16074, 15402, 16914])
-        self.assertTrue(all(10000 <= d <= 35000 for d in got))
-        self.assertEqual(round(gru(p["GUN_SPAWN"], (p["GUN_SPAWN"][0], 145.603))), 4577)
-
-    def test_the_fallback_at_guns_keeps_the_bands(self):
-        """The unbuilt fallback, batteries inside the cut's north-west corner at GUNS: the 2S7M (7,000-35,000 GRU)
-        reaches every target, the BM-27 (10,000-35,000) the boxes and ASSEMBLY but not the village; each with at least
-        500 GRU to spare, which a battery laid out around GUNS needs."""
-        p = ts_map.POINTS
-        village = gru(p["GUNS"], p["VILLAGE"])
+        village = gru(p["GUN_SPAWN"], p["VILLAGE"])
         self.assertTrue(7000 + 500 <= village <= 10000 - 500, village)
         for name in ("BOX_W", "BOX_C", "ASSEMBLY"):
             with self.subTest(target=name):
-                self.assertTrue(10000 + 500 <= gru(p["GUNS"], p[name]) <= 35000 - 500)
-        self.assertEqual([round(gru(p["GUNS"], p[n])) for n in ("VILLAGE", "BOX_W", "BOX_C", "ASSEMBLY")],
+                self.assertTrue(10000 + 500 <= gru(p["GUN_SPAWN"], p[name]) <= 35000 - 500)
+        self.assertEqual([round(gru(p["GUN_SPAWN"], p[n])) for n in ("VILLAGE", "BOX_W", "BOX_C", "ASSEMBLY")],
                          [7846, 10991, 11818, 12867])
         self.assertEqual([round(gru(p["VILLAGE"], p[n])) for n in ("BOX_W", "BOX_C", "ASSEMBLY")], [3238, 4719, 5240])
 
@@ -512,7 +502,8 @@ class TwinStrikeCutTest(unittest.TestCase):
 @PICTURES
 class TwinStrikePlacesTest(unittest.TestCase):
     """The named places sit where their reasons say, on Twin Cities' Minimap: the lane points, the waves' entries
-    and the reinforcement location on road pixels, the open-ground places on fields, GUNS in the corner forest."""
+    and the reinforcement location on road pixels, the open-ground places on fields, GUN_SPAWN in the corner
+    forest."""
 
     @classmethod
     def setUpClass(cls):
@@ -537,7 +528,7 @@ class TwinStrikePlacesTest(unittest.TestCase):
                 self.assertTrue(FIELD_LUMINANCE <= self.luminance(ts_map.POINTS[name]) < ROAD_LUMINANCE)
 
     def test_guns_in_the_corner_forest(self):
-        self.assertLess(self.luminance(ts_map.POINTS["GUNS"]), FOREST_LUMINANCE)
+        self.assertLess(self.luminance(ts_map.POINTS["GUN_SPAWN"]), FOREST_LUMINANCE)
 
 
 @LAYOUT_DATA

@@ -41,13 +41,14 @@ A mechanism filed under two topics is listed under both.
 - [zone-lookup-by-point](mechanisms/zone-lookup-by-point.md): Zone conditions find their zone by a tag's point, and a point in no zone fails silently (PLAYED, verified 201602 2026-11-06)
 - [arrival-end-in-zone](mechanisms/arrival-end-in-zone.md): Every player arrival entry must end inside a deployment zone of its side or a command zone (STOCK, verified 201602 2026-11-04)
 - [start-camera-before-loading-done](mechanisms/start-camera-before-loading-done.md): An Operation that opens in the deployment phase sets its opening camera after LoadingDone, a move then a snap to its last key (STOCK, verified 201602 2026-11-11)
+- [created-units-stand-in-zone](mechanisms/created-units-stand-in-zone.md): A script cannot hide a unit outside the playable zone; a unit created there stands on the zone's edge, where the player's units see and engage it (FAILED, verified 201602 2026-11-11)
 
 ### Units and orders
 
 - [add-unit-to-deck](mechanisms/add-unit-to-deck.md): AddUnitToDeck adds a card at load or mid-battle, a transport card included; added cards show in the battlegroup view (PLAYED, verified 201602 2026-11-11)
 - [fast-move-and-attack-keeps-roads](mechanisms/fast-move-and-attack-keeps-roads.md): MoveAndAttack goes cross-country; FastMoveAndAttack and ForceRoad moves keep to roads (PLAYED, verified 201602 2026-11-06)
 - [kill-counts-by-type](mechanisms/kill-counts-by-type.md): Kill counts are by unit type, not by group; count a group's survivors instead (PLAYED, verified 201602 2026-11-06)
-- [scripted-fires](mechanisms/scripted-fires.md): A battery created just before its ShootOnPosition fires; pre-placed allied guns drove toward the front instead (PLAYED, verified 201602 2026-11-11)
+- [scripted-fires](mechanisms/scripted-fires.md): A battery created just before its ShootOnPosition fires; created where the player's units can reach, it must be in their alliance (PLAYED, verified 201602 2026-11-11)
 - [seteffect-never-finishes](mechanisms/seteffect-never-finishes.md): SetEffect and other lasting actions never finish, so nothing after them in a Sequential ever runs (PLAYED, verified 201602 2026-11-06)
 - [spawn-and-create-units](mechanisms/spawn-and-create-units.md): SpawnUnits reveals pre-placed units; CreateUnitOnPosition makes new ones at a tag (PLAYED, verified 201602 2026-11-06)
 - [vanished-removal](mechanisms/vanished-removal.md): KillAllUnit with Vanished removes units at once; count them before you remove them (PLAYED, verified 201602 2026-11-06)
@@ -58,6 +59,7 @@ A mechanism filed under two topics is listed under both.
 - [scripted-air-sweep](mechanisms/scripted-air-sweep.md): Hidden aircraft revealed, sent over a circle and sent home once spent give an AI-less camp air sweeps (STOCK, verified 201602 2026-11-11)
 - [wave-ends-with-attack](mechanisms/wave-ends-with-attack.md): An AI-less wave stops at its last waypoint unless its route ends with an Attack on the player's units (STOCK, verified 201602 2026-11-11)
 - [weapons-jammed-effect](mechanisms/weapons-jammed-effect.md): The "weapons jammed" effect only zeroes weapon ranges; to keep a unit silent, empty its ammunition (STOCK, verified 201602 2026-11-03)
+- [created-units-stand-in-zone](mechanisms/created-units-stand-in-zone.md): A script cannot hide a unit outside the playable zone; a unit created there stands on the zone's edge, where the player's units see and engage it (FAILED, verified 201602 2026-11-11)
 - [helicopter-boarding](mechanisms/helicopter-boarding.md): Scripted infantry boarding of a helicopter does not work (FAILED, verified 201602 2026-11-03)
 - [scripted-nuke-effect](mechanisms/scripted-nuke-effect.md): A script cannot launch the tactical-nuke impact effect; the game crashes (FAILED, verified 201602 2026-11-10)
 
@@ -110,6 +112,8 @@ The game's own words in this component's trials, the mechanism behind them, and 
 | Nothing bought after Launch battle arrived | [arrival-end-in-zone](mechanisms/arrival-end-in-zone.md) | `modkit.ops.gates.check_arrivals` |
 | Nothing bought after Launch battle arrived | [deployment-phase-recipe](mechanisms/deployment-phase-recipe.md) | `modkit.ops.gates.check_arrivals` |
 | Relaunch Game prompt on starting any Operation; after Continue, the game came back with no mod active | [gameplay-mod-relaunch](mechanisms/gameplay-mod-relaunch.md) | `modkit.ops.gates.check_package` |
+| The division's batteries showed as blue units on the playable zone's north edge beside the player's deployment, and the player's Ka-50s killed them; their shells landed on the target | [created-units-stand-in-zone](mechanisms/created-units-stand-in-zone.md) | `modkit.ops.gates.check_created_in_zone` |
+| The division's batteries showed as blue units on the playable zone's north edge beside the player's deployment, and the player's Ka-50s killed them; their shells landed on the target | [scripted-fires](mechanisms/scripted-fires.md) | `modkit.ops.gates.check_fire_range` |
 | The division's guns drove toward the front and died; the release dialog never showed after the fire plan was fired | [add-unit-to-deck](mechanisms/add-unit-to-deck.md) | none yet |
 | The division's guns drove toward the front and died; the release dialog never showed after the fire plan was fired | [detector-circles-only](mechanisms/detector-circles-only.md) | `modkit.ops.gates.check_zone_tags` |
 | The division's guns drove toward the front and died; the release dialog never showed after the fire plan was fired | [dialog-reask-loop](mechanisms/dialog-reask-loop.md) | none yet |
@@ -140,6 +144,7 @@ The game's own words in this component's trials, the mechanism behind them, and 
 - 2026-11-11 [2026-11-11-twin-strike-play1](trials/2026-11-11-twin-strike-play1.md): play, mixed. The division's guns drove toward the front and died; the release dialog never showed after the fire plan was fired
 - 2026-11-11 [2026-11-11-twin-strike-opening-camera](trials/2026-11-11-twin-strike-opening-camera.md): play, fail. The opening camera sat on the ground somewhere
 - 2026-11-11 [2026-11-11-twin-strike-launch1-duplicate-menu-order](trials/2026-11-11-twin-strike-launch1-duplicate-menu-order.md): play, fail. Map pack configuration error : Duplicate OrderToChainMission 1001 in map pack '{the Operations pack's GUID}'.
+- 2026-11-11 [2026-11-11-twin-strike-guns-on-the-edge](trials/2026-11-11-twin-strike-guns-on-the-edge.md): play, mixed. The division's batteries showed as blue units on the playable zone's north edge beside the player's deployment, and the player's Ka-50s killed them; their shells landed on the target
 - 2026-11-11 [2026-11-11-probe3b-play1-no-supply](trials/2026-11-11-probe3b-play1-no-supply.md): play, fail. The Soviet player found no supply trucks or supply helicopters to buy
 - 2026-11-11 [2026-11-11-opening-camera-stock-survey](trials/2026-11-11-opening-camera-stock-survey.md): survey, pass
 - 2026-11-10 [2026-11-10-probe3-play1-effect-crash](trials/2026-11-10-probe3-play1-effect-crash.md): play, fail. The game crashed during the deploy phase, at the effect steps

@@ -7,8 +7,9 @@ inside it as the AI grid, and CUT.gate() holds both (modkit.ops.maps.Cut).
 
 POINTS is every named place of the design (docs/design.md section 3), each checked on the Minimap's roads and the
 Preview's satellite picture, and moved where it was off (the reason beside it); PATHS are the routes through them.
-Every place lies inside the cut but GUN_SPAWN, where the division's batteries are created for each fire, out of the
-player's sight north of it (the fire-range gate holds it there).
+Every place lies inside the cut, GUN_SPAWN among them: the division's batteries are created there for each fire, in the
+player's allied camp. A unit created outside the playable zone stands on the zone's edge, where the player's units see
+and engage it [[created-units-stand-in-zone]].
 items() is every LevelDesign item the map gives the op:
 - the one command zone, the village: the stock zone AutoName_5's polygon, Points and position, copied into a
   generated zone (VILLAGE_CZ);
@@ -74,25 +75,16 @@ POINTS: dict[str, tuple[float, float]] = {
     # battalion 2's assembly area, the nuke zone's centre: open field west of the east road (fields x 130-163 here);
     # the design's (170, 500) was 14 px east, on a small wood (x 169-175, y 497-505) beside the road
     "ASSEMBLY": (156, 500),
-    # the division artillery's first place, in the forest of the cut's north-west corner (forest from x 0 to 30),
-    # outside the Soviet box: 17 px north of the design's (15, 175), where the village was 7,273 GRU off, 273 over the
-    # 2S7M's 7,000 minimum, a margin a battery laid out around the point loses (a gun 10 px south of it stands 6,937
-    # GRU off); here the village is 7,846 GRU off, and BOX_W 10,991 against the BM-27's 10,000. Pre-placed guns there
-    # drove south and died in the first play; it is now GUN_SPAWN's fallback (below), unbuilt.
-    "GUNS": (15, 158),
-    # Where the division's batteries are created for each fire, then removed (design 5.4): the one point outside the
-    # cut. The fire-range gate holds it to its rules, from the shipped Details and the unit database:
-    # - outside the cut, inside Twin Cities' map bounds (0-768 px);
-    # - north of the cut's north edge (y 145.6) by at least the longest ground vision range of every unit the player
-    #   can field, so none sees it: 4,250 GRU (122 px, the MiG-23ML; every other is 3,500 or less). It stands 131.6 px,
-    #   4,577 GRU, north of the edge;
-    # - every fire target inside the band of each battery that fires on it: the village 12,865 GRU off, BOX W 16,074,
-    #   BOX C 15,402 and ASSEMBLY 16,914, against the 2S7M's 7,000-35,000 and the BM-27's 10,000-35,000.
-    # North of the cut the Minimap is dimmed (its frame lines run at x 9 and y 10-11), so the spot was read off the
-    # Preview: open fields between the forest band (x 75-110) and the north-east fields, 3 px south of the frame.
-    # The fallback, unbuilt: the ally camp (SovietAlly), the batteries created inside the cut's north-west corner at
-    # GUNS, seen for about a minute per fire.
-    "GUN_SPAWN": (140, 14),
+    # Where the division's batteries are created for each fire, in the player's allied camp, then removed (design
+    # 5.4): the forest of the cut's north-west corner (forest from x 0 to 30), outside the Soviet box. 17 px north of
+    # the design's (15, 175), where the village was 7,273 GRU off, 273 over the 2S7M's 7,000 minimum, a margin a
+    # battery laid out around the point loses (a gun 10 px south of it stands 6,937 GRU off); here the village is
+    # 7,846 GRU off, and BOX_W 10,991 against the BM-27's 10,000. The fire-range gate holds every target inside the
+    # band of each battery that fires on it, from the shipped Details and the unit database.
+    # The guns' history: pre-placed here in the first play, they drove south and died; then created for each fire at
+    # (140, 14) px, 4,577 GRU north of the cut, in the unused NATO2 camp, they stood on the cut's north edge beside
+    # the Soviet box, where the player's Ka-50s killed them [[created-units-stand-in-zone]].
+    "GUN_SPAWN": (15, 158),
     # the player's FOBs: open fields in the Soviet box, W between the forest-edge track (x 35) and the north road
     # (x 78), E west of the east road (x 202-205)
     "FOB_W": (62, 198),
@@ -115,7 +107,7 @@ VILLAGE_CZ = rect_polygon((15680.0, 848903.0, 338240.0, 1079303.0))
 VILLAGE_CZ_AT = (184320.0, 983040.0)
 VILLAGE_CZ_POINTS = 2
 # The deployment boxes, inside the cut. Soviet: the stock north zone's western part (it runs y 157.6-211.6), clear of
-# GUNS and the cut's west forest. NATO: the south strip, north of the cut's south edge.
+# GUN_SPAWN and the cut's west forest. NATO: the south strip, north of the cut's south edge.
 SOV_DZ = (40, 158, 210, 212)
 NATO_DZ = (6, 490, 210, 520)
 # The player's arrivals (Start, End), entering at the cut's north edge (y 145.6), each End in the Soviet box. The

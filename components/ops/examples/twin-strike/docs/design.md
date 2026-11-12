@@ -115,22 +115,21 @@ and those that were off moved at most 20 px.
 | LANE_C | (163, 510) → (180, 455) → (150, 409) → VILLAGE | The centre lane, up the east road east of the stream, then west on the road across it into the village |
 | BOX_W, BOX_C | (65, 470), (180, 455) | Fire boxes, one on each lane, on its road |
 | ASSEMBLY | (156, 500), in the NATO zone | The second battalion's assembly area, on open fields: the nuke zone (5.6) |
-| GUN_SPAWN | (140, 14), north of the cut | Where each fire's battery is created and removed (5.4), out of the player's sight |
-| GUNS | (15, 158), the cut's north-west corner | The guns' first place; now GUN_SPAWN's unbuilt fallback (5.4) |
+| GUN_SPAWN | (15, 158), the cut's north-west corner | Where each fire's battery is created, in the player's allied camp, and removed (5.4) |
 | FOB_W, FOB_E | (62, 198), (188, 198), in the Soviet box | The player's two FOBs (6.2) |
 
 **Distances.** Everything is close: from the village, BOX_W is about 3,200 GRU, BOX_C about 4,700 and ASSEMBLY about
-5,200. GUN_SPAWN stands 4,577 GRU north of the cut, past the longest ground vision range of any unit the player can
-field (4,250 GRU, the MiG-23ML's), and from it:
-- the village is 12,865 GRU;
-- BOX_W 16,074;
-- BOX_C 15,402;
-- ASSEMBLY 16,914.
-The `fire-range` gate holds these rules on every build.
+5,200. GUN_SPAWN stands in the forest of the cut's north-west corner, outside the Soviet box, and from it:
+- the village is 7,846 GRU;
+- BOX_W 10,991;
+- BOX_C 11,818;
+- ASSEMBLY 12,867.
+The `fire-range` gate holds these ranges on every build, and the build's own gate keeps every unit the script creates
+inside the cut [[created-units-stand-in-zone]].
 
-**The guns' bands decide the guns.** The 2S7M (7,000–35,000) and the BM-27 (10,000–35,000) both reach every target
-from GUN_SPAWN; the plan keeps the BM-27 off the village, its preparation fire the 2S7Ms' alone. Nothing on the map is
-far enough for the BM-30, so it is dropped (6.2).
+**The guns' bands decide the guns.** The 2S7M (7,000–35,000) reaches every target from GUN_SPAWN, the BM-27
+(10,000–35,000) the boxes and ASSEMBLY but not the village; the plan keeps the BM-27 off the village, its preparation
+fire the 2S7Ms' alone. Nothing on the map is far enough for the BM-30, so it is dropped (6.2).
 
 ## 4. Mission flow (target 35–40 minutes)
 
@@ -227,11 +226,14 @@ The division's artillery is real units the player cannot control, outside the de
 [[scripted-fires]]: real shells, real damage, real suppression. No stock script action deals damage at a place
 without a weapon, so this is the only proven way.
 
-**Each fire, its own battery.** In the first play the guns stood pre-placed in the allied camp at GUNS, in view,
-emptied between orders, and drove toward the front and died. Now no gun is pre-placed; each fire:
+**Each fire, its own battery.** In the first play the guns stood pre-placed in the allied camp at GUN_SPAWN, in
+view, emptied between orders, and drove toward the front and died. The next build created each fire's battery 4,577
+GRU north of the cut, in the unused NATO2 camp, to hide it: in play it stood on the cut's north edge beside the Soviet
+box, an enemy to the player, and the player's Ka-50s killed it, though its shells landed
+[[created-units-stand-in-zone]]. Now no gun is pre-placed; each fire:
 1. creates its battery (the fire's 2S7M ×6, BM-27 ×6, or both for the fire plan) with CreateUnitOnPosition into its
-   own group at GUN_SPAWN (3), north of the cut past the player's sight, in the unused NATO2 camp, which fog hides
-   from the player (probe 1's played create-then-fire shape);
+   own group at GUN_SPAWN (3), in the player's allied camp (SovietAlly), so the player's units never engage it and
+   the player sees it for about 2 minutes (probe 1's played create-then-fire shape);
 2. keeps it off that camp's AI (AddIgnoredUnitByScript, TheDieburgSalient's form);
 3. waits 20 s (probe 1's lead time);
 4. orders ShootOnPosition, non-blocking, on the target's Name tag (`TS_Village`, `TS_BoxW`, `TS_BoxC`, `TS_Assembly`),
@@ -239,8 +241,8 @@ emptied between orders, and drove toward the front and died. Now no gun is pre-p
 5. holds 90 s while the salvo lands;
 6. removes the battery (KillAllUnit, Vanished ✓ [[vanished-removal]]).
 A created battery comes with full ammunition, and stock never empties artillery: no SetAmmo anywhere. BUSY keeps one
-fire at a time. The fallback, unbuilt: the batteries created in the player's allied camp inside the cut's north-west
-corner (GUNS), seen for about a minute per fire.
+fire at a time. A battery lives 110 s, so even a drive toward the front, as the first play's guns did, ends before it
+gets far.
 
 - **Preparation fire**, in phase 1, once.
   - **The offer.** A dialog asks "Preparation fire on the village: Fire now / Not yet". It is asked again every 2 min
@@ -384,7 +386,7 @@ All units are vanilla. Every name below is in the game's DeckPacks. Each build's
 | Group | Units | How |
 |---|---|---|
 | FOBs, at FOB_W and FOB_E | `FOB_SOV` ×2 | Pre-placed in the player's camp and auto-spawned, so they stand in the north zone from the deployment on. No deck that `SetDeck` can address holds a FOB [[deployment-phase-recipe]]. Marauders and SigurdsStrike place the player's FOB the same way (`C0_FOB_UK_2`, `C0_FOB_TCH_1`, in Camp 0) ◐. |
-| Division artillery | `2S7M_Malka_SOV` ×6, `BM27_Uragan_SOV` ×6, and one `2S7M_Malka_SOV` for the strike's round | Not pre-placed: each fire creates its battery at GUN_SPAWN, north of the cut out of the player's sight, in the unused NATO2 camp, and removes it once the salvo has landed (5.4). Uncontrolled; they fire on order only, and no NATO unit can reach them. In the first play they stood pre-placed in the allied camp at GUNS and drove toward the front. |
+| Division artillery | `2S7M_Malka_SOV` ×6, `BM27_Uragan_SOV` ×6, and one `2S7M_Malka_SOV` for the strike's round | Not pre-placed: each fire creates its battery at GUN_SPAWN, the cut's north-west corner, in the player's allied camp, and removes it once the salvo has landed (5.4). Uncontrolled; they fire on order only. In the first play they stood pre-placed in the allied camp there and drove toward the front; created north of the cut in an enemy camp, they stood on its edge and the player's units killed them. |
 
 ### 6.3 NATO forces (all scripted)
 
@@ -422,7 +424,7 @@ fuel or ammunition. Each sweep is its own group, in its own branch, so none hold
 - **Budget.**
   - Battalion 2 appears only after battalion 1 is broken.
   - The peak is about 66 of the player's units (the supply's 4 trucks and 2 helicopters included), 20 left of
-    battalion 1, and 52 of battalion 2: about 140, with a battery of up to 12 guns north of the cut for a fire's
+    battalion 1, and 52 of battalion 2: about 140, with a battery of up to 12 guns in the north-west corner for a fire's
     two minutes and a sweep's few fighters.
   - That is over Open Door's ~120 envelope. No play has gone that big yet ? [[script-and-battle-scale]].
   - All of it is packed into the 216 × 378 px cut. The density is the point: one concentrated battle.

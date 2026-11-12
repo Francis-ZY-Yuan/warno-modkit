@@ -21,6 +21,7 @@ import tempfile
 import textwrap
 import unittest
 import uuid
+from unittest import mock
 
 from test_gates_stock import MENU_SPANS
 from twin_strike_support import (
@@ -173,15 +174,15 @@ class Profile(unittest.TestCase):
 
 class Items(unittest.TestCase):
     def test_every_item_is_inside_the_cut_and_named_once(self):
-        """Every item but the guns' spawn tag, which stands north of the cut, out of the player's sight."""
+        """Every item, the guns' spawn tag among them: a unit created outside the playable zone stands on its edge
+        [[created-units-stand-in-zone]]."""
         x0, y0, x1, y1 = ts_map.CUT_PX
         names = [it.name for it in op.ITEMS]
         self.assertEqual(len(names), len(set(names)))
         for it in op.ITEMS:
             with self.subTest(item=it.name):
                 x, y = px(it)
-                self.assertEqual(x0 <= x <= x1 and y0 <= y <= y1, it.name != op.GUN_SPAWN, (x, y))
-        self.assertLess(px(item(op.GUN_SPAWN))[1], y0)
+                self.assertTrue(x0 <= x <= x1 and y0 <= y <= y1, (x, y))
 
     def test_the_map_items_are_kept(self):
         self.assertEqual(op.ITEMS[:len(ts_map.items())], ts_map.items())
@@ -237,9 +238,10 @@ class Items(unittest.TestCase):
 
 class Ranges(unittest.TestCase):
     """Design 3's bands: the 2S7M fires at 7,000-35,000 GRU, the BM-27 at 10,000-35,000. From GUN_SPAWN every target
-    of each battery lies inside its band, with a wide margin (the fire-range gate checks the built files)."""
+    of each battery lies inside its band, with 500 GRU to spare for a battery laid out around the point (the
+    fire-range gate checks the built files)."""
 
-    MARGIN = 2000.0
+    MARGIN = 500.0
 
     def check_band(self, battery: str, low: float, targets: tuple[str, ...]):
         for target in targets:
@@ -253,15 +255,14 @@ class Ranges(unittest.TestCase):
     def test_rockets_reach_the_boxes(self):
         self.check_band(op.ROCKETS, 10000.0, ("BOX_W", "BOX_C"))
 
-    def test_out_of_the_players_sight(self):
-        """North of the cut by more than the longest ground vision of any unit the player can field (4,250 GRU, the
-        unit database's; the gate re-reads it), inside the map."""
+    def test_in_the_allied_camp_in_the_corner(self):
+        """The batteries are the player's ally's (SovietAlly), so the player's units never engage them, created in the
+        cut's north-west corner, outside the Soviet box (the gate checks the alliance on the built script)."""
+        self.assertEqual(op.GUN_CAMP, "SovietAlly")
         x, y = ts_map.POINTS["GUN_SPAWN"]
-        edge = ts_map.CUT_PX[1] - 0.5          # the cut's north edge, the tile edge at y 145.6 (Cut.box)
-        self.assertGreater(gru((x, y), (x, edge)), 4250.0)
-        self.assertTrue(0 <= x <= TWIN_CITIES.minimap_px[0] and 0 <= y <= TWIN_CITIES.minimap_px[1])
-        x0, _, x1, _ = ts_map.CUT_PX
-        self.assertTrue(x0 <= x <= x1)
+        cx0, cy0, _, _ = ts_map.CUT_PX
+        sx0, _, _, _ = ts_map.SOV_DZ
+        self.assertTrue(cx0 <= x < sx0 and cy0 <= y, (x, y))
 
 
 class Camera(unittest.TestCase):
@@ -537,8 +538,8 @@ class Build(unittest.TestCase):
         """Every standard gate passes (the end funnel holding all nine endings; the script-effects gate holding the
         strike's look and the dressing; the garrison the one smart-ordered group), and the extra gates: the 55 unit
         types the op names (the supply's, the carriers', the Kubs' and the fighters' among them), no Survivors name,
-        the cut's 40 tiles, the zones and arrivals, and the fire range: GUN_SPAWN out of the player's sight, its 10
-        battery-target pairs in range."""
+        the cut's 40 tiles, the zones and arrivals, and the fire range: GUN_SPAWN's batteries in the player's
+        alliance, its 10 battery-target pairs in range; every unit the script creates inside the playable zone."""
         for line in ("1 player reinforcement locations and 1 aerial corridors",
                      "12 never-finishing script actions",              # the three locks and the nine endings
                      "1 HUD restores with the buy-menu switch Default",
@@ -549,8 +550,10 @@ class Build(unittest.TestCase):
                      "gate 3 no-template-name: 15 re-keyed or generated dumps without Survivors",
                      "gate 3 grid: 40 AI tiles and 1,560 path costs of twincities_op/SM_SU_3x3_TwinCities_03_Details",
                      "gate 3 zone-layout: 3 zones and 2 arrivals laid out by stock's rules",
-                     "gate 3 fire-range: TS_GunSpawn 4,577 GRU N of the playable zone, inside the map, past the "
-                     "player's longest ground vision, 4,250 GRU (MiG_23ML_SOV); 10 battery-target pairs on 4 targets",
+                     "CreateUnitOnPosition, each inside the shipped playable zone",
+                     "gate 3 fire-range: TS_GunSpawn's batteries in Allie, the player's alliance (0), standing inside "
+                     "the playable zone; 10 battery-target pairs on 4 targets, each inside its band (closest: "
+                     "TS_Village from 2S7M_Malka_SOV, 846 GRU inside)",
                      "gate 5 package: all 43 entries lie under challenge_OperationTwinStrike; no Gameplay file",
                      "CamPaths_LevelDesign 10 objects vs 35 stock files"):   # gate 2: canonical, stock shapes
             self.assertIn(line, self.log)
@@ -588,17 +591,43 @@ class Build(unittest.TestCase):
                          dict.fromkeys((*gates.IA_GRID_FILES, gates.PLAYABLE_FILE, CAMPATHS_FILE), "generate"))
         self.assertEqual(set(details.values()), {"generate"})
 
-    def test_the_fire_range_gate_fails_a_spawn_out_of_range(self):
-        """The fire-range gate's proof (it passes this build, above): the same op with GUN_SPAWN moved south of the
-        cut, (65, 700) px, 176 px from it, past every unit's sight, but BOX W 8,000 GRU off, inside the BM-27's 10,000
-        GRU minimum, fails the build with the gate's line."""
-        moved = tuple(dataclasses.replace(it, x=65 * TWIN_CITIES.world_per_px, y=700 * TWIN_CITIES.world_per_px)
+    @staticmethod
+    def moved_spawn(x: float, y: float):
+        """The op's content with GUN_SPAWN's tag moved to (x, y) px."""
+        moved = tuple(dataclasses.replace(it, x=x * TWIN_CITIES.world_per_px, y=y * TWIN_CITIES.world_per_px)
                       if it.name == op.GUN_SPAWN else it for it in op.ITEMS)
-        bad = dataclasses.replace(op.content(), items=moved)
+        return dataclasses.replace(op.content(), items=moved)
+
+    def test_the_in_zone_gate_fails_the_played_spawn(self):
+        """The in-zone gate's proof (it passes this build, above): the same op with GUN_SPAWN back at (140, 14) px,
+        4,577 GRU north of the cut, where the play's batteries stood on the cut's edge and the player's Ka-50s killed
+        them [[created-units-stand-in-zone]], fails the build with the gate's line."""
+        out = os.path.join(OUT_ROOT, "bad-zone")
+        with self.assertRaisesRegex(CheckError, r"^10 of \d+ CreateUnitOnPosition create units outside the playable "
+                                                r"zone:\n  2S7M_Malka_SOV is created at TS_GunSpawn, 4,577 GRU N of the "
+                                                r"playable zone: it stands on the zone's edge"):
+            quiet_build(self.moved_spawn(140, 14), out)
+        remove_out(out)
+
+    def test_the_fire_range_gate_fails_an_enemy_camp(self):
+        """The fire-range gate's proof: the same op with its batteries in the NATO2 camp, as played (Alliance 1, the
+        player's enemy), fails the build with the gate's line (the script is generated during the build)."""
+        out = os.path.join(OUT_ROOT, "bad-camp")
+        with mock.patch.object(op, "GUN_CAMP", "NATO2"), \
+                self.assertRaisesRegex(CheckError, r"(?s)fire range:\n  2S7M_Malka_SOV is created at TS_GunSpawn in "
+                                                   r"ordinateur_DDR, outside the player's alliance \(0\): the player's "
+                                                   r"units engage it"):
+            quiet_build(op.content(), out)
+        remove_out(out)
+
+    def test_the_fire_range_gate_fails_a_spawn_out_of_range(self):
+        """The fire-range gate's proof: the same op with GUN_SPAWN moved to (65, 240) px, inside the cut, where BOX W
+        is 8,000 GRU off, inside the BM-27's 10,000 GRU minimum, fails the build with the gate's line."""
         out = os.path.join(OUT_ROOT, "bad-spawn")
-        with self.assertRaisesRegex(CheckError, r"(?s)fire range:\n.*TS_BoxW is 8,000 GRU from TS_GunSpawn, outside "
-                                                r"BM27_Uragan_SOV's ShootOnPosition band \(10,000-35,000 GRU\)"):
-            quiet_build(bad, out)
+        with self.assertRaisesRegex(CheckError, r"(?s)fire range:\n.*TS_BoxW is 8,000 GRU from where BM27_Uragan_SOV "
+                                                r"stands at TS_GunSpawn, outside its ShootOnPosition band "
+                                                r"\(10,000-35,000 GRU\)"):
+            quiet_build(self.moved_spawn(65, 240), out)
         remove_out(out)
 
     def test_the_menu_deck_is_rjs(self):

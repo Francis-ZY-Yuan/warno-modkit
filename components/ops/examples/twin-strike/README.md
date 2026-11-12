@@ -7,7 +7,7 @@ second. You play the Soviets.
 > **v0 demo.** Twin Strike has been played once. The fixes from that play are built but not yet played:
 > - transports for the infantry;
 > - the battlegroup view of the buy menu;
-> - hidden division guns;
+> - division guns created in your allied camp for each fire;
 > - garrison and wave orders;
 > - the release dialog;
 > - the economy;
@@ -15,7 +15,8 @@ second. You play the Soviets.
 >
 > Known issues:
 > - RedJuggernaut's stock cards still show in the buy menu beside the op's own (the op is getting its own deck).
-> - The division's guns are created outside the playable area, which no stock scenario does, so a fire may not land.
+> - The division's guns fire from your allied camp, which no stock Operation does; in the first play, allied guns placed
+>   at the start drove toward the front.
 >
 > Tell us what you see: each play becomes a record in the knowledge base.
 
@@ -89,7 +90,7 @@ them), and every written pack is read back. Twin Strike adds six extra gates (`t
 | `grid` | the shipped playable zone and AI grid are the cut's: 40 tiles of the layout's own grid (`CUT.gate()`) |
 | `zone-layout` | the shipped zones and arrivals keep stock's layout rules |
 | `menu-order` | its menu order is no stock Operation's |
-| `fire-range` | each fire's battery is created at `TS_GunSpawn`, outside the cut, past the ground vision of every unit you can field, with every target inside each battery's range band (`modkit.ops.gates.check_fire_range`) |
+| `fire-range` | each fire's battery, created at `TS_GunSpawn`, is in your alliance, so your units never engage it, with every target inside each battery's range band from where it stands (`modkit.ops.gates.check_fire_range`); the build's own gate keeps every created unit inside the playable zone |
 
 The opening camera's paths file is held to the camera gate when the build plans it (`modkit.ops.maps.check_camera_paths`):
 stock's key shape, the move then its last key, every eye over the map and at least 376,057 world units above the
@@ -125,8 +126,10 @@ announces itself with a hint, so what you see can be matched to the sheet. (The 
    south, your deployment box in the near part of it and the village beyond? Does Escape skip straight to that view?
    Do you start with 2,000 points and no income?
 
-**The guns** (no gun stands on the map: each fire's battery appears north of the cut, out of sight, and is removed)
-4. Do you ever see a 2S7M or a BM-27 on the map or the minimap?
+**The guns** (no gun stands on the map at the start: friendly guns appear in the north-west forest corner for about 2
+minutes per fire, then vanish)
+4. Do friendly 2S7Ms or BM-27s appear in the north-west forest corner for each fire, stay there, and vanish about 2
+   minutes later? Do your units leave them alone?
 5. Does each ordered fire land where it was named, about 50 s after you answer: the village for the preparation fire,
    BOX W or BOX C for a fire mission, the fuller box for the fire plan? Does each battery fire one salvo and stop?
 
@@ -184,8 +187,9 @@ announces itself with a hint, so what you see can be matched to the sheet. (The 
   [[count-race-forced-owner]] [[zone-capture-command-units]].
 - The waves and lanes: [[fast-move-and-attack-keeps-roads]], each ending with an Attack on your units
   [[wave-ends-with-attack]]; B1's count, battalion 1's tanks created less those alive: [[kill-counts-by-type]].
-- The fires: ShootOnPosition from a battery created for each fire out of your sight and removed after
-  [[scripted-fires]]; the dialogs [[dialog-reask-loop]] [[dialog-button-ingame-dictionary]].
+- The fires: ShootOnPosition from a battery created for each fire in your allied camp, inside the playable zone, and
+  removed after [[scripted-fires]] [[created-units-stand-in-zone]]; the dialogs [[dialog-reask-loop]]
+  [[dialog-button-ingame-dictionary]].
 - The strike: a self-contained script effect [[script-effects-self-contained]] (the nuke impact effects crash a script
   [[scripted-nuke-effect]]), then KillAllUnit on the units a circle detects.
 - The endings: [[mission-ends-only-by-script]]; the difficulty: [[difficulty-branches]].

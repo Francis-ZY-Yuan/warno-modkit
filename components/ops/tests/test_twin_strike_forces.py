@@ -52,7 +52,7 @@ class Tables(unittest.TestCase):
         self.assertEqual({r.camp for r in forces.ROWS if r.group in ("garrison", "bn1", "bn1_recon", "bn1_ad", "bn2")},
                          {"NATO"})
         self.assertEqual({(r.camp, r.spawn) for r in forces.ROWS if r.group.startswith("guns")},
-                         {("NATO2", "GUN_SPAWN")})
+                         {("SovietAlly", "GUN_SPAWN")})
         self.assertEqual([(r.spawn, r.descriptor) for r in forces.ROWS if r.group == "fob"],
                          [("FOB_W", "FOB_SOV"), ("FOB_E", "FOB_SOV")])
 
