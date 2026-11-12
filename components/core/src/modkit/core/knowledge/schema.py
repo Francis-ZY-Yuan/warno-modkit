@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import datetime
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 STATUSES = ("PLAYED", "PROBED", "RE", "STOCK", "FAILED", "UNTESTED")
 SOURCES = ("play", "stock-data", "exe-analysis")

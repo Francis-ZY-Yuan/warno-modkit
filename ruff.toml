@@ -1,0 +1,20 @@
+# Lint for bugs, not style: CI runs `ruff check .` with the version pinned in .github/workflows/ci.yml. No
+# formatter, and no style rules: the codebase keeps its own layout.
+target-version = "py314"
+
+[lint]
+select = [
+    "E9",   # the file does not parse
+    "F",    # pyflakes: undefined names, unused imports and variables, redefinitions, bad format strings
+    "PLE",  # pylint's errors: code that fails when it runs
+]
+
+[lint.per-file-ignores]
+# Unused imports (and two f-strings without a placeholder in test_coinstall.py) in files two open port pull requests
+# rewrite. To be cleaned, and these entries removed, once the port lands.
+"components/ops/src/modkit/ops/gates.py" = ["F401"]
+"components/ops/tests/test_coinstall.py" = ["F401", "F541"]
+"components/ops/tests/test_probe_fx.py" = ["F401"]
+"components/ops/tests/test_probe_spike.py" = ["F401"]
+"components/ops/tests/test_probes.py" = ["F401"]
+"components/ops/tests/test_shapes.py" = ["F401"]

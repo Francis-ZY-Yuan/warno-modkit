@@ -36,7 +36,6 @@ import argparse
 import collections
 import fnmatch
 import json
-import os
 import struct
 import sys
 
