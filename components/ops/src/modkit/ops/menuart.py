@@ -14,10 +14,16 @@ time from the user's own extraction; the toolkit ships no picture.
   polaroid's shadow. The paper, its border and the polaroid stay; the stock map's own markings go with the stock map.
   ``cut_view`` makes the view of an op's cut (``modkit.ops.maps.Cut``): the smallest box of the card map's shape that
   holds the cut, kept inside the picture.
+* **Markings** (optional, on the swapped map). Zones (``draw_zones``): a polygon in the view's units, red or blue,
+  drawn as stock draws its zones, a marker outline with diagonal hatching, the map showing through (a multiply by
+  pure red or blue), and only on the map. Stickers (``draw_stickers``): the stock card's own badge stickers
+  (``CardLayout.stickers``: Survivors' Soviet star and NATO badge), copied byte for byte and moved by whole pixels
+  to a point in the view's units; one that would cross the map's border or the polaroid fails.
 
 The result (``Card``) is a TGV in the stock card's exact format and size (``modkit.core.tgv.encode_tgv``), and a PNG
 for review. An op ships ``build_card(TITLE, cut_view(CUT)).tgv`` (or ``build_card(TITLE).tgv``, the stock map kept) in
-place of its template's ``MapTexture.tgv``.
+place of its template's ``MapTexture.tgv``, its markings passed as ``zones=[(polygon, "red" | "blue")]`` and
+``stickers=[("SOV" | "NATO", (x, y))]`` in minimap px (none by default).
 
 A card's geometry is measured off one stock picture (``CardLayout``) and pinned to it by SHA-256, so a different or
 changed stock card fails rather than drawing in the wrong place. ``SURVIVORS`` is Survivors' card, the one an op
@@ -38,6 +44,7 @@ import math
 import os
 import sys
 import zlib
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from modkit.core import paths, tgv
@@ -49,6 +56,25 @@ Box = tuple[float, float, float, float]
 
 
 # --------------------------------------------------------------------------- the layout
+
+@dataclass(frozen=True)
+class Sticker:
+    """A badge sticker on a stock card: a rounded square turned by atan(`slope`) (its top edge rising to the right),
+    measured where its white edge crosses the map."""
+    centre: Point
+    size: tuple[float, float]   # width and height, along its own edges
+    slope: float
+    radius: float               # its corners'
+
+    def coverage(self, x: float, y: float) -> float:
+        """How much of the pixel centred at (x, y) the sticker covers (0-1)."""
+        c, s = math.cos(math.atan(self.slope)), math.sin(math.atan(self.slope))
+        dx, dy = x - self.centre[0], y - self.centre[1]
+        qx = abs(dx * c - dy * s) - (self.size[0] / 2 - self.radius)
+        qy = abs(dx * s + dy * c) - (self.size[1] / 2 - self.radius)
+        d = math.hypot(max(qx, 0.0), max(qy, 0.0)) + min(max(qx, qy), 0.0) - self.radius
+        return max(0.0, min(1.0, 0.5 - d))
+
 
 @dataclass(frozen=True)
 class CardLayout:
@@ -72,6 +98,9 @@ class CardLayout:
     creases: tuple[float, float]    # the paper's folds: at this fraction across the map, and down it
     margin: tuple[float, float] = (7.0, 5.0)         # the title's clearance inside the band, along u and v
     max_cap: float = 26.0                            # the tallest cap height drawn, px
+    stickers: tuple[tuple[str, Sticker], ...] = ()   # the badge stickers markings may reuse, by name
+    pen: float = 3.2                                 # a zone marker's half-width, px
+    hatch: tuple[float, float] = (37.0, 30.0)        # a zone's hatching: its rise (degrees) and spacing (px)
 
     def to_frame(self, x: float, y: float) -> Point:
         """Image px to the polaroid's (u, v)."""
@@ -111,6 +140,12 @@ SURVIVORS_CARD = "scenarios/challenge_Survivors/PC/Texture/challenge_Survivors/M
 # - tone: quantiles of the stock map's neutral pixels (its hatching and badges left out, and its white badges capped
 #   by stopping at the 90th).
 # - creases: the dark fold lines, x 276 at the top to 269.5 at the bottom, y 279-285: the map's middle.
+# - stickers: the Soviet star (the red zone's) and the NATO badge (the blue zone's), each edge a line through the
+#   crossings of grey 180 between the sticker's white (233) and the map (residuals under 0.55 px); they lean 1.4 and
+#   1.8 degrees. Their corners round off in 2-3 px along the diagonal: a radius of about 6.
+# - pen and hatch: the zones' marker strokes are 6-7 px wide (outline and hatching alike); the hatching rises 35-38
+#   degrees, drawn by hand 25-37 px apart. A stroke keeps the map's grey in its own channel (red R, blue B) and
+#   zeroes the others: a multiply by pure red or blue.
 SURVIVORS = CardLayout(
     source=SURVIVORS_CARD,
     sha256="575f60438c0cf6f156e3f53a59c01ff6854099ca8a91031a98140031583a7f62",
@@ -126,6 +161,8 @@ SURVIVORS = CardLayout(
     map_paper=(250, 250, 250),
     tone=((0.02, 50.0), (0.25, 82.0), (0.5, 91.0), (0.75, 106.0), (0.9, 131.0)),
     creases=(0.507, 0.512),
+    stickers=(("SOV", Sticker((259.17, 334.91), (72.71, 72.53), 0.0243, 6.0)),
+              ("NATO", Sticker((66.48, 472.16), (63.37, 63.47), 0.032, 6.0))),
 )
 
 
@@ -285,9 +322,17 @@ def draw_caption(layout: CardLayout, img: bytearray, title: str) -> float:
 @dataclass(frozen=True)
 class MapView:
     """A box of a map picture (a Preview .tgv, relative to the extraction), in that picture's px: the map a card
-    shows."""
+    shows. Markings on it (zones, stickers) are given in units of `unit` picture px (a cut's view: minimap px)."""
     picture: str
     box: Box
+    unit: float = 1.0
+
+    def to_card(self, layout: CardLayout, p: Point) -> Point:
+        """A point in the view's units to card px: where draw_map draws that spot of the picture."""
+        x0, y0, x1, y1 = self.box
+        s, t = (p[0] * self.unit - x0) / (x1 - x0), (p[1] * self.unit - y0) / (y1 - y0)
+        tl, ea, eb = _map_frame(layout)
+        return tl[0] + s * ea[0] + t * eb[0], tl[1] + s * ea[1] + t * eb[1]
 
 
 def view_box(box: Box, aspect: float, bounds: tuple[int, int]) -> Box:
@@ -323,7 +368,8 @@ def cut_view(cut, layout: CardLayout = SURVIVORS) -> MapView:
     hdr = tgv.parse_header(_read(picture))
     k = hdr.width / cut.map.minimap_px[0]
     x0, y0, x1, y1 = cut.box_px
-    return MapView(picture, view_box((x0 * k, y0 * k, x1 * k, y1 * k), map_aspect(layout), (hdr.width, hdr.height)))
+    return MapView(picture, view_box((x0 * k, y0 * k, x1 * k, y1 * k), map_aspect(layout), (hdr.width, hdr.height)),
+                   unit=k)
 
 
 def _grey_view(view: MapView, out_w: int, out_h: int) -> list[list[float]]:
@@ -425,6 +471,107 @@ def draw_map(layout: CardLayout, img: bytearray, view: MapView) -> None:
         _blend(img, (y * w + x) * 4, col, bare)
 
 
+# --------------------------------------------------------------------------- the markings
+
+# What a zone's marker keeps of each channel of the map under it (stock's strokes are a multiply by pure red or blue).
+ZONE_INKS: dict[str, tuple[float, float, float]] = {"red": (1.0, 0.0, 0.0), "blue": (0.0, 0.0, 1.0)}
+
+
+def _map_edges(layout: CardLayout) -> list[tuple[Point, Point]]:
+    """Each edge of the map as (a point on it, its inward unit normal): the corners run clockwise on screen."""
+    corners = layout.map_corners
+    out = []
+    for a, b in zip(corners, corners[1:] + corners[:1]):
+        n = math.hypot(b[0] - a[0], b[1] - a[1])
+        out.append((a, (-(b[1] - a[1]) / n, (b[0] - a[0]) / n)))
+    return out
+
+
+def _on_map(edges: list[tuple[Point, Point]], layout: CardLayout, x: float, y: float) -> float:
+    """How much of the pixel centred at (x, y) is the map, inside its border and off the polaroid (0-1)."""
+    inside = min((x - a[0]) * n[0] + (y - a[1]) * n[1] for a, n in edges)
+    u, v = layout.to_frame(x, y)
+    bare = max(0.0, min(1.0, -min(u, layout.polaroid[0] - u, v, layout.polaroid[1] - v)))
+    return max(0.0, min(1.0, inside + 0.5)) * bare
+
+
+def _inside(p: Point, poly: list[Point]) -> bool:
+    """Even-odd test of `p` against the polygon."""
+    hit = False
+    for (ax, ay), (bx, by) in zip(poly, poly[1:] + poly[:1]):
+        if (ay > p[1]) != (by > p[1]) and p[0] < ax + (p[1] - ay) * (bx - ax) / (by - ay):
+            hit = not hit
+    return hit
+
+
+def draw_zones(layout: CardLayout, img: bytearray, view: MapView,
+               zones: Sequence[tuple[Sequence[Point], str]]) -> None:
+    """Draw each zone (its polygon in the view's units, and 'red' or 'blue') on the card's map as stock draws its
+    zones: a marker outline with diagonal hatching inside, the map showing through. Only the map is drawn on: not its
+    border, not the polaroid."""
+    edges = _map_edges(layout)
+    rise = math.radians(layout.hatch[0])
+    nx, ny, spacing, pen = math.sin(rise), math.cos(rise), layout.hatch[1], layout.pen
+    w = layout.size[0]
+    for points, colour in zones:
+        check(colour in ZONE_INKS, f"menu card zone: colour {colour!r} is not one of {', '.join(ZONE_INKS)}")
+        check(len(points) >= 3, f"menu card zone: {len(points)} points are not a polygon")
+        ink = ZONE_INKS[colour]
+        poly = [view.to_card(layout, p) for p in points]
+        segs = list(zip(poly, poly[1:] + poly[:1]))
+        for y, x in _bbox_pixels(poly, layout.size, pad=math.ceil(pen) + 1):
+            px, py = x + 0.5, y + 0.5
+            room = _on_map(edges, layout, px, py)
+            if room == 0:
+                continue
+            d = min(_dist((px, py), a, b) for a, b in segs)
+            fill = max(0.0, min(1.0, (d if _inside((px, py), poly) else -d) + 0.5))
+            proj = (px * nx + py * ny) % spacing      # hatch lines where proj is a multiple of the spacing
+            hatch = max(0.0, min(1.0, pen + 0.5 - min(proj, spacing - proj))) * fill
+            k = max(max(0.0, min(1.0, pen + 0.5 - d)), hatch) * room
+            if k > 0:
+                i = (y * w + x) * 4
+                for c in range(3):
+                    img[i + c] = round(img[i + c] * (1 - k * (1 - ink[c])))
+
+
+def _sticker_pixels(st: Sticker, size: tuple[int, int]) -> list[tuple[int, int, float]]:
+    """(x, y, coverage) of every stock pixel the sticker covers."""
+    r = math.hypot(*st.size) / 2 + 1
+    corners = [(st.centre[0] + dx, st.centre[1] + dy) for dx in (-r, r) for dy in (-r, r)]
+    out = []
+    for y, x in _bbox_pixels(corners, size, pad=0):
+        c = st.coverage(x + 0.5, y + 0.5)
+        if c > 0:
+            out.append((x, y, c))
+    return out
+
+
+def draw_stickers(layout: CardLayout, img: bytearray, stock: bytes, view: MapView,
+                  stickers: Sequence[tuple[str, Point]]) -> None:
+    """Paste each named sticker of the stock card (its pixels, byte for byte) with its centre at a point in the view's
+    units, moved by whole pixels. A sticker that would cross the map's border or the polaroid fails (CheckError)."""
+    named = dict(layout.stickers)
+    edges = _map_edges(layout)
+    w, h = layout.size
+    for name, at in stickers:
+        check(name in named, f"menu card sticker {name!r}: the card has {', '.join(named) or 'none'}")
+        st = named[name]
+        cx, cy = view.to_card(layout, at)
+        dx, dy = round(cx - st.centre[0]), round(cy - st.centre[1])
+        pixels = _sticker_pixels(st, layout.size)
+        off = [(x, y) for x, y, _ in pixels if not (0 <= x + dx < w and 0 <= y + dy < h)
+               or _on_map(edges, layout, x + dx + 0.5, y + dy + 0.5) < 1]
+        check(not off, f"menu card sticker {name} at {at}: {len(off)} of its pixels would leave the map or lie "
+                       "under the polaroid (move it)")
+        for x, y, c in pixels:
+            i, j = ((y + dy) * w + x + dx) * 4, (y * w + x) * 4
+            if c == 1:
+                img[i:i + 4] = stock[j:j + 4]
+            else:
+                _blend(img, i, tuple(stock[j:j + 3]), c)
+
+
 # --------------------------------------------------------------------------- the card
 
 @dataclass(frozen=True)
@@ -446,9 +593,11 @@ def _read(rel: str) -> bytes:
         return f.read()
 
 
-def render(layout: CardLayout, stock: bytes, title: str, view: MapView | None = None) -> Card:
+def render(layout: CardLayout, stock: bytes, title: str, view: MapView | None = None,
+           zones: Sequence[tuple[Sequence[Point], str]] = (), stickers: Sequence[tuple[str, Point]] = ()) -> Card:
     """The card drawn over `stock` (the stock card's TGV bytes, the layout's picture): the title in its caption and,
-    with a view, that map in place of the stock map."""
+    with a view, that map in place of the stock map, with the zones and stickers on it (draw_zones, draw_stickers)."""
+    check(view is not None or not (zones or stickers), "menu card: zones and stickers need a map view")
     got = hashlib.sha256(stock).hexdigest()
     check(got == layout.sha256, f"{layout.source}: SHA-256 {got[:16]}... is not the {layout.sha256[:16]}... "
                                 "the card layout was measured on (a changed game picture: re-measure the layout)")
@@ -459,14 +608,18 @@ def render(layout: CardLayout, stock: bytes, title: str, view: MapView | None = 
     img = bytearray(pixels)
     if view is not None:
         draw_map(layout, img, view)
+        draw_zones(layout, img, view, zones)
+        draw_stickers(layout, img, pixels, view, stickers)
     cap = draw_caption(layout, img, title)
     return Card(hdr.width, hdr.height, bytes(img), tgv.encode_tgv(hdr.width, hdr.height, bytes(img), hdr.fmt), cap)
 
 
-def build_card(title: str, view: MapView | None = None, layout: CardLayout = SURVIVORS) -> Card:
+def build_card(title: str, view: MapView | None = None, zones: Sequence[tuple[Sequence[Point], str]] = (),
+               stickers: Sequence[tuple[str, Point]] = (), layout: CardLayout = SURVIVORS) -> Card:
     """The op's menu card, read from the user's extraction: `layout`'s stock card with `title` in its caption and,
-    with `view`, that map in place of the stock one."""
-    return render(layout, _read(layout.source), title, view)
+    with `view`, that map in place of the stock one, marked with `zones` ((polygon, 'red' or 'blue')) and `stickers`
+    ((name, centre)), both in the view's units (a cut's view: minimap px)."""
+    return render(layout, _read(layout.source), title, view, zones, stickers)
 
 
 # --------------------------------------------------------------------------- CLI

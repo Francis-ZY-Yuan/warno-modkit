@@ -1,6 +1,7 @@
 """Tests for modkit.ops.menuart: the caption on synthetic cards (no stock pixel survives in the repainted strip,
 whatever the card under it), the title's checks, the map view's box, and the card built from Survivors' stock card,
 with and without Twin Cities' map: it parses, keeps the stock card's size and format, and is deterministic."""
+import math
 import random
 import unittest
 
@@ -191,6 +192,144 @@ class MapSwapTest(unittest.TestCase):
             r, g, b, a = pixel(self.card.rgba, x, y)
             self.assertEqual((r, a), (b, 255))
             self.assertEqual(r, g)
+
+
+# Twin Strike's markings, in minimap px (examples/twin-strike, twinstrike.map): the Soviet deployment box SOV_DZ and
+# the village's command zone VILLAGE_CZ (world units / 2,560); the star at the Soviet box's east end, the NATO badge
+# on the village (POINTS["VILLAGE"]).
+SOV_ZONE = [(40, 158), (210, 158), (210, 212), (40, 212)]
+VILLAGE_ZONE = [(6.125, 331.603), (132.125, 331.603), (132.125, 421.603), (6.125, 421.603)]
+ZONES = [(SOV_ZONE, "red"), (VILLAGE_ZONE, "blue")]
+STICKERS = [("SOV", (179, 185)), ("NATO", (69, 377))]
+VIEW = menuart.MapView("synthetic", (0, 0, 100, 100))   # the whole map is 100 x 100 units
+
+
+def on_map(x: int, y: int) -> bool:
+    """The pixel's centre lies on the map, less than half a pixel outside its edges, and off the polaroid."""
+    px, py = x + 0.5, y + 0.5
+    corners = SURVIVORS.map_corners
+    for (ax, ay), (bx, by) in zip(corners, corners[1:] + corners[:1]):   # clockwise on screen: inside is right
+        if ((bx - ax) * (py - ay) - (by - ay) * (px - ax)) / math.hypot(bx - ax, by - ay) <= -0.5:
+            return False
+    u, v = SURVIVORS.to_frame(px, py)
+    return min(u, SURVIVORS.polaroid[0] - u, v, SURVIVORS.polaroid[1] - v) < 0
+
+
+def changed_pixels(a: bytes, b: bytes) -> list[tuple[int, int]]:
+    w = SURVIVORS.size[0]
+    return [(i // 4 % w, i // 4 // w) for i in range(0, len(a), 4) if a[i:i + 4] != b[i:i + 4]]
+
+
+def grey_card(level: int) -> bytearray:
+    img = noise_card(0)
+    n = len(img) // 4
+    img[0::4], img[1::4], img[2::4] = bytes([level]) * n, bytes([level]) * n, bytes([level]) * n
+    return img
+
+
+class MarkingsTest(unittest.TestCase):
+    """Zones and stickers on synthetic cards: no extraction needed."""
+
+    def test_the_view_maps_its_box_onto_the_map(self):
+        for p, corner in zip(((0, 0), (100, 0), (0, 100)), (0, 1, 3)):
+            got = VIEW.to_card(SURVIVORS, p)
+            self.assertAlmostEqual(got[0], SURVIVORS.map_corners[corner][0], places=9)
+            self.assertAlmostEqual(got[1], SURVIVORS.map_corners[corner][1], places=9)
+
+    def test_zones_draw_inside_the_map_only(self):
+        """A zone larger than the whole map: every pixel it changes is map, off the polaroid; the border, the
+        polaroid and the margins stay. The marker keeps its own channel and darkens the others."""
+        for colour, kept in (("red", 0), ("blue", 2)):
+            before, after = noise_card(5), noise_card(5)
+            menuart.draw_zones(SURVIVORS, after, VIEW, [([(-20, -20), (120, -20), (120, 120), (-20, 120)], colour)])
+            changed = changed_pixels(before, after)
+            self.assertGreater(len(changed), 1000)
+            self.assertEqual([p for p in changed if not on_map(*p)], [])
+            for x, y in changed:
+                old, new = pixel(before, x, y), pixel(after, x, y)
+                self.assertEqual(new[kept], old[kept])
+                self.assertTrue(all(new[c] <= old[c] for c in range(3)))
+
+    def test_a_zone_is_an_outline_and_hatching(self):
+        img = grey_card(0x80)
+        menuart.draw_zones(SURVIVORS, img, VIEW, [([(50, 50), (90, 50), (90, 90), (50, 90)], "red")])
+        x0, y0 = (round(c) for c in VIEW.to_card(SURVIVORS, (50, 70)))   # on the west outline
+        self.assertEqual(pixel(img, x0, y0)[:3], b"\x80\x00\x00")
+        inside = [pixel(img, x, y0)[1] for x in range(x0 + 8, x0 + 180)]
+        self.assertIn(0, inside)                                           # the hatching
+        self.assertIn(0x80, inside)                                        # and the map between its lines
+        self.assertEqual(pixel(img, x0 - 10, y0)[:3], b"\x80\x80\x80")     # nothing outside the outline
+
+    def test_stickers_are_byte_equal_crops_of_the_stock_card(self):
+        stock, img = noise_card(7), noise_card(8)
+        view = menuart.MapView("synthetic", (0, 0, 492, 492))
+        named = dict(SURVIVORS.stickers)
+        for name, at in (("SOV", (300, 300)), ("NATO", (400, 150))):
+            menuart.draw_stickers(SURVIVORS, img, bytes(stock), view, [(name, at)])
+            st = named[name]
+            cx, cy = view.to_card(SURVIVORS, at)
+            dx, dy = round(cx - st.centre[0]), round(cy - st.centre[1])
+            whole = [(x, y) for x, y, c in menuart._sticker_pixels(st, SURVIVORS.size) if c == 1]
+            self.assertGreater(len(whole), 3500)
+            self.assertEqual([(x, y) for x, y in whole if pixel(img, x + dx, y + dy) != pixel(stock, x, y)], [])
+
+    def test_a_sticker_off_the_map_or_on_the_polaroid_fails(self):
+        for at in ((5, 5), (30, 30), (99, 50)):   # under the polaroid, across its edge, across the map's
+            with self.subTest(at=at), self.assertRaisesRegex(CheckError, "leave the map or lie under the polaroid"):
+                menuart.draw_stickers(SURVIVORS, noise_card(9), bytes(noise_card(10)), VIEW, [("SOV", at)])
+
+    def test_bad_markings_fail(self):
+        with self.assertRaisesRegex(CheckError, "colour 'green'"):
+            menuart.draw_zones(SURVIVORS, noise_card(1), VIEW, [(SOV_ZONE, "green")])
+        with self.assertRaisesRegex(CheckError, "2 points"):
+            menuart.draw_zones(SURVIVORS, noise_card(1), VIEW, [([(1, 1), (2, 2)], "red")])
+        with self.assertRaisesRegex(CheckError, "sticker 'UK'"):
+            menuart.draw_stickers(SURVIVORS, noise_card(1), bytes(noise_card(2)), VIEW, [("UK", (50, 50))])
+
+    def test_markings_need_a_view(self):
+        with self.assertRaisesRegex(CheckError, "need a map view"):
+            menuart.render(SURVIVORS, b"", "X", zones=ZONES)
+
+
+@CARD_DATA
+@PREVIEW_DATA
+class MarkedCardTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.view = menuart.cut_view(Cut(TWIN_CITIES, TWIN_STRIKE_CUT))
+        cls.mapped = menuart.build_card("TWIN STRIKE", cls.view)
+        cls.card = menuart.build_card("TWIN STRIKE", cls.view, zones=ZONES, stickers=STICKERS)
+        _, cls.stock = tgv.decode_tgv(menuart._read(SURVIVORS.source))
+
+    def test_no_markings_is_the_plain_map_card(self):
+        self.assertEqual(menuart.build_card("TWIN STRIKE", self.view, zones=(), stickers=()).tgv, self.mapped.tgv)
+
+    def test_it_parses_and_is_deterministic(self):
+        hdr, pixels = tgv.decode_tgv(self.card.tgv)
+        self.assertEqual((hdr.width, hdr.height, hdr.fmt, tgv.unwritable(hdr)), (*SURVIVORS.size, "A8B8G8R8_LIN", ""))
+        self.assertEqual(pixels, self.card.rgba)
+        again = menuart.build_card("TWIN STRIKE", self.view, zones=ZONES, stickers=STICKERS)
+        self.assertEqual(again.tgv, self.card.tgv)
+
+    def test_the_markings_lie_on_the_map(self):
+        changed = changed_pixels(self.mapped.rgba, self.card.rgba)
+        self.assertGreater(len(changed), 10_000)
+        self.assertEqual([p for p in changed if not on_map(*p)], [])
+
+    def test_the_stickers_are_the_stock_cards_own_pixels(self):
+        named = dict(SURVIVORS.stickers)
+        for name, at in STICKERS:
+            st = named[name]
+            cx, cy = self.view.to_card(SURVIVORS, at)
+            dx, dy = round(cx - st.centre[0]), round(cy - st.centre[1])
+            whole = [(x, y) for x, y, c in menuart._sticker_pixels(st, SURVIVORS.size) if c == 1]
+            self.assertEqual([p for p in whole if pixel(self.card.rgba, p[0] + dx, p[1] + dy) != pixel(self.stock, *p)],
+                             [], name)
+            # the crop is the sticker: its rim (the pixels within 3 px of its edge) is the sticker's white paper,
+            # not the stock map round it
+            rim = [pixel(self.stock, x, y) for x, y in whole
+                   if min(st.coverage(x + 0.5 + ox, y + 0.5 + oy) for ox, oy in ((3, 0), (-3, 0), (0, 3), (0, -3))) < 1]
+            self.assertGreater(sum(1 for r, g, b, _ in rim if min(r, g, b) > 180) / len(rim), 0.9, name)
 
 
 if __name__ == "__main__":
