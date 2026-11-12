@@ -1771,7 +1771,7 @@ STOCK_SCRIPT_EFFECTS = ("$/GFX/GameFx/fx_FumeeBlanche_ForScript_RandomPosition",
 
 
 def gamefx_file() -> str:
-    """The game's GameFx namespace file in the stock extraction (ops' STOCK_PATHS entry transactions, the
+    """The game's GameFx namespace file in the stock extraction (core's STOCK_PATHS entry transactions, the
     Transactions pack): where the game looks up the effect a script launches. Build 210942 ships the game's own NDF
     there as .txn; the Glad pack's GameFx.ndfbin is 201602's, which 210942 no longer reads. Raises
     paths.NotConfigured without an extraction."""
