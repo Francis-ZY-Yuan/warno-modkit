@@ -78,10 +78,10 @@ SCALAR_EDITS = (
                Value(0x03, MENU_ORDER)),
     ScalarEdit("MapConfiguration", "TChallengeMapInfo", "Duration", Value(0x02, 3), Value(0x02, 1)),
 )
-# Twin Strike's Steam Workshop item ID, written to Config.ini's ID: 0 until the first upload. The upload writes the new
-# item's ID into the installed Config.ini only, so set it here to that ID right after the first upload: a rebuild then
-# keeps it, and the next upload updates the same item instead of creating a second one.
-WORKSHOP_ID = 0
+# Twin Strike's Steam Workshop item ID, written to Config.ini's ID. The first upload created the item; an upload
+# writes the ID into the installed Config.ini only, so it is kept here and a rebuild carries it: the next upload then
+# updates this item instead of creating a second one.
+WORKSHOP_ID = 3838528915
 MAP_SWAP_STRINGS = {"_3x3_Railway": TWIN_CITIES.name}     # ScenarioInfo.RootDatapackName
 MAP_SWAP_TRANS = {"Railway": TWIN_CITIES.env_settings}    # import $/GraphicSettings/EnvironmentSettings/<map>
 DECK_SWAP = SOVIET_PLAYER_DECK_SWAP                       # MapConfiguration LocalPlayerDeck
