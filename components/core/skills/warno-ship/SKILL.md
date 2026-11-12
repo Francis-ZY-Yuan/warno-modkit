@@ -1,6 +1,6 @@
 ---
 name: warno-ship
-description: Use when sharing a finished WARNO mod with other players, uploading it to the Steam Workshop, or updating a shared mod after a game update.
+description: Use when sharing a finished WARNO mod with other players, uploading it to the Steam Workshop, writing or checking its Workshop page, or updating a shared mod after a game update.
 ---
 
 # Shipping a mod
@@ -38,18 +38,27 @@ mods. A component can add its own checks through its installer hook.
 ## Route 2: the Steam Workshop
 
 The modder runs the upload, never Claude. Full checklist:
-[references/workshop-publishing.md](references/workshop-publishing.md). In short:
+[references/workshop-publishing.md](references/workshop-publishing.md); the item page:
+[references/workshop-page.md](references/workshop-page.md). In short:
 
 1. **`Config.ini`:** `Name` equals the folder name. `ID = 0` for the first upload only, then the item's ID forever
    after ([[workshop-upload-folder]]): a rebuild that resets it publishes a duplicate item. `ModGenVersion` should
    be the current game build; it comes from the toolkit (see "After a game update"). `[Config]` stays empty for a
-   scenario-only mod. `PreviewImagePath` is empty, or a path without your user name (it is published).
+   scenario-only mod. `PreviewImagePath` names the main image, at a path without your user name (it is published),
+   or is empty for the first upload.
 2. **Install exactly the release** into your Saved Games `mod\` folder and compare it file by file with the build.
 3. **Upload with the game's own tool,** with WARNO closed, Steam running and the game's online login working.
 4. **Set the item Hidden at once** if it isn't ready: the tool has no visibility switch.
 5. **Copy the new ID into your build** and commit it.
-6. **Write the item page:** unofficial and not affiliated with Eugen Systems; contains modified Eugen game data;
-   single-player; the game build it was made for; may break after game updates. No donation links.
+6. **Write the item page from files you commit:** `workshop/item.toml` (ID, mod name, title), the description,
+   the main image and the gallery. The upload sets the main image; the item's web pages set the title, the
+   description and the gallery ([[workshop-item-page]]). The page says: unofficial and not affiliated with Eugen
+   Systems; contains modified Eugen game data; single-player; the game build it was made for; may break after game
+   updates. No donation links.
+7. **Check the live page:** `python -m modkit.core.workshop check workshop/item.toml`.
+
+**Every later upload** resets the title to `Config.ini`'s `Name`: set the title again, then run the check. After a
+reinstall, set `PreviewImagePath` again before uploading.
 
 ## After a game update
 
@@ -68,4 +77,6 @@ Don't edit the installed core; until that release, the mod ships the build the t
 | Uploading the build folder you didn't play | Upload exactly the installed, played release |
 | `ID = 0` after the first upload | Keep the item's ID in the build |
 | A preview image path under your user folder | It is published inside `Config.ini`; move it |
+| Editing the page on Steam only | Change the `workshop/` files first, then the page, then run the check |
+| Leaving the title as the upload reset it | Set it again after every upload |
 | Shipping a Gameplay file in an Operation mod | It makes the game relaunch with mods off ([[gameplay-mod-relaunch]]) |

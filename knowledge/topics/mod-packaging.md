@@ -15,6 +15,7 @@ Topic `mod-packaging`, declared by core. Back to [the map](../README.md).
 
 ### PROBED
 
+- [workshop-item-page](../../components/core/knowledge/mechanisms/workshop-item-page.md): The upload sets a Workshop item's main image and resets its title; the item's own pages set its text and gallery (core, verified 210942)
 - [workshop-upload-folder](../../components/core/knowledge/mechanisms/workshop-upload-folder.md): The Workshop upload sends the mod folder as it is; a scenario mod needs no generate step (core, verified 210942)
 
 ## Lessons
@@ -31,6 +32,7 @@ Taught by the trials of these mechanisms.
 ## Trials, newest first
 
 - 2026-11-12 [2026-11-12-twin-strike-workshop-upload](../../components/core/knowledge/trials/2026-11-12-twin-strike-workshop-upload.md) (core): launch, pass
+- 2026-11-12 [2026-11-12-twin-strike-workshop-page](../../components/core/knowledge/trials/2026-11-12-twin-strike-workshop-page.md) (core): launch, pass
 - 2026-11-12 [2026-11-12-twin-strike-210942-play1](../../components/ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md) (ops): play, mixed
 - 2026-11-12 [2026-11-12-build-210942-port](../../components/core/knowledge/trials/2026-11-12-build-210942-port.md) (core): survey, pass
 - 2026-11-11 [2026-11-11-twin-strike-launch1-duplicate-menu-order](../../components/ops/knowledge/trials/2026-11-11-twin-strike-launch1-duplicate-menu-order.md) (ops): play, fail

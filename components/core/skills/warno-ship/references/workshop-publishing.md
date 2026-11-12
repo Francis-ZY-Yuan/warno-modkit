@@ -53,7 +53,8 @@ produces too ([[mod-version-and-config-lines]]).
    the release you build: on 210942 the upload drops the empty `[Config]` header from the installed copy, and
    whether the game still lists a mod without it is unseen ([[workshop-upload-folder]]).
 7. `PreviewImagePath` is empty, or names an image of about 1 MB or less at a path without your user name. The path
-   itself is published inside `Config.ini`, and an image placed inside the mod folder ships too.
+   itself is published inside `Config.ini`, and an image placed inside the mod folder ships too. It is the only way
+   to set the item's main image ([[workshop-item-page]]).
 
 **Content**
 8. `Gen/Version.ndf` is exactly `version is '<current build>'` and a newline. The toolkit writes it too
@@ -77,6 +78,8 @@ produces too ([[mod-version-and-config-lines]]).
 **The item page**
 16. Say: unofficial and not affiliated with or endorsed by Eugen Systems; contains modified Eugen game data;
     single-player; the game build it was made for; may break after game updates. No donation links.
+17. Keep the page as files and set it from them, then check the live page against them:
+    [workshop-page.md](workshop-page.md). Every upload resets the title ([[workshop-item-page]]).
 
 ## After a game update
 

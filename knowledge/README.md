@@ -20,7 +20,7 @@ What the game does (mechanisms), what was tried and how it came out (trials), an
 | --- | --- | --- | --- |
 | [Files and formats](topics/files-and-formats.md) | The game's archives and file formats (edat, compiled NDF, dictionaries and tokens), and how the toolkit reads and writes them. | 5 | 3 |
 | [Loading and crashes](topics/loading-and-crashes.md) | What the game checks when a mod loads, how a load or a launch fails, and how to read a crash. | 6 | 4 |
-| [Mod packaging](topics/mod-packaging.md) | How a mod folder is laid out, activated, kept apart from other mods, and shared. | 4 | 3 |
+| [Mod packaging](topics/mod-packaging.md) | How a mod folder is laid out, activated, kept apart from other mods, and shared. | 5 | 3 |
 | [Game updates](topics/game-updates.md) | What changed between game builds, and the facts most likely to change with the next update. | 12 | 7 |
 | [Operation setup](topics/operation-setup.md) | How an Operation is assembled from stock parts and registered: its packs, its identity, its deployment phase and its menu entry. | 9 | 5 |
 | [Script flow](topics/script-flow.md) | How the script graph runs: containers, when each action finishes, loops, difficulty and how a battle ends. | 14 | 8 |
@@ -32,7 +32,7 @@ What the game does (mechanisms), what was tried and how it came out (trials), an
 
 | Component | Knows | Mechanisms | Trials | Lessons |
 | --- | --- | --- | --- | --- |
-| [core](../components/core/knowledge/INDEX.md) | WARNO modding foundations: setup from your own install, file formats, load-time gates, crash triage, packaging and the knowledge base. | 7 | 8 | 12 |
+| [core](../components/core/knowledge/INDEX.md) | WARNO modding foundations: setup from your own install, file formats, load-time gates, crash triage, packaging and the knowledge base. | 8 | 9 | 12 |
 | [ops](../components/ops/knowledge/INDEX.md) | Build, gate and playtest custom scripted Operations (scenario mods) for WARNO, with worked examples. | 48 | 43 | 9 |
 
 ## Writing records

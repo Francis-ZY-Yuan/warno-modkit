@@ -5,7 +5,7 @@ status: PROBED
 last_verified: 210942 2026-11-12
 source: stock-data
 topics: [mod-packaging, game-updates]
-trials: [2026-11-02-workshop-publishing-survey, 2026-11-12-twin-strike-workshop-upload]
+trials: [2026-11-02-workshop-publishing-survey, 2026-11-12-twin-strike-workshop-upload, 2026-11-12-twin-strike-workshop-page]
 ---
 **What the game does.** The official upload (`WARNO.exe -uploadmod <Name>`) uploads your Saved Games
 `mod\<Name>\` folder, the same folder a local install fills. A scenario mod made of `Config.ini`,
@@ -17,6 +17,8 @@ The extra files the official generate step writes matter only to mods that repla
 - The upload writes the item's ID into `Config.ini`. A rebuild that resets `ID = 0` would publish a second item on
   the next upload, so keep the ID across rebuilds. The toolkit does: a build writes the ID its profile names
   (`mod_id`, 0 until the first upload), and the share installer carries an installed non-zero ID over a build's 0.
+- Every upload also resets the item's title to `Config.ini`'s `Name`, and only the upload sets its main image
+  ([[workshop-item-page]]).
 - Calling the game with `-uploadmod` directly should need no write access to the install; only the official batch
   route wants a copy of the mod inside the install's `Mods` folder.
 - The official update script merges NDF projects and deletes the mod's `Gen` folder. A scenario-only mod has nothing
@@ -38,7 +40,7 @@ Open: whether the game still lists a mod with no `[Config]` section. Packaging k
 <!-- referenced-by:start -->
 ## Referenced by
 
-- Trials: [2026-11-02-workshop-publishing-survey](../trials/2026-11-02-workshop-publishing-survey.md), [2026-11-12-twin-strike-workshop-upload](../trials/2026-11-12-twin-strike-workshop-upload.md)
+- Trials: [2026-11-02-workshop-publishing-survey](../trials/2026-11-02-workshop-publishing-survey.md), [2026-11-12-twin-strike-workshop-page](../trials/2026-11-12-twin-strike-workshop-page.md), [2026-11-12-twin-strike-workshop-upload](../trials/2026-11-12-twin-strike-workshop-upload.md)
 - Skills: [`components/core/skills/warno-ship/SKILL.md`](../../skills/warno-ship/SKILL.md), [`components/core/skills/warno-ship/references/workshop-publishing.md`](../../skills/warno-ship/references/workshop-publishing.md)
 - Examples: [`components/ops/examples/twin-strike/README.md`](../../../ops/examples/twin-strike/README.md)
 - Records: [2026-11-12-twin-strike-workshop-upload](../trials/2026-11-12-twin-strike-workshop-upload.md)
