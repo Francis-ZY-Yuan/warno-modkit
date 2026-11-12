@@ -5,7 +5,7 @@ import unittest
 
 from modkit.core.gates import CheckError
 from modkit.core.ndfbin import Value
-from modkit.ops.bricks import g_choice, g_cmp, g_hint, g_seq
+from modkit.ops.bricks import g_choice, g_cmp, g_hint, g_seq, g_start_timer
 from modkit.ops.graph import Node, walk
 from modkit.ops.leveldesign import LdItem
 from modkit.ops.maps import GEISA
@@ -154,6 +154,35 @@ class Blocks(unittest.TestCase):
         self.assertEqual([p for p, _ in objective("o", "l", cond, at).props], [*head, *tail])
         with self.assertRaisesRegex(CheckError, "not both"):
             objective("o", "l", cond, at, [n], label_counters=[n])
+
+    def test_objective_timer(self):
+        """`timers` fill the label with a running clock, TheWingedHussars #487's order and form (positionless: no
+        ShowEtiquette); a timer and counters together are refused (no stock objective lists both)."""
+        c = ctx()
+        clock, cond = c.timer("clock", 180), g_cmp(c.int_var("x"), 1)
+        held = objective("o", "l", cond, timers=[clock])
+        self.assertEqual([p for p, _ in held.props],
+                         ["BonusScoreMission", "Condition", "LabelComponent", "ListTimersForEtiquetteText",
+                          "ObjectiveEtiquetteText", "ObjectiveText", "ShowAddAnimation", "ShowBaseAnimation"])
+        self.assertEqual(prop(held, "ListTimersForEtiquetteText"), [clock])
+        with self.assertRaisesRegex(CheckError, "timers or counters, not both"):
+            objective("o", "l", cond, timers=[clock], label_counters=[c.int_var("n")])
+
+    def test_timer_once_per_name(self):
+        """Ctx.timer: a TGDVariableTimer of its seconds (Duree), exported with the variables, made once per name; the
+        same name with another length, or an integer's name, is refused. StartTimer starts it (D#271)."""
+        c = ctx()
+        clock = c.timer("clock", 300)
+        self.assertIs(c.timer("clock", 300), clock)
+        self.assertEqual((clock.cls, clock.export, prop(clock, "Duree").v),
+                         ("TGDVariableTimer", "$/GDScript/T/Variables/clock", 300))
+        with self.assertRaisesRegex(CheckError, "not a timer of 60 s"):
+            c.timer("clock", 60)
+        c.int_var("x")
+        with self.assertRaisesRegex(CheckError, "not a timer"):
+            c.timer("x", 60)
+        start = g_start_timer(clock)
+        self.assertEqual((start.cls, prop(start, "Timer")), ("TGDDescriptorStartTimer", clock))
 
     def test_beat_hint_and_dialog_tokens(self):
         c = ctx()

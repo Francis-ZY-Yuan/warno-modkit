@@ -18,7 +18,7 @@ from modkit.ops.files import read_file
 from modkit.ops.graph import decode, walk
 from modkit.ops.profile import SURVIVORS
 from modkit.ops.shapes import GRU_WORLD
-from modkit.ops.testing import last, objective_named, of, prop, subs, token
+from modkit.ops.testing import last, objective_named, of, parent_of, prop, subs, token
 from twinstrike import forces, profile
 from twinstrike import map as ts_map
 from twinstrike import op
@@ -51,6 +51,15 @@ def village(nato: list, cmd: list | None = None, mine: list | None = None, zone:
     mine = mine or [(0, 5)]
     return {op.VILLAGE_RING: {NATO: nato, "cmd": cmd or [], JOUEUR: mine}, VILLAGE_CZ: {JOUEUR: zone or mine},
             **extra}
+
+
+# World.groups with a unit left in every NATO ground group, so phase 5 runs its clock (op.nato_spent ends it at once
+# once all are empty), and with all of them empty from second `t` on.
+NATO_LEFT = {name: [(0, 1)] for name in op.NATO_GROUND}
+
+
+def nato_gone(t: int) -> dict:
+    return {name: [(0, 1), (t, 0)] for name in op.NATO_GROUND}
 
 
 # The fall at second FALL_T: the garrison down to 2 (Hard's threshold, so it falls at every difficulty), a command
@@ -807,8 +816,8 @@ class Phase4(unittest.TestCase):
         countdown is done, battalion 2 attacks (each half boards, then its lane) and phase 5 starts; B2's "tanks left"
         is done once 9 or fewer are left, with the hint ts_hbn2b."""
         end = BN2_T + op.COUNTDOWN_S
-        world = World(answers={"ts_drel": [1]}, groups={op.BN2_TANKS_G: [(0, 29), (end + 100, 9)]}, arrive_s=20,
-                      board_s=10)
+        world = World(answers={"ts_drel": [1]}, groups={op.BN2_TANKS_G: [(0, 29), (end + 100, 9)], **NATO_LEFT},
+                      arrive_s=20, board_s=10)
         m = phase45(world, end + 120)
         self.assertEqual((m.vars[op.STRIKE], m.vars[op.BUSY]), (op.WITHHELD, 0))
         self.assertEqual(m.when("hint", "ts_hwith"), [ASK_T])
@@ -830,7 +839,7 @@ class Strike(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        world = World(rings={op.STRIKE_RING: {NATO: [(0, 52)]}}, answers={"ts_drel": [0]})
+        world = World(rings={op.STRIKE_RING: {NATO: [(0, 52)]}}, answers={"ts_drel": [0]}, groups=NATO_LEFT)
         cls.m = phase45(world, STRUCK_T + 120)
 
     def test_the_order(self):
@@ -929,8 +938,10 @@ class Phase5(unittest.TestCase):
     """The end clock and the grade (design 5.8)."""
 
     def grade(self, answer: int, until: int, values: dict | None = None, **world) -> Model:
-        """Phases 4 and 5 with the release answered `answer`; the village the player's unless `owner` says."""
+        """Phases 4 and 5 with the release answered `answer`; the village the player's unless `owner` says; a NATO
+        ground unit left in each group (NATO_LEFT) unless `groups` says otherwise."""
         world.setdefault("owner", JOUEUR)
+        world["groups"] = {**NATO_LEFT, **world.get("groups", {})}
         return phase45(World(answers={"ts_drel": [answer]}, **world), until, values)
 
     def test_after_a_strike(self):
@@ -981,6 +992,164 @@ class Phase5(unittest.TestCase):
         m = self.grade(0, STRUCK_T + 400, {op.END: op.END_EMPTY, op.B1_DONE: 1})
         self.assertEqual(m.vars[op.END], op.END_EMPTY)
         self.assertEqual([e[1:] for e in m.log if e[1] == "dialog"], [("dialog", "ts_dempty")])
+
+    def test_the_clock_is_shown(self):
+        """With phase 5's hint, its end clock starts and shows: after a strike the timer ts_clock_r of END_CLOCK_S, P3
+        (ts_p3r) showing it; the battle ends as it reads 0, and P3 is done with the win. After withholding,
+        ts_clock_w of END_CLOCK_WITHHELD_S and P3 ts_p3w."""
+        m = self.grade(0, STRUCK_T + 400, {op.B1_DONE: 1}, groups={"Groupe_Joueur": [(0, 40)]})
+        (t0,) = m.when("hint", "ts_hph5")
+        self.assertEqual(m.entries("timer"), [(t0, op.CLOCK_R, int(op.END_CLOCK_S))])
+        self.assertEqual(m.when("show", "ts_p3r", op.CLOCK_R), [t0])
+        (end,) = m.when("dialog", "ts_dtotr")
+        self.assertIn(end - t0, (op.END_CLOCK_S, op.END_CLOCK_S + 1))
+        self.assertIn(m.when("done", "ts_p3r")[0] - end, (-1, 0, 1))
+        attack = BN2_T + op.COUNTDOWN_S
+        m = self.grade(1, attack + 30, {op.B1_DONE: 1}, arrive_s=20, board_s=10)
+        (t0,) = m.when("hint", "ts_hph5")
+        self.assertEqual(m.entries("timer"), [(t0, op.CLOCK_W, int(op.END_CLOCK_WITHHELD_S))])
+        self.assertEqual(m.when("show", "ts_p3w", op.CLOCK_W), [t0])
+        self.assertEqual(m.when("show", "ts_p3r"), [])
+
+    def test_nato_spent_ends_at_once(self):
+        """The smoke play's dead end: after a strike, with NATO's ground forces gone (at the kill, or a minute later),
+        the battle ends at once with the grade that state earns (Total, released: battalion 1 broken, battalion 2
+        struck), not when the 5:00 clock runs out; P2 and P3 are done with it."""
+        for after in (0, 60):
+            with self.subTest(after=after):
+                gone = STRUCK_T + after
+                m = self.grade(0, STRUCK_T + 400, {op.B1_DONE: 1},
+                               groups={"Groupe_Joueur": [(0, 40)], **nato_gone(gone)}, lost=[(0, 10)])
+                self.assertEqual(m.vars[op.END], op.END_TOTAL_R)
+                (end,) = m.when("dialog", "ts_dtotr")
+                self.assertIn(end - gone, (0, 1, 2))
+                self.assertEqual(m.entries("end"), [(end, shapes.TOTAL_VICTORY, None)])
+                self.assertIn(m.when("done", "ts_p3r")[0] - end, (-1, 0, 1))
+
+    def test_a_unit_left_holds_the_clock(self):
+        """One NATO ground group still holding a unit (any of the four) keeps the clock running to its end."""
+        for name in op.NATO_GROUND:
+            with self.subTest(group=name):
+                groups = {"Groupe_Joueur": [(0, 40)], **nato_gone(STRUCK_T), name: [(0, 1)]}
+                m = self.grade(0, STRUCK_T + 400, {op.B1_DONE: 1}, groups=groups)
+                self.assertIn(clock(m, "ts_dtotr"), (op.END_CLOCK_S, op.END_CLOCK_S + 1))
+
+    def test_withheld_nato_spent(self):
+        """Withheld: battalion 2 destroyed to its last unit, with the rest of NATO's ground forces, ends the battle at
+        once, Total (withheld) with battalion 1 broken, even while B2's count (polled) has not yet read the break: here
+        its tanks' count reads the loss 2 s late."""
+        attack = BN2_T + op.COUNTDOWN_S
+        gone = attack + 400
+        groups = {op.BN2_TANKS_G: [(0, 29), (gone + 2, 0)], "Groupe_Joueur": [(0, 40)], **nato_gone(gone)}
+        m = self.grade(1, gone + 30, {op.B1_DONE: 1}, groups=groups, arrive_s=20, board_s=10)
+        self.assertEqual(m.vars[op.END], op.END_TOTAL_W)
+        self.assertIn(m.when("dialog", "ts_dtotw")[0] - gone, (0, 1, 2))
+
+
+def boxes(answer: int, until: int, groups: dict | None = None) -> Model:
+    """Phases 3 (PH3 at second 0, battalion 1 already beaten), 4 and 5 and the funnel, the release answered
+    `answer`, the village the player's, a NATO ground unit left (NATO_LEFT) unless `groups` says."""
+    world = World(answers={"ts_drel": [answer]}, owner=JOUEUR, groups={**NATO_LEFT, **(groups or {})}, arrive_s=20,
+                  board_s=10)
+    return run(world, until, "funnel", "phase3", "phase4", "phase5", values={op.PH3: 1, op.BN1_DONE: 1})
+
+
+class Boxes(unittest.TestCase):
+    """The fire boxes' labels close once nothing more comes through them, so they never stand as open tasks in
+    phase 5."""
+
+    def test_closed_at_the_kill(self):
+        """After a strike: BOX W and BOX C done at the kill (or the model's next tick), five minutes before the end."""
+        m = boxes(0, STRUCK_T + 30)
+        done = [(t, name) for t, name, _ in m.entries("done") if name.startswith("ts_ob")]
+        self.assertEqual(sorted(name for _, name in done), ["ts_obc", "ts_obw"])
+        self.assertTrue(all(t - STRUCK_T in (0, 1) for t, _ in done), done)
+        self.assertEqual(m.vars.get(op.END, 0), 0)
+
+    def test_closed_once_battalion_two_breaks(self):
+        """Withheld: the boxes stay open while battalion 2 attacks through them, and close once it is broken."""
+        attack = BN2_T + op.COUNTDOWN_S
+        broken = attack + 300
+        m = boxes(1, broken + 30, groups={op.BN2_TANKS_G: [(0, 29), (broken, 9)]})
+        (b2n,) = m.when("done", "ts_b2n")
+        done = [(t, name) for t, name, _ in m.entries("done") if name.startswith("ts_ob")]
+        self.assertEqual(sorted(name for _, name in done), ["ts_obc", "ts_obw"])
+        self.assertTrue(all(t - b2n in (0, 1) for t, _ in done), (b2n, done))
+
+
+class EndClock(unittest.TestCase):
+    """Phase 5's end clock in stock's form (design 5.8), read off the beats (no stock data needed)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.ctx = op.Ctx()
+        cls.nodes = list(walk([beats_root(op.BEATS, cls.ctx)]))
+
+    def test_p3_shows_the_clock(self):
+        """Each road's P3 is a Primary objective whose label shows on the village's command zone, as TheKitzingenRuse
+        #281 ("HOLD DMITRI", "Reinforcements in %1", on CommandPoints/CZ_B): its label's one %1 is its timer
+        (ListTimersForEtiquetteText), of END_CLOCK_S or END_CLOCK_WITHHELD_S, which StartTimer starts right before the
+        Simultaneous holding P3, last; beside P3 the race that ends the phase: WaitDuration of the same length,
+        (withheld) battalion 2 broken, and NATO spent."""
+        for text, name, seconds in (("ts_p3r", op.CLOCK_R, op.END_CLOCK_S),
+                                    ("ts_p3w", op.CLOCK_W, op.END_CLOCK_WITHHELD_S)):
+            with self.subTest(objective=text):
+                p3 = objective_named(self.nodes, text)
+                (timer,) = prop(p3, "ListTimersForEtiquetteText")
+                self.assertEqual((last(timer), timer.cls, prop(timer, "Duree").v),
+                                 (name, "TGDVariableTimer", int(seconds)))
+                self.assertEqual((last(prop(p3, "Position")), prop(p3, "ShowEtiquette") is not None,
+                                  prop(p3, "ListVariables"), prop(p3, "LabelComponent").text),
+                                 (VILLAGE_CZ, True, None, "Primary"))
+                self.assertEqual(token(prop(p3, "ObjectiveEtiquetteText")), f"{text}l")
+                self.assertEqual(STRINGS_LOC[f"{text}l"].count("%1"), 1)
+                held = parent_of(self.nodes, p3)
+                start, simul = subs(parent_of(self.nodes, held))
+                self.assertEqual((start.cls, prop(start, "Timer"), simul, subs(simul)[-1]),
+                                 ("TGDDescriptorStartTimer", timer, held, p3))
+                race = subs(subs(simul)[0])[0]
+                wait, *more, spent = subs(race)
+                self.assertEqual((race.cls, prop(wait, "Duree").v), ("TGDDescriptorCompetition", seconds))
+                self.assertEqual([last(prop(prop(w, "Condition"), "Variable")) for w in more],
+                                 [] if name == op.CLOCK_R else [op.BN2_BROKEN])
+                tests = prop(prop(spent, "Condition"), "SousConditions")
+                self.assertEqual([last(prop(c, "Variable")) for c in tests], list(op.NATO_GROUND))
+                self.assertTrue(all(prop(prop(c, "Operator"), "Value") is None
+                                    and prop(prop(c, "Operator"), "OperatorType") is None for c in tests))  # == 0
+        self.assertIn(f"{op.END_CLOCK_S / 60:g} MIN", STRINGS_LOC["ts_p3r"])
+        self.assertIn(f"{op.END_CLOCK_WITHHELD_S / 60:g} MIN", STRINGS_LOC["ts_p3w"])
+
+    def test_every_nato_ground_unit_is_counted(self):
+        """Every NATO ground unit the script makes or reveals reaches a NATO_GROUND group through
+        AddUnitGroupListToUnitGroup, so nato_spent never ends the battle while one is left: each CreateUnitOnPosition
+        in the NATO camp creates into such a group, and each NATO Spawn item's tag (the garrison's and battalion 2's)
+        is such a source. The fighters' are not: they are left out on purpose (op.nato_spent)."""
+        into: dict[int, list] = {}
+        for u in of(self.nodes, "AddUnitGroupListToUnitGroup"):
+            for src in prop(u, "ListGroupSource"):
+                into.setdefault(id(src), []).append(prop(u, "GroupDestination"))
+
+        def counted(node) -> bool:
+            seen, stack = set(), [node]
+            while stack:
+                n = stack.pop()
+                if n.cls == "TGDVariableUnitGroup" and last(n) in op.NATO_GROUND:
+                    return True
+                if id(n) not in seen:
+                    seen.add(id(n))
+                    stack += into.get(id(n), [])
+            return False
+
+        creates = [n for n in of(self.nodes, "CreateUnitOnPosition") if last(prop(n, "Camp")) == NATO]
+        self.assertEqual(sum(prop(n, "NbUnit").v for n in creates),
+                         sum(n for t in op.BN1_WAVES for _, n, _ in t.wave.rows))
+        for n in creates:
+            self.assertTrue(counted(prop(n, "Group")), last(prop(n, "Group")))
+        spawns = [it for it in op.ITEMS if it.addon == "Spawn" and it.camp == profile.camp_index(op.ENEMY)]
+        ground = [it for it in spawns if not it.group.startswith("air_")]
+        self.assertEqual(len(ground), op.GARRISON_N + len(op.bn2_items()))
+        for it in spawns:
+            self.assertEqual(counted(self.ctx.tag(it.name)), it in ground, it.name)
 
 
 class Funnel(unittest.TestCase):

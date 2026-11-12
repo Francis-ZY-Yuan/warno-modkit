@@ -58,7 +58,7 @@ Soviet ground in red with the star and the NATO ground in blue with its badge (`
 | 2. Unlock | The division's reserve joins your deck, with 8,000 points and an income of 500 from then on; NATO's recon moves north | 2 min |
 | 3. Counter-attack | A US armoured battalion comes up both lanes, its recon screen first, then company teams with their air defence, each attacking your units once in the village; NATO fighters sweep the boxes. Fire missions on BOX W or BOX C, and one division fire plan. | The battalion is broken, or 15 min on (its survivors break off) |
 | 4. Surprise | A West German Panzer battalion appears at the assembly area: it attacks in 5:00. Front offers nuclear release. | The strike, or the countdown runs out |
-| 5. Hold | Hold the village | 5 min after a strike; after withholding, until the second battalion is broken, up to 20 min |
+| 5. Hold | Hold the village; HOLD ON, on the village and in the objectives, shows the time left | 5 min after a strike; after withholding, until the second battalion is broken, up to 20 min; at once when NATO has no ground unit left |
 
 You lose if NATO owns the village for 60 s, or none of your units is inside its zone for 3 min (from phase 2 on). A win is
 Total (the village held, both battalions beaten: the first broken, the second destroyed or broken), Minor (held, but
@@ -159,8 +159,10 @@ minutes per fire, then vanish)
 14. What does the kill leave: wrecks, or nothing?
 15. Did the fires and the black smoke show across the zone, and for about a minute?
 
-**The end**
-16. Which ending was reached (the end dialog's first line and its last sentence), and on which difficulty?
+**The end** (after a strike: HOLD ON counts down from 5:00 on the village and in the objectives, BOX W and BOX C are
+done, and the end dialog comes at 0:00, or at once when NATO has no ground unit left)
+16. Did the end come so? Which ending was reached (the end dialog's first line and its last sentence), and on which
+    difficulty?
 
 **Supply**
 17. Were the supply trucks (Ural-4320 ×4) and supply helicopters (Mi-8TZ ×2) in the buy menu from the start, and could
@@ -194,7 +196,8 @@ minutes per fire, then vanish)
   [[dialog-button-ingame-dictionary]].
 - The strike: a self-contained script effect [[script-effects-self-contained]] (the nuke impact effects crash a script
   [[scripted-nuke-effect]]), then KillAllUnit on the units a circle detects.
-- The endings: [[mission-ends-only-by-script]]; the difficulty: [[difficulty-branches]].
+- The endings: [[mission-ends-only-by-script]], phase 5's end clock shown as a stock objective timer
+  [[objective-counters]]; the difficulty: [[difficulty-branches]].
 - The opening camera: after LoadingDone, a three-key move from high over the cut down to the Soviet box and the
   village, then a snap to its last key, as stock opens a deployment-phase Operation; a snap before LoadingDone, as v0.1
   shipped, left the camera on the ground [[start-camera-before-loading-done]].

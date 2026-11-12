@@ -34,6 +34,20 @@ def g_until(cond: Node) -> Node:
     return Node("TGDDescriptorWaitCondition", [("Condition", cond)])
 
 
+def g_timer(seconds: int, export: str | None = None) -> Node:
+    """A script timer of `seconds` (TGDVariableTimer, Duree an int32: TheWingedHussars #604 180, Gotterdammerung #175
+    1200, D DefenseTimer #210). It counts down only once g_start_timer starts it; an objective shows it as a clock in
+    its label (shapes.objective's `timers`: ListTimersForEtiquetteText), and g_cmp(timer, op=LessOrEqual) holds once it
+    has run out (the stock hold objectives' Condition, TheWingedHussars #606; D Timer_Assault's WaitCondition #426)."""
+    return Node("TGDVariableTimer", [("Duree", i32(seconds))], export)
+
+
+def g_start_timer(timer: Node) -> Node:
+    """StartTimer: `timer` (g_timer) starts counting down, at once (TheWingedHussars #486, right before its hold
+    objective; D#271)."""
+    return Node("TGDDescriptorStartTimer", [("Timer", timer)])
+
+
 def g_int_compare(value: int | None = None, op: int | None = None, other: Node | None = None) -> Node:
     """EGDOperator: 0 Equal (default), 2 MoreOrEqual, 3 LessOrEqual, 5 StrictlyLess; value 0 omitted."""
     props: list[tuple[str, object]] = [("Variable", other)] if other is not None else []

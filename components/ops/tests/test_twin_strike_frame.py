@@ -346,13 +346,13 @@ class Strings(unittest.TestCase):
         self.assertTrue(all(t.startswith("ts_") for t in toks))
 
     def test_what_the_whole_op_needs(self):
-        """The camp names, the start hint, every phase's hint, the objectives P1, P2, B1 and B2 with their labels, the
-        five choice dialogs and every ending (design 4.2, 5.8)."""
+        """The camp names, the start hint, every phase's hint, the objectives P1, P2, P3 (each road's), B1 and B2 with
+        their labels, the five choice dialogs and every ending (design 4.2, 5.8)."""
         loc, dialog = strings.ENGLISH["Scripting/Localization"], strings.ENGLISH["Scripting/Dialog"]
         self.assertLessEqual(set(profile.CAMP_TOKENS.values()), set(loc))
         self.assertLessEqual({"ts_hdep", "ts_hph1", "ts_hprep", "ts_hfall", "ts_hph3", "ts_hbn2", "ts_hrel",
                               "ts_hph5"}, set(loc))
-        for obj in ("ts_p1", "ts_p2", "ts_b1", "ts_b2", "ts_b2n"):
+        for obj in ("ts_p1", "ts_p2", "ts_p3r", "ts_p3w", "ts_b1", "ts_b2", "ts_b2n"):
             self.assertLessEqual({obj, f"{obj}l"}, set(loc))
         self.assertEqual(set(strings.BUTTONS), {"ts_dprep", "ts_dfire1", "ts_dfire2", "ts_dplan", "ts_drel"})
         self.assertLessEqual(set(strings.BUTTONS), set(dialog))

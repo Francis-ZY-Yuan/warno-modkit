@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from modkit.core.gates import check
 from modkit.core.ndfbin import Value, token_unhash
 from modkit.ops.bricks import (
-    g_cmp, g_compete, g_create, g_hint, g_if, g_modify, g_seq, g_set, g_simul, g_until, g_wait, unit_path,
+    g_cmp, g_compete, g_create, g_hint, g_if, g_modify, g_seq, g_set, g_simul, g_timer, g_until, g_wait, unit_path,
 )
 from modkit.ops.graph import TRUE, Imp, Node, Str, i32, loc, walk
 from modkit.ops.leveldesign import LdItem, gd_tags
@@ -140,6 +140,13 @@ class Ctx:
     def int_var(self, name: str) -> Node:
         return self._variable(name, "TGDVariableInteger")
 
+    def timer(self, name: str, seconds: int) -> Node:
+        """The script timer `name` of `seconds` (bricks.g_timer), exported with the variables, made once per name."""
+        node = self.variables.setdefault(name, g_timer(seconds, export=f"{self.folder}/Variables/{name}"))
+        check(node.cls == "TGDVariableTimer" and dict(node.props)["Duree"].v == seconds,
+              f"variable {name} is a {node.cls}, not a timer of {seconds} s")
+        return node
+
     def tag(self, name: str) -> Node:
         """The GdItems tag of the item named `name`."""
         check(name in self.tags, f"{name} is not an ITEMS entry")
@@ -217,23 +224,30 @@ def beat_hint(token: str, *actions: Node) -> Node:
 
 def objective(text: str, label: str, condition: Node | None, position: Node | None = None,
               counters: list[Node] | None = None, *, fail: Node | None = None, reussi: Node | None = None,
-              echec: Node | None = None, kind: str = "Primary", label_counters: list[Node] | None = None) -> Node:
+              echec: Node | None = None, kind: str = "Primary", label_counters: list[Node] | None = None,
+              timers: list[Node] | None = None) -> Node:
     """GereObjectif in stock property order (DelayedRetribution #344 with counters). `counters` fill the %1 (and %2)
     of both texts (ListVariables: ObjectiveText; ListVariablesForEtiquetteText: the label). `label_counters` fill the
     label's only (ListVariablesForEtiquetteText, no ListVariables: DelayedRetribution #344, Survivors #295); give one
-    or the other. Only an objective with a `position` shows its map label (ShowEtiquette): a positionless objective's
-    pin lands in the map corner, and stock leaves ShowEtiquette out on its positionless objectives. `fail` is the
-    ConditionEchec, `reussi` and `echec` the ActionsReussi and ActionsEchec, the first properties (Survivors #295); a
-    None `condition` makes a fail-only objective (TheHydra #101); `kind` is the LabelComponent ('Bonus': Survivors
-    #775). It finishes only once it resolves and its chosen action has, so it goes last in its Sequential."""
+    or the other. `timers` (bricks.g_timer) fill the label's %1 with a running clock instead (ListTimersForEtiquetteText:
+    the 7 stock timer objectives, TheWingedHussars #487 "Time remaining %1" among them), with no counters: no stock
+    objective lists both. Only an objective with a `position` shows its map label (ShowEtiquette): a positionless
+    objective's pin lands in the map corner, and stock leaves ShowEtiquette out on its positionless objectives; the
+    objective list shows the label's text either way. `fail` is the ConditionEchec, `reussi` and `echec` the
+    ActionsReussi and ActionsEchec, the first properties (Survivors #295); a None `condition` makes a fail-only
+    objective (TheHydra #101); `kind` is the LabelComponent ('Bonus': Survivors #775). It finishes only once it
+    resolves and its chosen action has, so it goes last in its Sequential."""
     check(not (counters and label_counters), "objective: give counters (both texts) or label_counters (the label "
                                              "only), not both")
+    check(not (timers and (counters or label_counters)), "objective: a label shows timers or counters, not both (no "
+                                                         "stock objective lists both)")
     props: list[tuple[str, object]] = [*([("ActionsEchec", echec)] if echec is not None else []),
                                        *([("ActionsReussi", reussi)] if reussi is not None else []),
                                        ("BonusScoreMission", i32(50)),
                                        *([("Condition", condition)] if condition is not None else []),
                                        *([("ConditionEchec", fail)] if fail is not None else []),
-                                       ("LabelComponent", Str(kind))]
+                                       ("LabelComponent", Str(kind)),
+                                       *([("ListTimersForEtiquetteText", list(timers))] if timers else [])]
     if counters:
         props += [("ListVariables", list(counters)), ("ListVariablesForEtiquetteText", list(counters))]
     elif label_counters:

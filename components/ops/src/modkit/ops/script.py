@@ -16,7 +16,8 @@ from modkit.core import ndfbin
 from modkit.core.gates import check
 from modkit.core.ndfbin import Value
 from modkit.ops.bricks import (
-    g_cmp, g_compete, g_dialog, g_hint, g_income, g_seq, g_simul, g_union, g_until, g_wait, g_zone_owner,
+    g_cmp, g_compete, g_dialog, g_hint, g_income, g_seq, g_simul, g_start_timer, g_timer, g_union, g_until, g_wait,
+    g_zone_owner,
 )
 from modkit.ops.graph import TRUE, Imp, Node, Str, i32, loc, template_scalars, with_scalars
 
@@ -134,7 +135,7 @@ def hold_script(tpl: ndfbin.NdfBin, templates: Templates, *, folder: str, camps:
     Main, Objective, the two endings and Variables/, where `variables` are exported between Groupe_Joueur and
     HoldTimer."""
     groupe_joueur = Node("TGDVariableUnitGroup", export=f"{folder}/Variables/Groupe_Joueur")                # S#148
-    hold_timer = Node("TGDVariableTimer", [("Duree", i32(hold_s))], export=f"{folder}/Variables/HoldTimer")  # D#210
+    hold_timer = g_timer(hold_s, export=f"{folder}/Variables/HoldTimer")                                    # D#210
 
     def end_game(export: str, winner: int | None) -> Node:
         result = [("VictoryReason", i32(6)), ("VictoryType", i32(5))]          # ScriptDecided, MajorVictory
@@ -168,7 +169,7 @@ def hold_script(tpl: ndfbin.NdfBin, templates: Templates, *, folder: str, camps:
         g_dialog(intro),                                                                                # D#257/D#392
         Node("TGDDescriptorForceDisplayUIElement", hud_restore(tpl, templates, False, prod_menu_switch)),  # S#296
         g_until(g_cmp(groupe_joueur, 1, 2)),                                                            # R#340
-        Node("TGDDescriptorStartTimer", [("Timer", hold_timer)]),                                       # D#271
+        g_start_timer(hold_timer),                                                                      # D#271
         g_simul([hold, *parallel]),
     ], export=f"{folder}/Main")
     root = Node("TGDDescriptorLaunchEffetStandard", [                                                   # S#108

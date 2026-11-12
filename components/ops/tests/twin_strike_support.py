@@ -219,17 +219,22 @@ class Model:
     Sequential runs its children in turn (NbExecutions times), a Simultaneous all until all finish, a Competition until
     its first finishes; a WaitDuration takes its seconds, a WaitCondition until its condition holds. An objective
     resolves on the first tick its Condition (first) or ConditionEchec holds, then runs that action. TriggerEndGame,
-    LockDeckUnit and a (blocking) Attack never finish. Instant actions are logged as (second, kind, ...); variables and
-    script-filled groups are kept by name."""
+    LockDeckUnit and a (blocking) Attack never finish. A timer reads its seconds left: its Duree until StartTimer, then
+    down to 0. Instant actions are logged as (second, kind, ...); variables and script-filled groups are kept by
+    name."""
 
     def __init__(self, world: World, values: dict[str, int] | None = None) -> None:
         self.world, self.t, self.vars, self.log = world, 0, dict(values or {}), []
         self.owner: dict[str, str] = {}
         self.groups: dict[str, int] = {}
+        self.started: dict[str, int] = {}        # a timer's name -> the second StartTimer started it
 
     def value(self, v: Node) -> int:
         if v.cls in gates.UNIT_GROUPS:
             return self.groups[last(v)] if last(v) in self.groups else at(self.world.groups.get(last(v), []), self.t)
+        if v.cls == "TGDVariableTimer":
+            duree, start = prop(v, "Duree").v, self.started.get(last(v))
+            return duree if start is None else max(0, duree - (self.t - start))
         return self.vars.get(last(v), 0)
 
     @staticmethod
@@ -390,9 +395,14 @@ class Model:
             self.note("owner", last(prop(n, "Camp")), zones)
         elif cls == "LDHint":
             self.note("hint", token(prop(n, "Info")))
+        elif cls == "StartTimer":
+            timer = prop(n, "Timer")
+            self.started[last(timer)] = self.t
+            self.note("timer", last(timer), prop(timer, "Duree").v)
         elif cls == "GereObjectif":
             name, counters = token(prop(n, "ObjectiveText")), prop(n, "ListVariables") or []
-            self.note("show", name)
+            self.note("show", name, *([last(k) for k in prop(n, "ListTimersForEtiquetteText")]
+                                      if prop(n, "ListTimersForEtiquetteText") else []))
             while True:
                 for key, then, how in (("Condition", "ActionsReussi", "done"),
                                        ("ConditionEchec", "ActionsEchec", "failed")):

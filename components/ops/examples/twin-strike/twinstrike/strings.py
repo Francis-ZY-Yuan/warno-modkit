@@ -162,9 +162,9 @@ ENGLISH: dict[str, dict[str, str]] = {
         "ts_hwith": "Release withheld. Fight the second battalion with what you have.",
         "ts_hatk": "The second battalion is attacking up both lanes.",
         "ts_hbn2b": "The second battalion is broken.",
-        # phase 5 (design 5.8)
-        "ts_hph5": "PHASE 5: hold the village to the end: 5 minutes after a strike; if you withheld it, until the "
-                   "second battalion breaks, at most 20 minutes.",
+        # phase 5 (design 5.8): P3 shows the end clock
+        "ts_hph5": "PHASE 5: hold the village to the end. HOLD ON, on the village and in the objectives, shows the time "
+                   "left; the battle ends then, or at once when NATO has no ground unit left.",
         # the losses' warnings (design 4.2)
         "ts_hnato": "NATO is in the village. Throw them out within 60 seconds, or the battle is lost.",
         # shown 20 s into an empty streak (op.EMPTY_WARN_S): 2:40 of the 3 minutes are left, and P2 shows the clock
@@ -181,6 +181,13 @@ ENGLISH: dict[str, dict[str, str]] = {
         "ts_b2l": "Attacks in %1 s",
         "ts_b2n": "DEAL WITH THE SECOND BATTALION: %1 tanks left. It breaks with 3 in 10 left.",
         "ts_b2nl": "%1 tanks left",
+        # P3, phase 5's end clock (op.end_clock): the label's %1 is its running timer (op.END_CLOCK_S after a strike,
+        # op.END_CLOCK_WITHHELD_S at most after withholding)
+        "ts_p3r": "HOLD ON FOR 5 MIN: then the battle ends. It ends at once when NATO has no ground unit left.",
+        "ts_p3rl": "Ends in %1",
+        "ts_p3w": "HOLD ON, 20 MIN AT MOST: the battle ends when the second battalion breaks, or at once when NATO has "
+                  "no ground unit left.",
+        "ts_p3wl": "Ends in %1 at most",
         "ts_obw": "BOX W: the fire box on the west lane",
         "ts_obwl": "BOX W",
         "ts_obc": "BOX C: the fire box on the centre lane",

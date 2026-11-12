@@ -21,6 +21,8 @@ for a win and one for a loss, not one per grade.
   fires during deployment.
 - Keep `CheckEndGame`, `GameTime` and `ModeFixedRandomSeed` out of the rules.
 - Name the grade in a dialog before the end screen; treat Minor victory as untested.
+- Script every ending the design wants, the enemy wiped out included, and show any end that waits on a clock (a timer
+  in an objective's label, [[objective-counters]]): an end clock nobody can see reads as a battle that cannot be won.
 
 **How we know.** In the second probe the end dialog's victory gave the total-victory screen, then the menu. The
 same-tick ending race was built but not yet played.

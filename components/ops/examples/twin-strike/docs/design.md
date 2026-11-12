@@ -140,7 +140,7 @@ fire the 2S7Ms' alone. Nothing on the map is far enough for the BM-30, so it is 
 | 2. Unlock | ~2 min | The best Soviet cards unlock. The recon screen is reported. | Timer |
 | 3. Counter-attack | ~12 min | US battalion 1 comes on both lanes, NATO fighters sweep the boxes. Fire missions and the division fire plan run. | Battalion 1 is broken (6.4), or 15 min with the village held |
 | 4. Surprise | ~5 min | Battalion 2 appears at ASSEMBLY with "attacks in 05:00". The release dialog follows. | Strike, or the countdown runs out |
-| 5. Hold | 5 min after a strike; up to 20 min after withholding | Hold the village (5.8) | The end clock, or the village is lost |
+| 5. Hold | 5 min after a strike; up to 20 min after withholding; P3 shows the time left | Hold the village (5.8) | The end clock, NATO has no ground unit left, or the village is lost |
 
 ### 4.2 Deadlines and losses (no phase can hang)
 
@@ -168,9 +168,12 @@ fire the 2S7Ms' alone. Nothing on the map is far enough for the BM-30, so it is 
 | P2 | Hold the village | "NATO N/60 s, empty N/180 s", the failures' clocks | NATO owns the village for 60 s, or its zone is empty of Soviet units for 3 min |
 | B1 | Break the first battalion | "Battalion 1 tanks destroyed: N / 31" (31 at Medium; the difficulty's company teams move it) | – |
 | B2 | Deal with the second battalion | the countdown, then "N tanks left" | – |
+| P3 | Hold on (phase 5): 5 min after a strike, or 20 min at most after withholding | the end clock, "Ends in 4:59", a running timer | – (done or failed with the ending) |
 
 Objective counters ✓ [[objective-counters]]. Each label is pinned to its place [[objective-label-needs-position]]; B1,
-whose battalion comes on both lanes, shows in the objectives panel only.
+whose battalion comes on both lanes, shows in the objectives panel only. P3's label, its clock, is pinned on the
+village's command zone. The fire boxes' labels are done once nothing more comes through the boxes (the strike's kill,
+battalion 2 broken, or the end), so no label the player cannot act on stays open in phase 5.
 
 ### 4.3 Economy
 
@@ -327,6 +330,15 @@ With CheckEndGame off, only the script ends the battle, and the first TriggerEnd
   - **after withholding:** phase 5 runs until battalion 2 is broken or the village is lost, capped at 20 min. Battalion
     2 starts its attack when the countdown runs out, from about 5,200 GRU away, so the fight comes fast. It needs the
     longer window to be beaten.
+- **NATO spent.** Either clock is cut short the moment NATO has no ground unit left on the map (its garrison,
+  battalion 1 and battalion 2 groups all empty): the battle ends at once with the grade that state earns. Its fighters
+  do not count: a sweep can neither take nor hold the village, and where an evacuated fighter goes is unseen
+  [[scripted-air-sweep]].
+- **The clock is shown**, in stock's way: P3 (HOLD ON) lists a timer in its label, "Ends in %1", started with the
+  clock and shown on the village's command zone and in the objective list, as stock shows its timed holds on the zone
+  held (TheKitzingenRuse's "HOLD DMITRI", "Reinforcements in %1"; 7 stock objectives list a timer)
+  [[objective-counters]]. The smoke play's end had none: after the strike the panel showed only P2's failure clocks
+  and the two box labels, open with nothing to do, and the player left before the 5 min ran out.
 - **Win**, by its own type:
   - **Total:** the village is held, battalion 1 is broken, and battalion 2 is destroyed or broken.
   - **Major:** the village is held.

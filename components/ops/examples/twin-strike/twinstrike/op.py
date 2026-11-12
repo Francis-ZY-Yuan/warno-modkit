@@ -46,7 +46,8 @@ The phases, every one with a deadline (design 4.2), each a timed beat from "Laun
   STRUCK); on No the countdown runs out and battalion 2 attacks down both lanes (bn2_attack, ATTACK), and a last
   fighter sweep comes with it;
 - phase 5 (phase5, from PH5): the end clock (5 min after a strike; after withholding until battalion 2 is broken, up
-  to 20 min), then the grade (grade: Total, Minor or Major, released or withheld).
+  to 20 min), shown as P3's running timer in the objective list, cut short once NATO has no ground unit left
+  (nato_spent), then the grade (grade: Total, Minor or Major, released or withheld).
 The guns fire through fire(): one fire at a time (BUSY), each battery created at GUN_SPAWN in the player's allied camp
 (SovietAlly: the player's units never engage it), kept off its camp's AI, ordered, then removed FIRE_HOLD_S later
 (salvo) [[scripted-fires]].
@@ -69,8 +70,8 @@ from modkit.ops import shapes
 from modkit.ops.bricks import (
     c_all, c_any, c_none, c_team, c_type, g_and, g_attack, g_choice, g_cmp, g_collect, g_compete, g_count,
     g_detect, g_fx, g_grant, g_hint, g_idle_roe, g_if, g_ignored, g_income, g_kill, g_losses, g_modify, g_or,
-    g_planes_spent, g_roe, g_seq, g_set, g_simul, g_smart_hold, g_spawn, g_union, g_units_in_zones, g_until, g_vanish,
-    g_wait, g_zone_control, g_zone_owner, unit_path,
+    g_planes_spent, g_roe, g_seq, g_set, g_simul, g_smart_hold, g_spawn, g_start_timer, g_union, g_units_in_zones,
+    g_until, g_vanish, g_wait, g_zone_control, g_zone_owner, unit_path,
 )
 from modkit.ops.forces import group_total, share_count
 from modkit.ops.graph import Node
@@ -167,7 +168,13 @@ TANKS = "tanks"                        # mission.wave's track: ts_bn1_w<key>_tan
 BN1_TANKS_G = f"{BN1}_{TANKS}"         # battalion 1's tanks (forces.BN1_TANKS), alive: B1's count
 BN2 = "ts_bn2"                         # battalion 2: ts_bn2_w and ts_bn2_c its halves (each with _inf and _ifv)
 BN2_TANKS_G = "ts_bn2_tanks"           # battalion 2's tanks (forces.BN2_TANKS): B2's "tanks left"
+# Every NATO ground unit's group, each filled as its units appear: the garrison (load_groups), battalion 1's vehicles
+# and riflemen (mission.wave) and battalion 2 (bn2_reveal). Phase 5 ends at once when all are empty (nato_spent).
+NATO_GROUND = (GARRISON, BN1, f"{BN1}_inf", BN2)
 STRIKER = "ts_striker"                 # the one 2S7M that fires the strike's round
+# Phase 5's end clocks (TGDVariableTimer), each P3's running clock in the objective list: after a strike
+# (END_CLOCK_S), after withholding (END_CLOCK_WITHHELD_S).
+CLOCK_R, CLOCK_W = "ts_clock_r", "ts_clock_w"
 # The LevelDesign items the mission names.
 VILLAGE_ZONE = "TS_CZ_Village"         # the village's command zone (twinstrike.map)
 VILLAGE_RING = "TS_RingVillage"        # the detector circle over the village: the fall's count, a sweep's target
@@ -270,8 +277,9 @@ BN2_BROKEN_N = forces.threshold("bn2")
 # the gun's 30 s aiming time, so they land on the zone after the effect.
 STRIKE_ROUND_T, STRIKE_T, STRIKE_KILL_S = 0.0, 30.0, 3.0
 # Phase 5 (design 5.8): the end clock, from PH5, after a strike, and its cap after withholding (or until battalion 2 is
-# broken).
+# broken); either ends sooner once NATO has no ground unit left. Whole seconds: each is also a timer's Duree (P3's clock).
 END_CLOCK_S, END_CLOCK_WITHHELD_S = 300.0, 1200.0
+check(END_CLOCK_S.is_integer() and END_CLOCK_WITHHELD_S.is_integer(), "the end clocks are timers: whole seconds")
 
 # Difficulty (design 5.7) [[difficulty-branches]]: (Easy, Medium, Hard). The garrison left at which the village falls
 # (FALL_SHARES of the garrison: 35/25/15 %), battalion 1's company teams (TEAMS) and the fire-mission cooldown
@@ -672,6 +680,17 @@ def warn(var: Node, token: str, after: int = 1) -> Node:
                  runs=FOREVER)
 
 
+def a_win(ctx: Ctx) -> Node:
+    """END holds a win (1..WON): a fresh condition, the objectives' done once the battle is won."""
+    end = ctx.int_var(END)
+    return g_and(g_cmp(end, 1, GE), g_cmp(end, WON, LE))
+
+
+def a_loss(ctx: Ctx) -> Node:
+    """END holds a loss (above WON): a fresh condition, the objectives' failure once the battle is lost."""
+    return g_cmp(ctx.int_var(END), WON + 1, GE)
+
+
 def losses(ctx: Ctx) -> Node:
     """From H+0:00: once FALLEN, side by side
       - NATO owns the village: ts_nato_s counts the seconds NATO controls its zone, reset once the player does
@@ -693,8 +712,7 @@ def losses(ctx: Ctx) -> Node:
                              g_until(g_cmp(nato_s, NATO_HOLD_S, GE))]), set_end(end, END_LOST)])
     emptied = g_seq([g_compete([seconds_while(empty, someone, empty_s, reset=True),
                                 g_until(g_cmp(empty_s, EMPTY_S, GE))]), set_end(end, END_EMPTY)])
-    p2 = objective("ts_p2", "ts_p2l", g_and(g_cmp(end, 1, GE), g_cmp(end, WON, LE)), ctx.tag("TS_Village"),
-                   [nato_s, empty_s], fail=g_cmp(end, WON + 1, GE))
+    p2 = objective("ts_p2", "ts_p2l", a_win(ctx), ctx.tag("TS_Village"), [nato_s, empty_s], fail=a_loss(ctx))
     return g_seq([g_until(g_cmp(ctx.int_var(FALLEN), 1)),
                   g_simul([lost, emptied, warn(nato_s, "ts_hnato"), warn(empty_s, "ts_hempty", EMPTY_WARN_S), p2])])
 
@@ -766,12 +784,15 @@ def bn1_watch(ctx: Ctx) -> Node:
 
 def phase3(ctx: Ctx) -> Node:
     """From H+0:00: once PH3, the phase hint ts_hph3 beside battalion 1's waves (bn1_wave, each from its offset), the
-    count (b1_count), the watch (bn1_watch), the fire boxes' pinned labels (ts_obw, ts_obc: they stand until the battle
-    ends) and B1 BREAK THE FIRST BATTALION, a bonus in the panel only (design 7 pins labels on the village, the boxes
-    and ASSEMBLY): "%1 / %2" = ts_b1_k and ts_b1_tanks, done once ts_b1_k >= ts_b1_need (MoreOrEqual against a
-    variable), which sets B1_DONE (design 4.1: no failure). Last."""
+    count (b1_count), the watch (bn1_watch), the fire boxes' pinned labels (ts_obw, ts_obc: done once nothing more
+    comes through them, at the strike's kill, once battalion 2 is broken or at the end, so neither lingers as an open
+    task in phase 5) and B1 BREAK THE FIRST BATTALION, a bonus in the panel only (design 7 pins labels on the village,
+    the boxes and ASSEMBLY): "%1 / %2" = ts_b1_k and ts_b1_tanks, done once ts_b1_k >= ts_b1_need (MoreOrEqual
+    against a variable), which sets B1_DONE (design 4.1: no failure). Last."""
     kills, end = ctx.int_var("ts_b1_k"), ctx.int_var(END)
-    boxes = [objective(f"ts_ob{lane.lower()}", f"ts_ob{lane.lower()}l", g_cmp(end, 1, GE), ctx.tag(ring), kind="Bonus")
+    over = lambda: g_or(g_cmp(end, 1, GE), g_cmp(ctx.int_var(STRUCK), 1),  # noqa: E731
+                        g_cmp(ctx.int_var(BN2_BROKEN), 1))
+    boxes = [objective(f"ts_ob{lane.lower()}", f"ts_ob{lane.lower()}l", over(), ctx.tag(ring), kind="Bonus")
              for lane, ring in BOX_RINGS.items()]
     b1 = objective("ts_b1", "ts_b1l", g_cmp(kills, op=GE, other=ctx.int_var("ts_b1_need")),
                    counters=[kills, ctx.int_var("ts_b1_tanks")], reussi=g_set(ctx.int_var(B1_DONE), 1), kind="Bonus")
@@ -961,15 +982,17 @@ def phase4(ctx: Ctx) -> Node:
 # --------------------------------------------------------------------------- phase 5 and the end (design 5.8)
 
 def grade(ctx: Ctx) -> list[Node]:
-    """The grade at the end clock (design 5.8), written through set_end (a loss already written stands):
+    """The grade at the end of phase 5 (design 5.8), written through set_end (a loss already written stands):
     ts_lost = the player's losses (GetNbLossCamp, GloryOrAttrition #161) and ts_alive = Groupe_Joueur's count (what
     is left of what was bought), ts_alive1 = ts_alive + 1; then, if NATO owns the village, END_LOST; else, by the
-    release (STRIKE): Total if B1 is done (battalion 1 broken) and battalion 2 struck or broken; else Minor if the
-    losses are more than half of what was bought (ts_lost >= ts_alive1: MoreOrEqual against a variable); else
-    Major. Total comes first: the design's "release makes Total easy"."""
+    release (STRIKE): Total if B1 is done (battalion 1 broken) and battalion 2 struck, broken or destroyed (its group
+    empty: phase 5 may end on NATO's last unit before B2's count has read the break); else Minor if the losses are
+    more than half of what was bought (ts_lost >= ts_alive1: MoreOrEqual against a variable); else Major. Total
+    comes first: the design's "release makes Total easy"."""
     end, lost, alive, more = (ctx.int_var(n) for n in (END, "ts_lost", "ts_alive", "ts_alive1"))
     beaten = lambda: g_and(g_cmp(ctx.int_var(B1_DONE), 1),  # noqa: E731
-                           g_or(g_cmp(ctx.int_var(STRUCK), 1), g_cmp(ctx.int_var(BN2_BROKEN), 1)))
+                           g_or(g_cmp(ctx.int_var(STRUCK), 1), g_cmp(ctx.int_var(BN2_BROKEN), 1),
+                                g_cmp(ctx.group(BN2))))
 
     def won(total: int, minor: int, major: int) -> Node:
         return g_if(beaten(), g_seq([set_end(end, total)]),
@@ -983,15 +1006,43 @@ def grade(ctx: Ctx) -> list[Node]:
                              g_seq([won(END_TOTAL_W, END_MINOR_W, END_MAJOR_W)]))]))]
 
 
+def nato_spent(ctx: Ctx) -> Node:
+    """NATO has no ground unit left on the map: And[each NATO_GROUND group's count == 0] (Survivors #728's count test;
+    the dead and the removed leave a group [[kill-counts-by-type]]). Every NATO ground unit is in one of them from its
+    spawn or creation on. NATO's fighters are left out: a sweep can neither take nor hold the village and goes home on
+    its own, and where an evacuated fighter goes is unseen [[scripted-air-sweep]], so counting one could hold the end
+    for good. A fresh condition."""
+    return g_and(*(g_cmp(ctx.group(name)) for name in NATO_GROUND))
+
+
+def end_clock(ctx: Ctx, timer: str, seconds: float, text: str, ends: list[Node]) -> Node:
+    """Phase 5's end clock of `seconds`, shown in stock's way: the timer `timer` (g_timer, `seconds`) started, then side
+    by side
+      - Competition[WaitDuration `seconds`, the other `ends`, WaitCondition(nato_spent)], then the grade;
+      - P3 HOLD ON (the objective `text`, its label `text`l "Ends in %1" with the timer as %1:
+        ListTimersForEtiquetteText), its label shown on the village's command zone as stock shows its timed holds on
+        the zone held (TheKitzingenRuse #281 "HOLD DMITRI", "Reinforcements in %1", on CommandPoints/CZ_B; 5 of the 7
+        stock timer objectives show their label on the map, 4 on a command zone), so the clock shows on the map as in
+        the objective list; done once a win is written, failed once a loss is. Last.
+    The timer starts in the instant chain that starts the WaitDuration, so the clock shown is the one that ends the
+    phase; the end never waits on the timer, which only shows the time left."""
+    clock = ctx.timer(timer, int(seconds))
+    race = g_compete([g_wait(seconds), *ends, g_until(nato_spent(ctx))])
+    p3 = objective(text, f"{text}l", a_win(ctx), ctx.tag(VILLAGE_ZONE), timers=[clock], fail=a_loss(ctx))
+    return g_seq([g_start_timer(clock), g_simul([g_seq([race, *grade(ctx)]), p3])])
+
+
 def phase5(ctx: Ctx) -> Node:
-    """From H+0:00: once PH5 (the strike's kill, or battalion 2's attack), the hint ts_hph5, then the end clock:
-    END_CLOCK_S after a strike; after withholding, until battalion 2 is broken (BN2_BROKEN) or END_CLOCK_WITHHELD_S;
-    then the grade."""
+    """From H+0:00: once PH5 (the strike's kill, or battalion 2's attack), the hint ts_hph5, then the end clock
+    (end_clock), P3 showing it: END_CLOCK_S after a strike; after withholding, until battalion 2 is broken
+    (BN2_BROKEN) or END_CLOCK_WITHHELD_S. Either ends at once when NATO has no ground unit left (nato_spent), with
+    the grade that state earns."""
     released = g_cmp(ctx.int_var(STRIKE), RELEASED)
-    clock = g_if(released, g_seq([g_wait(END_CLOCK_S)]),
-                 g_seq([g_compete([g_wait(END_CLOCK_WITHHELD_S), g_until(g_cmp(ctx.int_var(BN2_BROKEN), 1))])]))
-    return g_seq([g_until(g_cmp(ctx.int_var(PH5), 1)), g_simul([g_hint("ts_hph5", HINT_S, "shint")]), clock,
-                  *grade(ctx)])
+    after_strike = end_clock(ctx, CLOCK_R, END_CLOCK_S, "ts_p3r", [])
+    after_withholding = end_clock(ctx, CLOCK_W, END_CLOCK_WITHHELD_S, "ts_p3w",
+                                  [g_until(g_cmp(ctx.int_var(BN2_BROKEN), 1))])
+    return g_seq([g_until(g_cmp(ctx.int_var(PH5), 1)), g_simul([g_hint("ts_hph5", HINT_S, "shint")]),
+                  g_if(released, after_strike, after_withholding)])
 
 
 BEATS: list[Beat] = [
