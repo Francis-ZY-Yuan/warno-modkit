@@ -14,9 +14,9 @@
 # to 30 UTF-16 units.
 #
 # The Chinese follows the warno-localization skill, with terms.toml as the op's term table. A native reader reviewed
-# it, all but the deck's names and the reserve's unlock, written since; no Chinese play has shown it yet. Each
-# dialog's text names its two buttons (twinstrike.strings.BUTTONS, stock in-game tokens) by their labels in its
-# language.
+# it, all but the deck's names, the reserve's unlock and the briefing's later edit (the reserve's Su-24Ms and Buks,
+# and the cuts that made room for them), written since; no Chinese play has shown it yet. Each dialog's text names its
+# two buttons (twinstrike.strings.BUTTONS, stock in-game tokens) by their labels in its language.
 
 # the menu (profile.MENU_RENAMES), in stock's form (this file's header)
 
@@ -64,7 +64,7 @@ Front offers release for one tactical nuclear strike on that assembly area. The 
 - T-80BV tanks, motor rifles in BMP-2s, Konkurs-M teams in BTR-80s, engineers, scouts, Shilkas, 2S1s and Ka-29s.
 - The division's 2S7M and BM-27 batteries, on call.
 - In reserve, locked until the village falls: T-80U tanks, Konkurs-M and Metis teams, Ka-50 and Mi-24V \
-helicopters, Tunguska, Osa and Kub air defence."""
+helicopters, Su-24M bombers, Tunguska, Osa, Buk and Kub air defence."""
 SC = """
 1989年7月4日 04:30 UTC
 战斗命令第79/014号
@@ -74,19 +74,20 @@ SC = """
 1. 从北面夺取该村。师炮兵可实施冲击炮火准备，届时冲击分队须在村外。
 
 2. 夺取该村后，师预备队解锁，归您指挥。扼守该村，抗击北约两次突击：美军坦克营由南沿两路北上，\
-西德坦克营随后在村南集结。方面军可批准对该集结地域实施一次战术核突击，由您决定。
+西德坦克营随后在村南集结。方面军可批准对该地域实施一次战术核突击，由您决定。
 
 3. 敌情：
 - 村内：西德装甲掷弹兵连，有黄鼠狼步兵战车、豹1A5坦克和米兰反坦克小组。
-- 美军坦克营特遣队：M1A1HA坦克和M2A2步兵战车，另有侦察分队和强大的防空火力。
+- 美军坦克营特遣队：M1A1HA坦克、M2A2步兵战车、侦察分队和强大的防空火力。
 - 西德坦克营：豹2A4坦克和黄鼠狼步兵战车。
 - 北约战斗机扫荡。
 
 4. 您指挥的近卫坦克第79师先遣支队：
-- T-80BV坦克、乘BMP-2步兵战车的摩步、乘BTR-80的竞赛-M反坦克小组、工兵、侦察兵、石勒喀自行高炮、\
+- T-80BV坦克、乘BMP-2的摩步、乘BTR-80的竞赛-M反坦克小组、工兵、侦察兵、石勒喀自行高炮、\
 2S1自行榴弹炮和Ka-29直升机。
-- 师炮兵2S7M炮兵连和BM-27火箭炮连随时待命。
-- 预备队：T-80U坦克，竞赛-M和混血儿反坦克小组，Ka-50和Mi-24V直升机，通古斯卡、黄蜂和立方防空系统。"""
+- 师炮兵2S7M炮兵连和BM-27火箭炮连待命。
+- 预备队：T-80U坦克，竞赛-M和混血儿反坦克小组，Ka-50和Mi-24V直升机，Su-24M轰炸机，\
+通古斯卡、黄蜂、山毛榉和立方防空系统。"""
 
 # TexteObjectifs, under the title: the background (design 1), ending on the detachment's orders
 [SCENARIO_DEFINITION.ts_recap]
@@ -530,7 +531,7 @@ US = "Reserve: Support"
 SC = "预备队：支援"
 
 # The deck's platoon names, read as part of the game's PLATOONS list: one token per distinct text, so the two tank
-# pages share their 2nd and 3rd platoons' and both ATGM platoons share one.
+# pages share their 2nd and 3rd platoons'.
 [DECK_PLATOONS.ts_pl_cmd]
 US = "Command"
 SC = "指挥"
@@ -595,6 +596,10 @@ SC = "指挥部和坦克第1排"
 US = "4th Tank Platoon"
 SC = "坦克第4排"
 
+[DECK_PLATOONS.ts_pl_t5]
+US = "5th Tank Platoon"
+SC = "坦克第5排"
+
 [DECK_PLATOONS.ts_pl_at]
 US = "AT Platoon"
 SC = "反坦克排"
@@ -610,6 +615,10 @@ SC = "摩步第2排（混血儿）"
 [DECK_PLATOONS.ts_pl_ad]
 US = "Air Defence"
 SC = "防空"
+
+[DECK_PLATOONS.ts_pl_sam]
+US = "SAM Battery"
+SC = "防空导弹连"
 
 [DECK_PLATOONS.ts_pl_atk]
 US = "Attack Helicopters"

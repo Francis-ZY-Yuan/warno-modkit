@@ -52,9 +52,9 @@ T80U_TANK = "T80U_Obr89_SOV"
 # the first play fielded from it: its T-80BV, BRM-1, MT-LB Strela-10 and 2S1 packs are all at 1 (game build 210942; a
 # stock test re-reads it). Those four keep it; every other card is at 0 but the reserve's Konkurs-M teams (KONKURS_XP).
 RJ_XP = 1
-# The reserve's Konkurs-M teams in their BTR-80s are the motor rifle company's card at another level: the game pools a
-# deck's cards by (unit, transport, experience), so at 0 an open page would sell the locked page's teams. At 1 they are a
-# card of their own [[op-exported-deck]].
+# The reserve's Konkurs-M teams in their BTR-80s (the reserve tanks' AT platoon) are the motor rifle company's card at
+# another level: the game pools a deck's cards by (unit, transport, experience), so at 0 an open page would sell the
+# locked page's teams. At 1 they are a card of their own [[op-exported-deck]].
 KONKURS_XP = 1
 
 # The deck's names: each page's and platoon's token, one token per distinct text (twinstrike.strings DECK_COMPANIES and
@@ -65,7 +65,7 @@ PG_HQ, PG_TANK, PG_MR, PG_RES_TANK, PG_RES_SUP = "ts_pg_hq", "ts_pg_tank", "ts_p
 # support, its tank battalion and its motor rifle company, then the division's reserve, tanks and support (locked until
 # the fall: RESERVE_PAGES). A platoon holds at most three card keys and a page at most six platoons (the game's group
 # rules for an Operation's deck: five pages). Each pack's count is split over the platoons that hold it (the T-80BVs
-# 4/3/3, the motor rifles 3/3/2, the T-80Us 3/4/4/4, the Metis teams 4/4), so every card shows in one platoon.
+# 4/3/3, the motor rifles 3/3/2, the T-80Us 3/4/4/4/4, the Metis teams 4/4), so every card shows in one platoon.
 # - The HQ platoon holds the six command vehicles the fall can rest on [[zone-capture-command-units]]: two T-80BV
 #   command tanks, a BMP-2 command vehicle and the three MT-LB command vehicles kept on 2026-11-11.
 # - The engineers ride MT-LBs (RJ's deck fields the MT-LB, the 2S12's tractor; 5 Army General pawns pair them so), the
@@ -75,10 +75,12 @@ PG_HQ, PG_TANK, PG_MR, PG_RES_TANK, PG_RES_SUP = "ts_pg_hq", "ts_pg_tank", "ts_p
 # - The Ka-29s are gunship cards: the Ka-29 carries no troops in the game (it has no transporter module; the decks gate
 #   would refuse it as a carrier). The deck has no airborne infantry.
 # - The supply: the stock Soviet supply truck and the medium supply helicopter.
-# - The reserve: T-80U obr. 1989 tanks and their command tank, Konkurs-armed BRDM-2s, Metis teams in BMP-2s, four more
-#   Konkurs-M teams to hold the village against the Abrams, the division's air defence (the 2K12 Kub against NATO's
-#   fighter sweeps: the 79th Guards Tank Division's own SAM, bare as every stock pack holds it), attack helicopters
-#   and strike aircraft. The counts are the balance's (design 6.5): the reserve holds more than the fall's points buy.
+# - The reserve: five platoons of T-80U obr. 1989 tanks and their command tank, and an AT platoon of Konkurs-armed
+#   BRDM-2s and four more Konkurs-M teams to hold the village against the Abrams; Metis teams in BMP-2s, the
+#   division's air defence (Tunguskas and Osas, and a SAM battery of Buk and Kub against NATO's fighter sweeps, bare as
+#   every stock pack holds them), attack helicopters and strike aircraft, the Su-24M with cluster bombs. The counts are
+#   the balance's (design 6.5): the reserve holds more than the fall's points buy (2026-11-12: "Add more tanks and CLU
+#   bombers and proper AA").
 DECK_PAGES: tuple[DeckPage, ...] = (
     DeckPage(PG_HQ, (
         Platoon("ts_pl_cmd", (ForceRow("T80BV_CMD_SOV", 2), ForceRow("BMP_2_CMD_SOV", 1), ForceRow("MTLB_CMD_SOV", 3))),
@@ -105,16 +107,16 @@ DECK_PAGES: tuple[DeckPage, ...] = (
         Platoon("ts_pl_t2", (ForceRow(T80U_TANK, 4),)),
         Platoon("ts_pl_t3", (ForceRow(T80U_TANK, 4),)),
         Platoon("ts_pl_t4", (ForceRow(T80U_TANK, 4),)),
-        Platoon("ts_pl_at", (ForceRow("BRDM_2_Konkurs_SOV", 6),)),
+        Platoon("ts_pl_at", (ForceRow("BRDM_2_Konkurs_SOV", 6), ForceRow(ATGM_TEAM, 4, ATGM_CARRIER, xp=KONKURS_XP))),
+        Platoon("ts_pl_t5", (ForceRow(T80U_TANK, 4),)),
     )),
     DeckPage(PG_RES_SUP, (
         Platoon("ts_pl_me1", (ForceRow("MotRifles_Metis_SOV", 4, "BMP_2_SOV"),)),
         Platoon("ts_pl_me2", (ForceRow("MotRifles_Metis_SOV", 4, "BMP_2_SOV"),)),
-        Platoon("ts_pl_atgm", (ForceRow(ATGM_TEAM, 4, ATGM_CARRIER, xp=KONKURS_XP),)),
-        Platoon("ts_pl_ad", (ForceRow("Tunguska_2K22_SOV", 2), ForceRow("Osa_9K33M3_SOV", 2),
-                             ForceRow("2K12_KUB_SOV", 2))),
+        Platoon("ts_pl_ad", (ForceRow("Tunguska_2K22_SOV", 4), ForceRow("Osa_9K33M3_SOV", 2))),
+        Platoon("ts_pl_sam", (ForceRow("Buk_9K37M_SOV", 2), ForceRow("2K12_KUB_SOV", 2))),
         Platoon("ts_pl_atk", (ForceRow("Mi_24V_AT_SOV", 6), ForceRow("Ka_50_SOV", 4))),
-        Platoon("ts_pl_str", (ForceRow("Su_25T_SOV", 2), ForceRow("Su_24M_clu_SOV", 2))),
+        Platoon("ts_pl_str", (ForceRow("Su_25T_SOV", 2), ForceRow("Su_24M_clu_SOV", 4))),
     )),
 )
 # The division's reserve: pages 3 and 4, by their 0-based place in DECK_PAGES (LockCombatGroup's index), locked from
@@ -140,7 +142,9 @@ STOCK_NAMES = False
 # role in the game's COMPANIES or PLATOONS list. A page name in Russian (Rota Komandovaniya, Aviapodderzhka) gives way
 # to the English one of its role; the two tank pages take RedJuggernaut's own two tank battalions (1-1-17-y GvTP,
 # 2-1-17-y GvTP: no COMPANIES text says reserve); platoons take stock's numbered platoons where stock uses them in tank
-# and infantry pages alike, and the English "Engineer Platoon" over the only stock deck's Polish one.
+# and infantry pages alike (the fifth tank platoon, with no "5th Platoon" in the list, takes "Tank Platoon"), the
+# English "Engineer Platoon" over the only stock deck's Polish one, and "SAM Battery" for the SAM battery. The tokens
+# gate holds every pick to the game's own PLATOONS and COMPANIES dictionaries.
 STOCK_PICKS: dict[str, str] = {
     PG_HQ: "IJOVDIJCWA",         # Company HQ
     PG_TANK: "YHHKVXFYTB",       # 1-1-17-y GvTP (RedJuggernaut's first tank battalion)
@@ -157,6 +161,7 @@ STOCK_PICKS: dict[str, str] = {
     "ts_pl_t2": "TXLIVWUPSM",    # 2nd Platoon
     "ts_pl_t3": "WAKIQBNMIP",    # 3rd Platoon
     "ts_pl_t4": "JFDLGUGPAH",    # 4th Platoon
+    "ts_pl_t5": "CIZTRCDLMV",    # Tank Platoon
     "ts_pl_hq1": "AEHXPSCGSH",   # 1st Platoon
     "ts_pl_mr1": "AEHXPSCGSH",   # 1st Platoon
     "ts_pl_mr2": "TXLIVWUPSM",   # 2nd Platoon
@@ -167,6 +172,7 @@ STOCK_PICKS: dict[str, str] = {
     "ts_pl_at": "MMISGNOMQO",    # AT Platoon
     "ts_pl_eng": "JXQPRZMRTN",   # Engineer Platoon
     "ts_pl_ad": "HBLUTIMQXB",    # AA Platoon
+    "ts_pl_sam": "XFUKLHNUHK",   # SAM Battery
     "ts_pl_atk": "UQOOFMYADI",   # Aero platoon
     "ts_pl_str": "OBWKKGSZTP",   # 1st Flight
 }

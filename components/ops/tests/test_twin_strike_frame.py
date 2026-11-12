@@ -642,21 +642,21 @@ class Build(unittest.TestCase):
     def test_the_gates_that_hold_the_frame(self):
         """Every standard gate passes (the end funnel holding all nine endings; the script-effects gate holding the
         strike's look, its nuke through the script's own wrapper; the garrison the one smart-ordered group; the decks
-        gate holding the own deck, its two page locks and the four SetDecks; the deck's 28 names in the game's lists),
-        and the extra gates: the 56 unit types the op names (the deck's, the carriers', the ATGM teams', the Kubs' and
+        gate holding the own deck, its two page locks and the four SetDecks; the deck's 30 names in the game's lists),
+        and the extra gates: the 57 unit types the op names (the deck's, the carriers', the ATGM teams', the SAMs' and
         the fighters' among them), no Survivors name, the cut's 40 tiles, the zones and arrivals, and the fire range:
         GUN_SPAWN's batteries in the player's alliance, its 9 battery-target pairs in range; every unit the script
         creates inside the playable zone."""
         for line in ("1 player reinforcement locations and 1 aerial corridors",
                      "11 never-finishing script actions",              # the two page locks and the nine endings
                      "1 HUD restores with the buy-menu switch ForceHide",
-                     "28 deck names in the game's UNITS, COMPANIES and PLATOONS lists",
+                     "30 deck names in the game's UNITS, COMPANIES and PLATOONS lists",
                      "4 SetDecks, each naming a stock deck or one the script exports; 1 exported decks that pass the "
                      "game's load checks and the op's deck rules, 2 page locks in range",
                      "9 TriggerEndGame, each under $/GDScript/TS/EndFunnel",
                      "19 script effect launches, each a self-contained GameFx effect",   # the flash's 19
                      "1 smart-ordered groups, none ordered again after its smart order",
-                     "gate 3 units: 56 unit descriptors exist",
+                     "gate 3 units: 57 unit descriptors exist",
                      # 18 read: the 11 Definition entries with a fixture or stock bytes (the generated GDScript .dbg
                      # has neither) and the 7 generated Details files
                      "gate 3 no-template-name: 18 re-keyed or generated dumps without Survivors",
@@ -816,12 +816,14 @@ class Build(unittest.TestCase):
         remove_out(os.path.join(OUT_ROOT, "bad-carrier"))
 
     def test_the_decks_gate_fails_a_key_across_the_lock(self):
-        """The reserve's Konkurs-M teams at the start's experience (0): one key on page 2 (open) and page 4 (locked),
-        which an open page would sell; the build fails with the gate's line."""
+        """The reserve's Konkurs-M teams (page 3's AT platoon) at the start's experience (0): one key on page 2 (open)
+        and page 3 (locked), which an open page would sell; the build fails with the gate's line."""
         pages = list(forces.DECK_PAGES)
-        res = pages[4]
-        atgm = Platoon("ts_pl_atgm", (ForceRow(forces.ATGM_TEAM, 4, forces.ATGM_CARRIER),))
-        pages[4] = DeckPage(res.name, (*res.platoons[:2], atgm, *res.platoons[3:]))
+        res = pages[3]
+        (at,) = [k for k, p in enumerate(res.platoons) if p.name == "ts_pl_at"]
+        brdm, _ = res.platoons[at].cards
+        anti_tank = Platoon("ts_pl_at", (brdm, ForceRow(forces.ATGM_TEAM, 4, forces.ATGM_CARRIER)))
+        pages[3] = DeckPage(res.name, (*res.platoons[:at], anti_tank, *res.platoons[at + 1:]))
         with self.assertRaisesRegex(CheckError, r"ATteam_KonkursM_TTsko_SOV in BTR_80_SOV at experience 0 is on a "
                                                 r"locked page and an open one"):
             self.bad_deck_build(tuple(pages), "bad-key")
@@ -862,7 +864,7 @@ class Build(unittest.TestCase):
         with mock.patch.object(forces, "STOCK_NAMES", True), contextlib.redirect_stdout(log):
             code = build_main(["--content", "op", "--out", out])
         self.assertEqual(code, 0, log.getvalue())
-        self.assertIn("19 deck names in the game's UNITS, COMPANIES and PLATOONS lists", log.getvalue())
+        self.assertIn("21 deck names in the game's UNITS, COMPANIES and PLATOONS lists", log.getvalue())
         path = os.path.join(out, "TwinStrike", "Scenarios", f"{profile.SCENARIO}_Definition.dat")
         entries = {e.path: edat.read_entry(path, e) for e in edat.read_index(path)}
         nb, _, _ = decode(entries[def_path("MapConfiguration", TXN, profile.SCENARIO)])

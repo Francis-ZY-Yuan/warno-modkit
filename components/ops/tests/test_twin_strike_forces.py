@@ -113,30 +113,30 @@ class Deck(unittest.TestCase):
 
     def test_the_pages(self):
         """Five pages, named by the op's own tokens: the forward detachment's HQ and support (six platoons), its tank
-        battalion and motor rifle company, then the division's reserve, tanks and support, locked (pages 3 and 4). 49
-        cards in 15 packs at the start and 54 in 12 packs in the reserve."""
+        battalion and motor rifle company, then the division's reserve, tanks and support, locked (pages 3 and 4, six
+        platoons each). 49 cards in 15 packs at the start and 64 in 13 packs in the reserve."""
         self.assertEqual([page.name for page in forces.DECK_PAGES],
                          ["ts_pg_hq", "ts_pg_tank", "ts_pg_mr", "ts_pg_rtk", "ts_pg_rsp"])
-        self.assertEqual([len(page.platoons) for page in forces.DECK_PAGES], [6, 3, 5, 5, 6])
+        self.assertEqual([len(page.platoons) for page in forces.DECK_PAGES], [6, 3, 5, 6, 6])
         self.assertEqual(forces.RESERVE_PAGES, (3, 4))
         start, reserve = forces.start_cards(), forces.reserve_cards()
         self.assertEqual((sum(c.count for c in start), len(deck_packs([forces.DECK_PAGES[k] for k in (0, 1, 2)]))),
                          (49, 15))
         self.assertEqual((sum(c.count for c in reserve), len(deck_packs([forces.DECK_PAGES[k] for k in (3, 4)]))),
-                         (54, 12))
-        self.assertEqual(len(deck_packs(forces.DECK_PAGES)), 27)
+                         (64, 13))
+        self.assertEqual(len(deck_packs(forces.DECK_PAGES)), 28)
 
     def test_the_packs_are_the_pages_summed(self):
         """One pack per card key, its count the sum over its platoons: the T-80BVs 4/3/3, the motor rifles 3/3/2, the
-        T-80Us 3/4/4/4, the Metis teams 4/4; the Konkurs-M teams two keys, 2 at experience 0 and 4 at 1."""
+        T-80Us 3/4/4/4/4, the Metis teams 4/4; the Konkurs-M teams two keys, 2 at experience 0 and 4 at 1."""
         packs = {p.key: p.count for p in deck_packs(forces.DECK_PAGES)}
         self.assertEqual(packs[("T80BV_SOV", None, 1)], 10)
         self.assertEqual(packs[("MotRifles_SOV", "BMP_2_SOV", 0)], 8)
-        self.assertEqual(packs[(forces.T80U_TANK, None, 0)], 15)
+        self.assertEqual(packs[(forces.T80U_TANK, None, 0)], 19)
         self.assertEqual(packs[("MotRifles_Metis_SOV", "BMP_2_SOV", 0)], 8)
         self.assertEqual((packs[(forces.ATGM_TEAM, forces.ATGM_CARRIER, 0)],
                           packs[(forces.ATGM_TEAM, forces.ATGM_CARRIER, forces.KONKURS_XP)]), (2, 4))
-        self.assertEqual(sum(packs.values()), 103)
+        self.assertEqual(sum(packs.values()), 113)
 
     def test_experience(self):
         """RedJuggernaut's level for the four types the first play fielded from its deck; 1 for the reserve's Konkurs-M
@@ -341,15 +341,10 @@ class Balance(unittest.TestCase):
                 self.assertGreaterEqual(self.points_by(all_in), self.cost(rows))
                 self.assertGreaterEqual(self.points_by(all_in + op.BN2_GAP_S), self.cost(bn2))
 
-    @unittest.expectedFailure
     def test_the_reserve_holds_what_the_fall_buys(self):
         """The cards the fall unlocks (the reserve pages) are worth at least the grant and Medium's income until
-        battalion 1 is all in, so the fall's points buy the division's reserve, not only what is left of the start's
-        deck.
-
-        Expected to fail, under review (TS10): the own deck's reserve pages hold the design's reserve unchanged, 10,805
-        against the 11,000; design 6.5's 11,590 counted RedJuggernaut's three types the fall unlocked (a Tunguska, two
-        Su-24M, an Mi-24P), which the own deck drops. 195 short, one Su-25T's cost."""
+        battalion 1 is all in (11,000), so the fall's points buy the division's reserve, not only what is left of the
+        start's deck: 13,195, the fifth T-80U platoon, the Su-24Ms with cluster bombs and the SAM battery among them."""
         _, all_in = self.bn1(MEDIUM)
         self.assertGreaterEqual(self.cost(forces.reserve_cards()), self.points_by(all_in) - op.DEPLOY_POINTS)
 

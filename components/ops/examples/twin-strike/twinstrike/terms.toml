@@ -210,6 +210,10 @@ source.SC = "doctrine: батарея"
 US = "rocket battery"
 SC = "火箭炮连"
 source.SC = "doctrine: реактивная батарея"
+[military."SAM battery"]
+US = "SAM battery"
+SC = "防空导弹连"
+source.SC = "doctrine: зенитная ракетная батарея (as rocket battery, 火箭炮连)"
 [military.salvo]
 US = "salvo"
 SC = "齐射"
@@ -389,6 +393,18 @@ source.SC = "stock UNITS"
 US = "Kub"
 SC = "立方"
 source.SC = "stock UNITS"
+[weapons.Buk]
+US = "Buk"
+SC = "山毛榉"
+source.SC = "stock UNITS HISSO79G"
+[weapons.SAM]
+US = "SAM"
+SC = "防空导弹"
+source.SC = "stock UNITS HISRDABerl"
+[weapons.bombers]
+US = "bombers"
+SC = "轰炸机"
+source.SC = "stock UNITS HISSO79G"
 [weapons.Konkurs-M]
 US = "Konkurs-M"
 SC = "竞赛-M"
