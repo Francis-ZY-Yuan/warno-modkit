@@ -9,6 +9,7 @@ import os
 from dataclasses import dataclass
 from typing import Callable, Iterable, Mapping, NamedTuple
 
+from modkit.core import txntag
 from modkit.core.gates import CheckError, check
 from modkit.ops.files import read_file, rel_source, walk_files
 from modkit.ops.graph import decode
@@ -65,11 +66,14 @@ Generated = tuple[bytes, str, str]  # (payload, provenance for MANIFEST.tsv, exp
 GENERATED_SOURCE = "ScenariosData:/{scenario}/Scripting/{kind}.ndf"
 
 
-def plan_definition(rk: Rekey, src_dir: str, generated: Mapping[str, Generated]) -> list[Item]:
+def plan_definition(rk: Rekey, src_dir: str, generated: Mapping[str, Generated],
+                    transactions: Callable[[Mapping[str, bytes]], Mapping[str, txntag.Transaction]]) -> list[Item]:
     """The Definition pack: for each of rk.kinds, the template's .txn, .txn.tag and .dbg from `src_dir` re-keyed to
     rk.scenario (rekey_definition, rekey_tag, rekey_dbg); a kind in `generated` ships that .txn instead, with the
-    template's tag re-keyed and its own source map (generated_dbg at GENERATED_SOURCE)."""
-    items = []
+    template's tag re-keyed and its own source map (generated_dbg at GENERATED_SOURCE). Each tag holds the ConfigHash
+    of its kind's transaction: `transactions` maps the planned entries (inner path -> bytes) to {kind: transaction}
+    (modkit.ops.gates.definition_transactions), and a kind it leaves out fails the plan."""
+    items, tags = [], []
     for kind in rk.kinds:
         stock = {ext: read_file(os.path.join(src_dir, *def_path(kind, ext, rk.source).split("/")))
                  for ext in (TXN, TAG, DBG)}
@@ -86,8 +90,13 @@ def plan_definition(rk: Rekey, src_dir: str, generated: Mapping[str, Generated])
             objects = len(decode(raw)[0].objects)
             dbg_item = mem_item("Definition", new[DBG], rekey_dbg(stock[DBG], kind, rk, objects), "rekey",
                                 source[DBG], stock[DBG])
-        items.append(mem_item("Definition", new[TAG], rekey_tag(stock[TAG], kind, rk), "tag", source[TAG], stock[TAG]))
+        tags.append((kind, len(items), new[TAG], stock[TAG], source[TAG]))
         items.append(dbg_item)
+    known = transactions({it.path: payload(it) for it in items})
+    for kind, at, inner, raw, source in reversed(tags):
+        check(kind in known, f"{inner}: no data names the transaction of {kind}, so its tag's ConfigHash is unknown")
+        items.insert(at, mem_item("Definition", inner, rekey_tag(raw, kind, rk, txntag.config_hash(known[kind])), "tag",
+                                  source, raw))
     return items
 
 

@@ -16,9 +16,10 @@ from modkit.core.gates import CheckError
 from modkit.ops.graph import Imp, Map, Node, Str, all_values, build_graph, decode, encode, loc, u32
 from modkit.ops.gates import (
     INGAME_PROPS, MENU_PACK, SCAN_FILES, SCANNED_KINDS, UNIT_ARCHIVE, UNIT_DATABASE, StockClasses, check_canonical,
-    check_definition_layout, check_menu_order, check_no_template_name, check_references, check_stock_classes,
-    check_tokens, check_units, ingame_keys, ingame_misses, menu_order_gate, menu_orders, ref_targets, scanned_kinds,
-    split_tokens, stock_classes, stock_menu_orders, template_name_gate, unit_database,
+    check_config_hashes, check_definition_layout, check_menu_order, check_no_template_name, check_references,
+    check_stock_classes, check_tokens, check_units, ingame_keys, ingame_misses, menu_order_gate, menu_orders,
+    ref_targets, scanned_kinds, split_tokens, stock_classes, stock_menu_orders, stock_scans, template_name_gate,
+    unit_database,
 )
 from modkit.ops.items import mem_item
 from modkit.ops.rekey import DBG, TAG, TXN, def_path
@@ -565,7 +566,27 @@ class DefinitionStockTest(unittest.TestCase):
             with self.subTest(folder=os.path.relpath(folder, root)):
                 kinds.append(check_definition_layout(entries, scenario))
                 self.assertEqual(check_stock_classes(entries.items(), stock)[0], 2 * kinds[-1])  # each .txn and tag
+                self.assertEqual(check_config_hashes(entries, scenario, stock_scans()), kinds[-1])  # every tag
         self.assertEqual(sorted(kinds), [4] * 8 + [5] * 27)
+
+    @paths.skip_unless_extracted("scenarios", "challenge_Survivors")
+    def test_a_template_config_hash_fails_a_clone(self):
+        """A clone whose tags keep its template's ConfigHash (the first 210942 build of Twin Strike) fails: the game
+        computes the clone's own from its BaseName and files."""
+        folder = os.path.join(str(paths.extracted_root()), "scenarios", "challenge_Survivors", "NDF", "Scenarios",
+                              "challenge_Survivors")
+        entries = {}
+        for name in sorted(os.listdir(folder)):
+            with open(os.path.join(folder, name), "rb") as fh:
+                raw = fh.read()
+            if name.endswith(".txn") or name.endswith(".txn.tag"):
+                nb, _, _ = decode(raw)
+                nb.strings = [t.replace(b"challenge_Survivors", b"challenge_Clone") for t in nb.strings]
+                raw = encode(nb, name)
+            entries[f"NDF/Scenarios/challenge_Clone/{name}"] = raw
+        with self.assertRaisesRegex(CheckError, r"ConfigHash -?\d+, but the game computes -?\d+ for "
+                                                r"Scenarios/challenge_Clone/\w+\.txn .*\"NDF parsing error\. Retry\?\""):
+            check_config_hashes(entries, "challenge_Clone", stock_scans())
 
     @paths.skip_unless_extracted("transactions", *SCAN_FILES[0].split("/"))
     def test_scanned_kinds_are_the_games(self):

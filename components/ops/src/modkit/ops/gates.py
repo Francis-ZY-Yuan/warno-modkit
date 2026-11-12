@@ -15,7 +15,8 @@ reviewed-pending entry for one:
    script creates stands inside the playable zone);
 4. every re-keyed file differs from stock only by its dump rows: ``check_dump_diff``;
 5. the package is scenario-only and ships no Gameplay file: ``check_package``; the Definition pack is in build
-   210942's layout, every .txn with its .txn.tag and a .dbg of one line per object (``check_definition_layout``); and
+   210942's layout, every .txn with its .txn.tag and a .dbg of one line per object (``check_definition_layout``),
+   every tag holding the ConfigHash the game computes for its transaction (``check_config_hashes``); and
    every class and property the build ships is one the stock files of its kind hold (``check_stock_classes``);
 6. every written pack reads back (``modkit.ops.packs.verify_packs``).
 
@@ -47,7 +48,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Callable, Iterable, Mapping, NamedTuple, Sequence
 
-from modkit.core import dbg, ndfbin, ndfrules, paths, trad
+from modkit.core import dbg, ndfbin, ndfrules, paths, trad, txntag
 from modkit.core.gates import CheckError, check, check_fixture_text
 from modkit.core.names import unit_path
 from modkit.core.ndfbin import Value
@@ -1968,6 +1969,71 @@ def scanned_kinds(files: Iterable[str]) -> tuple[str, ...]:
             if nb.cname(ob.cls) == SCAN_CLASS and _text(nb, props.get("DirName")) == "Scenarios":
                 out.add(_text(nb, props.get("BaseName")).removesuffix(f".{TXN}"))
     return tuple(sorted(out))
+
+
+def stock_scans() -> dict[str, txntag.Scan]:
+    """The game's folder scans of NDF/Scenarios (SCAN_FILES in the extraction's Transactions pack), by the BaseName
+    of the transaction each makes ('MapConfiguration.txn', ...). Raises paths.NotConfigured without an extraction."""
+    return _stock_scans(str(paths.extracted_root()))
+
+
+@functools.cache
+def _stock_scans(root: str) -> dict[str, txntag.Scan]:
+    out = {}
+    for rel in SCAN_FILES:
+        nb, _, _ = decode(read_file(os.path.join(root, "transactions", *rel.split("/"))))
+        out.update({s.base_name: s for s in txntag.scans(nb) if s.dir_name == "Scenarios"})
+    check(sorted(b.removesuffix(f".{TXN}") for b in out) == sorted(SCANNED_KINDS),
+          f"the game's scenario scans name {sorted(out)}, not {list(SCANNED_KINDS)}: re-read the Transactions pack")
+    return out
+
+
+def definition_transactions(entries: Mapping[str, bytes], scenario: str,
+                            scans: Mapping[str, txntag.Scan]) -> dict[str, txntag.Transaction]:
+    """{kind: the transaction the game loads it by} for every kind of the Definition `entries`: a scanned kind's from
+    the game's scan of the scenario folder (`scans`: stock_scans()), every other kind's from the TNDFTransaction a
+    shipped .txn names it by (BaseName Scenarios/<scenario>/<Kind>.txn: ScenarioInfo names its ScenarioLoader, the
+    ScenarioLoader its GDScript). A kind no data names is left out."""
+    named: dict[str, txntag.Transaction] = {}
+    for inner, raw in entries.items():
+        if inner.endswith(f".{TXN}") and is_cndf(raw):
+            for t in txntag.transactions(decode(raw)[0]):
+                named.setdefault(t.base_name, t)
+    out = {}
+    for inner in entries:
+        entry = def_entry(inner)
+        if entry is None or entry[2] != TXN:
+            continue
+        kind = entry[1]
+        scan = scans.get(f"{kind}.{TXN}")
+        t = txntag.scan_transaction(scan, scenario) if scan is not None else named.get(f"Scenarios/{scenario}/{kind}.{TXN}")
+        if t is not None:
+            out[kind] = t
+    return out
+
+
+def check_config_hashes(entries: Mapping[str, bytes], scenario: str, scans: Mapping[str, txntag.Scan]) -> int:
+    """Gate 5: every .txn.tag of the Definition `entries` holds the ConfigHash the game computes for its transaction
+    (definition_transactions, modkit.core.txntag). With any other, the game treats the .txn as stale and compiles the
+    transaction from its NDF sources, which a mod does not ship: "NDF parsing error. Retry?", "File not found" for its
+    first source. A tag whose transaction no data names fails, unevaluated. Returns the number of tags."""
+    transactions = definition_transactions(entries, scenario, scans)
+    tags = 0
+    for inner, raw in entries.items():
+        entry = def_entry(inner)
+        if entry is None or entry[2] != TAG:
+            continue
+        kind = entry[1]
+        t = transactions.get(kind)
+        check(t is not None, f"Definition:{inner}: no data names the transaction of {kind}.{TXN} (neither the game's "
+                             f"scans of NDF/Scenarios nor a shipped TNDFTransaction), so its ConfigHash cannot be checked")
+        held, want = txntag.read_tag(raw)[0], txntag.config_hash(t)
+        check(held == want, f"Definition:{inner}: ConfigHash {held}, but the game computes {want} for "
+                            f"{t.base_name} (NameSpace {t.namespace}, {len(t.files)} files): it would compile the "
+                            f"transaction from sources the mod does not ship and stop with \"NDF parsing error. "
+                            f"Retry?\" and \"File not found : '{t.files[0] if t.files else t.base_name}'\"")
+        tags += 1
+    return tags
 
 
 def check_definition_layout(entries: Mapping[str, bytes], scenario: str) -> int:

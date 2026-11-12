@@ -4,7 +4,7 @@ import os
 import tempfile
 import unittest
 
-from modkit.core import dbg
+from modkit.core import dbg, txntag
 from modkit.core.gates import CheckError
 from modkit.core.ndfbin import Value
 from modkit.ops.graph import Map, Node, Str, build_graph, decode, encode
@@ -19,6 +19,12 @@ G_OLD, G_NEW = bytes(range(16)), bytes(range(16, 32))
 
 def table(kinds=("GDScript", "ScenarioInfo")) -> Rekey:
     return Rekey(SOURCE, NEW, G_OLD, G_NEW, {}, "ta_", (), {}, {}, {}, kinds)
+
+
+def transactions(entries):
+    """A stand-in for gates.definition_transactions: one transaction per planned kind, named by its BaseName."""
+    return {kind: txntag.Transaction(f"Scenarios/{NEW}/{kind}.txn", kind, ())
+            for kind in ("GDScript", "ScenarioInfo") if any(p.endswith(f"/{kind}.txn") for p in entries)}
 
 
 def write(root: str, inner: str, raw: bytes) -> None:
@@ -63,7 +69,8 @@ class PlanDefinitionTest(TempDirTest):
     def test_rekeys_every_kind_or_ships_the_generated_one(self):
         root = Node("TScript", [("Name", Str(NEW))], export="$/GDScript/RootDescriptor")
         gd = encode(build_graph([root], [root]), "GDScript")
-        items = plan_definition(table(), self.root, {"GDScript": (gd, "generated (test)", "GDScript.txt")})
+        items = plan_definition(table(), self.root, {"GDScript": (gd, "generated (test)", "GDScript.txt")},
+                                transactions)
         self.assertEqual([(it.path, it.action) for it in items],
                          [(def_path("GDScript", TXN, NEW), "generate"), (def_path("GDScript", TAG, NEW), "tag"),
                           (def_path("GDScript", DBG, NEW), "generate"),
@@ -82,12 +89,21 @@ class PlanDefinitionTest(TempDirTest):
         self.assertEqual(dbg.read(payload(items[5])), [dbg.Line("", f"ScenariosData:/{NEW}/Scenario.ndf", 1, 1)])
 
     def test_without_generated_kinds_every_file_is_rekeyed(self):
-        items = plan_definition(table(), self.root, {})
+        items = plan_definition(table(), self.root, {}, transactions)
         self.assertEqual([it.action for it in items], ["rekey", "tag", "rekey", "rekey", "tag", "rekey"])
+        for it in items:   # each tag holds its kind's computed ConfigHash
+            if it.path.endswith(".txn.tag"):
+                kind = it.path.rsplit("/", 1)[1].split(".")[0]
+                self.assertEqual(txntag.read_tag(payload(it))[0],
+                                 txntag.config_hash(transactions([it.path[:-4]])[kind]))
+
+    def test_a_kind_without_a_known_transaction_fails(self):
+        with self.assertRaisesRegex(CheckError, "no data names the transaction of ScenarioInfo"):
+            plan_definition(table(), self.root, {}, lambda entries: {})
 
     def test_missing_template_file(self):
         with self.assertRaises(OSError):
-            plan_definition(table(("GDScript", "ScenarioLoader")), self.root, {})
+            plan_definition(table(("GDScript", "ScenarioLoader")), self.root, {}, transactions)
 
 
 class PlanDetailsTest(TempDirTest):

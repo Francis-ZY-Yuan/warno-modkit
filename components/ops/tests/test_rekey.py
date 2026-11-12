@@ -191,21 +191,23 @@ class RekeyDefinitionTest(unittest.TestCase):
 class RekeyTagTest(unittest.TestCase):
     def test_source_paths_move_and_hashes_stay(self):
         stock = tag("ScenarioInfo")
-        new = rekey_tag(stock, "ScenarioInfo", table())
+        new = rekey_tag(stock, "ScenarioInfo", table(), -5)
         nb, _, _ = decode(new)
         self.assertEqual(sorted(nb.strings), sorted(f"ScenariosData:/{NEW}/{f}".encode() for f in SOURCES))
-        self.assertEqual(decode(stock)[0].objects[0].props[0], nb.objects[0].props[0])  # the ConfigHash, as stock's
+        self.assertEqual(decode(stock)[0].objects[0].props, nb.objects[0].props)  # this ConfigHash and the hashes
         _, fired = check_dump_diff(Entry(def_path("ScenarioInfo", TAG, NEW), new, stock), dump_rows(table()))
         self.assertEqual(fired, {"id challenge_A -> S"})
+        nb, _, _ = decode(rekey_tag(stock, "ScenarioInfo", table(), 1234))
+        self.assertEqual(nb.objects[0].props[0][1], Value(0x13, 1234))   # the ConfigHash given
 
     def test_a_tag_names_a_source_of_its_scenario(self):
         with self.assertRaisesRegex(CheckError, "names no challenge_A source file"):
             rekey_tag(encode(build_graph([Node(TAG_CLASS, [("ConfigHash", Value(0x13, 1))])], []), "t"),
-                      "ScenarioInfo", table())
+                      "ScenarioInfo", table(), 1)
 
     def test_a_tag_is_one_tag_file(self):
         with self.assertRaisesRegex(CheckError, "not one TNDFTagFile"):
-            rekey_tag(tag("ScenarioInfo", cls="TGladNDFBinHandler_FileList"), "ScenarioInfo", table())
+            rekey_tag(tag("ScenarioInfo", cls="TGladNDFBinHandler_FileList"), "ScenarioInfo", table(), 1)
 
 
 class SourceMapTest(unittest.TestCase):
@@ -293,7 +295,7 @@ class StockTest(unittest.TestCase):
                 raw = fh.read()
                 nb, _, _ = decode(raw)
                 self.assertEqual([nb.cname(ob.cls) for ob in nb.objects], [TAG_CLASS])
-                new = rekey_tag(raw, kind, table(source=scenario, scenario="challenge_ModkitTest"))
+                new = rekey_tag(raw, kind, table(source=scenario, scenario="challenge_ModkitTest"), 1)
                 self.assertNotIn(scenario.encode(), b"".join(decode(new)[0].strings))
                 for ext in (TXN, DBG):
                     self.assertTrue(os.path.isfile(path[:-len(TAG)] + ext), ext)

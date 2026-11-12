@@ -274,7 +274,8 @@ class WholeBuildTest(unittest.TestCase):
         self.assertRegex(report, r"gate 5 package: all \d+ entries lie under challenge_ModkitTest; no Gameplay file")
         # 4 kinds: GDScript (generated), MapConfiguration, ScenarioInfo and ScenarioLoader (re-keyed); TrophyDef dropped
         self.assertRegex(report, r"gate 5 definition: 4 kinds in NDF/Scenarios/challenge_ModkitTest/, each \.txn with "
-                                 r"its \.txn\.tag and a \.dbg of one line per object; every class and property of \d+ "
+                                 r"its \.txn\.tag and a \.dbg of one line per object; 4 tags with the ConfigHash the "
+                                 r"game computes; every class and property of \d+ "
                                  r"files \(\d+ objects\) is in the \d+ stock files'\n")
 
     def test_a_pending_gate_5_does_not_claim_a_pass(self):

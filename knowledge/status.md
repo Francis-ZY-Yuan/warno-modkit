@@ -48,6 +48,7 @@ How far each mechanism is proven: `PLAYED` worked in a real play; `PROBED` loade
 
 - [crash-dump-names-the-error](../components/core/knowledge/mechanisms/crash-dump-names-the-error.md) (core): The crash report's dump names the real error
 - [edat-revision-chain](../components/core/knowledge/mechanisms/edat-revision-chain.md) (core): Game data is a chain of edat archives, read newest revision first
+- [txn-tag-config-hash](../components/ops/knowledge/mechanisms/txn-tag-config-hash.md) (ops): Build 210942 loads a compiled .txn only when its .txn.tag holds the ConfigHash the game computes for the transaction; any other makes it compile the sources
 
 ## STOCK
 

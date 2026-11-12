@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from unittest import mock
 
-from modkit.core import edat
+from modkit.core import edat, txntag
 from modkit.core.gates import CheckError
 from modkit.core.ndfbin import Value
 from modkit.ops import gates, packs
@@ -114,13 +114,21 @@ class PackTest(unittest.TestCase):
             self.assertEqual(fh.read(), b"video")
 
 
-def definition(scenario: str, kinds=("MapConfiguration", "ScenarioInfo"), cls: str = "TRoot"
+# The game's scans of NDF/Scenarios for these tests: one per kind the fixtures ship (gates.stock_scans's shape).
+SCANS = {f"{kind}.txn": txntag.Scan("Scenarios", f"{kind}.txn", kind, ("CommonData:/x.ndf",), (), "ScenariosData:/",
+                                    "S.ndf") for kind in ("MapConfiguration", "ScenarioInfo", "GDScript")}
+
+
+def definition(scenario: str, kinds=("MapConfiguration", "ScenarioInfo"), cls: str = "TRoot", config_hash=None
                ) -> list[tuple[str, bytes]]:
     """A Definition pack's entries in build 210942's layout: each kind's .txn (one `cls` object), its .txn.tag (one
-    TNDFTagFile) and its .dbg (one line per object)."""
-    tag = encode(build_graph([Node(TAG_CLASS, [("ConfigHash", Value(0x13, 7))])], []), "tag")
+    TNDFTagFile, with the ConfigHash the game computes from SCANS, or `config_hash`) and its .dbg (one line per
+    object)."""
     out = []
     for kind in kinds:
+        h = txntag.config_hash(txntag.scan_transaction(SCANS[f"{kind}.txn"], scenario)) if config_hash is None \
+            else config_hash
+        tag = encode(build_graph([Node(TAG_CLASS, [("ConfigHash", Value(0x13, h))])], []), "tag")
         raw = encode(build_graph([Node(cls, [("Name", Str(scenario))])], []), kind)
         out += [(def_path(kind, TXN, scenario), raw), (def_path(kind, TAG, scenario), tag),
                 (def_path(kind, DBG, scenario), generated_dbg(raw, scenario, f"ScenariosData:/{scenario}/S.ndf"))]
@@ -139,6 +147,9 @@ class CheckModTest(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.tmp = tmp.name
+        scans = mock.patch.object(gates, "stock_scans", return_value=SCANS)
+        scans.start()
+        self.addCleanup(scans.stop)
 
     def mod(self, name: str, scenario: str, definition_entries: list[tuple[str, bytes]]) -> str:
         """A mod folder holding `scenario`'s Definition pack and a Details pack of one stock-shaped file."""
@@ -158,8 +169,19 @@ class CheckModTest(unittest.TestCase):
     def test_a_210942_build_passes(self):
         """4 CNDF files of 4 objects in Definition (the .dbg are not CNDF) and 1 in Details."""
         self.assertEqual(check_mod(self.mod("New", "challenge_A", definition("challenge_A")), self.STOCK),
-                         ["challenge_A: 2 Definition kinds in this build's layout; every class and property of 5 "
-                          "files (5 objects) is in the 2 stock files'"])
+                         ["challenge_A: 2 Definition kinds in this build's layout, 2 tags with the ConfigHash the "
+                          "game computes; every class and property of 5 files (5 objects) is in the 2 stock files'"])
+
+    def test_a_tag_with_another_config_hash_fails(self):
+        """A tag holding another ConfigHash (a template's, kept by a re-keying) fails with the game's words: it would
+        compile the transaction from sources the mod does not ship."""
+        folder = self.mod("Stale", "challenge_A", definition("challenge_A", config_hash=7))
+        with self.assertRaises(CheckError) as cm:
+            check_mod(folder, self.STOCK)
+        self.assertRegex(str(cm.exception), r"^challenge_A: config-hash: Definition:NDF/Scenarios/challenge_A/"
+                                            r"MapConfiguration\.txn\.tag: ConfigHash 7, but the game computes -?\d+ for "
+                                            r"Scenarios/challenge_A/MapConfiguration\.txn .*\"NDF parsing error\. Retry\?\" "
+                                            r"and \"File not found : 'ScenariosData:/challenge_A/S\.ndf'\"")
 
     def test_a_201602_build_fails_both_gates(self):
         with self.assertRaises(CheckError) as cm:
@@ -183,8 +205,9 @@ class CheckModTest(unittest.TestCase):
                                             rf"challenge_A/GDScript\.txn\); {self.OLD}\.Name ")
         self.assertNotIn("definition-layout", str(cm.exception))
         self.assertEqual(check_mod(folder, self.STOCK, [(self.OLD, "Name")]),
-                         ["challenge_A: 3 Definition kinds in this build's layout; every class and property of 7 "
-                          "files (7 objects) is in the 2 stock files' or among 1 admitted"])
+                         ["challenge_A: 3 Definition kinds in this build's layout, 3 tags with the ConfigHash the "
+                          "game computes; every class and property of 7 files (7 objects) is in the 2 stock files' or "
+                          "among 1 admitted"])
 
     def test_a_folder_without_scenario_packs_fails(self):
         os.makedirs(os.path.join(self.tmp, "Empty"))
@@ -201,8 +224,9 @@ class CheckModTest(unittest.TestCase):
             self.assertEqual(packs.main(["check", good, old]), 1)
             self.assertEqual(packs.main(["check", good, "--admit", "NoProperty"]), 1)
         self.assertEqual(out.getvalue().splitlines(), [f"{good}: challenge_A: 2 Definition kinds in this build's "
-                                                       f"layout; every class and property of 5 files (5 objects) is "
-                                                       f"in the 2 stock files'"] * 2)
+                                                       f"layout, 2 tags with the ConfigHash the game computes; every "
+                                                       f"class and property of 5 files (5 objects) is in the 2 stock "
+                                                       f"files'"] * 2)
         failed = [line for line in err.getvalue().splitlines() if line.startswith("FAILED: ")]
         self.assertEqual(len(failed), 2)
         self.assertTrue(failed[0].startswith(f"FAILED: {old}: challenge_O: definition-layout: "), failed[0])

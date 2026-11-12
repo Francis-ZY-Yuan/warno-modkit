@@ -10,10 +10,13 @@ A fact holds for the build it was last verified on. After a game update, a recor
 - [edat-revision-chain](../components/core/knowledge/mechanisms/edat-revision-chain.md) (core): Game data is a chain of edat archives, read newest revision first (RE, 2026-11-12)
 - [game-build-classes](../components/ops/knowledge/mechanisms/game-build-classes.md) (ops): A game update removes and renames classes and properties; a mod's files may hold only those the installed build's stock holds (STOCK, 2026-11-12)
 - [scenario-definition-layout](../components/ops/knowledge/mechanisms/scenario-definition-layout.md) (ops): Build 210942 reads a scenario's Definition files as NDF/Scenarios/<scenario>/<Kind>.txn, each beside its .txn.tag and .dbg (STOCK, 2026-11-12)
+- [txn-tag-config-hash](../components/ops/knowledge/mechanisms/txn-tag-config-hash.md) (ops): Build 210942 loads a compiled .txn only when its .txn.tag holds the ConfigHash the game computes for the transaction; any other makes it compile the sources (RE, 2026-11-12)
 
 ### Trials run on it
 
+- 2026-11-12 [2026-11-12-twin-strike-launch-config-hash](../components/ops/knowledge/trials/2026-11-12-twin-strike-launch-config-hash.md) (ops): launch, fail
 - 2026-11-12 [2026-11-12-port-210942-survey](../components/ops/knowledge/trials/2026-11-12-port-210942-survey.md) (ops): survey, pass
+- 2026-11-12 [2026-11-12-config-hash-stock-survey](../components/ops/knowledge/trials/2026-11-12-config-hash-stock-survey.md) (ops): survey, pass
 - 2026-11-12 [2026-11-12-build-210942-port](../components/core/knowledge/trials/2026-11-12-build-210942-port.md) (core): survey, pass
 
 ## 201602

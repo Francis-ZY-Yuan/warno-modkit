@@ -22,12 +22,13 @@ import argparse
 import functools
 import glob
 import os
+import re
 import sys
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Callable, Mapping, Sequence
 
-from modkit.core import edat, gamebuild, ndfbin, ndfrules, paths, trad
+from modkit.core import edat, gamebuild, ndfbin, ndfrules, paths, trad, txntag
 from modkit.core.gates import CheckError, check, run_gate, unfired
 from modkit.core.ndfbin import Value
 from modkit.core.packaging import clean_out, write_manifest, write_mod_files
@@ -42,7 +43,7 @@ from modkit.ops.leveldesign import (
 )
 from modkit.ops.packs import verify_packs, write_loose, write_packs
 from modkit.ops.profile import STOCK_ASSETS, Content, OpProfile, extracted
-from modkit.ops.rekey import DEF_EXTS, TXN, Rekey, ScalarEdit, def_path, dump_rows
+from modkit.ops.rekey import DEF_EXTS, TAG, TXN, DumpRow, Rekey, ScalarEdit, def_entry, def_path, dump_rows
 from modkit.ops.script import BRICK_DEFAULT
 from modkit.ops.strings import LANGS, StringError, payloads
 from modkit.ops.zones import zone_areas_graph
@@ -199,7 +200,9 @@ def plan(profile: OpProfile, content: Content) -> Plan:
         roots, exports = content.script(tpl)
         generated["GDScript"] = (encode(build_graph(roots, exports), "GDScript"), src.label("GDScript"),
                                  src.fixture("GDScript"))
-    items = ops_items.plan_definition(rekey_table(profile, content), t.path("definition"), generated)
+    scans = gates.stock_scans()
+    items = ops_items.plan_definition(rekey_table(profile, content), t.path("definition"), generated,
+                                      lambda entries: gates.definition_transactions(entries, content.scenario, scans))
     items += plan_details(profile, content)
     assets, dropped = plan_assets(profile, content)
     items += assets + extra_items(profile, content)
@@ -310,10 +313,27 @@ def run_extra_gates(profile: OpProfile, items: list[Item], content: Content, run
     return [f"{gate.name}: {g(gate.name, gate.check, items, content)}" for gate in profile.extra_gates]
 
 
+def config_hash_rows(items: list[Item]) -> list[DumpRow]:
+    """The dump row of each re-keyed tag whose ConfigHash the plan recomputed: its stock value to the planned one
+    (gate 5's config-hash checks that value)."""
+    rows = []
+    for it in items:
+        entry = def_entry(it.path) if it.pack == "Definition" else None
+        if entry is None or entry[2] != TAG or it.stock is None:
+            continue
+        old, new = txntag.read_tag(it.stock)[0], txntag.read_tag(payload(it))[0]
+        if old != new:
+            typed = ndfbin.Dumper(ndfbin.NdfBin(), typed=True)
+            rows.append(DumpRow(f"ConfigHash {entry[1]}", (f"{entry[1]}.{TAG}",),
+                                re.escape(f"ConfigHash = {typed.val(Value(0x13, old), 0)}") + "$",
+                                f"ConfigHash = {typed.val(Value(0x13, new), 0)}"))
+    return rows
+
+
 def check_dump_rows(profile: OpProfile, content: Content, items: list[Item], run: GateRun | None = None) -> str:
     """Gate 4: every re-keyed file's typed dump differs from stock only by the dump rows, and every row fires."""
     g = run or GateRun(profile)
-    rows, fired_all, rekeyed, changed = dump_rows(rekey_table(profile, content)), set(), 0, 0
+    rows, fired_all, rekeyed, changed = dump_rows(rekey_table(profile, content)) + config_hash_rows(items), set(), 0, 0
     for it in items:
         if it.stock is None:
             continue
@@ -330,20 +350,22 @@ def check_dump_rows(profile: OpProfile, content: Content, items: list[Item], run
 
 
 def check_definition(profile: OpProfile, content: Content, items: list[Item], run: GateRun | None = None) -> str:
-    """Gate 5's game-build checks: the Definition pack in build 210942's layout (gates.check_definition_layout), and
-    every class and property of every CNDF entry the build ships in stock's (gates.check_stock_classes; the content's
-    admitted shapes pass too)."""
+    """Gate 5's game-build checks: the Definition pack in build 210942's layout (gates.check_definition_layout), every
+    tag holding the ConfigHash the game computes (gates.check_config_hashes), and every class and property of every
+    CNDF entry the build ships in stock's (gates.check_stock_classes; the content's admitted shapes pass too)."""
     g = run or GateRun(profile)
     definition = {it.path: payload(it) for it in items if it.pack == "Definition"}
     kinds = g("definition-layout", gates.check_definition_layout, definition, content.scenario)
+    tags = g("config-hash", gates.check_config_hashes, definition, content.scenario, gates.stock_scans())
     stock = gates.stock_classes()
     admitted = {(cls, prop) for cls, prop, _, _ in content.extra_shapes}
     shipped = [(f"{it.pack}:{it.path}", payload(it)) for it in items]
     read = g("stock-classes", gates.check_stock_classes, shipped, stock, admitted, pending=(PENDING, PENDING))
     files, objects = read
     return (f"{kinds} kinds in NDF/Scenarios/{content.scenario}/, each .txn with its .txn.tag and a .dbg of one line "
-            f"per object; every class and property of {files} files ({objects} objects) is in the {stock.files} stock "
-            f"files'" + (f" or among {len(admitted)} admitted" if admitted else ""))
+            f"per object; {tags} tags with the ConfigHash the game computes; every class and property of {files} files "
+            f"({objects} objects) is in the {stock.files} stock files'"
+            + (f" or among {len(admitted)} admitted" if admitted else ""))
 
 
 # --------------------------------------------------------------------------- writing

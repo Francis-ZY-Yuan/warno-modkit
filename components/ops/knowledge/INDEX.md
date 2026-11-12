@@ -82,12 +82,14 @@ A mechanism filed under two topics is listed under both.
 ### Files and formats
 
 - [gdscript-is-what-loads](mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (PLAYED, verified 201602 2026-11-06)
+- [txn-tag-config-hash](mechanisms/txn-tag-config-hash.md): Build 210942 loads a compiled .txn only when its .txn.tag holds the ConfigHash the game computes for the transaction; any other makes it compile the sources (RE, verified 210942 2026-11-12)
 
 ### Loading and crashes
 
 - [ai-grid-tiles-playable-zone](mechanisms/ai-grid-tiles-playable-zone.md): The AI strategic grid must tile the playable zone (PLAYED, verified 201602 2026-11-03)
 - [changestress-damagetype-zero](mechanisms/changestress-damagetype-zero.md): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load (PLAYED, verified 201602 2026-11-11)
 - [dialog-button-ingame-dictionary](mechanisms/dialog-button-ingame-dictionary.md): Dialog button labels resolve only in the game's in-game interface dictionary (PLAYED, verified 201602 2026-11-03)
+- [txn-tag-config-hash](mechanisms/txn-tag-config-hash.md): Build 210942 loads a compiled .txn only when its .txn.tag holds the ConfigHash the game computes for the transaction; any other makes it compile the sources (RE, verified 210942 2026-11-12)
 
 ### Mod packaging
 
@@ -101,6 +103,7 @@ A mechanism filed under two topics is listed under both.
 - [leveldesign-guid-binding](mechanisms/leveldesign-guid-binding.md): A script names a map item by the item's GUID in LevelDesign (210942 one GUID value, 201602 four words) (PLAYED, verified 201602 2026-11-06)
 - [operation-menu-registration](mechanisms/operation-menu-registration.md): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden (PLAYED, verified 201602 2026-11-11)
 - [script-effects-self-contained](mechanisms/script-effects-self-contained.md): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (PLAYED, verified 201602 2026-11-11)
+- [txn-tag-config-hash](mechanisms/txn-tag-config-hash.md): Build 210942 loads a compiled .txn only when its .txn.tag holds the ConfigHash the game computes for the transaction; any other makes it compile the sources (RE, verified 210942 2026-11-12)
 - [game-build-classes](mechanisms/game-build-classes.md): A game update removes and renames classes and properties; a mod's files may hold only those the installed build's stock holds (STOCK, verified 210942 2026-11-12)
 - [scenario-definition-layout](mechanisms/scenario-definition-layout.md): Build 210942 reads a scenario's Definition files as NDF/Scenarios/<scenario>/<Kind>.txn, each beside its .txn.tag and .dbg (STOCK, verified 210942 2026-11-12)
 
@@ -117,6 +120,8 @@ The game's own words in this component's trials, the mechanism behind them, and 
 | Every objective counter showed as a pin at the map corner or edge | [objective-label-needs-position](mechanisms/objective-label-needs-position.md) | `modkit.ops.gates.check_objective_pins` |
 | Map pack configuration error : Duplicate OrderToChainMission 1001 in map pack '{the Operations pack's GUID}'. | [content-identity-unique](mechanisms/content-identity-unique.md) | `modkit.ops.gates.check_menu_order`, `modkit.ops.gates.menu_order_gate` |
 | Map pack configuration error : Duplicate OrderToChainMission 1001 in map pack '{the Operations pack's GUID}'. | [operation-menu-registration](mechanisms/operation-menu-registration.md) | none yet |
+| NDF parsing error. Retry? @file:ScenariosData:/challenge_OperationTwinStrike/Scenario.ndf@(0:0): File not found : 'ScenariosData:/challenge_OperationTwinStrike/Scenario.ndf' | [scenario-definition-layout](mechanisms/scenario-definition-layout.md) | `modkit.ops.gates.check_definition_layout`, `modkit.ops.gates.check_config_hashes`, `modkit.ops.gates.check_references` |
+| NDF parsing error. Retry? @file:ScenariosData:/challenge_OperationTwinStrike/Scenario.ndf@(0:0): File not found : 'ScenariosData:/challenge_OperationTwinStrike/Scenario.ndf' | [txn-tag-config-hash](mechanisms/txn-tag-config-hash.md) | `modkit.ops.gates.check_config_hashes` |
 | No enemy unit moved and no barrage came; the decoys kept their ammunition | [script-container-semantics](mechanisms/script-container-semantics.md) | none yet |
 | No enemy unit moved and no barrage came; the decoys kept their ammunition | [scripted-fires](mechanisms/scripted-fires.md) | `modkit.ops.gates.check_fire_range` |
 | No enemy unit moved and no barrage came; the decoys kept their ammunition | [seteffect-never-finishes](mechanisms/seteffect-never-finishes.md) | `modkit.ops.gates.check_never_finishing` |
@@ -161,7 +166,9 @@ The game's own words in this component's trials, the mechanism behind them, and 
 
 ## Trials, newest first
 
+- 2026-11-12 [2026-11-12-twin-strike-launch-config-hash](trials/2026-11-12-twin-strike-launch-config-hash.md): launch, fail. NDF parsing error. Retry? @file:ScenariosData:/challenge_OperationTwinStrike/Scenario.ndf@(0:0): File not found : 'ScenariosData:/challenge_OperationTwinStrike/Scenario.ndf'
 - 2026-11-12 [2026-11-12-port-210942-survey](trials/2026-11-12-port-210942-survey.md): survey, pass
+- 2026-11-12 [2026-11-12-config-hash-stock-survey](trials/2026-11-12-config-hash-stock-survey.md): survey, pass
 - 2026-11-11 [2026-11-11-twin-strike-strike-unseen](trials/2026-11-11-twin-strike-strike-unseen.md): play, mixed. Not seeing the massive nuke effect, just a scripted effect of all units dead, while they were not detected; small explosions seen
 - 2026-11-11 [2026-11-11-twin-strike-play1](trials/2026-11-11-twin-strike-play1.md): play, mixed. The division's guns drove toward the front and died; the release dialog never showed after the fire plan was fired
 - 2026-11-11 [2026-11-11-twin-strike-opening-camera](trials/2026-11-11-twin-strike-opening-camera.md): play, fail. The opening camera sat on the ground somewhere

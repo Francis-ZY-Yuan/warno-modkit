@@ -5,7 +5,8 @@ folder; and the game-build check of a mod folder already built.
 
 reads each mod folder's scenario packs (Scenarios/<scenario>_Definition.dat and _Details.dat) and runs the game-build
 gates on them, as a build runs them on its own output: the Definition layout (modkit.ops.gates.check_definition_layout)
-and every class and property against stock's (modkit.ops.gates.check_stock_classes). A content's admitted shapes
+then each tag's ConfigHash (modkit.ops.gates.check_config_hashes), and every class and property against stock's
+(modkit.ops.gates.check_stock_classes). A content's admitted shapes
 (Content.extra_shapes) are not in a mod folder: pass each as ``--admit CLASS.PROPERTY``. One line per scenario; a
 failure prints one ``FAILED:`` line naming each failed gate and gives exit code 1. Use it on a mod built before a game
 update, or one built elsewhere; nothing is written.
@@ -106,12 +107,20 @@ def check_mod(mod_root: str | Path, stock: gates.StockClasses, admitted: Iterabl
     admitted = tuple(admitted)
     lines, failed = [], []
     for scenario, packs in sorted(found.items()):
+        definition = dict(packs.get("Definition", []))
         try:
-            kinds = gates.check_definition_layout(dict(packs.get("Definition", [])), scenario)
+            kinds = gates.check_definition_layout(definition, scenario)
             layout = f"{kinds} Definition kinds in this build's layout"
         except CheckError as exc:
             failed.append(f"{scenario}: definition-layout: {exc}")
             layout = None
+        if layout:
+            try:
+                tags = gates.check_config_hashes(definition, scenario, gates.stock_scans())
+                layout += f", {tags} tags with the ConfigHash the game computes"
+            except CheckError as exc:
+                failed.append(f"{scenario}: config-hash: {exc}")
+                layout = None
         shipped = [(f"{kind}:{inner}", raw) for kind in ("Definition", "Details") for inner, raw in packs.get(kind, [])]
         try:
             files, objects = gates.check_stock_classes(shipped, stock, admitted)

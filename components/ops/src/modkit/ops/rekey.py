@@ -9,7 +9,9 @@ files it was cooked from, by game path, to their hashes) and ``<Kind>.dbg`` (its
 A clone of a stock Operation rewrites its Definition files: the scenario id in STRG/TRAN entries (``replace_text``),
 whole entries such as the map name (``swap_exact``), the scenario GUID, the menu tokens and a few plain properties
 (``ScalarEdit``); in each ``.txn.tag`` and ``.dbg``, the scenario id of the source file paths (``rekey_tag``,
-``rekey_dbg``). The tag's hashes stay stock's: they are the cook's own, and nothing here can recompute them. A
+``rekey_dbg``). The tag's ConfigHash is the one the game computes from the re-keyed transaction
+(``modkit.core.txntag``): a tag holding another makes the game compile the transaction from sources a mod does not
+ship. Its source hashes stay stock's; the game ignores a source the install lacks. A
 ``Rekey`` holds every value of one such clone; ``rekey_definition``, ``rekey_tag`` and ``rekey_dbg`` apply it, and
 ``dump_rows`` lists the changes it may make. ``modkit.ops.gates.check_dump_diff`` then compares typed dumps (a .dbg's
 text) line by line: every new line must equal the stock line with the applicable ``DumpRow`` patterns applied.
@@ -152,9 +154,10 @@ def rekey_definition(raw: bytes, kind: str, rk: Rekey) -> bytes:
     return encode(nb, kind)
 
 
-def rekey_tag(raw: bytes, kind: str, rk: Rekey) -> bytes:
+def rekey_tag(raw: bytes, kind: str, rk: Rekey, config_hash: int) -> bytes:
     """A stock .txn.tag re-keyed: the source paths of its one TNDFTagFile (ScenariosData:/<source>/...) to the new id,
-    at least one; its ConfigHash and source hashes kept as stock's."""
+    at least one, and its ConfigHash to `config_hash`, the re-keyed transaction's (modkit.core.txntag); its source
+    hashes kept as stock's."""
     nb, _, image = decode(raw)
     what = f"{kind}.{TAG}"
     check(ndfbin.encode_image(nb) == image, f"{what}: stock image does not round-trip")
@@ -163,6 +166,10 @@ def rekey_tag(raw: bytes, kind: str, rk: Rekey) -> bytes:
     check(replace_text(nb.strings, rk.source, rk.scenario) >= 1, f"{what}: names no {rk.source} source file")
     left = [t.decode("latin-1") for t in nb.strings + nb.trans if rk.source.encode("latin-1") in t]
     check(not left, f"{what}: {rk.source} left in {left}")
+    ob = nb.objects[0]
+    k = next((k for k, (pi, v) in enumerate(ob.props) if nb.pname(pi) == "ConfigHash" and v.tag == 0x13), None)
+    check(k is not None, f"{what}: no int64 ConfigHash")
+    ob.props[k] = (ob.props[k][0], Value(0x13, config_hash))
     return encode(nb, what)
 
 

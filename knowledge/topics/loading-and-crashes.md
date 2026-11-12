@@ -17,6 +17,7 @@ Topic `loading-and-crashes`, declared by core. Back to [the map](../README.md).
 ### RE
 
 - [crash-dump-names-the-error](../../components/core/knowledge/mechanisms/crash-dump-names-the-error.md): The crash report's dump names the real error (core, verified 201602)
+- [txn-tag-config-hash](../../components/ops/knowledge/mechanisms/txn-tag-config-hash.md): Build 210942 loads a compiled .txn only when its .txn.tag holds the ConfigHash the game computes for the transaction; any other makes it compile the sources (ops, verified 210942)
 
 ## Lessons
 
@@ -35,7 +36,9 @@ Taught by the trials of these mechanisms.
 
 ## Trials, newest first
 
+- 2026-11-12 [2026-11-12-twin-strike-launch-config-hash](../../components/ops/knowledge/trials/2026-11-12-twin-strike-launch-config-hash.md) (ops): launch, fail
 - 2026-11-12 [2026-11-12-port-210942-survey](../../components/ops/knowledge/trials/2026-11-12-port-210942-survey.md) (ops): survey, pass
+- 2026-11-12 [2026-11-12-config-hash-stock-survey](../../components/ops/knowledge/trials/2026-11-12-config-hash-stock-survey.md) (ops): survey, pass
 - 2026-11-12 [2026-11-12-build-210942-port](../../components/core/knowledge/trials/2026-11-12-build-210942-port.md) (core): survey, pass
 - 2026-11-11 [2026-11-11-fxprobe-play1](../../components/ops/knowledge/trials/2026-11-11-fxprobe-play1.md) (ops): play, pass
 - 2026-11-06 [2026-11-06-probe2-play-run-a](../../components/ops/knowledge/trials/2026-11-06-probe2-play-run-a.md) (ops): play, pass
