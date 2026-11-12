@@ -4,21 +4,17 @@ Early July 1989. A Soviet tank division's forward detachment must seize a road-j
 Twin Cities, then hold it against two NATO blows, and decide whether to ask Front for one tactical nuclear strike on the
 second. You play the Soviets.
 
-> **v0 demo.** Twin Strike has been played once. The fixes from that play are built but not yet played:
-> - transports for the infantry;
-> - the battlegroup view of the buy menu;
-> - division guns created in your allied camp for each fire;
-> - garrison and wave orders;
-> - the release dialog;
-> - the economy;
-> - NATO fighter sweeps;
-> - a strike you can see: the game's own nuke effect, a camera move to it, and a second battalion left for you to
->   finish.
+> **v0.1 showcase.** Twin Strike is a demonstration of what the toolkit builds, not a polished or historical scenario.
+> Its context, its formations and their orders of battle are fictional. It has been played on game builds 201602 and
+> 210942.
 >
 > Known issues:
-> - RedJuggernaut's stock cards still show in the buy menu beside the op's own (the op is getting its own deck).
-> - The division's guns fire from your allied camp, which no stock Operation does; in the first play, allied guns placed
->   at the start drove toward the front.
+> - **Decks:** RedJuggernaut's stock cards still show in the buy menu beside the op's own.
+> - **The nuke's effects:** the game can slow down markedly after the strike, and the strike plays in fog, so the
+>   second battalion isn't seen being hit.
+> - **Balance:** untuned, and played only a handful of times, on Medium.
+> - **The guns:** the division's guns fire from your allied camp, which no stock Operation does; in the first play,
+>   allied guns placed at the start drove toward the front.
 >
 > Tell us what you see: each play becomes a record in the knowledge base.
 
@@ -117,7 +113,8 @@ installer also keeps an installed non-zero ID over a build's 0, and refuses a bu
 
 Play one run on Medium. Answer each question with what the map shows; a number or a yes/no is enough. Every phase
 announces itself with a hint, so what you see can be matched to the sheet. (The first play's answers are trial
-`2026-11-11-twin-strike-play1`; this sheet is for the next.)
+`2026-11-11-twin-strike-play1`, and the first on build 210942's are `2026-11-12-twin-strike-210942-play1`; this sheet
+is for the next.)
 
 **Loading and the deploy screen**
 1. Does the op load, past the deploy screen, with the map clipped to the cut: the village in the south-west, your
@@ -162,7 +159,7 @@ fireball, and the rest is left reeling for you to finish.
 12. Did the release dialog show (after the fire plan too)? Did the camera fly to the zone in about 4 s, wherever you
     were looking, hold it about 11 s with your orders blocked, then hand control back? Does Escape skip the move?
 13. Did the nuclear fireball rise on the assembly area (not elsewhere)? Sound, shake? Did the frame rate hold during
-    the strike and after it (the black smoke that slowed the probe is gone)?
+    the strike and after it (the 210942 play slowed after it, with no black smoke)?
 14. Kill (new: kill by spawn tag): about half of the second battalion should die on Easy, 40 % on Medium, 30 % on
     Hard, tanks and Marders both. Roughly how many died? Did they leave wrecks, or vanish?
 15. Damage and stun: did the survivors' vehicles drop to about half health (the probe showed this)? Did they stop
