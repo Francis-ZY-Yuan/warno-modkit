@@ -5,6 +5,13 @@ to retake Fulda, and lets it in: a worn rearguard gives ground and draws the Sov
 anvil far to the rear, and then you pick the moment to shut the door behind the forward detachment of the 5th Guards
 Tank Army's lead division.
 
+[![Operation Open Door's authoring page: the map, in APP-6 symbols over Geisa's minimap](/docs/screenshots/open-door-map.jpg)](/docs/screenshots/open-door-authoring-page.jpg)
+
+The authoring page, `docs/authoring-page.html`, is the design page this op was authored from: a schematic, not
+gameplay (click the map for the whole page). GitHub shows HTML as source, so download the file and open it in a
+browser. Map imagery from WARNO, (c) Eugen Systems, shown for non-commercial illustration; not affiliated with or
+endorsed by Eugen Systems.
+
 Open Door is the flagship example of the shared Operation driver, `modkit.ops.build`. It is a clone of the stock
 challenge Survivors moved onto the stock map Geisa (`modkit.ops.profile.SURVIVORS`, `modkit.ops.maps.GEISA`)
 [[custom-operation-from-stock-parts]], with a generated LevelDesign, zone files, GDScript and English and Simplified
@@ -55,6 +62,9 @@ off, and play one Medium run with `docs/play-sheet.md` beside you. Record what y
 
 - `docs/design.md`: the full mission design, section by section, each marked with what the playable core builds and
   what waits for a later build (the code cites its sections as "design 5.4" and so on).
+- `docs/authoring-page.html`: the authoring page: the playable core's plan in APP-6 symbols over Geisa's minimap, with
+  the phases, objectives, endings, difficulty and order of battle. One self-contained file: download it and open it in
+  a browser.
 - `docs/storyline-map.html`: the storyline drawn over Geisa's minimap, stepped by phase, with the objective and force
   boards. The map picture is the game's own, so it is not shipped: open the page and load `od_overlay.png` from a
   build (or any picture of Geisa's minimap) as its base.

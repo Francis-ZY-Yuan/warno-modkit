@@ -19,6 +19,13 @@ second. You play the Soviets.
 >
 > Tell us what you see: each play becomes a record in the knowledge base.
 
+[![Operation Twin Strike's authoring page: the map, in APP-6 symbols over the game's satellite picture of the cut](/docs/screenshots/twin-strike-map.jpg)](/docs/screenshots/twin-strike-authoring-page.jpg)
+
+The authoring page, `docs/authoring-page.html`, is the design page this op was authored from: a schematic, not
+gameplay (click the map for the whole page). GitHub shows HTML as source, so download the file and open it in a
+browser. Map imagery from WARNO, (c) Eugen Systems, shown for non-commercial illustration; not affiliated with or
+endorsed by Eugen Systems.
+
 Twin Strike is the toolkit's showcase example: a clone of the stock challenge Survivors (`modkit.ops.profile.SURVIVORS`)
 moved onto a cut of the stock map Twin Cities (`modkit.ops.maps.TWIN_CITIES`, `twinstrike.map.CUT`)
 [[custom-operation-from-stock-parts]] [[ai-grid-tiles-playable-zone]], with the player's camp flipped to the stock

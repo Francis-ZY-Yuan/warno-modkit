@@ -22,6 +22,16 @@ every play becomes a record in the knowledge base, and the next version gets bet
 
 Unofficial, and not affiliated with Eugen Systems; see [Notice](#notice).
 
+## What an Operation looks like
+
+| [![Operation Open Door: its authoring page's map](docs/screenshots/open-door-map.jpg)](components/ops/examples/open-door/README.md) | [![Operation Twin Strike: its authoring page's map](docs/screenshots/twin-strike-map.jpg)](components/ops/examples/twin-strike/README.md) |
+| --- | --- |
+| [Operation Open Door](components/ops/examples/open-door/README.md): you play NATO | [Operation Twin Strike](components/ops/examples/twin-strike/README.md): you play the Soviets |
+
+These are the authoring pages of the two example Operations: the design schematics each op was built from, in APP-6
+symbols over the game's own map, not gameplay. Gameplay screenshots will follow. Map imagery from WARNO, (c) Eugen
+Systems, shown for non-commercial illustration; not affiliated with or endorsed by Eugen Systems.
+
 ## Components
 
 | Plugin | Folder | Holds |

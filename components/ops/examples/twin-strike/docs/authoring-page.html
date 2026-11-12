@@ -1,0 +1,801 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Operation Twin Strike: authoring page</title>
+<style>
+/* One self-contained page: inline CSS, inline SVG and an embedded map picture; no scripts, no web fonts, no
+   external requests. Dark, opaque. */
+:root {
+  --bg: #12171a; --panel: #1a2125; --ground: #222b2f; --rule: #2f3a3f;
+  --ink: #e7eae4; --muted: #98a5a9; --halo: #0b0f11;
+  --sov: #5aa9ff; --nato: #ff5a4e; --fires: #ffb21f; --nuke: #c39bf5; --cz: #d6c35a;
+  --display: "Bahnschrift SemiCondensed", "Bahnschrift", "Arial Narrow", "Roboto Condensed", "Segoe UI", sans-serif;
+  --body: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mono: "Cascadia Mono", Consolas, ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); color: var(--ink); margin: 0; }
+body { font: 15px/1.5 var(--body); }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 22px 20px 36px; display: grid; gap: 20px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: .02em; margin: 0; }
+h1 { font-size: 48px; line-height: 1; }
+h2 { font-size: 26px; line-height: 1.1; }
+h3 { font-size: 18px; line-height: 1.15; }
+p { margin: 0; }
+header { display: grid; gap: 8px; border-bottom: 1px solid var(--rule); padding-bottom: 16px; }
+.eyebrow { font: 500 12px/1.3 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.what { font-size: 14px; color: var(--ink); border-left: 3px solid var(--fires); padding: 4px 10px; background: var(--panel); }
+.lede { max-width: 82ch; color: var(--muted); }
+.lede b { color: var(--ink); font-weight: 600; }
+.t-sov { color: #8cc2ff; font-weight: 600; } .t-nato { color: #ff8f86; font-weight: 600; } .t-nuke { color: #d7bdf8; font-weight: 600; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: 500 12px/1.3 var(--mono); padding: 5px 9px; border: 1px solid var(--rule); border-radius: 3px; color: var(--muted); }
+.chip b { color: var(--ink); font-weight: 500; }
+
+.main { display: grid; grid-template-columns: 542px minmax(0, 1fr); gap: 22px; align-items: start; }
+@media (max-width: 960px) { .main { grid-template-columns: minmax(0, 1fr); } }
+.mapbox { background: var(--ground); border: 1px solid #2b353e; border-radius: 4px; overflow: hidden; }
+svg.map { display: block; width: 100%; height: auto; }
+.mapnote { font: 12px/1.45 var(--mono); color: var(--muted); padding: 8px 12px; border-top: 1px solid var(--rule); background: var(--panel); }
+
+/* Map text and strokes are in map pixels: the 216 x 378 cut shows about 2.5 times larger. */
+svg.map text { font-family: var(--display); font-weight: 600; paint-order: stroke; stroke: var(--halo); stroke-width: 1.6px; stroke-linejoin: round; }
+svg.map .big { font-size: 6.6px; letter-spacing: .05em; }
+svg.map .mid { font-size: 5.6px; letter-spacing: .02em; }
+svg.map .sm { font-size: 4.8px; font-weight: 500; }
+svg.map .badge text { font-family: var(--mono); font-size: 5px; font-weight: 700; fill: var(--halo); stroke: none; }
+.f-sov { fill: #8cc2ff; } .f-nato { fill: #ff8f86; } .f-fires { fill: #ffc766; } .f-nuke { fill: #d7bdf8; }
+.f-ink { fill: var(--ink); } .f-cz { fill: var(--cz); }
+.cz { fill: rgba(214,195,90,.10); stroke: var(--cz); stroke-width: .7; }
+.dz-sov { fill: rgba(90,169,255,.08); stroke: var(--sov); stroke-width: .8; stroke-dasharray: 3 2; }
+.dz-nato { fill: rgba(255,90,78,.08); stroke: var(--nato); stroke-width: .8; stroke-dasharray: 3 2; }
+.box { fill: rgba(255,178,31,.14); stroke: var(--fires); stroke-width: .9; stroke-dasharray: 2.4 1.6; }
+.prep { fill: none; stroke: var(--fires); stroke-width: .9; stroke-dasharray: 2.4 1.6; }
+.strike { fill: rgba(195,155,245,.12); stroke: var(--nuke); stroke-width: 1; stroke-dasharray: 3 2; }
+.ring { fill: none; stroke: var(--ink); stroke-width: .5; stroke-dasharray: 1 1.6; opacity: .8; }
+.arrow { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.a-sov { stroke: var(--sov); } .a-nato { stroke: var(--nato); } .a-fires { stroke: var(--fires); } .a-nuke { stroke: var(--nuke); }
+.w3 { stroke-width: 2.6; } .w2 { stroke-width: 1.6; } .w1 { stroke-width: .9; }
+.dash { stroke-dasharray: 4 3; }
+.unit { stroke: var(--halo); stroke-width: .5; }
+svg.map .app6-t { fill: #eef1f2; font-weight: 600; }
+
+.panel { display: grid; gap: 8px; }
+.phase { border: 1px solid var(--rule); border-radius: 4px; background: var(--panel); padding: 9px 12px 10px; display: grid; gap: 3px; }
+.ph-head { display: flex; gap: 10px; align-items: baseline; }
+.ph-num { font: 700 21px/1 var(--display); min-width: 1em; }
+.ph-name { font: 700 19px/1.1 var(--display); text-transform: uppercase; letter-spacing: .03em; }
+.ph-time { font: 12px var(--mono); color: var(--muted); margin-left: auto; white-space: nowrap; }
+.phase p { font-size: 13.5px; }
+.phase ul { margin: 2px 0 0; padding: 0 0 0 16px; font-size: 13px; color: var(--muted); display: grid; gap: 2px; }
+.decide { font-size: 13px; border-top: 1px dotted var(--rule); padding-top: 4px; margin-top: 2px; }
+.decide b { font: 600 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--fires); margin-right: 4px; }
+.legend { border: 1px solid var(--rule); border-radius: 4px; padding: 9px 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 5px 14px; font-size: 12.5px; color: var(--muted); }
+.legend h3 { grid-column: 1 / -1; font: 500 12px var(--mono); letter-spacing: .08em; color: var(--muted); }
+.lg { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 8px; align-items: center; }
+.lg svg { width: 34px; height: 14px; overflow: visible; }
+.legend6 { border: 1px solid var(--rule); border-radius: 4px; padding: 9px 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; font-size: 12.5px; color: var(--muted); }
+.legend6 h3 { grid-column: 1 / -1; font: 500 12px var(--mono); letter-spacing: .08em; color: var(--muted); }
+.lg6 { display: grid; grid-template-columns: 60px minmax(0, 1fr); gap: 8px; align-items: center; }
+.lg6 svg { display: block; }
+
+section.board { display: grid; gap: 12px; border-top: 1px solid var(--rule); padding-top: 18px; }
+.board-lede { max-width: 90ch; color: var(--muted); font-size: 14px; }
+.board-lede b { color: var(--ink); font-weight: 600; }
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
+@media (max-width: 960px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+.card { border: 1px solid var(--rule); border-radius: 4px; background: var(--panel); padding: 10px 12px 12px; display: grid; gap: 8px; align-content: start; }
+.card h4 { margin: 4px 0 0; font: 500 11.5px var(--mono); letter-spacing: .07em; text-transform: uppercase; }
+.card h4.sov { color: #8cc2ff; } .card h4.nato { color: #ff8f86; } .card h4.fires { color: #ffc766; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; padding: 6px 9px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font: 500 11px var(--mono); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+td.k { font: 600 15px var(--display); white-space: nowrap; letter-spacing: .02em; }
+td.n { font-family: var(--mono); font-size: 12.5px; white-space: nowrap; }
+.tbl { border: 1px solid var(--rule); border-radius: 4px; background: var(--panel); overflow-x: auto; }
+.roster { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; font-size: 13px; }
+.roster li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; border-bottom: 1px dotted var(--rule); padding-bottom: 2px; }
+.roster li:last-child { border-bottom: 0; }
+.roster .q { font: 12.5px var(--mono); color: var(--muted); white-space: nowrap; }
+.note { font-size: 12.5px; color: var(--muted); }
+.note b { color: var(--ink); font-weight: 600; }
+.tag { font: 600 11px var(--mono); letter-spacing: .07em; text-transform: uppercase; }
+.tag.pri { color: #8cc2ff; } .tag.bon { color: #ffc766; }
+footer { font: 12px/1.5 var(--mono); color: var(--muted); border-top: 1px solid var(--rule); padding-top: 12px; display: grid; gap: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">warno-modkit example / authoring page / map _3x3_TwinCities, a 216 x 378 px cut / early July 1989</div>
+  <h1>Operation Twin Strike</h1>
+  <p class="what"><b>Authoring page.</b> This is the design page used to author the op with warno-modkit: a schematic of the plan, drawn from the op's own coordinates over the game's satellite picture of Twin Cities. It is not an in-game view.</p>
+  <p class="lede">Early July 1989, two weeks into the war. A Soviet tank division's forward detachment (<span class="t-sov">you</span>) must seize a road-junction village on the western edge of a pair of towns. <span class="t-nato">NATO</span> answers twice: a US armoured battalion counter-attacks at once, then a West German Panzer battalion assembles just south of the village for a heavier blow. Soviet doctrine of the day planned nuclear strikes against exactly that, a reserve massing to counter-attack, and Front command offers you release for <span class="t-nuke">one tactical nuclear strike</span>. You may also refuse it and fight. <b>One concentrated battle:</b> the map is cut to the village and its fields, and everything happens there.</p>
+  <div class="chips">
+    <span class="chip">Player <b>Soviet</b></span>
+    <span class="chip">AI <b>NATO, all scripted</b></span>
+    <span class="chip">Map <b>Twin Cities, the far-left village's corner</b></span>
+    <span class="chip">Target <b>35-40 min</b></span>
+    <span class="chip">Difficulty <b>Easy, Medium, Hard</b></span>
+  </div>
+</header>
+
+<div class="main">
+  <div class="mapbox">
+    <svg class="map" viewBox="0 146 216 378" role="img" aria-label="Schematic of Operation Twin Strike on the Twin Cities cut: the Soviet assault from the north zone into the village, NATO's counter-attack on two lanes from the south zone, the two fire boxes, and the strike zone round the assembly area.">
+      <defs>
+        <clipPath id="cut"><rect x="0" y="146" width="216" height="378"/></clipPath>
+        <marker id="ah-sov" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="2.6" markerHeight="2.6" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#5aa9ff"/></marker>
+        <marker id="ah-fires" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3" markerHeight="3" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#ffb21f"/></marker>
+        <marker id="ah-nuke" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#c39bf5"/></marker>
+      </defs>
+
+      <!-- The game's own satellite picture of the cut (432 x 756, shown at about 1.25x), dimmed under the overlay -->
+      <image x="0" y="146" width="216" height="378" preserveAspectRatio="none" href="data:image/jpeg;base64,
+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
+f//Z
+"/>
+      <rect x="0" y="146" width="216" height="378" fill="rgba(11,15,17,.22)"/>
+      <g transform="translate(10 160)">
+        <path d="M0 -7 L2.8 1.6 L0 0 L-2.8 1.6 Z" fill="#e7eae4"/>
+        <text class="sm f-ink" x="0" y="8" text-anchor="middle">N</text>
+      </g>
+
+      <!-- Zones: the two deployment boxes, the village's command zone -->
+      <rect class="dz-sov" x="40" y="158" width="170" height="54"/>
+      <rect class="dz-nato" x="6" y="490" width="204" height="30"/>
+      <rect class="cz" x="6.125" y="331.6" width="126" height="90"/>
+
+      <!-- Circles: the village's fall count, the fire boxes, the strike zone (radius R, cut to the playable zone) -->
+      <circle class="ring" cx="69" cy="377" r="40"/>
+      <circle class="prep" cx="69" cy="377" r="22"/>
+      <circle class="box" cx="65" cy="470" r="20"/>
+      <circle class="box" cx="180" cy="455" r="20"/>
+      <circle class="strike" cx="156" cy="500" r="67.2" clip-path="url(#cut)"/>
+
+      <!-- Your arrivals, and the Ka-29s' runs on the garrison -->
+      <path class="arrow a-sov w1" d="M 73 148 L 77 176" marker-end="url(#ah-sov)"/>
+      <path class="arrow a-sov w1" d="M 125 148 L 125 175" marker-end="url(#ah-sov)"/>
+      <path class="arrow a-sov w2 dash" d="M 56 216 L 46 262 L 42 306 L 44 334" marker-end="url(#ah-sov)"/>
+
+      <!-- APP-6 axes: your assault (main attack); battalion 1 on both lanes and battalion 2 if withheld (counterattacks) -->
+<g class="axis"><path d="M106.17 214.86L81.18 298.8L75.05 317.2L72.21 316.25L76 327L85.49 320.68L82.64 319.73L88.82 301.2L113.83 217.14Z" fill="#5aa9ff" fill-opacity="0.16" stroke="none"/><path d="M106.17 214.86L81.18 298.8L75.05 317.2L72.21 316.25L76 327L85.49 320.68L82.64 319.73L88.82 301.2L113.83 217.14" fill="none" stroke="#0a0d10" stroke-opacity=".75" stroke-width="2.34" stroke-linejoin="round"/><polygon points="72.21,316.25 76,327 85.49,320.68" fill="#5aa9ff"/><path d="M106.17 214.86L81.18 298.8L75.05 317.2L72.21 316.25L76 327L85.49 320.68L82.64 319.73L88.82 301.2L113.83 217.14" fill="none" stroke="#5aa9ff" stroke-width="0.9" stroke-linejoin="round"/></g>
+<g class="axis"><path d="M63.5 520L63.5 511.21L68.49 470.26L69.29 440.09L72.29 440.17L66 432L59.29 439.83L62.29 439.91L61.51 469.74L56.5 510.79L56.5 520Z" fill="#ff5a4e" fill-opacity="0.16" stroke="none"/><path d="M63.5 520L63.5 511.21L68.49 470.26L69.29 440.09L72.29 440.17L66 432L59.29 439.83L62.29 439.91L61.51 469.74L56.5 510.79L56.5 520" fill="none" stroke="#0a0d10" stroke-opacity=".75" stroke-width="2.08" stroke-linejoin="round"/><path d="M63.5 520L63.5 511.21L68.49 470.26L69.29 440.09L72.29 440.17L66 432L59.29 439.83L62.29 439.91L61.51 469.74L56.5 510.79L56.5 520" fill="none" stroke="#ff5a4e" stroke-width="0.8" stroke-linejoin="round" stroke-dasharray="2.56 1.76"/></g>
+<g class="axis"><path d="M166.39 521.87L183.43 455.73L191.06 411.02L150.39 405.52L124.28 403.22L124.54 400.23L116 406L123.4 413.18L123.66 410.19L149.61 412.48L182.94 416.98L176.57 454.27L159.61 520.13Z" fill="#ff5a4e" fill-opacity="0.16" stroke="none"/><path d="M166.39 521.87L183.43 455.73L191.06 411.02L150.39 405.52L124.28 403.22L124.54 400.23L116 406L123.4 413.18L123.66 410.19L149.61 412.48L182.94 416.98L176.57 454.27L159.61 520.13" fill="none" stroke="#0a0d10" stroke-opacity=".75" stroke-width="2.08" stroke-linejoin="round"/><path d="M166.39 521.87L183.43 455.73L191.06 411.02L150.39 405.52L124.28 403.22L124.54 400.23L116 406L123.4 413.18L123.66 410.19L149.61 412.48L182.94 416.98L176.57 454.27L159.61 520.13" fill="none" stroke="#ff5a4e" stroke-width="0.8" stroke-linejoin="round" stroke-dasharray="2.56 1.76"/></g>
+<g class="axis"><path d="M152.99 484.73L149.94 451.23L140.51 430.27L131.07 420.83L132.84 419.06L124 418L125.06 426.84L126.83 425.07L135.49 433.73L144.06 452.77L147.01 485.27Z" fill="#ff5a4e" fill-opacity="0.16" stroke="none"/><path d="M152.99 484.73L149.94 451.23L140.51 430.27L131.07 420.83L132.84 419.06L124 418L125.06 426.84L126.83 425.07L135.49 433.73L144.06 452.77L147.01 485.27" fill="none" stroke="#0a0d10" stroke-opacity=".75" stroke-width="1.82" stroke-linejoin="round"/><path d="M152.99 484.73L149.94 451.23L140.51 430.27L131.07 420.83L132.84 419.06L124 418L125.06 426.84L126.83 425.07L135.49 433.73L144.06 452.77L147.01 485.27" fill="none" stroke="#ff5a4e" stroke-width="0.7" stroke-linejoin="round" stroke-dasharray="2.24 1.54"/></g>
+
+      <!-- APP-6 objective: the village -->
+<g class="obj"><path d="M135 376.6C136.11 387.74 137.79 403.54 134.11 410.54C130.42 417.54 123.72 415.91 112.87 418.59C102.02 421.27 83.86 426.3 69 426.62C54.14 426.93 34.58 422.84 23.73 420.46C12.88 418.09 7.35 419.68 3.89 412.37C0.44 405.06 1.77 388.22 3 376.6C4.23 364.98 8.37 350.55 11.27 342.66C14.16 334.77 10.75 331.11 20.37 329.25C29.99 327.39 52.7 331.26 69 331.48C85.3 331.7 108.44 328.56 118.19 330.59C127.93 332.62 124.67 336.01 127.47 343.68C130.27 351.35 133.89 365.46 135 376.6Z" fill="none" stroke="#0a0d10" stroke-opacity=".8" stroke-width="2.24"/><path d="M135 376.6C136.11 387.74 137.79 403.54 134.11 410.54C130.42 417.54 123.72 415.91 112.87 418.59C102.02 421.27 83.86 426.3 69 426.62C54.14 426.93 34.58 422.84 23.73 420.46C12.88 418.09 7.35 419.68 3.89 412.37C0.44 405.06 1.77 388.22 3 376.6C4.23 364.98 8.37 350.55 11.27 342.66C14.16 334.77 10.75 331.11 20.37 329.25C29.99 327.39 52.7 331.26 69 331.48C85.3 331.7 108.44 328.56 118.19 330.59C127.93 332.62 124.67 336.01 127.47 343.68C130.27 351.35 133.89 365.46 135 376.6Z" fill="none" stroke="#eef1f2" stroke-width="0.8"/></g>
+
+      <!-- The division's guns, created off the map to the north for each fire; the strike's carrier round -->
+      <path class="arrow a-fires w2" d="M 140 166 L 140 150" marker-end="url(#ah-fires)"/>
+      <path class="arrow a-nuke w1 dash" d="M 140 148 Q 214 300 166 486" marker-end="url(#ah-nuke)"/>
+
+      <!-- APP-6 unit symbols at their start or arrival places -->
+<g class="app6"><title>Forward detachment: the T-80BV tank company, in your deck at the start</title><rect x="84.88" y="188.25" width="14.25" height="9.5" fill="#80e0ff" stroke="#000000" stroke-width="0.67"/><ellipse cx="92" cy="193" rx="4.27" ry="1.99" stroke="#000000" stroke-width="0.62" fill="none" stroke-linecap="butt"/><path d="M92 187.3L92 184.07" stroke="#0a0d10" stroke-width="1.52" stroke-linecap="square" fill="none"/><path d="M92 187.3L92 184.07" stroke="#eef1f2" stroke-width="0.76" fill="none"/><text class="app6-t" x="92" y="205.5" text-anchor="middle" style="font-size:3.9px;stroke-width:1.17px">T-80BV</text></g>
+<g class="app6"><title>Forward detachment: the motor rifle company in BMP-2s</title><rect x="110.88" y="188.25" width="14.25" height="9.5" fill="#80e0ff" stroke="#000000" stroke-width="0.67"/><path d="M110.88 188.25L125.12 197.75M110.88 197.75L125.12 188.25" stroke="#000000" stroke-width="0.62" fill="none" stroke-linecap="butt"/><ellipse cx="118" cy="193" rx="4.27" ry="1.99" stroke="#000000" stroke-width="0.62" fill="none" stroke-linecap="butt"/><path d="M118 187.3L118 184.07" stroke="#0a0d10" stroke-width="1.52" stroke-linecap="square" fill="none"/><path d="M118 187.3L118 184.07" stroke="#eef1f2" stroke-width="0.76" fill="none"/><text class="app6-t" x="118" y="205.5" text-anchor="middle" style="font-size:3.9px;stroke-width:1.17px">BMP-2</text></g>
+<g class="app6"><title>Forward detachment: the 2S1 battery</title><rect x="136.88" y="188.25" width="14.25" height="9.5" fill="#80e0ff" stroke="#000000" stroke-width="0.67"/><ellipse cx="144" cy="193" rx="4.27" ry="1.99" stroke="#000000" stroke-width="0.62" fill="none" stroke-linecap="butt"/><circle cx="144" cy="193" r="0.95" fill="#000000"/><path d="M144 187.3L144 184.07" stroke="#0a0d10" stroke-width="1.52" stroke-linecap="square" fill="none"/><path d="M144 187.3L144 184.07" stroke="#eef1f2" stroke-width="0.76" fill="none"/><text class="app6-t" x="144" y="205.5" text-anchor="middle" style="font-size:3.9px;stroke-width:1.17px">2S1</text></g>
+<g class="app6"><title>FOB_W: a Soviet FOB, placed in your zone from the start</title><rect x="56.75" y="194.5" width="10.5" height="7" fill="#80e0ff" stroke="#000000" stroke-width="0.49"/><path d="M56.75 199.26L67.25 199.26" stroke="#000000" stroke-width="0.46" fill="none" stroke-linecap="butt"/><text class="app6-t" x="62" y="207.5" text-anchor="middle" style="font-size:3.9px;stroke-width:1.17px">FOB</text></g>
+<g class="app6"><title>FOB_E: a Soviet FOB, placed in your zone from the start</title><rect x="182.75" y="194.5" width="10.5" height="7" fill="#80e0ff" stroke="#000000" stroke-width="0.49"/><path d="M182.75 199.26L193.25 199.26" stroke="#000000" stroke-width="0.46" fill="none" stroke-linecap="butt"/><text class="app6-t" x="188" y="207.5" text-anchor="middle" style="font-size:3.9px;stroke-width:1.17px">FOB</text></g>
+<g class="app6"><title>Division reserve: the T-80U company and the rest, unlocked when the village falls</title><rect x="14.88" y="186.25" width="14.25" height="9.5" fill="#80e0ff" stroke="#000000" stroke-width="0.67" stroke-dasharray="2.09 1.33"/><ellipse cx="22" cy="191" rx="4.27" ry="1.99" stroke="#000000" stroke-width="0.62" fill="none" stroke-linecap="butt"/><path d="M22 185.3L22 182.07" stroke="#0a0d10" stroke-width="1.52" stroke-linecap="square" fill="none"/><path d="M22 185.3L22 182.07" stroke="#eef1f2" stroke-width="0.76" fill="none"/><text class="app6-t" x="22" y="203.5" text-anchor="middle" style="font-size:3.9px;stroke-width:1.17px">reserve</text></g>
+<g class="app6"><title>Village garrison: a West German Panzergrenadier company (-), pre-placed</title><polygon points="101,361.16 107.84,368 101,374.84 94.16,368" fill="#ff8080" stroke="#000000" stroke-width="0.67"/><path d="M97.58 364.58L104.42 371.42M97.58 371.42L104.42 364.58" stroke="#000000" stroke-width="0.62" fill="none" stroke-linecap="butt"/><ellipse cx="101" cy="368" rx="3.15" ry="1.78" stroke="#000000" stroke-width="0.62" fill="none" stroke-linecap="butt"/><path d="M101 360.21L101 356.98" stroke="#0a0d10" stroke-width="1.52" stroke-linecap="square" fill="none"/><path d="M101 360.21L101 356.98" stroke="#eef1f2" stroke-width="0.76" fill="none"/><text class="app6-t" x="110" y="370.5" text-anchor="start" style="font-size:3.9px;stroke-width:1.17px">PzGren</text></g>
+<g class="app6"><title>Battalion 1: a US armoured task force, in waves from phase 3</title><polygon points="24,498.16 30.84,505 24,511.84 17.16,505" fill="#ff8080" stroke="#000000" stroke-width="0.67" stroke-dasharray="2.09 1.33"/><ellipse cx="24" cy="505" rx="3.15" ry="1.78" stroke="#000000" stroke-width="0.62" fill="none" stroke-linecap="butt"/><path d="M23.05 497.21L23.05 493.98M24.95 497.21L24.95 493.98" stroke="#0a0d10" stroke-width="1.52" stroke-linecap="square" fill="none"/><path d="M23.05 497.21L23.05 493.98M24.95 497.21L24.95 493.98" stroke="#eef1f2" stroke-width="0.76" fill="none"/><text class="app6-t" x="33" y="508" text-anchor="start" style="font-size:3.9px;stroke-width:1.17px">US TF</text></g>
+<g class="app6"><title>Battalion 2: a West German Panzer battalion, at ASSEMBLY from phase 4</title><polygon points="156,493.16 162.84,500 156,506.84 149.16,500" fill="#ff8080" stroke="#000000" stroke-width="0.67" stroke-dasharray="2.09 1.33"/><ellipse cx="156" cy="500" rx="3.15" ry="1.78" stroke="#000000" stroke-width="0.62" fill="none" stroke-linecap="butt"/><path d="M155.05 492.21L155.05 488.98M156.95 492.21L156.95 488.98" stroke="#0a0d10" stroke-width="1.52" stroke-linecap="square" fill="none"/><path d="M155.05 492.21L155.05 488.98M156.95 492.21L156.95 488.98" stroke="#eef1f2" stroke-width="0.76" fill="none"/><text class="app6-t" x="165" y="503" text-anchor="start" style="font-size:3.9px;stroke-width:1.17px">Pz Btl</text></g>
+
+      <!-- Labels -->
+      <text class="sm f-sov" x="80" y="164">your arrivals</text>
+      <text class="mid f-sov" x="208" y="220" text-anchor="end">SOVIET DEPLOYMENT: YOU</text>
+      <text class="sm f-fires" x="144" y="153">division guns,</text>
+      <text class="sm f-fires" x="144" y="158.5">off the map to the north</text>
+      <text class="mid f-sov" x="98" y="262">assault</text>
+      <text class="sm f-sov" x="8" y="262">Ka-29 x4</text>
+      <text class="big f-ink" x="10" y="340">OBJ VILLAGE</text>
+      <text class="sm f-cz" x="10" y="346">command zone, 2 points</text>
+      <text class="sm f-fires" x="69" y="409" text-anchor="middle">preparation fire</text>
+      <text class="mid f-fires" x="88" y="474">BOX W</text>
+      <text class="mid f-fires" x="180" y="432" text-anchor="middle">BOX C</text>
+      <text class="mid f-nato" x="56" y="452" text-anchor="end">CATK</text>
+      <text class="mid f-nato" x="212" y="402" text-anchor="end">CATK</text>
+      <text class="mid f-nato" x="8" y="486">US BATTALION 1</text>
+      <text class="mid f-nuke" x="156" y="517.5" text-anchor="middle">ASSEMBLY</text>
+      <text class="mid f-nuke" x="208" y="450" text-anchor="end">STRIKE ZONE</text>
+      <text class="sm f-nuke" x="208" y="456" text-anchor="end">radius 800 m</text>
+      <text class="sm f-nato" x="136" y="440" text-anchor="end">if withheld: CATK</text>
+      <text class="mid f-nato" x="70" y="517.5">NATO DEPLOYMENT</text>
+
+      <!-- Phase badges -->
+      <g class="badge"><circle cx="120" cy="240" r="4.2" fill="#e7eae4"/><text x="120" y="241.8" text-anchor="middle">1</text></g>
+      <g class="badge"><circle cx="48" cy="430" r="4.2" fill="#e7eae4"/><text x="48" y="431.8" text-anchor="middle">3</text></g>
+      <g class="badge"><circle cx="196" cy="419" r="4.2" fill="#e7eae4"/><text x="196" y="420.8" text-anchor="middle">3</text></g>
+      <g class="badge"><circle cx="192" cy="511" r="4.2" fill="#e7eae4"/><text x="192" y="512.8" text-anchor="middle">4</text></g>
+      <g class="badge"><circle cx="120" cy="452" r="4.2" fill="#e7eae4"/><text x="120" y="453.8" text-anchor="middle">5</text></g>
+    </svg>
+    <div class="mapnote">Drawn on the game's satellite picture of the op's cut of Twin Cities, north up: x 0-216, y 146-524 minimap pixels. The village's command zone is the stock one; the deployment boxes, circles, lanes and places are the op's own (twinstrike/map.py, twinstrike/op.py). Numbered badges give the phase.</div>
+  </div>
+
+  <aside class="panel">
+    <div class="phase">
+      <div class="ph-head"><span class="ph-num">0</span><span class="ph-name">Deploy</span><span class="ph-time">3 min</span></div>
+      <p>Buy and place the forward detachment in the north zone, with 2,000 points and no income. Two FOBs already stand there.</p>
+    </div>
+    <div class="phase">
+      <div class="ph-head"><span class="ph-num">1</span><span class="ph-name">Assault</span><span class="ph-time">~10 min, deadline 20</span></div>
+      <p>Take the village from its pre-placed West German garrison, which holds it. It falls when the garrison is down to its breaking point and one of your command units is inside; the map flips to you.</p>
+      <p class="decide"><b>Decide</b>when to call the division's one preparation fire on the village (asked again every 2 min). Keep your own troops out. No fall by 20 min: the battle is lost.</p>
+    </div>
+    <div class="phase">
+      <div class="ph-head"><span class="ph-num">2</span><span class="ph-name">Unlock</span><span class="ph-time">~2 min</span></div>
+      <p>Front releases the division's reserve into your deck, with 4,000 points at once and an income of 250 from then on. A hint reports NATO recon moving north.</p>
+    </div>
+    <div class="phase">
+      <div class="ph-head"><span class="ph-num">3</span><span class="ph-name">Counter-attack</span><span class="ph-time">~12 min, cap 15</span></div>
+      <p>US battalion 1 comes from the south edge on two lanes: its recon screen first, then company teams with heavy air defence. Each wave attacks your units once it reaches the village.</p>
+      <ul>
+        <li>NATO fighter sweeps: 2 F-15C over BOX W at +2:30, 2 over BOX C at +6:00, one more over the village at +10:00 on Hard.</li>
+        <li>It ends when battalion 1 is broken, or after 15 min with the village held; its survivors break off.</li>
+      </ul>
+      <p class="decide"><b>Decide</b>each fire mission: rockets or heavy guns, then BOX W or BOX C, on a cooldown. Once per battle, the division fire plan: every battery on whichever box holds more NATO vehicles.</p>
+    </div>
+    <div class="phase">
+      <div class="ph-head"><span class="ph-num">4</span><span class="ph-name">Surprise</span><span class="ph-time">~5 min</span></div>
+      <p>A West German Panzer battalion appears at ASSEMBLY, about 5,200 GRU south of the village. It attacks in 05:00.</p>
+      <p class="decide"><b>Decide</b>request nuclear release, or fight it conventionally.</p>
+    </div>
+    <div class="phase">
+      <div class="ph-head"><span class="ph-num">5</span><span class="ph-name">Strike and hold</span><span class="ph-time">5 min, or up to 20</span></div>
+      <p><b>Released:</b> a 30 s warning, a carrier round from a lone 2S7M, the game's script-only mega bomb effect, and every NATO unit in the zone dies. Hold 5 min.</p>
+      <p><b>Withheld:</b> battalion 2 attacks north into the village, and 2 F-4F join once it attacks. Hold until it breaks or the village falls, up to 20 min. Both roads can reach the top grade.</p>
+    </div>
+    <div class="legend">
+      <h3>MAP</h3>
+      <div class="lg"><svg viewBox="0 0 34 14" aria-hidden="true"><line x1="2" y1="7" x2="25" y2="7" stroke="#5aa9ff" stroke-width="3" stroke-dasharray="6 4" stroke-linecap="round"/><path d="M24 1 L33 7 L24 13 z" fill="#5aa9ff"/></svg><span>Your helicopters; your arrivals</span></div>
+      <div class="lg"><svg viewBox="0 0 34 14" aria-hidden="true"><rect x="2" y="1" width="30" height="12" fill="rgba(90,169,255,.08)" stroke="#5aa9ff" stroke-width="1.6" stroke-dasharray="5 3"/></svg><span>Soviet deployment: you</span></div>
+      <div class="lg"><svg viewBox="0 0 34 14" aria-hidden="true"><rect x="2" y="1" width="30" height="12" fill="rgba(255,90,78,.08)" stroke="#ff5a4e" stroke-width="1.6" stroke-dasharray="5 3"/></svg><span>NATO deployment</span></div>
+      <div class="lg"><svg viewBox="0 0 34 14" aria-hidden="true"><rect x="2" y="1" width="30" height="12" fill="rgba(214,195,90,.10)" stroke="#d6c35a" stroke-width="1.6"/></svg><span>Command zone</span></div>
+      <div class="lg"><svg viewBox="0 0 34 14" aria-hidden="true"><circle cx="17" cy="7" r="6" fill="rgba(255,178,31,.14)" stroke="#ffb21f" stroke-width="1.6" stroke-dasharray="3 2"/></svg><span>Fire target</span></div>
+      <div class="lg"><svg viewBox="0 0 34 14" aria-hidden="true"><circle cx="17" cy="7" r="6" fill="rgba(195,155,245,.12)" stroke="#c39bf5" stroke-width="1.6" stroke-dasharray="3 2"/></svg><span>Strike zone</span></div>
+      <div class="lg"><svg viewBox="0 0 34 14" aria-hidden="true"><circle cx="17" cy="7" r="6" fill="none" stroke="#e7eae4" stroke-width="1.2" stroke-dasharray="1 2"/></svg><span>The fall's count circle</span></div>
+    </div>
+    <div class="legend6">
+      <h3>APP-6 SYMBOLS</h3>
+      <div class="lg6"><svg viewBox="0 0 46 26" width="60" height="34" aria-hidden="true"><g class="app6"><rect x="13.25" y="8.5" width="19.5" height="13" fill="#80e0ff" stroke="#000000" stroke-width="0.91"/></g></svg><span>Friendly unit: Soviet, yours</span></div>
+      <div class="lg6"><svg viewBox="0 0 46 26" width="60" height="34" aria-hidden="true"><g class="app6"><polygon points="23,4.64 32.36,14 23,23.36 13.64,14" fill="#ff8080" stroke="#000000" stroke-width="0.91"/></g></svg><span>Hostile unit: NATO, the AI</span></div>
+      <div class="lg6"><svg viewBox="0 0 46 26" width="60" height="34" aria-hidden="true"><g class="app6"><rect x="13.25" y="8.5" width="19.5" height="13" fill="#80e0ff" stroke="#000000" stroke-width="0.91" stroke-dasharray="2.86 1.82"/></g></svg><span>Dashed frame: anticipated (hidden, later wave or reinforcement)</span></div>
+      <div class="lg6"><svg viewBox="0 0 46 26" width="60" height="34" aria-hidden="true"><g class="app6"><rect x="13.25" y="8.5" width="19.5" height="13" fill="#80e0ff" stroke="#000000" stroke-width="0.91"/><ellipse cx="23" cy="15" rx="5.85" ry="2.73" stroke="#000000" stroke-width="0.84" fill="none" stroke-linecap="butt"/></g></svg><span>Armour</span></div>
+      <div class="lg6"><svg viewBox="0 0 46 26" width="60" height="34" aria-hidden="true"><g class="app6"><rect x="13.25" y="8.5" width="19.5" height="13" fill="#80e0ff" stroke="#000000" stroke-width="0.91"/><path d="M13.25 8.5L32.75 21.5M13.25 21.5L32.75 8.5" stroke="#000000" stroke-width="0.84" fill="none" stroke-linecap="butt"/><ellipse cx="23" cy="15" rx="5.85" ry="2.73" stroke="#000000" stroke-width="0.84" fill="none" stroke-linecap="butt"/></g></svg><span>Mechanised infantry</span></div>
+      <div class="lg6"><svg viewBox="0 0 46 26" width="60" height="34" aria-hidden="true"><g class="app6"><rect x="13.25" y="8.5" width="19.5" height="13" fill="#80e0ff" stroke="#000000" stroke-width="0.91"/><ellipse cx="23" cy="15" rx="5.85" ry="2.73" stroke="#000000" stroke-width="0.84" fill="none" stroke-linecap="butt"/><circle cx="23" cy="15" r="1.3" fill="#000000"/></g></svg><span>Self-propelled artillery</span></div>
+      <div class="lg6"><svg viewBox="0 0 46 26" width="60" height="34" aria-hidden="true"><g class="app6"><rect x="13.25" y="8.5" width="19.5" height="13" fill="#80e0ff" stroke="#000000" stroke-width="0.91"/><path d="M13.25 17.34L32.75 17.34" stroke="#000000" stroke-width="0.84" fill="none" stroke-linecap="butt"/></g></svg><span>Supply (FOB)</span></div>
+      <div class="lg6"><svg viewBox="0 0 46 26" width="60" height="34" aria-hidden="true"><g class="app6"><rect x="14" y="11" width="18" height="12" fill="#80e0ff" stroke="#000000" stroke-width="0.84"/><path d="M23 9.8L23 5.72" stroke="#0a0d10" stroke-width="1.92" stroke-linecap="square" fill="none"/><path d="M23 9.8L23 5.72" stroke="#eef1f2" stroke-width="0.96" fill="none"/></g></svg><span>Echelon above the frame: I company or battery</span></div>
+      <div class="lg6"><svg viewBox="0 0 46 26" width="60" height="34" aria-hidden="true"><g class="app6"><rect x="14" y="11" width="18" height="12" fill="#80e0ff" stroke="#000000" stroke-width="0.84"/><path d="M21.8 9.8L21.8 5.72M24.2 9.8L24.2 5.72" stroke="#0a0d10" stroke-width="1.92" stroke-linecap="square" fill="none"/><path d="M21.8 9.8L21.8 5.72M24.2 9.8L24.2 5.72" stroke="#eef1f2" stroke-width="0.96" fill="none"/></g></svg><span>II battalion</span></div>
+      <div class="lg6"><svg viewBox="0 0 46 26" width="60" height="34" aria-hidden="true"><g class="axis"><path d="M3 18L32 18L32 21.5L43 13L32 4.5L32 8L3 8Z" fill="#5aa9ff" fill-opacity="0.16" stroke="none"/><path d="M3 18L32 18L32 21.5L43 13L32 4.5L32 8L3 8" fill="none" stroke="#0a0d10" stroke-opacity=".75" stroke-width="3.64" stroke-linejoin="round"/><polygon points="32,21.5 43,13 32,4.5" fill="#5aa9ff"/><path d="M3 18L32 18L32 21.5L43 13L32 4.5L32 8L3 8" fill="none" stroke="#5aa9ff" stroke-width="1.4" stroke-linejoin="round"/></g></svg><span>Axis of advance, main attack</span></div>
+      <div class="lg6"><svg viewBox="0 0 46 26" width="60" height="34" aria-hidden="true"><g class="axis"><path d="M3 18L32 18L32 21.5L43 13L32 4.5L32 8L3 8Z" fill="#ff5a4e" fill-opacity="0.16" stroke="none"/><path d="M3 18L32 18L32 21.5L43 13L32 4.5L32 8L3 8" fill="none" stroke="#0a0d10" stroke-opacity=".75" stroke-width="3.64" stroke-linejoin="round"/><path d="M3 18L32 18L32 21.5L43 13L32 4.5L32 8L3 8" fill="none" stroke="#ff5a4e" stroke-width="1.4" stroke-linejoin="round" stroke-dasharray="4.48 3.08"/></g></svg><span>Counterattack (CATK)</span></div>
+      <div class="lg6"><svg viewBox="0 0 46 26" width="60" height="34" aria-hidden="true"><g class="obj"><path d="M41 13C41.3 15.32 41.76 18.61 40.76 20.07C39.75 21.53 37.92 21.19 34.96 21.75C32 22.31 27.05 23.35 23 23.42C18.95 23.49 13.61 22.63 10.65 22.14C7.69 21.64 6.19 21.98 5.24 20.45C4.3 18.93 4.66 15.42 5 13C5.34 10.58 6.46 7.57 7.25 5.93C8.04 4.28 7.11 3.52 9.74 3.14C12.36 2.75 18.55 3.55 23 3.6C27.45 3.65 33.76 2.99 36.42 3.41C39.07 3.84 38.18 4.54 38.95 6.14C39.71 7.74 40.7 10.68 41 13Z" fill="none" stroke="#0a0d10" stroke-opacity=".8" stroke-width="3.92"/><path d="M41 13C41.3 15.32 41.76 18.61 40.76 20.07C39.75 21.53 37.92 21.19 34.96 21.75C32 22.31 27.05 23.35 23 23.42C18.95 23.49 13.61 22.63 10.65 22.14C7.69 21.64 6.19 21.98 5.24 20.45C4.3 18.93 4.66 15.42 5 13C5.34 10.58 6.46 7.57 7.25 5.93C8.04 4.28 7.11 3.52 9.74 3.14C12.36 2.75 18.55 3.55 23 3.6C27.45 3.65 33.76 2.99 36.42 3.41C39.07 3.84 38.18 4.54 38.95 6.14C39.71 7.74 40.7 10.68 41 13Z" fill="none" stroke="#eef1f2" stroke-width="1.4"/></g></svg><span>OBJ: an objective, named</span></div>
+    </div>
+  </aside>
+</div>
+
+<section class="board" aria-labelledby="obj-h">
+  <h2 id="obj-h">Objectives and endings</h2>
+  <p class="board-lede">Only the script ends the battle. Each objective label is pinned to its place on the map; B1, whose battalion comes on both lanes, shows in the panel only.</p>
+  <div class="cols">
+    <div class="tbl"><table>
+      <thead><tr><th>ID</th><th>Objective</th><th>Counter</th></tr></thead>
+      <tbody>
+        <tr><td class="k">P1</td><td><span class="tag pri">Primary</span><br>Take the village</td><td>enemy left in the village</td></tr>
+        <tr><td class="k">P2</td><td><span class="tag pri">Primary</span><br>Hold the village</td><td>the two loss clocks: NATO owning it, and the zone empty of your units</td></tr>
+        <tr><td class="k">B1</td><td><span class="tag bon">Bonus</span><br>Break the first battalion</td><td>battalion 1 tanks destroyed, of 31 on Medium</td></tr>
+        <tr><td class="k">B2</td><td><span class="tag bon">Bonus</span><br>Deal with the second battalion</td><td>the countdown, then its tanks left</td></tr>
+      </tbody>
+    </table></div>
+    <div class="tbl"><table>
+      <thead><tr><th>Result</th><th>When</th></tr></thead>
+      <tbody>
+        <tr><td class="k">Total victory</td><td>the village held; battalion 1 broken, and battalion 2 destroyed or broken, by any means</td></tr>
+        <tr><td class="k">Major victory</td><td>the village held</td></tr>
+        <tr><td class="k">Minor victory</td><td>the village held, but more than half of what you bought is lost</td></tr>
+        <tr><td class="k">Defeat</td><td>no fall by 20 min; NATO owns the village for 60 s; or none of your units is inside its command zone for 3 min (warned after 20 s)</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <p class="note">The end dialog names your choice: the strike released or withheld. There is no moral score; the choice changes the ending text and the battle before it.</p>
+</section>
+
+<section class="board" aria-labelledby="dif-h">
+  <h2 id="dif-h">Difficulty</h2>
+  <p class="board-lede">The difficulty reaches the script at load, with Medium as the baseline.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Knob</th><th>Easy</th><th>Medium</th><th>Hard</th></tr></thead>
+    <tbody>
+      <tr><td>The garrison left when the village falls</td><td class="n">35 %</td><td class="n">25 %</td><td class="n">15 %</td></tr>
+      <tr><td>Battalion 1's company teams (its tanks, B1's count)</td><td class="n">2 (21)</td><td class="n">3 (31)</td><td class="n">4 (41)</td></tr>
+      <tr><td>Fire-mission cooldown</td><td class="n">2:00</td><td class="n">3:00</td><td class="n">4:00</td></tr>
+      <tr><td>The third F-15C sweep, over the village</td><td class="n">-</td><td class="n">-</td><td class="n">yes</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="board" aria-labelledby="oob-h">
+  <h2 id="oob-h">Order of battle</h2>
+  <p class="board-lede">Vanilla units only. One counter is one vehicle or squad, at the in-game counts, on Medium at scale 1x; one scale knob moves every scripted group. All of it fights inside the 216 x 378 px cut.</p>
+  <div class="cols">
+    <div class="card">
+      <h3>Soviet: you</h3>
+      <h4 class="sov">Forward detachment, your deck at the start</h4>
+      <p class="note">RedJuggernaut's 79th Guards Tank Division deck, topped up by the script to at least these:</p>
+      <ul class="roster">
+        <li><span>T-80BV / T-80BV command</span><span class="q">10 / 2</span></li>
+        <li><span>BMP-2 with motor rifles / BMP-2 command</span><span class="q">8 / 1</span></li>
+        <li><span>Flamethrower engineers in MT-LB / scouts in UAZ-469</span><span class="q">2 / 2</span></li>
+        <li><span>BRM-1 recon / Shilka / Strela-10</span><span class="q">2 / 2 / 1</span></li>
+        <li><span>2S1 Gvozdika / Ka-29</span><span class="q">4 / 4</span></li>
+        <li><span>Supply: Ural-4320 trucks / Mi-8TZ helicopters</span><span class="q">4 / 2</span></li>
+        <li><span>FOB, placed in your zone</span><span class="q">2</span></li>
+      </ul>
+      <p class="note">The deck's own Tunguska, Su-24M and Mi-24P stay locked until the village falls.</p>
+      <h4 class="sov">Division reserve, at the fall</h4>
+      <ul class="roster">
+        <li><span>T-80U / T-80U command</span><span class="q">10 / 1</span></li>
+        <li><span>Tunguska / Osa / 2K12 Kub</span><span class="q">2 / 2 / 2</span></li>
+        <li><span>Mi-24V (AT) / Ka-50</span><span class="q">4 / 4</span></li>
+        <li><span>Su-25T / Su-24M (cluster)</span><span class="q">2 / 2</span></li>
+        <li><span>BRDM-2 Konkurs / Metis teams in BMP-2</span><span class="q">4 / 4</span></li>
+      </ul>
+      <h4 class="fires">Division artillery, scripted, off the map</h4>
+      <ul class="roster">
+        <li><span>2S7M Malka / BM-27 Uragan, created for each fire and removed after</span><span class="q">6 / 6</span></li>
+        <li><span>One more 2S7M, for the strike's carrier round</span><span class="q">1</span></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>NATO: AI, all scripted</h3>
+      <h4 class="nato">Village garrison, West German, pre-placed: 14</h4>
+      <ul class="roster">
+        <li><span>Panzergrenadiere / Marder 1A3 / Milan teams</span><span class="q">4 / 3 / 2</span></li>
+        <li><span>Leopard 1A5 / Gepard / Fernspaher</span><span class="q">3 / 1 / 1</span></li>
+      </ul>
+      <h4 class="nato">Battalion 1, US armoured task force: 67</h4>
+      <p class="note">Three company teams on Medium (two on Easy, four on Hard), behind a recon screen, in waves on both lanes.</p>
+      <ul class="roster">
+        <li><span>M1A1HA / M1A1HA command</span><span class="q">30 / 1</span></li>
+        <li><span>M2A2 Bradley with rifles (AT4)</span><span class="q">10 + 9</span></li>
+        <li><span>Recon: M3A2 CFV / scouts / OH-58D</span><span class="q">3 / 3 / 2</span></li>
+        <li><span>Air defence: M163 / Chaparral / Avenger / Stinger teams</span><span class="q">2 / 2 / 2 / 3</span></li>
+      </ul>
+      <h4 class="nato">Battalion 2, West German Panzer battalion: 52</h4>
+      <p class="note">It appears at ASSEMBLY once battalion 1 is beaten. It is the strike's target.</p>
+      <ul class="roster">
+        <li><span>Leopard 2A4 / Leopard 2A3 command</span><span class="q">28 / 1</span></li>
+        <li><span>Marder 1A3 with Panzergrenadiere</span><span class="q">8 + 8</span></li>
+        <li><span>Gepard / Roland / Luchs</span><span class="q">3 / 2 / 2</span></li>
+      </ul>
+      <h4 class="nato">Fighters, hidden until each sweep</h4>
+      <ul class="roster">
+        <li><span>F-15C Eagle (5 on Hard)</span><span class="q">4</span></li>
+        <li><span>F-4F Phantom II, after a withheld strike</span><span class="q">2</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div>Operation Twin Strike, a warno-modkit example: components/ops/examples/twin-strike/.</div>
+  <div>Sources: docs/design.md, twinstrike/map.py, twinstrike/op.py and twinstrike/forces.py. The overlay is drawn from their coordinates.</div>
+  <div>Map imagery from WARNO, (c) Eugen Systems, shown for non-commercial illustration; not affiliated with or endorsed by Eugen Systems.</div>
+</footer>
+
+</div>
+</body>
+</html>

@@ -4,8 +4,10 @@ Unofficial. warno-modkit is a community toolkit. It is not affiliated with, endo
 Systems. WARNO is a trademark of Eugen Systems; its name is used here only to say what the toolkit works with.
 
 No game data. This repository contains no files, tables, text, images, sounds or other data from WARNO, apart
-from the screenshots in `docs/screenshots/`: pictures of mods made with this toolkit, taken in the game. The
-game's art in them belongs to Eugen Systems; they are here only to show what the toolkit makes. The tools
+from the pictures in `docs/screenshots/` (pictures of mods made with this toolkit) and the map pictures in the two
+example Operations' authoring pages (`components/ops/examples/*/docs/authoring-page.html`). The game's art in them
+belongs to Eugen Systems; they are here only to show what the toolkit makes. Map imagery from WARNO, (c) Eugen
+Systems, shown for non-commercial illustration; not affiliated with or endorsed by Eugen Systems. The tools
 work only on your own copy of the game: they read your install to build what they need on your machine, and the
 mods they help you make contain modified Eugen game data, which stays subject to Eugen's end-user licence agreement
 for WARNO. Do not commit or redistribute what the tools extract.
