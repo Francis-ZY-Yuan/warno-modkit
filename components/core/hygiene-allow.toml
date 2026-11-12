@@ -140,3 +140,58 @@ reason = "format tag: NbExecutions uint32 max, a script loop that repeats until 
 path = "components/ops/src/modkit/ops/script.py"
 text = "0xFFFFFFFF"
 reason = "format tag: NbExecutions uint32 max, a script loop that repeats until something else ends it"
+
+[[allow]]
+path = "components/core/src/modkit/core/txntag.py"
+text = "0xD6D018F5"
+reason = "published constant: MetroHash64's k0"
+
+[[allow]]
+path = "components/core/src/modkit/core/txntag.py"
+text = "0xA2AA033B"
+reason = "published constant: MetroHash64's k1"
+
+[[allow]]
+path = "components/core/src/modkit/core/txntag.py"
+text = "0x62992FC1"
+reason = "published constant: MetroHash64's k2"
+
+[[allow]]
+path = "components/core/src/modkit/core/txntag.py"
+text = "0x30BC5B29"
+reason = "published constant: MetroHash64's k3"
+
+[[allow]]
+path = "components/core/src/modkit/core/txntag.py"
+text = "0x9E3779B9"
+reason = "published constant: the golden-ratio word of boost::hash_combine"
+
+[[allow]]
+path = "components/core/src/modkit/core/txntag.py"
+text = "0xFF51AFD7ED558CCD"
+reason = "published constant: MurmurHash3's fmix64 first multiplier"
+
+[[allow]]
+path = "components/core/src/modkit/core/txntag.py"
+text = "0xC4CEB9FE1A85EC53"
+reason = "published constant: MurmurHash3's fmix64 second multiplier"
+
+[[allow]]
+path = "components/core/src/modkit/core/txntag.py"
+text = "0x7FFFFFFF"
+reason = "mask: the 31 bits of MetroHash64 a .txn.tag name hash keeps"
+
+[[allow]]
+path = "components/core/src/modkit/core/txntag.py"
+text = "0x18775B986"
+reason = "key: the ConfigHash head's first seed, held by every stock .txn.tag (test_txntag)"
+
+[[allow]]
+path = "components/core/src/modkit/core/txntag.py"
+text = "0x7DCF0"
+reason = "key: a game path hash's first seed, held by every stock .txn.tag (test_txntag)"
+
+[[allow]]
+path = "components/core/src/modkit/core/txntag.py"
+text = "0x52706CAAD497DB23"
+reason = "key: the hash of the game's path root, solved from stock .txn.tags (test_txntag)"
