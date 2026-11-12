@@ -11,9 +11,10 @@ from __future__ import annotations
 
 import math
 import unittest
+from collections import Counter
 
 from twin_strike_support import JOUEUR, NATO, SCRIPT_DATA, Model, World, beats_root
-from modkit.ops import shapes
+from modkit.ops import gates, shapes
 from modkit.ops.files import read_file
 from modkit.ops.graph import decode, walk
 from modkit.ops.profile import SURVIVORS
@@ -73,9 +74,10 @@ class Knobs(unittest.TestCase):
     def test_difficulty_knobs(self):
         """(Easy, Medium, Hard): the village falls with 5, 4 or 2 of the garrison's 14 left (35/25/15 %); 2, 3 or 4
         company teams; a 2, 3 or 4 min cooldown; B1's tanks and the kills that break battalion 1 (30 % left); the third
-        fighter sweep on Hard only."""
+        fighter sweep on Hard only; the strike kills 50, 40 or 30 % of battalion 2."""
         self.assertEqual(op.KNOBS, {"ts_fall_n": (5, 4, 2), "ts_teams": (2, 3, 4), "ts_cool_s": (120, 180, 240),
-                                    "ts_b1_tanks": (21, 31, 41), "ts_b1_need": (15, 22, 29), "ts_sweep3": (0, 0, 1)})
+                                    "ts_b1_tanks": (21, 31, 41), "ts_b1_need": (15, 22, 29), "ts_sweep3": (0, 0, 1),
+                                    "ts_kill_pct": (50, 40, 30)})
         self.assertEqual(op.KNOBS["ts_fall_n"][op.MEDIUM], forces.threshold("fall"))
         self.assertEqual(op.KNOBS["ts_b1_tanks"][op.MEDIUM] - op.KNOBS["ts_b1_need"][op.MEDIUM],
                          forces.threshold("bn1"))
@@ -188,8 +190,7 @@ class Places(unittest.TestCase):
 
     def test_battalion_two(self):
         """Design 6.3's battalion 2 (52, its tanks 29) in two halves, pre-placed hidden in the NATO camp (Camp_3),
-        every unit inside 0.8 R of ASSEMBLY and inside the cut, facing the village; B2's label at its north edge, the
-        dressing's spots inside the zone."""
+        every unit inside 0.8 R of ASSEMBLY and inside the cut, facing the village; B2's label at its north edge."""
         spawns = [it for it in op.ITEMS if it.group in ("bn2_w", "bn2_c")]
         self.assertEqual(len(spawns), 52)
         self.assertEqual(sum(it.unit in forces.BN2_TANKS for it in spawns), 29)
@@ -209,8 +210,25 @@ class Places(unittest.TestCase):
         north = min(px(it)[1] for it in spawns)
         self.assertLessEqual(px(item(op.BN2_PIN))[1], north)
         self.assertLess(math.dist(px(item(op.BN2_PIN)), a), op.STRIKE_R_PX)
-        for name in op.DRESSING:
-            self.assertLess(math.dist(px(item(name)), a), op.BN2_FIT * op.STRIKE_R_PX)
+
+    def test_the_strike_spots(self):
+        """Twelve Name tags round ASSEMBLY, inside the cut: six inner ones over battalion 2 (inside 0.8 R), six outer
+        ones about half R out (0.45 to 0.6 R), so the mega bombs spread over the zone."""
+        a = ts_map.POINTS["ASSEMBLY"]
+        x0, y0, x1, y1 = ts_map.CUT_PX
+        self.assertEqual(op.STRIKE_SPOTS, tuple(f"TS_Fx{k}" for k in range(1, 13)))
+        self.assertEqual((op.STRIKE_INNER, op.STRIKE_OUTER), (op.STRIKE_SPOTS[:6], op.STRIKE_SPOTS[6:]))
+        for name in op.STRIKE_SPOTS:
+            it = item(name)
+            x, y = px(it)
+            with self.subTest(spot=name):
+                self.assertEqual((it.ranking, it.addon), ("Tags", "Name"))
+                self.assertTrue(x0 <= x <= x1 and y0 <= y <= y1 - 0.4, (x, y))   # the cut's south edge: 523.6 px
+                r = math.dist((x, y), a) / op.STRIKE_R_PX
+                if name in op.STRIKE_INNER:
+                    self.assertLessEqual(r, op.BN2_FIT)
+                else:
+                    self.assertTrue(0.45 <= r <= 0.6, r)
 
     def test_battalion_two_lanes(self):
         """From ASSEMBLY the west half drives to BOX W and the village; the centre half battalion 1's centre lane.
@@ -281,7 +299,7 @@ class Shapes(unittest.TestCase):
                                  (group, shapes.SHOOT_ON_POSITION, None))
                 self.assertEqual((gone.cls, [last(g) for g in prop(gone, "GroupList")], prop(gone, "DeathCause")),
                                  ("TGDDescriptorKillAllUnit", [group], None))
-        self.assertEqual(fires, 8)          # prep, 4 fire missions, the fire plan's 2, the strike's round
+        self.assertEqual(fires, 7)          # prep, 4 fire missions, the fire plan's 2 (no gun fires the strike)
         ordered = {last(prop(n, "Group")) for n in of(self.nodes, "GiveOrderStandard")}
         self.assertEqual(ordered & set(op.BATTERIES), set(op.BATTERIES))
 
@@ -327,14 +345,13 @@ class Shapes(unittest.TestCase):
 
     def test_fires_aim_at_name_tags(self):
         """Every ShootOnPosition aims at a Name tag (Survivors #1231/#1232's form), never a detector circle: the
-        village, the two boxes and the assembly area; the batteries are HEAVY, ROCKETS, GUNS (both, the plan's) and
-        the strike's one 2S7M."""
+        village and the two boxes (no gun fires the strike); the batteries are HEAVY, ROCKETS and GUNS (both, the
+        plan's)."""
         targets = {last(prop(n, "Position")) for n in of(self.nodes, "GiveOrderStandard")
                    if prop(n, "OrderType").v == shapes.SHOOT_ON_POSITION}
-        self.assertEqual(targets, {"TS_Village", *op.BOX_TAGS.values(), "TS_Assembly"})
+        self.assertEqual(targets, {"TS_Village", *op.BOX_TAGS.values()})
         self.assertEqual(op.BATTERIES, {op.HEAVY: (("2S7M_Malka_SOV", 6),), op.ROCKETS: (("BM27_Uragan_SOV", 6),),
-                                        op.GUNS: (("2S7M_Malka_SOV", 6), ("BM27_Uragan_SOV", 6)),
-                                        op.STRIKER: (("2S7M_Malka_SOV", 1),)})
+                                        op.GUNS: (("2S7M_Malka_SOV", 6), ("BM27_Uragan_SOV", 6))})
 
     def test_every_reask_race_resets_its_flag(self):
         """Every Competition holding a re-ask loop (a forever Sequential asking a choice dialog) is followed in its
@@ -447,20 +464,91 @@ class Shapes(unittest.TestCase):
                                  [("Blocking", True), ("OrderType", shapes.AIRPLANE_EVACUATE)])
 
     def test_the_strike_launches_and_kills(self):
-        """The script launches the strike's look and the dressing only, all self-contained (the script-effects gate
-        builds them); the strike kills with STRIKE_CAUSE the NATO units its zone's detector gathers, the break-off's
-        removal is Vanished."""
+        """The script launches the strike's look only: the mega bomb, seen in the smoke play, and the three effects
+        stock's scripts launch, all self-contained (the script-effects gate builds them); the strike kills with
+        STRIKE_CAUSE the NATO units its zone's detector gathers, the break-off's removal is Vanished."""
         fx = sorted({prop(n, "DatabaseName").text for n in of(self.nodes, "LaunchFXFireAndForgetOnPosition")})
-        self.assertEqual(fx, sorted({op.STRIKE_FX, *op.DRESSING_FX}))
+        self.assertEqual(fx, sorted({op.STRIKE_FX, op.BARRAGE_FX, *op.SMOKE_FX}))
         self.assertEqual(op.STRIKE_FX, "$/GFX/GameFx/fx_HE_Mega_Bomb_ForScript")
+        self.assertEqual(sorted({op.BARRAGE_FX, *op.SMOKE_FX}), sorted(gates.STOCK_SCRIPT_EFFECTS))
         kills = of(self.nodes, "KillAllUnit")
         self.assertEqual(sorted((prop(k, "DeathCause").v if prop(k, "DeathCause") else None) for k in kills
-                                if prop(k, "DeathCause")), [shapes.PENETRATION])
+                                if prop(k, "DeathCause")), [shapes.PENETRATION] * 3)    # one per difficulty
         (collect,) = [n for n in of(self.nodes, "AddDetectedUnitsToUnitGroup")
                       if last(prop(prop(n, "Detector"), "Detecteur")) == op.STRIKE_RING]
         contrainte = prop(prop(collect, "Detector"), "Contrainte")
         self.assertEqual((contrainte.cls, last(prop(contrainte, "Camp"))), ("TGDContrainteOnUnitTeam", NATO))
         self.assertIn(shapes.DEATH_CAUSE_SHAPE, op.content().extra_shapes)
+
+    def test_the_flash_is_one_simultaneous(self):
+        """Every launch sits in the flash's one Simultaneous, RedJuggernaut's form: 13 mega bombs first (the zone's
+        centre and its 12 spots), then a Sequential of NbExecutions 10 launching the 203 mm barrage at the centre and
+        each inner spot, then white and black smoke at the centre and each outer spot: 97 launches."""
+        launches = of(self.nodes, "LaunchFXFireAndForgetOnPosition")
+        (flash,) = [n for n in of(self.nodes, "Simultaneous") if set(map(id, launches)) & {id(k) for k in subs(n)}]
+        kids = subs(flash)
+        mega, barrage, smoke = kids[:13], kids[13:20], kids[20:]
+        self.assertEqual(len(kids), 34)
+        self.assertEqual([(prop(n, "DatabaseName").text, last(prop(n, "Position"))) for n in mega],
+                         [(op.STRIKE_FX, t) for t in ("TS_Assembly", *op.STRIKE_SPOTS)])
+        for seq, tag in zip(barrage, ("TS_Assembly", *op.STRIKE_INNER)):
+            (fx,) = subs(seq)
+            self.assertEqual((seq.cls, prop(seq, "NbExecutions").v, prop(fx, "DatabaseName").text,
+                              last(prop(fx, "Position"))), ("TGDDescriptorSequential", 10, op.BARRAGE_FX, tag))
+        self.assertEqual([(prop(n, "DatabaseName").text, last(prop(n, "Position"))) for n in smoke],
+                         [(fx, t) for t in ("TS_Assembly", *op.STRIKE_OUTER) for fx in op.SMOKE_FX])
+        self.assertEqual(len(launches), 13 + 7 + 14)
+        self.assertEqual(13 + 7 * op.BARRAGE_N + 14, 97)
+
+    def test_the_strike_camera(self):
+        """The strike's one camera cutscene: EncapsuleCutscene(BlockPlayerActions)[CutsceneSequential[the one-key
+        path TS_Strike flown from the current camera in 4 s, easing in and out, skippable, then an 11 s
+        CutsceneWaitDuree]], in stock's property order (SigurdsStrike's MLRS)."""
+        cams = [n for n in of(self.nodes, "CutsceneStartCameraPath") if prop(n, "CameraPathName").text == "TS_Strike"]
+        (cam,) = cams
+        (cut,) = [n for n in of(self.nodes, "EncapsuleCutscene") if cam in walk([n])]
+        (seq,) = subs(cut)
+        self.assertEqual((seq.cls, [k.cls for k in subs(seq)]),
+                         ("TGDDescriptorCutsceneSequential",
+                          ["TGDDescriptorCutsceneStartCameraPath", "TGDDescriptorCutsceneWaitDuree"]))
+        self.assertEqual(prop(cut, "BlockPlayerActions").v, 1)
+        self.assertEqual([k for k, _ in cam.props],
+                         ["CameraPathName", "TimeInSecond", "AccelerationActivated", "DecelerationActivated",
+                          "StartFromCurrentCameraPosition", "CanBeSkippedWithEscape", "VisibleByAlliedOfSpecifiedCamp"])
+        self.assertEqual((prop(cam, "TimeInSecond").v, prop(subs(seq)[1], "WaitDuration").v),
+                         (ts_map.STRIKE_SHOT_S, ts_map.STRIKE_HOLD_S))
+        self.assertEqual((ts_map.STRIKE_SHOT_S, ts_map.STRIKE_HOLD_S), (4.0, 11.0))
+
+    def test_the_toll(self):
+        """Inside the blasts, in one Sequential after the zone's detector: the kill, an IfThenElse on ts_kill_pct
+        (Easy's value, else Hard's, else Medium's, as cooldown branches), each branch one KillAllUnit Penetration on
+        its share's spawn tags; then ChangeStress Physical STRIKE_DAMAGE and Stun STRIKE_STUN on the zone's group, in
+        the natives' alphabetical order; then STRUCK = 1. The content admits ChangeStress (shapes.STRESS_SHAPES)."""
+        (collect,) = [n for n in of(self.nodes, "AddDetectedUnitsToUnitGroup")
+                      if last(prop(prop(n, "Detector"), "Detecteur")) == op.STRIKE_RING]
+        (seq,) = [n for n in of(self.nodes, "Sequential") if collect in subs(n)]
+        kids = subs(seq)
+        k = kids.index(collect)
+        branch, damage, stun, struck_ = kids[k + 1:k + 5]
+        self.assertEqual(branch.cls, "TGDDescriptorIfThenElse")
+        conds = [n for n in walk([branch]) if n.cls == "TGDConditionVariable"]
+        self.assertEqual([(last(prop(c, "Variable")), prop(prop(c, "Operator"), "Value").v) for c in conds],
+                         [("ts_kill_pct", 50), ("ts_kill_pct", 30)])
+        inner = prop(branch, "EffetIfFalse")
+        branches = [subs(prop(branch, "EffetIfTrue"))[0], subs(prop(inner, "EffetIfTrue"))[0],
+                    subs(prop(inner, "EffetIfFalse"))[0]]
+        for kill, level in zip(branches, (op.EASY, op.HARD, op.MEDIUM)):
+            self.assertEqual((kill.cls, prop(kill, "DeathCause").v, [last(g) for g in prop(kill, "GroupList")]),
+                             ("TGDDescriptorKillAllUnit", shapes.PENETRATION, list(op.STRIKE_KILLS[level])))
+            self.assertTrue(all(g.cls == "TGDTagUnitGroup" for g in prop(kill, "GroupList")))
+        for node, kind, value in ((damage, shapes.PHYSICAL, op.STRIKE_DAMAGE), (stun, shapes.STUN, op.STRIKE_STUN)):
+            self.assertEqual((node.cls, [k for k, _ in node.props], prop(node, "DamageType").v,
+                              last(prop(node, "Group")), prop(node, "Value").v),
+                             ("TGDDescriptorChangeStress", ["DamageType", "Group", "Value"], kind, "ts_struck_g",
+                              value))
+        self.assertEqual((last(prop(struck_, "Variable1")), prop(struck_, "Value").v), (op.STRUCK, 1))
+        self.assertEqual((op.STRIKE_DAMAGE, op.STRIKE_STUN), (5, 240))
+        self.assertLessEqual(set(shapes.STRESS_SHAPES), set(op.content().extra_shapes))
 
     def test_b1_counts_survivors(self):
         """B1's count is battalion 1's tanks created less those alive [[kill-counts-by-type]]: every tank row goes into
@@ -832,14 +920,31 @@ class Phase4(unittest.TestCase):
         self.assertEqual(m.when("fx"), [])
 
 
+FLASH_T = ASK_T + int(op.STRIKE_T)
+CAMERA_T = ASK_T + int(op.STRIKE_SHOT_T)
+BACK_T = ASK_T + int(op.STRIKE_BACK_T)       # the strike camera hands control back: the guns freed
+BN2_TANKS = 29
+STRUCK_TANKS = BN2_TANKS - 12                # Medium's strike kills 12 of battalion 2's 29 tanks
+BREAK_T = STRUCK_T + 60                      # the Soviets bring battalion 2 down to BN2_BROKEN_N tanks
+
+
+def struck(broken: int | None = BREAK_T) -> dict:
+    """World.groups' battalion 2 tanks: 29, Medium's strike leaves STRUCK_TANKS, broken (9 left) at `broken`."""
+    return {op.BN2_TANKS_G: [(0, BN2_TANKS), (STRUCK_T, STRUCK_TANKS),
+                             *([(broken, op.BN2_BROKEN_N)] if broken is not None else [])]}
+
+
 class Strike(unittest.TestCase):
-    """The strike's order and timing (design 5.6), seconds after the release: the warning and the round's 2S7M at
-    once, its order FIRE_LEAD_S later (its shells leave after its 30 s aiming time), the effect at 0:30, the kill
-    STRIKE_KILL_S later, then the dressing for a minute; B2 done and phase 5 with the kill."""
+    """The strike's order and timing (design 5.6), seconds after the release: the warning at once; at 0:25 the camera
+    flies to the zone from wherever it is, arriving a second before the flash; at 0:30 the flash, every effect at once;
+    the toll inside its blasts (half a second on: the same second in the model's whole seconds), B2's countdown done
+    with it and FINISH THE SECOND BATTALION shown; the camera held 8 s or more past it, then the guns freed and the
+    hint. No gun fires. Phase 5 waits for battalion 2's break."""
 
     @classmethod
     def setUpClass(cls):
-        world = World(rings={op.STRIKE_RING: {NATO: [(0, 52)]}}, answers={"ts_drel": [0]}, groups=NATO_LEFT)
+        world = World(rings={op.STRIKE_RING: {NATO: [(0, 52)]}}, answers={"ts_drel": [0]},
+                      groups={**NATO_LEFT, **struck(None)})
         cls.m = phase45(world, STRUCK_T + 120)
 
     def test_the_order(self):
@@ -847,33 +952,117 @@ class Strike(unittest.TestCase):
         self.assertEqual(m.vars[op.STRIKE], op.RELEASED)
         self.assertEqual(m.when("hint", "ts_hrel"), [t0])
         self.assertEqual(m.when("show", "ts_ozone"), [t0])
-        round_t = t0 + int(op.STRIKE_ROUND_T)
-        lead, hold = int(op.FIRE_LEAD_S), int(op.FIRE_HOLD_S)
-        self.assertEqual(m.entries("create"), [(round_t, op.STRIKER, 1, "2S7M_Malka_SOV", op.GUN_SPAWN)])
-        self.assertEqual(m.entries("ignored"), [(round_t, op.STRIKER)])
-        self.assertEqual(m.entries("order"),
-                         [(round_t + lead, op.STRIKER, shapes.SHOOT_ON_POSITION, "TS_Assembly", False)])
-        fx = m.entries("fx")
-        self.assertEqual(fx[0], (t0 + int(op.STRIKE_T), "fx_HE_Mega_Bomb_ForScript", "TS_Assembly"))
+        self.assertEqual((m.entries("create"), m.entries("ignored"), m.entries("order"), m.entries("ammo")),
+                         ([], [], [], []))
+        self.assertEqual(m.entries("camera"), [(CAMERA_T, "TS_Strike", True, 4.0, 11.0)])
+        self.assertEqual({t for t, *_ in m.entries("fx")}, {FLASH_T})
+        self.assertEqual(STRUCK_T, FLASH_T)                              # 0.5 s on, in the model's whole seconds
         self.assertEqual(m.entries("collect"), [(STRUCK_T, "ts_struck_g", op.STRIKE_RING, 52)])
-        self.assertEqual(m.entries("kill"), [(STRUCK_T, ["ts_struck_g"], shapes.PENETRATION),
-                                             (round_t + lead + hold, [op.STRIKER], None)])
-        self.assertEqual(m.entries("ammo"), [])
+        self.assertEqual(m.entries("kill"), [(STRUCK_T, list(op.STRIKE_KILLS[op.MEDIUM]), shapes.PENETRATION)])
+        self.assertEqual(m.entries("stress"), [(STRUCK_T, "ts_struck_g", shapes.PHYSICAL, op.STRIKE_DAMAGE),
+                                               (STRUCK_T, "ts_struck_g", shapes.STUN, op.STRIKE_STUN)])
         self.assertEqual(sorted((t, name) for t, name, _ in m.entries("done")),
                          [(STRUCK_T, "ts_b2"), (STRUCK_T, "ts_ozone")])
-        self.assertIn(m.when("hint", "ts_hph5")[0] - STRUCK_T, (0, 1))  # phase 5 with the kill
+        self.assertIn(m.when("show", "ts_b2f")[0] - STRUCK_T, (0, 1))   # finish the second battalion
+        self.assertEqual(m.when("hint", "ts_hstruck"), [BACK_T])
+        self.assertEqual((m.when("hint", "ts_hph5"), m.vars.get(op.PH5, 0)), ([], 0))   # battalion 2 not yet broken
         self.assertEqual(m.vars[op.BUSY], 0)
 
-    def test_the_dressing(self):
-        """Fires and black smoke together at each of the six spots, 10 s apart, from the kill: a minute."""
-        dressing = self.m.entries("fx")[1:]
-        self.assertEqual(dressing, [(STRUCK_T + k * int(op.DRESSING_STEP_S), fx.rsplit("/", 1)[1], name)
-                                    for k, name in enumerate(op.DRESSING) for fx in op.DRESSING_FX])
-        self.assertEqual(dressing[-1][0] - dressing[0][0] + op.DRESSING_STEP_S, 60.0)
+    def test_the_camera_frames_the_flash(self):
+        """The camera arrives STRIKE_LEAD_S (1 s) before the flash and holds 9.5 s past the kill (the mega bombs' dust
+        lasts 10 s), so the toll falls inside its view; the guns stay held until it hands control
+        back (STRIKE_BACK_T, timed, not chained to the cutscene); phase 5 waits longer still, for the break."""
+        arrive = op.STRIKE_SHOT_T + ts_map.STRIKE_SHOT_S
+        self.assertEqual((op.STRIKE_SHOT_T, arrive, op.STRIKE_T, op.STRIKE_BACK_T), (25.0, 29.0, 30.0, 40.0))
+        self.assertEqual(op.STRIKE_BACK_T, arrive + ts_map.STRIKE_HOLD_S)
+        self.assertEqual(op.STRIKE_BACK_T - (op.STRIKE_T + op.STRIKE_KILL_S), 9.5)
+        self.assertTrue(arrive < op.STRIKE_T <= op.STRIKE_T + op.STRIKE_KILL_S < op.STRIKE_BACK_T)
+        world = dict(rings={op.STRIKE_RING: {NATO: [(0, 52)]}}, answers={"ts_drel": [0]},
+                     groups={**NATO_LEFT, **struck(None)})
+        held = phase45(World(**world), BACK_T - 1)
+        self.assertEqual((held.vars[op.BUSY], held.vars[op.STRUCK]), (1, 1))
+        freed = phase45(World(**world), BACK_T + 1)
+        self.assertEqual(freed.vars[op.BUSY], 0)
+
+    def test_the_flash(self):
+        """At the flash, every launch at once: 13 mega bombs (the centre and the 12 spots), the 203 mm barrage 10
+        times at the centre and at each inner spot (70), white and black smoke at the centre and each outer spot (14):
+        97 launches, RedJuggernaut's 61 and more."""
+        fx = Counter((name, tag) for _, name, tag in self.m.entries("fx"))
+        centre = "TS_Assembly"
+        self.assertEqual(fx, Counter({**{("fx_HE_Mega_Bomb_ForScript", t): 1 for t in (centre, *op.STRIKE_SPOTS)},
+                                      **{("fx_HE_Artillery_203mm_ForScript_RandomPosition", t): 10
+                                         for t in (centre, *op.STRIKE_INNER)},
+                                      **{(name, t): 1 for t in (centre, *op.STRIKE_OUTER)
+                                         for name in ("fx_FumeeBlanche_ForScript_RandomPosition",
+                                                      "fx_FumeeNoire_ForScript_RandomPosition")}}))
+        self.assertEqual(sum(fx.values()), 97)
+        self.assertEqual(self.m.entries("fx")[0], (FLASH_T, "fx_HE_Mega_Bomb_ForScript", centre))
 
     def test_no_attack_after_a_strike(self):
         self.assertEqual(self.m.vars.get(op.ATTACK, 0), 0)
         self.assertEqual(self.m.when("hint", "ts_hatk"), [])
+
+
+class Toll(unittest.TestCase):
+    """The strike does not kill every NATO unit in the zone (design 5.6): it kills the difficulty's share of battalion
+    2, damages and stuns the rest, and the Soviets finish it; phase 5 waits for its break."""
+
+    def test_the_shares(self):
+        """Easy, Medium, Hard: 26, 21 and 16 of battalion 2's 52 (50/40/30 %), whole units over its types, from both
+        halves: 15, 12 and 9 of its 29 tanks and 4, 3 and 2 of its 8 Marders among them; the survivors remain, the
+        tanks left (14, 17, 20) above the 9 that break it, so the Soviets must finish it."""
+        units = {it.name: it.unit for it in op.ITEMS}
+        groups = {it.name: it.group for it in op.ITEMS}
+        bn2 = [it.name for it in op.ITEMS if it.group in ("bn2_w", "bn2_c")]
+        self.assertEqual([len(k) for k in op.STRIKE_KILLS], [26, 21, 16])
+        for kills, tanks, marders in zip(op.STRIKE_KILLS, (15, 12, 9), (4, 3, 2)):
+            with self.subTest(kills=len(kills)):
+                self.assertLessEqual(set(kills), set(bn2))
+                self.assertEqual(len(set(kills)), len(kills))
+                got = Counter(units[n] for n in kills)
+                self.assertEqual(sum(got[u] for u in forces.BN2_TANKS), tanks)
+                self.assertEqual(got["Marder_1A3_RFA"], marders)
+                self.assertGreater(BN2_TANKS - tanks, op.BN2_BROKEN_N)
+                self.assertEqual({groups[n] for n in kills}, {"bn2_w", "bn2_c"})
+
+    def test_the_kill_by_difficulty(self):
+        """The difficulty's share dies at the strike's kill (Medium when the game passes none)."""
+        for level, want in ((op.EASY, op.EASY), (op.MEDIUM, op.MEDIUM), (op.HARD, op.HARD), (None, op.MEDIUM)):
+            with self.subTest(difficulty=level):
+                world = World(rings={op.STRIKE_RING: {NATO: [(0, 52)]}}, answers={"ts_drel": [0]},
+                              groups={**NATO_LEFT, **struck(None)}, difficulty=level)
+                m = run(world, STRUCK_T + 5, "difficulty", "funnel", "phase4", "phase5", values={op.BN1_DONE: 1})
+                self.assertEqual(m.entries("kill"), [(STRUCK_T, list(op.STRIKE_KILLS[want]), shapes.PENETRATION)])
+
+    def test_finish_the_second_battalion(self):
+        """After the strike, B2's FINISH THE SECOND BATTALION counts its tanks left, done once 9 or fewer are left
+        (BN2_BROKEN, the hint ts_hbn2b); phase 5 and P3's clock start then, not at the strike; the boxes close then."""
+        world = World(rings={op.STRIKE_RING: {NATO: [(0, 52)]}}, answers={"ts_drel": [0]}, owner=JOUEUR,
+                      groups={**NATO_LEFT, **struck()})
+        m = run(world, BREAK_T + 30, "funnel", "phase3", "phase4", "phase5", values={op.PH3: 1, op.BN1_DONE: 1})
+        (done,) = [(t, counters) for t, name, counters in m.entries("done") if name == "ts_b2f"]
+        self.assertIn(done[0] - BREAK_T, (0, 1, 2))
+        self.assertEqual(done[1], [op.BN2_BROKEN_N])
+        self.assertEqual(m.vars[op.BN2_BROKEN], 1)
+        self.assertEqual(m.when("hint", "ts_hbn2b"), [done[0]])
+        (t0,) = m.when("hint", "ts_hph5")
+        self.assertIn(t0 - done[0], (0, 1))
+        self.assertEqual(m.entries("timer"), [(t0, op.CLOCK_R, int(op.END_CLOCK_S))])
+        boxes_done = [t for t, name, _ in m.entries("done") if name.startswith("ts_ob")]
+        self.assertEqual(len(boxes_done), 2)
+        self.assertTrue(all(t - done[0] in (0, 1) for t in boxes_done), (done, boxes_done))
+        self.assertEqual(m.when("show", "ts_b2n"), [])
+
+    def test_phase_five_never_hangs(self):
+        """Battalion 2 never broken after a strike: phase 5 starts STRIKE_FINISH_MAX_S after the camera hands back
+        control (design 4.2: no phase hangs), and the grade cannot be Total (battalion 2 not beaten)."""
+        world = World(rings={op.STRIKE_RING: {NATO: [(0, 52)]}}, answers={"ts_drel": [0]}, owner=JOUEUR,
+                      groups={**NATO_LEFT, **struck(None), "Groupe_Joueur": [(0, 40)]}, lost=[(0, 10)])
+        end = BACK_T + int(op.STRIKE_FINISH_MAX_S)
+        m = phase45(world, end + int(op.END_CLOCK_S) + 10, values={op.B1_DONE: 1})
+        self.assertIn(m.when("hint", "ts_hph5")[0] - end, (0, 1))
+        self.assertEqual(m.vars[op.END], op.END_MAJOR_R)
 
 
 class Air(unittest.TestCase):
@@ -941,11 +1130,12 @@ class Phase5(unittest.TestCase):
         """Phases 4 and 5 with the release answered `answer`; the village the player's unless `owner` says; a NATO
         ground unit left in each group (NATO_LEFT) unless `groups` says otherwise."""
         world.setdefault("owner", JOUEUR)
-        world["groups"] = {**NATO_LEFT, **world.get("groups", {})}
+        world["groups"] = {**NATO_LEFT, **(struck() if answer == 0 else {}), **world.get("groups", {})}
         return phase45(World(answers={"ts_drel": [answer]}, **world), until, values)
 
     def test_after_a_strike(self):
-        """Released, battalion 1 broken: Total (released) 5 min after the kill, with its dialog and screen."""
+        """Released, battalion 1 broken: Total (released) 5 min after phase 5 starts (once the Soviets have broken what
+        the strike left of battalion 2, at BREAK_T), with its dialog and screen."""
         m = self.grade(0, STRUCK_T + 400, {op.B1_DONE: 1}, groups={"Groupe_Joueur": [(0, 40)]}, lost=[(0, 10)])
         self.assertEqual(m.vars[op.END], op.END_TOTAL_R)
         self.assertIn(clock(m, "ts_dtotr"), (op.END_CLOCK_S, op.END_CLOCK_S + 1))
@@ -1013,8 +1203,9 @@ class Phase5(unittest.TestCase):
 
     def test_nato_spent_ends_at_once(self):
         """The smoke play's dead end: after a strike, with NATO's ground forces gone (at the kill, or a minute later),
-        the battle ends at once with the grade that state earns (Total, released: battalion 1 broken, battalion 2
-        struck), not when the 5:00 clock runs out; P2 and P3 are done with it."""
+        the battle ends with the grade that state earns (Total, released: battalion 1 broken, battalion 2 struck), not
+        when the 5:00 clock runs out; P2 and P3 are done with it. Gone at the kill, it ends as the strike's camera hands
+        control back (BACK_T), so the end's dialog never opens inside the strike's cutscene; gone later, at once."""
         for after in (0, 60):
             with self.subTest(after=after):
                 gone = STRUCK_T + after
@@ -1022,7 +1213,7 @@ class Phase5(unittest.TestCase):
                                groups={"Groupe_Joueur": [(0, 40)], **nato_gone(gone)}, lost=[(0, 10)])
                 self.assertEqual(m.vars[op.END], op.END_TOTAL_R)
                 (end,) = m.when("dialog", "ts_dtotr")
-                self.assertIn(end - gone, (0, 1, 2))
+                self.assertIn(end - max(gone, BACK_T), (0, 1, 2))
                 self.assertEqual(m.entries("end"), [(end, shapes.TOTAL_VICTORY, None)])
                 self.assertIn(m.when("done", "ts_p3r")[0] - end, (-1, 0, 1))
 
@@ -1058,12 +1249,15 @@ class Boxes(unittest.TestCase):
     """The fire boxes' labels close once nothing more comes through them, so they never stand as open tasks in
     phase 5."""
 
-    def test_closed_at_the_kill(self):
-        """After a strike: BOX W and BOX C done at the kill (or the model's next tick), five minutes before the end."""
-        m = boxes(0, STRUCK_T + 30)
+    def test_closed_once_the_struck_battalion_breaks(self):
+        """After a strike: BOX W and BOX C stay open through the strike's kill, and close once the Soviets have broken
+        what it left of battalion 2 (or the model's next tick), five minutes before the end."""
+        m = boxes(0, BREAK_T + 30, groups=struck())
+        (b2f,) = m.when("done", "ts_b2f")
         done = [(t, name) for t, name, _ in m.entries("done") if name.startswith("ts_ob")]
         self.assertEqual(sorted(name for _, name in done), ["ts_obc", "ts_obw"])
-        self.assertTrue(all(t - STRUCK_T in (0, 1) for t, _ in done), done)
+        self.assertTrue(all(t - b2f in (0, 1) for t, _ in done), (b2f, done))
+        self.assertGreater(b2f, STRUCK_T + 1)
         self.assertEqual(m.vars.get(op.END, 0), 0)
 
     def test_closed_once_battalion_two_breaks(self):

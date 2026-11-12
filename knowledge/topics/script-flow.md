@@ -21,6 +21,7 @@ Topic `script-flow`, declared by ops. Back to [the map](../README.md).
 
 ### STOCK
 
+- [camera-shot-from-current-position](../../components/ops/knowledge/mechanisms/camera-shot-from-current-position.md): Mid-battle, a script flies the camera from wherever it is to a one-key path, in a cutscene that can hold the view (ops, verified 201602)
 - [difficulty-branches](../../components/ops/knowledge/mechanisms/difficulty-branches.md): Difficulty reaches a script as three conditions; give it a Medium baseline (ops, verified 201602)
 - [script-effects-self-contained](../../components/ops/knowledge/mechanisms/script-effects-self-contained.md): A script may launch only a self-contained effect, one that takes no parameters (ops, verified 201602)
 - [scripted-economy](../../components/ops/knowledge/mechanisms/scripted-economy.md): A script sets the player's points, a zero income, one-time grants and a later income in stock's own nodes (ops, verified 201602)
@@ -49,7 +50,9 @@ Taught by the trials of these mechanisms.
 
 ## Trials, newest first
 
+- 2026-11-11 [2026-11-11-twin-strike-strike-unseen](../../components/ops/knowledge/trials/2026-11-11-twin-strike-strike-unseen.md) (ops): play, mixed
 - 2026-11-11 [2026-11-11-twin-strike-play1](../../components/ops/knowledge/trials/2026-11-11-twin-strike-play1.md) (ops): play, mixed
+- 2026-11-11 [2026-11-11-strike-camera-stock-survey](../../components/ops/knowledge/trials/2026-11-11-strike-camera-stock-survey.md) (ops): survey, pass
 - 2026-11-10 [2026-11-10-probe3-play1-effect-crash](../../components/ops/knowledge/trials/2026-11-10-probe3-play1-effect-crash.md) (ops): play, fail
 - 2026-11-06 [2026-11-06-probe2-play-run-a](../../components/ops/knowledge/trials/2026-11-06-probe2-play-run-a.md) (ops): play, pass
 - 2026-11-04 [2026-11-04-lifecycle-survey](../../components/ops/knowledge/trials/2026-11-04-lifecycle-survey.md) (ops): re, pass

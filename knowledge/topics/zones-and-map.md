@@ -20,6 +20,7 @@ Topic `zones-and-map`, declared by ops. Back to [the map](../README.md).
 ### STOCK
 
 - [arrival-end-in-zone](../../components/ops/knowledge/mechanisms/arrival-end-in-zone.md): Every player arrival entry must end inside a deployment zone of its side or a command zone (ops, verified 201602)
+- [camera-shot-from-current-position](../../components/ops/knowledge/mechanisms/camera-shot-from-current-position.md): Mid-battle, a script flies the camera from wherever it is to a one-key path, in a cutscene that can hold the view (ops, verified 201602)
 - [start-camera-before-loading-done](../../components/ops/knowledge/mechanisms/start-camera-before-loading-done.md): An Operation that opens in the deployment phase sets its opening camera after LoadingDone, a move then a snap to its last key (ops, verified 201602)
 
 ### FAILED
@@ -45,6 +46,7 @@ Taught by the trials of these mechanisms.
 - 2026-11-11 [2026-11-11-twin-strike-play1](../../components/ops/knowledge/trials/2026-11-11-twin-strike-play1.md) (ops): play, mixed
 - 2026-11-11 [2026-11-11-twin-strike-opening-camera](../../components/ops/knowledge/trials/2026-11-11-twin-strike-opening-camera.md) (ops): play, fail
 - 2026-11-11 [2026-11-11-twin-strike-guns-on-the-edge](../../components/ops/knowledge/trials/2026-11-11-twin-strike-guns-on-the-edge.md) (ops): play, mixed
+- 2026-11-11 [2026-11-11-strike-camera-stock-survey](../../components/ops/knowledge/trials/2026-11-11-strike-camera-stock-survey.md) (ops): survey, pass
 - 2026-11-11 [2026-11-11-opening-camera-stock-survey](../../components/ops/knowledge/trials/2026-11-11-opening-camera-stock-survey.md) (ops): survey, pass
 - 2026-11-06 [2026-11-06-spawns-and-deck-survey](../../components/ops/knowledge/trials/2026-11-06-spawns-and-deck-survey.md) (ops): re, pass
 - 2026-11-06 [2026-11-06-probe2-play-run-a](../../components/ops/knowledge/trials/2026-11-06-probe2-play-run-a.md) (ops): play, pass

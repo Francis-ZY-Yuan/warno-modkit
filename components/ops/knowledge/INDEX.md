@@ -23,11 +23,12 @@ A mechanism filed under two topics is listed under both.
 - [script-container-semantics](mechanisms/script-container-semantics.md): How script containers run their children, and when each action finishes (PLAYED, verified 201602 2026-11-06)
 - [seteffect-never-finishes](mechanisms/seteffect-never-finishes.md): SetEffect and other lasting actions never finish, so nothing after them in a Sequential ever runs (PLAYED, verified 201602 2026-11-06)
 - [objective-waits-until-resolved](mechanisms/objective-waits-until-resolved.md): An objective finishes only after it resolves and its chosen actions finish (PROBED, verified 201602 2026-11-06)
+- [camera-shot-from-current-position](mechanisms/camera-shot-from-current-position.md): Mid-battle, a script flies the camera from wherever it is to a one-key path, in a cutscene that can hold the view (STOCK, verified 201602 2026-11-11)
 - [difficulty-branches](mechanisms/difficulty-branches.md): Difficulty reaches a script as three conditions; give it a Medium baseline (STOCK, verified 201602 2026-11-06)
-- [script-effects-self-contained](mechanisms/script-effects-self-contained.md): A script may launch only a self-contained effect, one that takes no parameters (STOCK, verified 201602 2026-11-10)
+- [script-effects-self-contained](mechanisms/script-effects-self-contained.md): A script may launch only a self-contained effect, one that takes no parameters (STOCK, verified 201602 2026-11-11)
 - [scripted-economy](mechanisms/scripted-economy.md): A script sets the player's points, a zero income, one-time grants and a later income in stock's own nodes (STOCK, verified 201602 2026-11-11)
 - [wave-ends-with-attack](mechanisms/wave-ends-with-attack.md): An AI-less wave stops at its last waypoint unless its route ends with an Attack on the player's units (STOCK, verified 201602 2026-11-11)
-- [scripted-nuke-effect](mechanisms/scripted-nuke-effect.md): A script cannot launch the tactical-nuke impact effect; the game crashes (FAILED, verified 201602 2026-11-10)
+- [scripted-nuke-effect](mechanisms/scripted-nuke-effect.md): A script cannot launch the tactical-nuke impact effect; the game crashes (FAILED, verified 201602 2026-11-11)
 - [script-and-battle-scale](mechanisms/script-and-battle-scale.md): How big a script and a battle can get is untested beyond the probes (UNTESTED)
 
 ### Zones and map
@@ -40,6 +41,7 @@ A mechanism filed under two topics is listed under both.
 - [zone-capture-command-units](mechanisms/zone-capture-command-units.md): Only command units capture a zone, and an enemy command unit inside makes it neutral at once (PLAYED, verified 201602 2026-11-06)
 - [zone-lookup-by-point](mechanisms/zone-lookup-by-point.md): Zone conditions find their zone by a tag's point, and a point in no zone fails silently (PLAYED, verified 201602 2026-11-06)
 - [arrival-end-in-zone](mechanisms/arrival-end-in-zone.md): Every player arrival entry must end inside a deployment zone of its side or a command zone (STOCK, verified 201602 2026-11-04)
+- [camera-shot-from-current-position](mechanisms/camera-shot-from-current-position.md): Mid-battle, a script flies the camera from wherever it is to a one-key path, in a cutscene that can hold the view (STOCK, verified 201602 2026-11-11)
 - [start-camera-before-loading-done](mechanisms/start-camera-before-loading-done.md): An Operation that opens in the deployment phase sets its opening camera after LoadingDone, a move then a snap to its last key (STOCK, verified 201602 2026-11-11)
 - [created-units-stand-in-zone](mechanisms/created-units-stand-in-zone.md): A script cannot hide a unit outside the playable zone; a unit created there stands on the zone's edge, where the player's units see and engage it (FAILED, verified 201602 2026-11-11)
 
@@ -55,13 +57,13 @@ A mechanism filed under two topics is listed under both.
 - [changestress-damagetype-zero](mechanisms/changestress-damagetype-zero.md): A script's ChangeStress cannot suppress; DamageType 0 fails at load (RE, verified 201602 2026-11-03)
 - [arrival-end-in-zone](mechanisms/arrival-end-in-zone.md): Every player arrival entry must end inside a deployment zone of its side or a command zone (STOCK, verified 201602 2026-11-04)
 - [garrison-roe-and-hold](mechanisms/garrison-roe-and-hold.md): A garrison in a camp with no AI holds its ground only with the ROE and smart orders the script gives it (STOCK, verified 201602 2026-11-11)
-- [script-effects-self-contained](mechanisms/script-effects-self-contained.md): A script may launch only a self-contained effect, one that takes no parameters (STOCK, verified 201602 2026-11-10)
+- [script-effects-self-contained](mechanisms/script-effects-self-contained.md): A script may launch only a self-contained effect, one that takes no parameters (STOCK, verified 201602 2026-11-11)
 - [scripted-air-sweep](mechanisms/scripted-air-sweep.md): Hidden aircraft revealed, sent over a circle and sent home once spent give an AI-less camp air sweeps (STOCK, verified 201602 2026-11-11)
 - [wave-ends-with-attack](mechanisms/wave-ends-with-attack.md): An AI-less wave stops at its last waypoint unless its route ends with an Attack on the player's units (STOCK, verified 201602 2026-11-11)
 - [weapons-jammed-effect](mechanisms/weapons-jammed-effect.md): The "weapons jammed" effect only zeroes weapon ranges; to keep a unit silent, empty its ammunition (STOCK, verified 201602 2026-11-03)
 - [created-units-stand-in-zone](mechanisms/created-units-stand-in-zone.md): A script cannot hide a unit outside the playable zone; a unit created there stands on the zone's edge, where the player's units see and engage it (FAILED, verified 201602 2026-11-11)
 - [helicopter-boarding](mechanisms/helicopter-boarding.md): Scripted infantry boarding of a helicopter does not work (FAILED, verified 201602 2026-11-03)
-- [scripted-nuke-effect](mechanisms/scripted-nuke-effect.md): A script cannot launch the tactical-nuke impact effect; the game crashes (FAILED, verified 201602 2026-11-10)
+- [scripted-nuke-effect](mechanisms/scripted-nuke-effect.md): A script cannot launch the tactical-nuke impact effect; the game crashes (FAILED, verified 201602 2026-11-11)
 
 ### Objectives and text
 
@@ -109,6 +111,8 @@ The game's own words in this component's trials, the mechanism behind them, and 
 | No enemy unit moved and no barrage came; the decoys kept their ammunition | [scripted-fires](mechanisms/scripted-fires.md) | `modkit.ops.gates.check_fire_range` |
 | No enemy unit moved and no barrage came; the decoys kept their ammunition | [seteffect-never-finishes](mechanisms/seteffect-never-finishes.md) | `modkit.ops.gates.check_never_finishing` |
 | No enemy unit moved and no barrage came; the decoys kept their ammunition | [weapons-jammed-effect](mechanisms/weapons-jammed-effect.md) | none yet |
+| Not seeing the massive nuke effect, just a scripted effect of all units dead, while they were not detected; small explosions seen | [script-effects-self-contained](mechanisms/script-effects-self-contained.md) | `modkit.ops.gates.check_script_effects` |
+| Not seeing the massive nuke effect, just a scripted effect of all units dead, while they were not detected; small explosions seen | [scripted-nuke-effect](mechanisms/scripted-nuke-effect.md) | `modkit.ops.gates.check_script_effects` |
 | Nothing bought after Launch battle arrived | [arrival-end-in-zone](mechanisms/arrival-end-in-zone.md) | `modkit.ops.gates.check_arrivals` |
 | Nothing bought after Launch battle arrived | [deployment-phase-recipe](mechanisms/deployment-phase-recipe.md) | `modkit.ops.gates.check_arrivals` |
 | Relaunch Game prompt on starting any Operation; after Continue, the game came back with no mod active | [gameplay-mod-relaunch](mechanisms/gameplay-mod-relaunch.md) | `modkit.ops.gates.check_package` |
@@ -141,10 +145,12 @@ The game's own words in this component's trials, the mechanism behind them, and 
 
 ## Trials, newest first
 
+- 2026-11-11 [2026-11-11-twin-strike-strike-unseen](trials/2026-11-11-twin-strike-strike-unseen.md): play, mixed. Not seeing the massive nuke effect, just a scripted effect of all units dead, while they were not detected; small explosions seen
 - 2026-11-11 [2026-11-11-twin-strike-play1](trials/2026-11-11-twin-strike-play1.md): play, mixed. The division's guns drove toward the front and died; the release dialog never showed after the fire plan was fired
 - 2026-11-11 [2026-11-11-twin-strike-opening-camera](trials/2026-11-11-twin-strike-opening-camera.md): play, fail. The opening camera sat on the ground somewhere
 - 2026-11-11 [2026-11-11-twin-strike-launch1-duplicate-menu-order](trials/2026-11-11-twin-strike-launch1-duplicate-menu-order.md): play, fail. Map pack configuration error : Duplicate OrderToChainMission 1001 in map pack '{the Operations pack's GUID}'.
 - 2026-11-11 [2026-11-11-twin-strike-guns-on-the-edge](trials/2026-11-11-twin-strike-guns-on-the-edge.md): play, mixed. The division's batteries showed as blue units on the playable zone's north edge beside the player's deployment, and the player's Ka-50s killed them; their shells landed on the target
+- 2026-11-11 [2026-11-11-strike-camera-stock-survey](trials/2026-11-11-strike-camera-stock-survey.md): survey, pass
 - 2026-11-11 [2026-11-11-probe3b-play1-no-supply](trials/2026-11-11-probe3b-play1-no-supply.md): play, fail. The Soviet player found no supply trucks or supply helicopters to buy
 - 2026-11-11 [2026-11-11-opening-camera-stock-survey](trials/2026-11-11-opening-camera-stock-survey.md): survey, pass
 - 2026-11-10 [2026-11-10-probe3-play1-effect-crash](trials/2026-11-10-probe3-play1-effect-crash.md): play, fail. The game crashed during the deploy phase, at the effect steps

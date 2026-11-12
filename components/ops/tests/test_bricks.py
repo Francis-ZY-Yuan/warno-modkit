@@ -146,6 +146,24 @@ class DialogTest(unittest.TestCase):
                                       ("AccelerationActivated", TRUE), ("DecelerationActivated", TRUE),
                                       ("CanBeSkippedWithEscape", TRUE), ("VisibleByAlliedOfSpecifiedCamp", TRUE)])
 
+    def test_camera_shot(self):
+        """From the current camera position: StartFromCurrentCameraPosition after the easing, as SigurdsStrike #1211
+        (MLRS, 3 s) writes it; with a hold, the path and a CutsceneWaitDuree in a CutsceneSequential, the player's
+        actions still blocked."""
+        cam = bricks.g_camera("TS_Strike", 4.0, from_current=True)
+        (fly,) = cam.props[0][1]
+        self.assertEqual(fly.props, [("CameraPathName", Str("TS_Strike")), ("TimeInSecond", f32(4.0)),
+                                     ("AccelerationActivated", TRUE), ("DecelerationActivated", TRUE),
+                                     ("StartFromCurrentCameraPosition", TRUE), ("CanBeSkippedWithEscape", TRUE),
+                                     ("VisibleByAlliedOfSpecifiedCamp", TRUE)])
+        held = bricks.g_camera("TS_Strike", 4.0, from_current=True, hold=11.0)
+        self.assertEqual(shape(held), ("TGDDescriptorEncapsuleCutscene", ["SubActions", "BlockPlayerActions"]))
+        (seq,) = held.props[0][1]
+        self.assertEqual((seq.cls, [k for k, _ in seq.props]), ("TGDDescriptorCutsceneSequential", ["SubActions"]))
+        path, wait = seq.props[0][1]
+        self.assertEqual(path.props, fly.props)
+        self.assertEqual((wait.cls, wait.props), ("TGDDescriptorCutsceneWaitDuree", [("WaitDuration", f32(11.0))]))
+
     def test_ammo(self):
         """SetAmmo in stock's two forms: refilled, MaxAmmoRatio 100 then Units (HoldUntilRelieved #281); emptied, Units
         only (Survivors #1332)."""

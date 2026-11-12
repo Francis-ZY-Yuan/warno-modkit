@@ -10,6 +10,7 @@ A fact holds for the build it was last verified on. After a game update, a recor
 - [add-unit-to-deck](../components/ops/knowledge/mechanisms/add-unit-to-deck.md) (ops): AddUnitToDeck adds a card at load or mid-battle, a transport card included; added cards show in the battlegroup view (PLAYED, 2026-11-11)
 - [ai-grid-tiles-playable-zone](../components/ops/knowledge/mechanisms/ai-grid-tiles-playable-zone.md) (ops): The AI strategic grid must tile the playable zone (PLAYED, 2026-11-03)
 - [arrival-end-in-zone](../components/ops/knowledge/mechanisms/arrival-end-in-zone.md) (ops): Every player arrival entry must end inside a deployment zone of its side or a command zone (STOCK, 2026-11-04)
+- [camera-shot-from-current-position](../components/ops/knowledge/mechanisms/camera-shot-from-current-position.md) (ops): Mid-battle, a script flies the camera from wherever it is to a one-key path, in a cutscene that can hold the view (STOCK, 2026-11-11)
 - [changestress-damagetype-zero](../components/ops/knowledge/mechanisms/changestress-damagetype-zero.md) (ops): A script's ChangeStress cannot suppress; DamageType 0 fails at load (RE, 2026-11-03)
 - [chinese-text-stock-glyphs](../components/ops/knowledge/mechanisms/chinese-text-stock-glyphs.md) (ops): Simplified Chinese text must stay within the characters stock text already uses (PROBED, 2026-11-03)
 - [content-identity-unique](../components/ops/knowledge/mechanisms/content-identity-unique.md) (ops): Two mods cloned from one template must not share an identity (PLAYED, 2026-11-11)
@@ -41,11 +42,11 @@ A fact holds for the build it was last verified on. After a game update, a recor
 - [objective-waits-until-resolved](../components/ops/knowledge/mechanisms/objective-waits-until-resolved.md) (ops): An objective finishes only after it resolves and its chosen actions finish (PROBED, 2026-11-06)
 - [operation-menu-registration](../components/ops/knowledge/mechanisms/operation-menu-registration.md) (ops): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden (PLAYED, 2026-11-11)
 - [script-container-semantics](../components/ops/knowledge/mechanisms/script-container-semantics.md) (ops): How script containers run their children, and when each action finishes (PLAYED, 2026-11-06)
-- [script-effects-self-contained](../components/ops/knowledge/mechanisms/script-effects-self-contained.md) (ops): A script may launch only a self-contained effect, one that takes no parameters (STOCK, 2026-11-10)
+- [script-effects-self-contained](../components/ops/knowledge/mechanisms/script-effects-self-contained.md) (ops): A script may launch only a self-contained effect, one that takes no parameters (STOCK, 2026-11-11)
 - [scripted-air-sweep](../components/ops/knowledge/mechanisms/scripted-air-sweep.md) (ops): Hidden aircraft revealed, sent over a circle and sent home once spent give an AI-less camp air sweeps (STOCK, 2026-11-11)
 - [scripted-economy](../components/ops/knowledge/mechanisms/scripted-economy.md) (ops): A script sets the player's points, a zero income, one-time grants and a later income in stock's own nodes (STOCK, 2026-11-11)
 - [scripted-fires](../components/ops/knowledge/mechanisms/scripted-fires.md) (ops): A battery created just before its ShootOnPosition fires; created where the player's units can reach, it must be in their alliance (PLAYED, 2026-11-11)
-- [scripted-nuke-effect](../components/ops/knowledge/mechanisms/scripted-nuke-effect.md) (ops): A script cannot launch the tactical-nuke impact effect; the game crashes (FAILED, 2026-11-10)
+- [scripted-nuke-effect](../components/ops/knowledge/mechanisms/scripted-nuke-effect.md) (ops): A script cannot launch the tactical-nuke impact effect; the game crashes (FAILED, 2026-11-11)
 - [seteffect-never-finishes](../components/ops/knowledge/mechanisms/seteffect-never-finishes.md) (ops): SetEffect and other lasting actions never finish, so nothing after them in a Sequential ever runs (PLAYED, 2026-11-06)
 - [soviet-player-camp](../components/ops/knowledge/mechanisms/soviet-player-camp.md) (ops): A clone of Survivors loads and plays with a Soviet player in the stock PACT-player camp shape (PROBED, 2026-11-11)
 - [spawn-and-create-units](../components/ops/knowledge/mechanisms/spawn-and-create-units.md) (ops): SpawnUnits reveals pre-placed units; CreateUnitOnPosition makes new ones at a tag (PLAYED, 2026-11-06)
@@ -58,10 +59,12 @@ A fact holds for the build it was last verified on. After a game update, a recor
 
 ### Trials run on it
 
+- 2026-11-11 [2026-11-11-twin-strike-strike-unseen](../components/ops/knowledge/trials/2026-11-11-twin-strike-strike-unseen.md) (ops): play, mixed
 - 2026-11-11 [2026-11-11-twin-strike-play1](../components/ops/knowledge/trials/2026-11-11-twin-strike-play1.md) (ops): play, mixed
 - 2026-11-11 [2026-11-11-twin-strike-opening-camera](../components/ops/knowledge/trials/2026-11-11-twin-strike-opening-camera.md) (ops): play, fail
 - 2026-11-11 [2026-11-11-twin-strike-launch1-duplicate-menu-order](../components/ops/knowledge/trials/2026-11-11-twin-strike-launch1-duplicate-menu-order.md) (ops): play, fail
 - 2026-11-11 [2026-11-11-twin-strike-guns-on-the-edge](../components/ops/knowledge/trials/2026-11-11-twin-strike-guns-on-the-edge.md) (ops): play, mixed
+- 2026-11-11 [2026-11-11-strike-camera-stock-survey](../components/ops/knowledge/trials/2026-11-11-strike-camera-stock-survey.md) (ops): survey, pass
 - 2026-11-11 [2026-11-11-probe3b-play1-no-supply](../components/ops/knowledge/trials/2026-11-11-probe3b-play1-no-supply.md) (ops): play, fail
 - 2026-11-11 [2026-11-11-opening-camera-stock-survey](../components/ops/knowledge/trials/2026-11-11-opening-camera-stock-survey.md) (ops): survey, pass
 - 2026-11-10 [2026-11-10-probe3-play1-effect-crash](../components/ops/knowledge/trials/2026-11-10-probe3-play1-effect-crash.md) (ops): play, fail

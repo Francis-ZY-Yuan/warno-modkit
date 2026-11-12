@@ -11,7 +11,8 @@ second. You play the Soviets.
 > - garrison and wave orders;
 > - the release dialog;
 > - the economy;
-> - NATO fighter sweeps.
+> - NATO fighter sweeps;
+> - a strike you can see: massed explosions, a camera move to it, and a second battalion left for you to finish.
 >
 > Known issues:
 > - RedJuggernaut's stock cards still show in the buy menu beside the op's own (the op is getting its own deck).
@@ -57,8 +58,8 @@ Soviet ground in red with the star and the NATO ground in blue with its badge (`
 | 1. Assault | Take the village from its West German garrison, which holds it. Division guns offer a preparation fire on it. | The village falls: few of its defenders left and one of your command units inside. Lost at 20 min. |
 | 2. Unlock | The division's reserve joins your deck, with 8,000 points and an income of 500 from then on; NATO's recon moves north | 2 min |
 | 3. Counter-attack | A US armoured battalion comes up both lanes, its recon screen first, then company teams with their air defence, each attacking your units once in the village; NATO fighters sweep the boxes. Fire missions on BOX W or BOX C, and one division fire plan. | The battalion is broken, or 15 min on (its survivors break off) |
-| 4. Surprise | A West German Panzer battalion appears at the assembly area: it attacks in 5:00. Front offers nuclear release. | The strike, or the countdown runs out |
-| 5. Hold | Hold the village; HOLD ON, on the village and in the objectives, shows the time left | 5 min after a strike; after withholding, until the second battalion is broken, up to 20 min; at once when NATO has no ground unit left |
+| 4. Surprise | A West German Panzer battalion appears at the assembly area: it attacks in 5:00. Front offers nuclear release. A strike guts it; you finish it. | After a strike, the battalion broken (20 min at most); or the countdown runs out |
+| 5. Hold | Hold the village; HOLD ON, on the village and in the objectives, shows the time left | 5 min after a struck battalion is broken; after withholding, until the second battalion is broken, up to 20 min; at once when NATO has no ground unit left |
 
 You lose if NATO owns the village for 60 s, or none of your units is inside its zone for 3 min (from phase 2 on). A win is
 Total (the village held, both battalions beaten: the first broken, the second destroyed or broken), Minor (held, but
@@ -92,9 +93,10 @@ them), and every written pack is read back. Twin Strike adds six extra gates (`t
 | `menu-order` | its menu order is no stock Operation's |
 | `fire-range` | each fire's battery, created at `TS_GunSpawn`, is in your alliance, so your units never engage it, with every target inside each battery's range band from where it stands (`modkit.ops.gates.check_fire_range`); the build's own gate keeps every created unit inside the playable zone |
 
-The opening camera's paths file is held to the camera gate when the build plans it (`modkit.ops.maps.check_camera_paths`):
-stock's key shape, the move then its last key, every eye over the map and at least 376,057 world units above the
-ground (stock's lowest start camera), and the last view inside the cut.
+The camera paths file, the opening camera's and the strike's shot, is held to the camera gate when the build plans it
+(`modkit.ops.maps.check_camera_paths`): stock's key shape, the move then its last key, the shot one key, every eye over
+the map and at least 376,057 world units above the ground (stock's lowest start camera), and the last view and the
+shot's inside the cut.
 
 A failed gate prints one `FAILED:` line and exits 1.
 
@@ -152,26 +154,35 @@ minutes per fire, then vanish)
 11. The frame rate at the peak, when the second battalion appears with the first's survivors and your force on the
     map: smooth, or stuttering?
 
-**The strike** (answer Yes to the release)
-12. Did the release dialog show (after the fire plan too)? The lone 2S7M's round is ordered 20 s after the release's
-    warning and aims for 30 s, so its shells should land on the zone after the strike: do you see them? How many?
-13. Does the mega bomb at 0:30 read as the strike? How big is it against the battalion?
-14. What does the kill leave: wrecks, or nothing?
-15. Did the fires and the black smoke show across the zone, and for about a minute?
+**The strike** (answer Yes to the release). What it should look like: 25 s after Yes the camera flies to the
+assembly area by itself; at 0:30 big explosions burst across the whole zone at once, then white and black smoke and
+burning wrecks that last minutes; part of the second battalion dies in the blasts, and the rest is left reeling for you
+to finish.
+12. Did the release dialog show (after the fire plan too)? Did the camera fly to the zone in about 4 s, wherever you
+    were looking, hold it about 11 s with your orders blocked, then hand control back? Does Escape skip the move?
+13. Did the flash read as one massive strike, or as scattered shells? How much of the zone did it cover from the
+    camera's view? Did the frame rate hold?
+14. Kill (new: kill by spawn tag): about half of the second battalion should die on Easy, 40 % on Medium, 30 % on
+    Hard, tanks and Marders both. Roughly how many died? Did they leave wrecks, or vanish?
+15. Damage and stun (new: no stock script damages or stuns this way): did the survivors' health drop (vehicles to about
+    half)? Did they stop firing or moving for a while, and for how long?
+16. Did "FINISH THE SECOND BATTALION: N tanks left" show at the assembly area, count down as you killed tanks, and
+    complete at 9 left with "The second battalion is broken"? Did the survivors fight back when you went in?
 
-**The end** (after a strike: HOLD ON counts down from 5:00 on the village and in the objectives, BOX W and BOX C are
-done, and the end dialog comes at 0:00, or at once when NATO has no ground unit left)
-16. Did the end come so? Which ending was reached (the end dialog's first line and its last sentence), and on which
+**The end** (after a strike: once the second battalion is broken, HOLD ON counts down from 5:00 on the village and in
+the objectives, BOX W and BOX C are done, and the end dialog comes at 0:00, or at once when NATO has no ground unit
+left)
+17. Did the end come so? Which ending was reached (the end dialog's first line and its last sentence), and on which
     difficulty?
 
 **Supply**
-17. Were the supply trucks (Ural-4320 ×4) and supply helicopters (Mi-8TZ ×2) in the buy menu from the start, and could
+18. Were the supply trucks (Ural-4320 ×4) and supply helicopters (Mi-8TZ ×2) in the buy menu from the start, and could
     they deliver supply to your units?
 
 **The new pieces**
-18. NATO fighters: did two F-15Cs come over BOX W about 2:30 into phase 3, and two over BOX C at 6:00? Did they leave
+19. NATO fighters: did two F-15Cs come over BOX W about 2:30 into phase 3, and two over BOX C at 6:00? Did they leave
     once spent?
-19. The empty-village warning: did it show only after your units had been out of the village's zone for 20 s, while P2
+20. The empty-village warning: did it show only after your units had been out of the village's zone for 20 s, while P2
     counted the empty clock?
 
 ## What the op stands on
@@ -194,8 +205,10 @@ done, and the end dialog comes at 0:00, or at once when NATO has no ground unit 
 - The fires: ShootOnPosition from a battery created for each fire in your allied camp, inside the playable zone, and
   removed after [[scripted-fires]] [[created-units-stand-in-zone]]; the dialogs [[dialog-reask-loop]]
   [[dialog-button-ingame-dictionary]].
-- The strike: a self-contained script effect [[script-effects-self-contained]] (the nuke impact effects crash a script
-  [[scripted-nuke-effect]]), then KillAllUnit on the units a circle detects.
+- The strike: 97 self-contained script effects at once [[script-effects-self-contained]] (the nuke impact effects
+  crash a script [[scripted-nuke-effect]]), the camera flown to the zone [[camera-shot-from-current-position]], then a
+  share of the second battalion killed by its spawn tags and the rest in the zone damaged and stunned with ChangeStress
+  [[changestress-damagetype-zero]], for you to finish.
 - The endings: [[mission-ends-only-by-script]], phase 5's end clock shown as a stock objective timer
   [[objective-counters]]; the difficulty: [[difficulty-branches]].
 - The opening camera: after LoadingDone, a three-key move from high over the cut down to the Soviet box and the

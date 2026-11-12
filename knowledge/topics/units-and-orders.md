@@ -58,6 +58,7 @@ Taught by the trials of these mechanisms.
 
 ## Trials, newest first
 
+- 2026-11-11 [2026-11-11-twin-strike-strike-unseen](../../components/ops/knowledge/trials/2026-11-11-twin-strike-strike-unseen.md) (ops): play, mixed
 - 2026-11-11 [2026-11-11-twin-strike-play1](../../components/ops/knowledge/trials/2026-11-11-twin-strike-play1.md) (ops): play, mixed
 - 2026-11-11 [2026-11-11-twin-strike-guns-on-the-edge](../../components/ops/knowledge/trials/2026-11-11-twin-strike-guns-on-the-edge.md) (ops): play, mixed
 - 2026-11-10 [2026-11-10-probe3-play1-effect-crash](../../components/ops/knowledge/trials/2026-11-10-probe3-play1-effect-crash.md) (ops): play, fail

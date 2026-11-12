@@ -129,6 +129,15 @@ def g_vanish(*groups: Node) -> Node:
     return Node("TGDDescriptorKillAllUnit", [("GroupList", list(groups))])  # DeathCause Vanished (0) omitted
 
 
+def g_stress(group: Node, value: int, damage_type: int) -> Node:
+    """ChangeStress: `value` points of the EDamageType `damage_type` on every unit of `group` (shapes.STUN: stun
+    points, against a ground unit's 300 cap; shapes.PHYSICAL: health points). Suppress (0) fails at load
+    [[changestress-damagetype-zero]]. No stock script writes one, so a content that does admits shapes.STRESS_SHAPES;
+    properties in the natives' alphabetical order."""
+    return Node("TGDDescriptorChangeStress", [("DamageType", i32(damage_type)), ("Group", group),
+                                              ("Value", i32(value))])
+
+
 def g_kill(*groups: Node, cause: int | None) -> Node:
     """KillAllUnit of `groups` with DeathCause `cause` (an EDeathCause: shapes.PENETRATION; no stock challenge writes
     one, so a content that does admits shapes.DEATH_CAUSE_SHAPE), or with `cause` None Vanished (g_vanish: the
@@ -239,19 +248,29 @@ def g_dialog(token: str) -> Node:
         ])])])
 
 
-def g_camera(path: str, seconds: float | None = None) -> Node:
+def g_camera(path: str, seconds: float | None = None, *, from_current: bool = False,
+             hold: float | None = None) -> Node:
     """The camera runs the camera path `path` (a CamPaths_LevelDesign path of the scenario's Details), easing in and
     out, skippable with Escape, with the player's actions blocked while it moves: EncapsuleCutscene[
     CutsceneStartCameraPath], stock order. With no `seconds`, a one-key path is a snap (DelayedRetribution #65/#79,
     camera_intro_end); with `seconds`, the camera flies a path of two keys or more in that time (DelayedRetribution
     #92, camera_intro: 2 keys in 20 s). DelayedRetribution, GloryOrAttrition and TheHydra open so, right after
-    LoadingDone: the move, then a snap to its last key."""
+    LoadingDone: the move, then a snap to its last key.
+
+    Mid-battle, `from_current` flies a one-key path from wherever the camera is, in `seconds`
+    (StartFromCurrentCameraPosition after the easing, as SigurdsStrike #1211 MLRS, 3 s, and Sledgehammer #737
+    camera_hades, 5 s, write it). With `hold`, the cutscene then holds the view `hold` seconds before control returns:
+    EncapsuleCutscene[CutsceneSequential[the path, CutsceneWaitDuree]] (a CutsceneSequential of camera paths:
+    BackhandBlow #108; a CutsceneWaitDuree in one: HoldUntilRelieved #147/#185)."""
     timed = [("TimeInSecond", f32(seconds))] if seconds is not None else []
-    return Node("TGDDescriptorEncapsuleCutscene", [("SubActions", [
-        Node("TGDDescriptorCutsceneStartCameraPath", [
-            ("CameraPathName", Str(path)), *timed, ("AccelerationActivated", TRUE), ("DecelerationActivated", TRUE),
-            ("CanBeSkippedWithEscape", TRUE), ("VisibleByAlliedOfSpecifiedCamp", TRUE)])]),
-        ("BlockPlayerActions", TRUE)])
+    current = [("StartFromCurrentCameraPosition", TRUE)] if from_current else []
+    start = Node("TGDDescriptorCutsceneStartCameraPath", [
+        ("CameraPathName", Str(path)), *timed, ("AccelerationActivated", TRUE), ("DecelerationActivated", TRUE),
+        *current, ("CanBeSkippedWithEscape", TRUE), ("VisibleByAlliedOfSpecifiedCamp", TRUE)])
+    if hold is not None:
+        start = Node("TGDDescriptorCutsceneSequential", [("SubActions", [
+            start, Node("TGDDescriptorCutsceneWaitDuree", [("WaitDuration", f32(hold))])])])
+    return Node("TGDDescriptorEncapsuleCutscene", [("SubActions", [start]), ("BlockPlayerActions", TRUE)])
 
 
 def g_hint(token: str, seconds: float, component: str) -> Node:

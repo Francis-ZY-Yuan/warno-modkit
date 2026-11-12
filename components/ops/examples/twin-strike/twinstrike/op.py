@@ -26,7 +26,7 @@ What stands from the start (LevelDesign, every item in ITEMS):
 - the detector circles [[detector-circles-only]]: the village's (VILLAGE_RING), the two fire boxes' (BOX_RINGS) and
   the strike zone's (STRIKE_RING, radius R); Name tags at the places the mission orders units to or fires on (TAGS),
   among them GUN_SPAWN in the cut's north-west corner, where each fire's battery is created; B2's label (BN2_PIN) and
-  the dressing's spots (DRESSING).
+  the strike's spots (STRIKE_SPOTS).
 
 The phases, every one with a deadline (design 4.2), each a timed beat from "Launch battle" that waits for its flag:
 - phase 1 (phase1, H+0:00): P1 on the village, its count and the fall (the garrison left in the circle at or below
@@ -42,12 +42,13 @@ The phases, every one with a deadline (design 4.2), each a timed beat from "Laun
   fire missions (fire_missions), the division fire plan (fire_plan) and NATO's fighter sweeps (air)
   [[scripted-air-sweep]];
 - phase 4 (phase4, from BN1_DONE): battalion 2 revealed, B2 and its 5:00 countdown, the release dialog (release);
-  on Yes the strike (strike: the warning and the 2S7M's round, the effect at 0:30, then the kill, the dressing,
-  STRUCK); on No the countdown runs out and battalion 2 attacks down both lanes (bn2_attack, ATTACK), and a last
-  fighter sweep comes with it;
-- phase 5 (phase5, from PH5): the end clock (5 min after a strike; after withholding until battalion 2 is broken, up
-  to 20 min), shown as P3's running timer in the objective list, cut short once NATO has no ground unit left
-  (nato_spent), then the grade (grade: Total, Minor or Major, released or withheld).
+  on Yes the strike (strike: the warning, the camera flown to the zone, the flash at 0:30, inside its blasts a share
+  of battalion 2 killed and the rest damaged and stunned, STRUCK; then the Soviets finish it, B2's "tanks left", and
+  phase 5 starts once it breaks); on No the countdown runs out and battalion 2 attacks down both lanes (bn2_attack,
+  ATTACK), and a last fighter sweep comes with it;
+- phase 5 (phase5, from PH5): the end clock (5 min after a struck battalion 2 breaks; after withholding until
+  battalion 2 is broken, up to 20 min), shown as P3's running timer in the objective list, cut short once NATO has no
+  ground unit left (nato_spent), then the grade (grade: Total, Minor or Major, released or withheld).
 The guns fire through fire(): one fire at a time (BUSY), each battery created at GUN_SPAWN in the player's allied camp
 (SovietAlly: the player's units never engage it), kept off its camp's AI, ordered, then removed FIRE_HOLD_S later
 (salvo) [[scripted-fires]].
@@ -70,8 +71,8 @@ from modkit.ops import shapes
 from modkit.ops.bricks import (
     c_all, c_any, c_none, c_team, c_type, g_and, g_attack, g_choice, g_cmp, g_collect, g_compete, g_count,
     g_detect, g_fx, g_grant, g_hint, g_idle_roe, g_if, g_ignored, g_income, g_kill, g_losses, g_modify, g_or,
-    g_planes_spent, g_roe, g_seq, g_set, g_simul, g_smart_hold, g_spawn, g_start_timer, g_union, g_units_in_zones,
-    g_until, g_vanish, g_wait, g_zone_control, g_zone_owner, unit_path,
+    g_planes_spent, g_roe, g_seq, g_set, g_simul, g_smart_hold, g_spawn, g_start_timer, g_stress, g_union,
+    g_units_in_zones, g_until, g_vanish, g_wait, g_zone_control, g_zone_owner, unit_path,
 )
 from modkit.ops.forces import group_total, share_count
 from modkit.ops.graph import Node
@@ -83,12 +84,12 @@ from modkit.ops.profile import Content
 from modkit.ops.script import BRICK_DEFAULT
 from modkit.ops.shapes import (
     AGGRESSIVE, AIRPLANE_EVACUATE, AIRPLANE_MOVE_AND_ENGAGE, DEATH_CAUSE_SHAPE, FAST_MOVE_AND_ATTACK,
-    IDLE_HOLD_POSITION, MOVE_AND_ATTACK, SHOOT_ON_POSITION, TRANSPORTER_SHAPE, Beat, add_card, beat_hint, create,
-    lock_card, objective, order, seconds_while, set_end,
+    IDLE_HOLD_POSITION, MOVE_AND_ATTACK, PHYSICAL, SHOOT_ON_POSITION, STRESS_SHAPES, STUN, TRANSPORTER_SHAPE, Beat,
+    add_card, beat_hint, create, lock_card, objective, order, seconds_while, set_end,
 )
 from modkit.ops.zones import heading
 from twinstrike import forces, profile
-from twinstrike.map import CAMERA, MAP, POINTS
+from twinstrike.map import CAMERA, MAP, POINTS, STRIKE_SHOT
 from twinstrike.map import items as map_items
 from twinstrike.strings import BUTTONS, STRINGS
 
@@ -111,29 +112,59 @@ PROD_MENU_SWITCH = BRICK_DEFAULT
 
 # --------------------------------------------------------------------------- the strike (design 5.6)
 
-# Each a one-line change: the look and the death cause are the rulings for now; probe 3b's play may swap either.
-# The look: the game's script-only mega bomb, self-contained. The tactical-nuke impact effects crash the game when a
-# script launches them [[scripted-nuke-effect]] (the script-effects gate refuses them).
+# The look, all at the flash: effects a script is known to launch, each self-contained
+# [[script-effects-self-contained]], massed at RedJuggernaut's scale (its intro launches 61 at once: the 203 mm barrage
+# 10 times at each of 5 tags, 8 white smokes and 3 black, in one Simultaneous). The tactical-nuke impact effects crash
+# the game when a script launches them [[scripted-nuke-effect]] (the script-effects gate refuses them). Each a
+# one-line change:
+# - STRIKE_FX, the game's script-only mega bomb (a 203 mm-sized fireball with a heavier shake and a bomb's sound; seen
+#   in Twin Strike's smoke play): one on the zone's centre and one on each of its spots, 13;
+# - BARRAGE_FX, the 203 mm barrage (each launch one impact at a random spot up to about 900 m round its tag;
+#   stock-launched 27 times): BARRAGE_N at the centre and at each inner spot, 70;
+# - SMOKE_FX at the centre and at each outer spot, 14: white smoke with a ground fire (stock-launched 45 times; it
+#   lasts minutes) and black smoke, the burning-wreck effect at a random spot round its tag (stock-launched 3 times,
+#   seen in the smoke play).
+# The design's napalm, fx_binder_fire_Napalm_Lourd, declares three parameters, so a script cannot launch it.
 STRIKE_FX = "$/GFX/GameFx/fx_HE_Mega_Bomb_ForScript"
-# The kill's DeathCause: Penetration, hoping for wrecks; None is Vanished, the proven fallback [[vanished-removal]].
+BARRAGE_FX = "$/GFX/GameFx/fx_HE_Artillery_203mm_ForScript_RandomPosition"
+BARRAGE_N = 10
+SMOKE_FX = ("$/GFX/GameFx/fx_FumeeBlanche_ForScript_RandomPosition",
+            "$/GFX/GameFx/fx_FumeeNoire_ForScript_RandomPosition")
+# The toll, inside the blasts (design 5.6): the strike does not kill every NATO unit in the zone; the Soviets finish
+# battalion 2.
+# - The kill: STRIKE_KILL_SHARES of battalion 2 (Easy, Medium, Hard: 50/40/30 %, the difficulty knob ts_kill_pct), in
+#   whole units spread over its types, tanks and IFVs among them (strike_kills), each pre-placed unit killed by its
+#   spawn tag (KillAllUnit on spawn tags: Marauders #224/#225) with STRIKE_CAUSE: Penetration, hoping for wrecks
+#   (seen in the smoke play's kill); None is Vanished, the proven fallback [[vanished-removal]].
+# - The damage: STRIKE_DAMAGE health points off every NATO unit left in the zone (ChangeStress Physical): half of a
+#   tank's or a Marder's 10, five of a Panzergrenadier squad's 6; it kills nothing [[changestress-damagetype-zero]].
+# - The stun: STRIKE_STUN stun points on every one of them (ChangeStress Stun, 0.8 of a ground unit's 300 cap: the
+#   value probe 1 loaded).
+# No stock script writes ChangeStress, and no play has run one: the play sheet asks what each did. Each a one-line
+# change: None leaves the damage or the stun out.
+STRIKE_KILL_SHARES = (0.5, 0.4, 0.3)
 STRIKE_CAUSE: int | None = shapes.PENETRATION
+STRIKE_DAMAGE: int | None = 5
+STRIKE_STUN: int | None = 240
+# Then the Soviets finish battalion 2: phase 5 starts once it is broken (B2's "tanks left" done) or NATO has no ground
+# unit left, or STRIKE_FINISH_MAX_S after the strike at most, so no phase hangs (design 4.2): the withheld road's cap.
+STRIKE_FINISH_MAX_S = 1200.0
 # The zone's radius R (design 5.6: 800 m to start), converted as the probes convert metres: 1 LBU, about a metre, is
 # 215 world units (MapSizeX / LBU; probes.spike2.KM_PX), on Twin Cities' 2,560 world units per minimap px.
 WORLD_PER_METRE = 215.0
 STRIKE_R_M = 800.0
 STRIKE_R_PX = STRIKE_R_M * WORLD_PER_METRE / MAP.map.world_per_px      # 67.2 px, 2,337 GRU
 BN2_FIT = 0.8                                                          # battalion 2's layout fits inside 0.8 R
-# The dressing (design 5.6, step 4): ground fires and black smoke together at each DRESSING tag in turn, a minute in
-# all. The design's burning wrecks, fx_binder_fire_Napalm_Lourd, declare three parameters (parDensityFire,
-# parRadiusPhysical, parPosition), so the script-effects gate refuses them [[script-effects-self-contained]]:
-# feu_fx_script, the game's script fire (a ground fire and a burned-ground mark, its parameters bound inside it),
-# replaces them. The black smoke is itself the burning-wreck effect at random spots round its tag (FX_script.ndf).
-DRESSING_FX = ("$/GFX/GameFx/feu_fx_script", "$/GFX/GameFx/fx_FumeeNoire_ForScript_RandomPosition")
-DRESSING_PX = ((-20.0, -8.0), (0.0, -12.0), (20.0, -8.0), (-20.0, 8.0), (0.0, 10.0), (20.0, 8.0))  # from ASSEMBLY
-DRESSING = tuple(f"TS_Fx{k + 1}" for k in range(len(DRESSING_PX)))
-DRESSING_STEP_S = 10.0
+# The zone's spots, a Name tag each, minimap px from ASSEMBLY (the zone's centre, TS_Assembly): six inner ones over
+# battalion 2 (0.15 to 0.32 R), then six outer ones about 0.5 R out, the two southern ones pulled north inside the cut
+# (its south edge runs 23.6 px south of ASSEMBLY).
+STRIKE_INNER_PX = ((-20.0, -8.0), (0.0, -12.0), (20.0, -8.0), (-20.0, 8.0), (0.0, 10.0), (20.0, 8.0))
+STRIKE_OUTER_PX = ((-37.0, 0.0), (-19.0, -32.0), (19.0, -32.0), (37.0, 0.0), (26.0, 20.0), (-26.0, 20.0))
+STRIKE_SPOTS = tuple(f"TS_Fx{k + 1}" for k in range(len(STRIKE_INNER_PX) + len(STRIKE_OUTER_PX)))
+STRIKE_INNER, STRIKE_OUTER = STRIKE_SPOTS[:len(STRIKE_INNER_PX)], STRIKE_SPOTS[len(STRIKE_INNER_PX):]
 EXTRA_SHAPES = (TRANSPORTER_SHAPE,                                   # the infantry cards carry their carriers
-                *((DEATH_CAUSE_SHAPE,) if STRIKE_CAUSE is not None else ()))   # the strike's KillAllUnit DeathCause
+                *((DEATH_CAUSE_SHAPE,) if STRIKE_CAUSE is not None else ()),   # the strike's KillAllUnit DeathCause
+                *(STRESS_SHAPES if STRIKE_DAMAGE or STRIKE_STUN else ()))      # the strike's damage and stun
 
 # --------------------------------------------------------------------------- the names the mission uses
 
@@ -153,7 +184,7 @@ STRIKE = "ts_strike"                   # the release dialog's answer: RELEASED o
 STRUCK = "ts_struck"                   # 1: the strike's kill is done (B2 done, phase 5)
 ATTACK = "ts_attack"                   # 1: battalion 2's countdown ran out (withheld): it attacks
 BN2_BROKEN = "ts_bn2_broken"           # 1: battalion 2 is broken (B2's "tanks left" done)
-PH5 = "ts_ph5"                         # 1: phase 5, the end clock, has started (after the strike, or at the attack)
+PH5 = "ts_ph5"                         # 1: phase 5, the end clock, has started (struck battalion 2 broken, or attack)
 FLAGS = (FALLEN, END, PH3, BN1_DONE, BN1_OFF, B1_DONE, BUSY, STRIKE, STRUCK, ATTACK, BN2_BROKEN, PH5)
 # Script groups (TGDVariableUnitGroup).
 GROUPE_JOUEUR = "Groupe_Joueur"        # every unit of the player's, refreshed every profile.REFRESH_S
@@ -171,7 +202,6 @@ BN2_TANKS_G = "ts_bn2_tanks"           # battalion 2's tanks (forces.BN2_TANKS):
 # Every NATO ground unit's group, each filled as its units appear: the garrison (load_groups), battalion 1's vehicles
 # and riflemen (mission.wave) and battalion 2 (bn2_reveal). Phase 5 ends at once when all are empty (nato_spent).
 NATO_GROUND = (GARRISON, BN1, f"{BN1}_inf", BN2)
-STRIKER = "ts_striker"                 # the one 2S7M that fires the strike's round
 # Phase 5's end clocks (TGDVariableTimer), each P3's running clock in the objective list: after a strike
 # (END_CLOCK_S), after withholding (END_CLOCK_WITHHELD_S).
 CLOCK_R, CLOCK_W = "ts_clock_r", "ts_clock_w"
@@ -271,11 +301,18 @@ RELEASE_ASK_S = 10.0
 RELEASE_MAX_WAIT_S = FIRE_LEAD_S + FIRE_HOLD_S + 10.0
 RELEASED, WITHHELD = 1, 2              # STRIKE's values: the dialog's Yes (button 0), No (button 1)
 BN2_BROKEN_N = forces.threshold("bn2")
-# The strike's timeline (seconds after the release, design 5.6): the round at STRIKE_ROUND_T, the effect at STRIKE_T,
-# the kill STRIKE_KILL_S after it (probe 3's pause, so the effect is seen alone). The round is a fire of its own
-# (salvo): one 2S7M created at GUN_SPAWN with the warning, ordered FIRE_LEAD_S later, its three shells leaving after
-# the gun's 30 s aiming time, so they land on the zone after the effect.
-STRIKE_ROUND_T, STRIKE_T, STRIKE_KILL_S = 0.0, 30.0, 3.0
+# The strike's timeline (seconds after the release, design 5.6): the warning at once; at STRIKE_SHOT_T the camera flies
+# to the zone (twinstrike.map.STRIKE_SHOT), arriving STRIKE_LEAD_S before the flash, and holds; at STRIKE_T the flash,
+# every effect at once; STRIKE_KILL_S later, inside its blasts (the mega bombs' dust lasts 10 s), the toll (the kill,
+# the damage and the stun). The camera holds 8 s or more past it; at STRIKE_BACK_T, when it hands control back, the
+# guns are freed (BUSY: the release held them), so no fire lands in the strike's window, and the hint names what is
+# left to do. Phase 5 waits for battalion 2's break after that, so its end never opens a dialog inside the strike's
+# cutscene. All of it is timed, not chained to the cutscene, so a cutscene that ends early (Escape) or late holds
+# nothing. No gun fires the strike: the first build's lone 2S7M landed its round 36 to 46 s after the kill.
+STRIKE_T, STRIKE_LEAD_S, STRIKE_KILL_S = 30.0, 1.0, 0.5
+STRIKE_SHOT_T = STRIKE_T - STRIKE_LEAD_S - STRIKE_SHOT.seconds        # 25 s
+STRIKE_BACK_T = STRIKE_SHOT_T + STRIKE_SHOT.seconds + STRIKE_SHOT.hold   # 40 s
+check(STRIKE_BACK_T - STRIKE_T - STRIKE_KILL_S >= 8.0, "the strike's camera must hold 8 s or more past the kill")
 # Phase 5 (design 5.8): the end clock, from PH5, after a strike, and its cap after withholding (or until battalion 2 is
 # broken); either ends sooner once NATO has no ground unit left. Whole seconds: each is also a timer's Duree (P3's clock).
 END_CLOCK_S, END_CLOCK_WITHHELD_S = 300.0, 1200.0
@@ -399,7 +436,9 @@ KNOBS: dict[str, tuple[int, int, int]] = {
     "ts_b1_tanks": tuple(bn1_tanks(k) for k in TEAMS),
     "ts_b1_need": tuple(bn1_tanks(k) - share_count(forces.SHARES["bn1"], bn1_tanks(k)) for k in TEAMS),
     "ts_sweep3": SWEEP3,
+    "ts_kill_pct": tuple(round(s * 100) for s in STRIKE_KILL_SHARES),   # the strike's kill, % of battalion 2
 }
+check(len(set(KNOBS["ts_kill_pct"])) == 3, "strike_kill branches on ts_kill_pct's value: the three shares must differ")
 
 
 # --------------------------------------------------------------------------- NATO's fighter sweeps (design 6.3)
@@ -506,13 +545,37 @@ def items() -> list[LdItem]:
         *(MAP.ring_item(ring, f"BOX_{lane}", BOX_RING_PX) for lane, ring in BOX_RINGS.items()),
         MAP.ring_item(STRIKE_RING, "ASSEMBLY", STRIKE_R_PX),
         MAP.item("Tags", BN2_PIN, BN2_PIN_PX, "Name"),
-        *(MAP.item("Tags", name, (ax + dx, ay + dy), "Name") for name, (dx, dy) in zip(DRESSING, DRESSING_PX)),
+        *(MAP.item("Tags", name, (ax + dx, ay + dy), "Name")
+          for name, (dx, dy) in zip(STRIKE_SPOTS, (*STRIKE_INNER_PX, *STRIKE_OUTER_PX))),
         *bn2_items(),
         *air_items(),
     ]
 
 
 ITEMS: list[LdItem] = items()
+
+
+def strike_kills(share: float) -> tuple[str, ...]:
+    """The spawn items of battalion 2 the strike kills at `share` (design 5.6): share_count(share, its 52) units in
+    all, apportioned over its unit types by largest remainder (the table's order breaks ties), so tanks, IFVs and the
+    rest each lose about `share`; within a type, units evenly spaced through its items in ITEMS order, both halves'
+    formations hit. Names in ITEMS order."""
+    spawns = [it for it in ITEMS if it.addon == "Spawn" and it.group in ("bn2_w", "bn2_c")]
+    by_type: dict[str, list[str]] = {}
+    for it in spawns:
+        by_type.setdefault(it.unit, []).append(it.name)
+    total = share_count(share, len(spawns))
+    quota = {unit: share * len(names) for unit, names in by_type.items()}
+    take = {unit: int(q) for unit, q in quota.items()}
+    order_ = sorted(by_type, key=lambda u: (-(quota[u] - take[u]), list(by_type).index(u)))
+    for unit in order_[:total - sum(take.values())]:
+        take[unit] += 1
+    picked = {names[int((k + 0.5) * len(names) / take[unit])] for unit, names in by_type.items()
+              for k in range(take[unit])}
+    return tuple(it.name for it in spawns if it.name in picked)
+
+
+STRIKE_KILLS: tuple[tuple[str, ...], ...] = tuple(strike_kills(s) for s in STRIKE_KILL_SHARES)   # Easy, Medium, Hard
 
 
 class Ctx(profile.Ctx):
@@ -566,12 +629,11 @@ def end_funnel(ctx: Ctx) -> Node:
 # --------------------------------------------------------------------------- the guns (design 5.4)
 
 # Each fire's battery, by its group: the force groups whose rows it creates (forces.ROWS: 2S7M x6, BM-27 x6, or both
-# for the division fire plan), and the strike's round, one 2S7M.
+# for the division fire plan).
 BATTERIES: dict[str, tuple[tuple[str, int], ...]] = {
     HEAVY: tuple((r.descriptor, r.count) for r in forces.force_rows("guns_heavy")),
     ROCKETS: tuple((r.descriptor, r.count) for r in forces.force_rows("guns_rockets")),
     GUNS: tuple((r.descriptor, r.count) for g in ("guns_heavy", "guns_rockets") for r in forces.force_rows(g)),
-    STRIKER: (("2S7M_Malka_SOV", 1),),
 }
 
 
@@ -785,13 +847,12 @@ def bn1_watch(ctx: Ctx) -> Node:
 def phase3(ctx: Ctx) -> Node:
     """From H+0:00: once PH3, the phase hint ts_hph3 beside battalion 1's waves (bn1_wave, each from its offset), the
     count (b1_count), the watch (bn1_watch), the fire boxes' pinned labels (ts_obw, ts_obc: done once nothing more
-    comes through them, at the strike's kill, once battalion 2 is broken or at the end, so neither lingers as an open
+    comes through them, once battalion 2 is broken (struck or not) or at the end, so neither lingers as an open
     task in phase 5) and B1 BREAK THE FIRST BATTALION, a bonus in the panel only (design 7 pins labels on the village,
     the boxes and ASSEMBLY): "%1 / %2" = ts_b1_k and ts_b1_tanks, done once ts_b1_k >= ts_b1_need (MoreOrEqual
     against a variable), which sets B1_DONE (design 4.1: no failure). Last."""
     kills, end = ctx.int_var("ts_b1_k"), ctx.int_var(END)
-    over = lambda: g_or(g_cmp(end, 1, GE), g_cmp(ctx.int_var(STRUCK), 1),  # noqa: E731
-                        g_cmp(ctx.int_var(BN2_BROKEN), 1))
+    over = lambda: g_or(g_cmp(end, 1, GE), g_cmp(ctx.int_var(BN2_BROKEN), 1))  # noqa: E731
     boxes = [objective(f"ts_ob{lane.lower()}", f"ts_ob{lane.lower()}l", over(), ctx.tag(ring), kind="Bonus")
              for lane, ring in BOX_RINGS.items()]
     b1 = objective("ts_b1", "ts_b1l", g_cmp(kills, op=GE, other=ctx.int_var("ts_b1_need")),
@@ -909,37 +970,69 @@ def bn2_attack(ctx: Ctx) -> Node:
                   g_simul([g_hint("ts_hatk", HINT_S, "shint"), *(half(h) for h in BN2_HALVES)])])
 
 
+def flash(ctx: Ctx) -> Node:
+    """The strike's flash: every effect at once, in one Simultaneous, as RedJuggernaut's intro launches its 61
+    [[script-effects-self-contained]]: the mega bombs first (STRIKE_FX on the zone's centre, TS_Assembly, and on each
+    of STRIKE_SPOTS), then the 203 mm barrage (BARRAGE_FX BARRAGE_N times, each tag's in a Sequential of NbExecutions
+    BARRAGE_N, RedJuggernaut #69's form) at the centre and each inner spot, then the smokes (SMOKE_FX) at the centre and
+    each outer spot."""
+    centre = "TS_Assembly"
+    mega = [g_fx(STRIKE_FX, ctx.tag(name)) for name in (centre, *STRIKE_SPOTS)]
+    barrage = [g_seq([g_fx(BARRAGE_FX, ctx.tag(name))], runs=BARRAGE_N) for name in (centre, *STRIKE_INNER)]
+    smoke = [g_fx(fx, ctx.tag(name)) for name in (centre, *STRIKE_OUTER) for fx in SMOKE_FX]
+    return g_simul([*mega, *barrage, *smoke])
+
+
+def strike_kill(ctx: Ctx) -> Node:
+    """The strike's kill: the difficulty's share of battalion 2 (STRIKE_KILLS, by ts_kill_pct, the difficulty knob)
+    killed with STRIKE_CAUSE, each unit by its spawn tag, one KillAllUnit (Marauders #224/#225 kill pre-placed units by
+    their spawn tags): an IfThenElse on the knob's value, Medium's the last else (the difficulty fallback), as
+    cooldown branches."""
+    pct = ctx.int_var("ts_kill_pct")
+    easy, _, hard = KNOBS["ts_kill_pct"]
+
+    def kill(level: int) -> Node:
+        return g_seq([g_kill(*(ctx.tag(name) for name in STRIKE_KILLS[level]), cause=STRIKE_CAUSE)])
+
+    return g_if(g_cmp(pct, easy), kill(EASY), g_if(g_cmp(pct, hard), kill(HARD), kill(MEDIUM)))
+
+
 def strike(ctx: Ctx) -> Node:
     """The strike (design 5.6), from the release, side by side, each from its own wait:
       - at once the hint ts_hrel, and the zone's label ts_ozone pinned at its centre (done at the kill), last;
-      - STRIKE_ROUND_T (with the warning): the round, a fire of its own (salvo): one 2S7M (STRIKER) created at
-        GUN_SPAWN, ordered FIRE_LEAD_S later to ShootOnPosition on the assembly area's Name tag (one salvo, leaving
-        after its 30 s aiming time), removed FIRE_HOLD_S after the order, then the guns freed (BUSY = 0: the release
-        held them);
-      - STRIKE_T: the effect STRIKE_FX on ASSEMBLY [[script-effects-self-contained]]; STRIKE_KILL_S later every NATO
-        unit in the zone's circle (STRIKE_RING, radius R) gathered into ts_struck_g [[detector-circles-only]] and
-        killed with STRIKE_CAUSE (bricks.g_kill), then STRUCK = 1 (B2 done) and PH5 = 1 (phase 5); then the dressing:
-        DRESSING_FX together at each DRESSING tag in turn, DRESSING_STEP_S apart.
+      - STRIKE_SHOT_T: the camera flies to the zone from wherever it is and holds there, the player's actions blocked
+        (twinstrike.map.STRIKE_SHOT's cutscene) [[camera-shot-from-current-position]], arriving STRIKE_LEAD_S before
+        the flash;
+      - STRIKE_T: the flash (flash); STRIKE_KILL_S later, inside its blasts, the toll: every NATO unit in the zone's
+        circle (STRIKE_RING, radius R) gathered into ts_struck_g [[detector-circles-only]], the difficulty's share of
+        battalion 2 killed (strike_kill), then every unit left in the zone damaged STRIKE_DAMAGE health points and
+        stunned STRIKE_STUN points (ChangeStress Physical, then Stun [[changestress-damagetype-zero]]), and STRUCK = 1
+        (the countdown done; B2's "finish the second battalion" shows, phase4); at STRIKE_BACK_T, as the camera hands
+        control back, the guns freed (BUSY = 0: the release held them) and the hint ts_hstruck; then phase 5 (PH5 = 1)
+        once battalion 2 is broken (BN2_BROKEN) or NATO has no ground unit left (nato_spent), or STRIKE_FINISH_MAX_S
+        on at most.
     The detector takes the NATO camp only: Soviet units inside are not touched (the warning keeps them out)."""
     zone, caught = ctx.tag(STRIKE_RING), ctx.group("ts_struck_g")
-    shot = g_seq([*([g_wait(STRIKE_ROUND_T)] if STRIKE_ROUND_T else []), *salvo(ctx, STRIKER, "TS_Assembly"),
-                  g_set(ctx.int_var(BUSY))])
-    dressing = [g_seq([g_simul([g_fx(fx, ctx.tag(name)) for fx in DRESSING_FX]), g_wait(DRESSING_STEP_S)])
-                for name in DRESSING]
-    blast = g_seq([g_wait(STRIKE_T), g_fx(STRIKE_FX, ctx.tag("TS_Assembly")), g_wait(STRIKE_KILL_S),
+    camera = g_seq([g_wait(STRIKE_SHOT_T), STRIKE_SHOT.cutscene()])
+    finished = g_compete([g_until(g_cmp(ctx.int_var(BN2_BROKEN), 1)), g_until(nato_spent(ctx)),
+                          g_wait(STRIKE_FINISH_MAX_S)])
+    blast = g_seq([g_wait(STRIKE_T), flash(ctx), g_wait(STRIKE_KILL_S),
                    g_collect(caught, g_detect(zone, c_team(ctx.camp(ENEMY)), compare=False)),
-                   g_kill(caught, cause=STRIKE_CAUSE), g_set(ctx.int_var(STRUCK), 1), g_set(ctx.int_var(PH5), 1),
-                   *dressing])
+                   strike_kill(ctx), *([g_stress(caught, STRIKE_DAMAGE, PHYSICAL)] if STRIKE_DAMAGE else []),
+                   *([g_stress(caught, STRIKE_STUN, STUN)] if STRIKE_STUN else []),
+                   g_set(ctx.int_var(STRUCK), 1),
+                   g_wait(STRIKE_BACK_T - STRIKE_T - STRIKE_KILL_S), g_set(ctx.int_var(BUSY)),
+                   g_simul([g_hint("ts_hstruck", HINT_S, "shint")]), finished, g_set(ctx.int_var(PH5), 1)])
     label = objective("ts_ozone", "ts_ozonel", g_cmp(ctx.int_var(STRUCK), 1), zone, kind="Bonus")
-    return g_simul([g_hint("ts_hrel", HINT_S, "shint"), shot, blast, label])
+    return g_simul([g_hint("ts_hrel", HINT_S, "shint"), camera, blast, label])
 
 
 def release(ctx: Ctx) -> Node:
     """The release dialog (design 5.6), RELEASE_ASK_S after battalion 2 appears: once no fire holds the guns and no
     fire-mission or fire-plan dialog is open, or RELEASE_MAX_WAIT_S on at most (Competition[WaitCondition(quiet),
-    WaitDuration], so a flag left set never hides the dialog), BUSY = 1 (the guns held for the strike's round), the
-    dialog ts_drel (Yes / No), shown once; Yes: STRIKE = RELEASED and the strike; No: STRIKE = WITHHELD, the guns freed
-    and the hint ts_hwith."""
+    WaitDuration], so a flag left set never hides the dialog), BUSY = 1 (the guns held through the strike), the dialog
+    ts_drel (Yes / No), shown once; Yes: STRIKE = RELEASED and the strike; No: STRIKE = WITHHELD, the guns freed and the
+    hint ts_hwith."""
     pick, choice, busy = ctx.int_var("ts_rel_pick"), ctx.int_var(STRIKE), ctx.int_var(BUSY)
     quiet = g_and(g_cmp(busy), g_cmp(ctx.int_var("ts_fire_open")), g_cmp(ctx.int_var("ts_plan_open")))
     return g_seq([g_wait(RELEASE_ASK_S), g_compete([g_until(quiet), g_wait(RELEASE_MAX_WAIT_S)]), g_set(busy, 1),
@@ -960,8 +1053,9 @@ def phase4(ctx: Ctx) -> Node:
       - the release dialog and the strike (release);
       - B2 DEAL WITH THE SECOND BATTALION, its countdown "%1 s" pinned at BN2_PIN, done at the strike's kill or the
         attack (design 4.1: no failure);
-      - after the attack, B2's "%1 tanks left" pinned at BN2_PIN, done once BN2_BROKEN_N or fewer are left, which sets
-        BN2_BROKEN with the hint ts_hbn2b. Last."""
+      - after the attack, B2's "%1 tanks left" (ts_b2n), or after the strike's kill, FINISH THE SECOND BATTALION with
+        its "%1 tanks left" (ts_b2f), pinned at BN2_PIN, done once BN2_BROKEN_N or fewer are left (a destroyed
+        battalion has none), which sets BN2_BROKEN with the hint ts_hbn2b. Last."""
     secs, left, choice = ctx.int_var("ts_b2_s"), ctx.int_var("ts_bn2_left"), ctx.int_var(STRIKE)
     attack, pin = ctx.int_var(ATTACK), ctx.tag(BN2_PIN)
     count = g_seq([g_count(left, ctx.group(BN2_TANKS_G)), g_wait(POLL_S)], runs=FOREVER)
@@ -970,13 +1064,16 @@ def phase4(ctx: Ctx) -> Node:
                        g_if(g_or(g_cmp(choice), g_cmp(choice, WITHHELD)), g_seq([bn2_attack(ctx)]))])
     b2 = objective("ts_b2", "ts_b2l", g_or(g_cmp(ctx.int_var(STRUCK), 1), g_cmp(attack, 1)), pin, [secs],
                    kind="Bonus")
-    broken = g_seq([g_set(ctx.int_var(BN2_BROKEN), 1), g_simul([g_hint("ts_hbn2b", HINT_S, "shint")])])
-    b2n = g_seq([g_until(g_cmp(attack, 1)),
-                 objective("ts_b2n", "ts_b2nl", g_cmp(left, BN2_BROKEN_N, LE), pin, [left], reussi=broken,
-                           kind="Bonus")])
+    def tanks_left(after: Node, text: str) -> Node:
+        broken = g_seq([g_set(ctx.int_var(BN2_BROKEN), 1), g_simul([g_hint("ts_hbn2b", HINT_S, "shint")])])
+        return g_seq([g_until(after), objective(text, f"{text}l", g_cmp(left, BN2_BROKEN_N, LE), pin, [left],
+                                                reussi=broken, kind="Bonus")])
+
+    b2n = tanks_left(g_cmp(attack, 1), "ts_b2n")
+    b2f = tanks_left(g_cmp(ctx.int_var(STRUCK), 1), "ts_b2f")
     return g_seq([g_until(g_cmp(ctx.int_var(BN1_DONE), 1)), g_wait(BN2_GAP_S), *bn2_reveal(ctx),
                   g_set(secs, COUNTDOWN_S),
-                  g_simul([g_hint("ts_hbn2", HINT_S, "shint"), count, countdown, release(ctx), b2, b2n])])
+                  g_simul([g_hint("ts_hbn2", HINT_S, "shint"), count, countdown, release(ctx), b2, b2n, b2f])])
 
 
 # --------------------------------------------------------------------------- phase 5 and the end (design 5.8)
@@ -985,14 +1082,14 @@ def grade(ctx: Ctx) -> list[Node]:
     """The grade at the end of phase 5 (design 5.8), written through set_end (a loss already written stands):
     ts_lost = the player's losses (GetNbLossCamp, GloryOrAttrition #161) and ts_alive = Groupe_Joueur's count (what
     is left of what was bought), ts_alive1 = ts_alive + 1; then, if NATO owns the village, END_LOST; else, by the
-    release (STRIKE): Total if B1 is done (battalion 1 broken) and battalion 2 struck, broken or destroyed (its group
-    empty: phase 5 may end on NATO's last unit before B2's count has read the break); else Minor if the losses are
+    release (STRIKE): Total if B1 is done (battalion 1 broken) and battalion 2 broken or destroyed (its group empty:
+    phase 5 may end on NATO's last unit before B2's count has read the break; the strike alone no longer beats it: the
+    Soviets finish it, design 5.6); else Minor if the losses are
     more than half of what was bought (ts_lost >= ts_alive1: MoreOrEqual against a variable); else Major. Total
     comes first: the design's "release makes Total easy"."""
     end, lost, alive, more = (ctx.int_var(n) for n in (END, "ts_lost", "ts_alive", "ts_alive1"))
     beaten = lambda: g_and(g_cmp(ctx.int_var(B1_DONE), 1),  # noqa: E731
-                           g_or(g_cmp(ctx.int_var(STRUCK), 1), g_cmp(ctx.int_var(BN2_BROKEN), 1),
-                                g_cmp(ctx.group(BN2))))
+                           g_or(g_cmp(ctx.int_var(BN2_BROKEN), 1), g_cmp(ctx.group(BN2))))
 
     def won(total: int, minor: int, major: int) -> Node:
         return g_if(beaten(), g_seq([set_end(end, total)]),
@@ -1033,10 +1130,10 @@ def end_clock(ctx: Ctx, timer: str, seconds: float, text: str, ends: list[Node])
 
 
 def phase5(ctx: Ctx) -> Node:
-    """From H+0:00: once PH5 (the strike's kill, or battalion 2's attack), the hint ts_hph5, then the end clock
-    (end_clock), P3 showing it: END_CLOCK_S after a strike; after withholding, until battalion 2 is broken
-    (BN2_BROKEN) or END_CLOCK_WITHHELD_S. Either ends at once when NATO has no ground unit left (nato_spent), with
-    the grade that state earns."""
+    """From H+0:00: once PH5 (after a strike, battalion 2 broken or NATO spent, or STRIKE_FINISH_MAX_S on; after
+    withholding, battalion 2's attack), the hint ts_hph5, then the end clock (end_clock), P3 showing it: END_CLOCK_S
+    after a strike; after withholding, until battalion 2 is broken (BN2_BROKEN) or END_CLOCK_WITHHELD_S. Either ends
+    at once when NATO has no ground unit left (nato_spent), with the grade that state earns."""
     released = g_cmp(ctx.int_var(STRIKE), RELEASED)
     after_strike = end_clock(ctx, CLOCK_R, END_CLOCK_S, "ts_p3r", [])
     after_withholding = end_clock(ctx, CLOCK_W, END_CLOCK_WITHHELD_S, "ts_p3w",

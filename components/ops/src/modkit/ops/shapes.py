@@ -69,7 +69,7 @@ EASY, MEDIUM, HARD = 0, 1, 2         # EGameDifficulty (bricks.g_difficulty)
 # EDeathCause (CommonData/Gameplay/Constantes/Enumerations/DeathCause.ndf), EDamageType
 # (GameData/Gameplay/Constantes/Enumerations/DamageType.ndf)
 PENETRATION = 2
-STUN = 2                             # not Suppress (0): ChangeStress rejects DamageType 0 at load; Physical (1) is HP
+PHYSICAL, STUN = 1, 2                # not Suppress (0): ChangeStress rejects DamageType 0 at load; Physical (1) is HP
 
 # GDScript shapes no stock file uses but a block writes (Content.extra_shapes): a content that uses the block admits
 # the shape. add_card(transport=...) sets AddUnitToDeck.Transporter, a property the class has; a KillAllUnit with a
@@ -77,6 +77,17 @@ STUN = 2                             # not Suppress (0): ChangeStress rejects Da
 # the shape gate does not survey; every challenge kills Vanished (0, omitted).
 TRANSPORTER_SHAPE = ("TGDDescriptorAddUnitToDeck", "Transporter", 0x09, "import $/GFX/Unit")
 DEATH_CAUSE_SHAPE = ("TGDDescriptorKillAllUnit", "DeathCause", 0x02, None)
+# ChangeStress (bricks.g_stress) is a class the game has, with Group, Value and DamageType, but no stock file uses it,
+# so a content that writes it admits the class too, and its place in a Sequential. Value and DamageType are ints, as
+# SetFuel's stock MaxFuelRatio (<int32>) is; DamageType is an EDamageType and may not be 0
+# [[changestress-damagetype-zero]]. Property order: alphabetical, as the natives' own properties are (KillAllUnit,
+# SetEffect, SetFuel).
+STRESS_SHAPES = (
+    ("TGDDescriptorChangeStress", "DamageType", 0x02, None),
+    ("TGDDescriptorChangeStress", "Group", 0x09, "TGDVariableUnitGroup"),
+    ("TGDDescriptorChangeStress", "Value", 0x02, None),
+    ("TGDDescriptorSequential", "SubActions", 0x11, "TGDDescriptorChangeStress"),
+)
 
 # One camp of the template's CampList: export name, TGDVariableCamp scalars before PlayerName as (property, value
 # tag, value), and its SetDeck id.

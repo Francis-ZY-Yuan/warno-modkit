@@ -49,6 +49,7 @@ How far each mechanism is proven: `PLAYED` worked in a real play; `PROBED` loade
 ## STOCK
 
 - [arrival-end-in-zone](../components/ops/knowledge/mechanisms/arrival-end-in-zone.md) (ops): Every player arrival entry must end inside a deployment zone of its side or a command zone
+- [camera-shot-from-current-position](../components/ops/knowledge/mechanisms/camera-shot-from-current-position.md) (ops): Mid-battle, a script flies the camera from wherever it is to a one-key path, in a cutscene that can hold the view
 - [dialog-text-takes-no-variables](../components/ops/knowledge/mechanisms/dialog-text-takes-no-variables.md) (ops): Dialog text cannot show live numbers; counts go in an objective counter or a hint
 - [difficulty-branches](../components/ops/knowledge/mechanisms/difficulty-branches.md) (ops): Difficulty reaches a script as three conditions; give it a Medium baseline
 - [garrison-roe-and-hold](../components/ops/knowledge/mechanisms/garrison-roe-and-hold.md) (ops): A garrison in a camp with no AI holds its ground only with the ROE and smart orders the script gives it

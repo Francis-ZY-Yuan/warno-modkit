@@ -21,8 +21,9 @@ items() is every LevelDesign item the map gives the op:
 Zone conditions find their zone by a tag's point [[zone-lookup-by-point]]: the village zone's item stands inside its
 polygon, and every lane point on a road its column keeps to [[fast-move-and-attack-keeps-roads]].
 CAMERA is the op's opening camera (modkit.ops.maps.OpeningCamera): a move from high over the cut down to a view of the
-Soviet box and the village, then a snap to its last key, both run right after LoadingDone. Its paths ship in place of
-the layout's camera paths, held to the camera gate.
+Soviet box and the village, then a snap to its last key, both run right after LoadingDone; and the strike's shot
+(STRIKE_SHOT), a one-key path the strike flies the camera to from wherever it is. Its paths ship in place of the
+layout's camera paths, held to the camera gate.
 
 `python -m twinstrike.map overlay OUT.png` (from this example's folder) draws every point, the cut, the zones, the
 arrivals and the routes on Twin Cities' Preview picture, for review (never committed: it is the game's picture).
@@ -36,7 +37,7 @@ from collections.abc import Sequence
 from modkit.core import paths
 from modkit.core.gates import CheckError
 from modkit.ops.leveldesign import LdItem
-from modkit.ops.maps import TWIN_CITIES, CameraKey, Cut, OpeningCamera
+from modkit.ops.maps import TWIN_CITIES, CameraKey, CameraShot, Cut, OpeningCamera
 from modkit.ops.shapes import Minimap
 from modkit.ops.zones import rect_polygon
 
@@ -142,7 +143,20 @@ OPENING_KEYS = (
 # take 5 to 20 s a path (Gotterdammerung 5, Marauders 8-12, TheKitzingenRuse 7-17, DelayedRetribution and TheHydra 20;
 # RedJuggernaut's first 34, beside its dialogs).
 OPENING_S = 8.0
-CAMERA = OpeningCamera(CUT, "TS_Open", "TS_Start", OPENING_KEYS, OPENING_S)
+# The strike's camera shot (design 5.6) [[camera-shot-from-current-position]]: TS_Strike, one key, which the strike
+# flies to from wherever the player's camera is, easing in and out, Escape skipping the move, then holds while the
+# strike lands, the player's actions blocked. Stock's mid-battle shots fly so in 3 to 10 s (SigurdsStrike's MLRS and
+# COBRA 3, Sledgehammer's camera_hades and camera_viper 5); STRIKE_SHOT_S is 4. STRIKE_HOLD_S (11 s) runs from the
+# camera's arrival, a second before the flash, through the kill and the mega bombs' 10 s of dust (twinstrike.op's
+# strike timeline). The view: ASSEMBLY, the strike zone's centre, facing south as the opening's last view does, 40
+# degrees down from 390,000 above the ground, as BlackHorsesLastStand's cam_02 (390,270 up, 40.0 degrees, flown from
+# the current camera in 6 s). Stock's mid-battle shots stand 97,021 to 433,526 up; this one keeps above the camera
+# gate's floor (376,057) and the whole zone, 800 m (172,000 world units) round ASSEMBLY, ahead of the eye, which stands
+# at (156, 318.4) px, over the cut.
+STRIKE_KEY = CameraKey(POINTS["ASSEMBLY"], (0.0, 1.0), 390000.0, 40.0)
+STRIKE_SHOT_S, STRIKE_HOLD_S = 4.0, 11.0
+STRIKE_SHOT = CameraShot("TS_Strike", STRIKE_KEY, STRIKE_SHOT_S, STRIKE_HOLD_S)
+CAMERA = OpeningCamera(CUT, "TS_Open", "TS_Start", OPENING_KEYS, OPENING_S, shots=(STRIKE_SHOT,))
 
 
 def items() -> list[LdItem]:

@@ -66,5 +66,5 @@ ID keeps its first finding's name.
 - Shapes: [`modkit.ops.bricks.g_camera`](../../src/modkit/ops/bricks.py), [`modkit.ops.maps.OpeningCamera`](../../src/modkit/ops/maps.py), [`modkit.ops.mission.script_frame`](../../src/modkit/ops/mission.py)
 - Skills: [`components/ops/skills/warno-new-operation/SKILL.md`](../../skills/warno-new-operation/SKILL.md)
 - Examples: [`components/ops/examples/twin-strike/README.md`](../../examples/twin-strike/README.md), [`components/ops/examples/twin-strike/docs/design.md`](../../examples/twin-strike/docs/design.md), [`components/ops/examples/twin-strike/twinstrike/map.py`](../../examples/twin-strike/twinstrike/map.py), [`components/ops/examples/twin-strike/twinstrike/op.py`](../../examples/twin-strike/twinstrike/op.py)
-- Records: [2026-11-11-twin-strike-opening-camera](../trials/2026-11-11-twin-strike-opening-camera.md), [custom-operation-from-stock-parts](custom-operation-from-stock-parts.md)
+- Records: [2026-11-11-twin-strike-opening-camera](../trials/2026-11-11-twin-strike-opening-camera.md), [camera-shot-from-current-position](camera-shot-from-current-position.md), [custom-operation-from-stock-parts](custom-operation-from-stock-parts.md)
 <!-- referenced-by:end -->

@@ -175,7 +175,7 @@ from modkit.ops import gates  # noqa: E402
 from modkit.ops.bricks import g_seq, g_simul, g_wait  # noqa: E402
 from modkit.ops.graph import Node, walk  # noqa: E402
 from modkit.ops.script import FOREVER  # noqa: E402
-from modkit.ops.testing import last, prop, subs, token  # noqa: E402
+from modkit.ops.testing import last, of, prop, subs, token  # noqa: E402
 
 Steps = list[tuple[int, int]]          # (from this second on, the value)
 JOUEUR, ALLIE, NATO = profile.CAMPS["Soviet"], profile.CAMPS["SovietAlly"], profile.CAMPS["NATO"]
@@ -217,11 +217,11 @@ class World:
 class Model:
     """A 1 s step model of the script runtime for the nodes Twin Strike uses ([[script-container-semantics]]): a
     Sequential runs its children in turn (NbExecutions times), a Simultaneous all until all finish, a Competition until
-    its first finishes; a WaitDuration takes its seconds, a WaitCondition until its condition holds. An objective
-    resolves on the first tick its Condition (first) or ConditionEchec holds, then runs that action. TriggerEndGame,
-    LockDeckUnit and a (blocking) Attack never finish. A timer reads its seconds left: its Duree until StartTimer, then
-    down to 0. Instant actions are logged as (second, kind, ...); variables and script-filled groups are kept by
-    name."""
+    its first finishes; a WaitDuration takes its seconds (rounded to whole ones), a WaitCondition until its condition
+    holds; a camera cutscene takes its path's TimeInSecond and its hold (CutsceneWaitDuree). An objective resolves on
+    the first tick its Condition (first) or ConditionEchec holds, then runs that action. TriggerEndGame, LockDeckUnit
+    and a (blocking) Attack never finish. A timer reads its seconds left: its Duree until StartTimer, then down to 0.
+    Instant actions are logged as (second, kind, ...); variables and script-filled groups are kept by name."""
 
     def __init__(self, world: World, values: dict[str, int] | None = None) -> None:
         self.world, self.t, self.vars, self.log = world, 0, dict(values or {}), []
@@ -346,6 +346,14 @@ class Model:
             answer = queue.pop(0) if queue else 1
             self.vars[last(prop(dialog, "SelectedButton"))] = answer
             self.note("ask", name, answer)
+        elif cls == "EncapsuleCutscene" and of(list(walk([n])), "CutsceneStartCameraPath"):
+            # a camera cutscene (bricks.g_camera): logged as (path, from the current camera, its time, its hold)
+            (cam,) = of(list(walk([n])), "CutsceneStartCameraPath")
+            fly = prop(cam, "TimeInSecond").v if prop(cam, "TimeInSecond") is not None else 0.0
+            hold = sum(prop(k, "WaitDuration").v for k in of(list(walk([n])), "CutsceneWaitDuree"))
+            self.note("camera", prop(cam, "CameraPathName").text,
+                      prop(cam, "StartFromCurrentCameraPosition") is not None, fly, hold)
+            yield from self.wait(round(fly + hold))
         elif cls == "EncapsuleCutscene":
             self.note("dialog", *(token(prop(k, "LocalizedText")) for k in walk([n])
                                   if k.cls == "TGDDescriptorCutsceneTextComponent"))
@@ -362,6 +370,8 @@ class Model:
             self.note("ammo", [last(u) for u in prop(n, "Units")], prop(n, "MaxAmmoRatio") is not None)
         elif cls == "LaunchFXFireAndForgetOnPosition":
             self.note("fx", prop(n, "DatabaseName").text.rsplit("/", 1)[1], last(prop(n, "Position")))
+        elif cls == "ChangeStress":
+            self.note("stress", last(prop(n, "Group")), prop(n, "DamageType").v, prop(n, "Value").v)
         elif cls == "KillAllUnit":
             cause = prop(n, "DeathCause")
             self.note("kill", [last(g) for g in prop(n, "GroupList")], cause.v if cause is not None else None)

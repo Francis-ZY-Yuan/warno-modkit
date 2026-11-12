@@ -110,8 +110,8 @@ ENGLISH: dict[str, dict[str, str]] = {
                    "Yes: request release.\n"
                    "No: fight it conventionally.",
         # design 5.8: the endings. A win names its grade and whether the strike was released or withheld.
-        "ts_dtotr": "#bold{TOTAL VICTORY.}\nThe village is held, the first battalion broken and the second destroyed. "
-                    "The strike was released.",
+        "ts_dtotr": "#bold{TOTAL VICTORY.}\nThe village is held and both battalions are broken. The strike was "
+                    "released, and you finished the second battalion.",
         "ts_dtotw": "#bold{TOTAL VICTORY.}\nThe village is held and both battalions are broken. The strike was "
                     "withheld: the second battalion was beaten in the field.",
         "ts_dmajr": "#bold{MAJOR VICTORY.}\nThe village is held. The strike was released.",
@@ -162,6 +162,8 @@ ENGLISH: dict[str, dict[str, str]] = {
         "ts_hwith": "Release withheld. Fight the second battalion with what you have.",
         "ts_hatk": "The second battalion is attacking up both lanes.",
         "ts_hbn2b": "The second battalion is broken.",
+        # after the strike's cutscene (design 5.6): what the strike left to do
+        "ts_hstruck": "The strike has gutted the second battalion. Its survivors are stunned and damaged: finish it.",
         # phase 5 (design 5.8): P3 shows the end clock
         "ts_hph5": "PHASE 5: hold the village to the end. HOLD ON, on the village and in the objectives, shows the time "
                    "left; the battle ends then, or at once when NATO has no ground unit left.",
@@ -181,6 +183,8 @@ ENGLISH: dict[str, dict[str, str]] = {
         "ts_b2l": "Attacks in %1 s",
         "ts_b2n": "DEAL WITH THE SECOND BATTALION: %1 tanks left. It breaks with 3 in 10 left.",
         "ts_b2nl": "%1 tanks left",
+        "ts_b2f": "FINISH THE SECOND BATTALION: %1 tanks left after the strike. It breaks with 3 in 10 left.",
+        "ts_b2fl": "%1 tanks left",
         # P3, phase 5's end clock (op.end_clock): the label's %1 is its running timer (op.END_CLOCK_S after a strike,
         # op.END_CLOCK_WITHHELD_S at most after withholding)
         "ts_p3r": "HOLD ON FOR 5 MIN: then the battle ends. It ends at once when NATO has no ground unit left.",

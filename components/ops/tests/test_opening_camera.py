@@ -19,7 +19,7 @@ from modkit.ops.files import read_file
 from modkit.ops.graph import Node, Str, build_graph, decode, encode, nodes_of, walk
 from modkit.ops.items import payload
 from modkit.ops.maps import (
-    CAMERA_SHAPE_SOURCES, CAMPATHS_FILE, GEISA, START_CAMERA_MIN_HEIGHT, CameraKey, Cut, OpeningCamera,
+    CAMERA_SHAPE_SOURCES, CAMPATHS_FILE, GEISA, START_CAMERA_MIN_HEIGHT, CameraKey, CameraShot, Cut, OpeningCamera,
     read_camera_paths, view_centre,
 )
 from modkit.ops.profile import extracted
@@ -30,6 +30,8 @@ CUT = Cut(GEISA, (100.0, 200.0, 600.0, 800.0))
 HIGH = CameraKey((350.0, 600.0), (0.0, 1.0), 700000.0, 40.0)    # its eye at y 274 px
 LOW = CameraKey((350.0, 500.0), (0.0, 1.0), 400000.0, 40.0)     # its eye at y 314 px, its view on (350, 500)
 CAMERA = OpeningCamera(CUT, "Op_Open", "Op_Start", (HIGH, LOW), 8.0)
+SHOT = CameraShot("Op_Shot", CameraKey((300.0, 450.0), (0.0, 1.0), 390000.0, 40.0), 4.0, 11.0)   # its eye at y 268 px
+WITH_SHOT = dataclasses.replace(CAMERA, shots=(SHOT,))
 FLOOR = f"below stock's lowest start camera ({START_CAMERA_MIN_HEIGHT:,.0f}, BlackHorsesLastStand's camera_start)"
 
 
@@ -93,6 +95,31 @@ class Opening(unittest.TestCase):
         for nd in (move, end):
             self.assertEqual(prop(nd, "BlockPlayerActions").v, 1)
             self.assertEqual(prop(subs(nd)[0], "CanBeSkippedWithEscape").v, 1)
+
+    def test_shots_ship_after_the_end(self):
+        """A shot's one key ships after the opening's two paths, in the same file; the item's source names it."""
+        (it,) = WITH_SHOT.items()
+        self.assertIn("ending on x 350, y 500 px; shot Op_Shot on x 300, y 450 px", it.source)
+        got = read_camera_paths(payload(it))
+        self.assertEqual(list(got), ["Op_Open", "Op_Start", "Op_Shot"])
+        (eye, d), = got["Op_Shot"]
+        e, dd = SHOT.key.key(GEISA)
+        self.assertEqual((eye, d), (ndfbin.as_f32(*e), ndfbin.as_f32(*dd)))
+
+    def test_shot_cutscene(self):
+        """A shot's one node: EncapsuleCutscene(BlockPlayerActions)[CutsceneSequential[the path flown from the current
+        camera in `seconds`, easing in and out, skippable, then CutsceneWaitDuree `hold`]]."""
+        cut = SHOT.cutscene()
+        (seq,) = subs(cut)
+        fly, wait = subs(seq)
+        self.assertEqual((cut.cls, prop(cut, "BlockPlayerActions").v, seq.cls),
+                         ("TGDDescriptorEncapsuleCutscene", 1, "TGDDescriptorCutsceneSequential"))
+        self.assertEqual([(k, getattr(v, "text", getattr(v, "v", None))) for k, v in fly.props],
+                         [("CameraPathName", "Op_Shot"), ("TimeInSecond", 4.0), ("AccelerationActivated", 1),
+                          ("DecelerationActivated", 1), ("StartFromCurrentCameraPosition", 1),
+                          ("CanBeSkippedWithEscape", 1), ("VisibleByAlliedOfSpecifiedCamp", 1)])
+        self.assertEqual((wait.cls, wait.props), ("TGDDescriptorCutsceneWaitDuree",
+                                                  [("WaitDuration", ndfbin.Value(0x05, 11.0))]))
 
 
 class Gate(unittest.TestCase):
@@ -169,6 +196,53 @@ class Gate(unittest.TestCase):
             with self.subTest(message):
                 move = Node("TCameraPath", [*props, ("Name", Str("Op_Open"))])
                 self.assertFails(encode(build_graph([move, end], []), CAMPATHS_FILE), message)
+
+
+class Shots(unittest.TestCase):
+    """check_camera_paths with a mid-battle shot: it passes the camera and its shot, and fails each shot rule."""
+
+    def assertFails(self, raw: bytes, message: str, camera: OpeningCamera = WITH_SHOT):
+        with self.assertRaises(CheckError) as cm:
+            camera.check(raw)
+        self.assertIn(message, str(cm.exception))
+
+    def test_passes(self):
+        """The line names the shot; with no shot it is the opening's line, unchanged (Gate.test_passes)."""
+        self.assertEqual(WITH_SHOT.check(WITH_SHOT.details()),
+                         "Op_Open (2 keys) then Op_Start, its last key: every eye over the map, at least 390,000 above "
+                         "the ground (stock's lowest start camera 376,057), the last view centred on (350.0, 500.0) "
+                         "px, inside the cut; one-key shot Op_Shot on (300.0, 450.0) px, inside the cut")
+
+    def test_fails_a_missing_or_unnamed_shot(self):
+        """The file must hold the opening's paths and the shots, nothing else: a shot left out of the file, or a path
+        the camera does not name, fails."""
+        self.assertFails(CAMERA.details(), "the camera paths file holds ['Op_Open', 'Op_Start'], not the opening's "
+                                           "Op_Open and Op_Start and the shots Op_Shot")
+        with self.assertRaises(CheckError) as cm:
+            CAMERA.check(WITH_SHOT.details())
+        self.assertIn("holds ['Op_Open', 'Op_Shot', 'Op_Start'], not the opening's Op_Open and Op_Start",
+                      str(cm.exception))
+
+    def test_fails_a_shot_of_two_keys(self):
+        (e, d) = SHOT.key.key(GEISA)
+        self.assertFails(cam_file(*CAMERA.paths(), ("Op_Shot", [e, e], [d, d])),
+                         "camera path Op_Shot: a shot is one key, flown from the current camera position, not 2")
+
+    def test_fails_a_shot_outside_the_cut(self):
+        out = dataclasses.replace(WITH_SHOT, shots=(dataclasses.replace(
+            SHOT, key=dataclasses.replace(SHOT.key, at_px=(650.0, 450.0))),))
+        self.assertFails(out.details(), "camera path Op_Shot: its view centres on (650.0, 450.0) px, outside the cut "
+                                        "x 100..600, y 200..800 px", out)
+
+    def test_fails_a_shot_below_the_floor(self):
+        """The floor holds a shot too, though stock's mid-battle shots go as low as 97,021: a shot at 100,000 fails
+        the build when it plans the file."""
+        low = dataclasses.replace(WITH_SHOT, shots=(dataclasses.replace(
+            SHOT, key=dataclasses.replace(SHOT.key, height=100000.0)),))
+        with self.assertRaises(CheckError) as cm:
+            low.items()
+        self.assertEqual(str(cm.exception), f"camera path Op_Shot key 0: its eye stands 100,000 above the ground, "
+                                            f"{FLOOR}")
 
 
 class Canonical(unittest.TestCase):
@@ -305,6 +379,31 @@ class Stock(unittest.TestCase):
                 self.assertGreaterEqual(len(keys[move]), 2)
                 self.assertEqual(len(keys[end]), 1)
                 self.assertTrue(same_key(keys[end][0], keys[move][-1]), (keys[end], keys[move][-1]))
+
+    def test_mid_battle_shots_fly_one_key_from_the_current_camera(self):
+        """The shot's stock (camera-shot-from-current-position): 18 CutsceneStartCameraPath nodes in 5 challenges set
+        StartFromCurrentCameraPosition, 10 of them in exactly the order bricks.g_camera writes for a shot; 17 fly a
+        one-key path (BackhandBlow's camera_intro2, two keys at one eye, aside), in 3 to 37 s; every key stands 97,021
+        to 433,526 above its ground, 26.5 to 40 degrees down."""
+        written = [k for k, _ in subs(subs(CameraShot("x", HIGH, 4.0, 1.0).cutscene())[0])[0].props]
+        nodes_, orders, keys, times, scenarios = 0, 0, [], [], set()
+        for scenario, (nb, nodes) in self.scripts.items():
+            for cam in (nd for nd in nodes if nd.cls == "TGDDescriptorCutsceneStartCameraPath"
+                        and prop(nd, "StartFromCurrentCameraPosition") is not None):
+                nodes_ += 1
+                scenarios.add(scenario)
+                orders += [k for k, _ in cam.props] == written
+                times.append(prop(cam, "TimeInSecond").v)
+                path = stock_paths(scenario)[nb.strings[prop(cam, "CameraPathName").v].decode("latin-1")]
+                keys.append((len(path), [(eye[2] - ground_z(scenario), math.degrees(math.asin(-d[2])))
+                                         for eye, d in path]))
+        self.assertEqual((nodes_, len(scenarios), orders), (18, 5, 10))
+        self.assertEqual(sum(n == 1 for n, _ in keys), 17)
+        self.assertEqual((min(times), max(times)), (3.0, 37.0))
+        heights = [h for _, ks in keys for h, _ in ks]
+        pitches = [p for _, ks in keys for _, p in ks]
+        self.assertEqual((round(min(heights)), round(max(heights))), (97021, 433526))
+        self.assertEqual((round(min(pitches), 1), round(max(pitches), 1)), (26.5, 40.0))
 
     def rules(self, scenario: str) -> int:
         (rules,) = [nd for nd in self.scripts[scenario][1] if nd.cls == "TGDSpecificTacticalGameRules"]

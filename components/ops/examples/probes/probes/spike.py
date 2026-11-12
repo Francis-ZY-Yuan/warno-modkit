@@ -28,7 +28,7 @@ from modkit.core.gates import check
 from modkit.ops import script as ops_script
 from modkit.ops.bricks import (
     c_any, c_team, c_type, g_ammo, g_choice, g_cmp, g_collect, g_compete, g_count, g_create, g_detect, g_fx, g_hint,
-    g_hold, g_if, g_kill, g_modify, g_seize, g_seq, g_set, g_simul, g_spawn, g_until, g_wait, unit_path,
+    g_hold, g_if, g_kill, g_modify, g_seize, g_seq, g_set, g_simul, g_spawn, g_stress, g_until, g_wait, unit_path,
 )
 from modkit.ops.forces import ForceRow, group_rows, scaled
 from modkit.ops.graph import TRUE, Imp, Node, i32
@@ -39,8 +39,8 @@ from modkit.ops.leveldesign import LdItem
 from modkit.ops.maps import GEISA_BOXES
 from modkit.ops.shapes import (  # noqa: F401  (GRU_WORLD and the order types are the probe's knobs too)
     DEATH_CAUSE_SHAPE, DIVIDE, FAST_MOVE_AND_ATTACK, FOREVER, GRU_WORLD, HINT_S, LAND, PENETRATION, REVEAL_EFFECT,
-    SEIZE, SHOOT_ON_POSITION, STRICTLY_LESS, STUN, TRANSPORTER_SHAPE, Beat, add_card, beat_hint, create, lock_card,
-    move, objective, order, reveal, set_effect,
+    SEIZE, SHOOT_ON_POSITION, STRESS_SHAPES, STRICTLY_LESS, STUN, TRANSPORTER_SHAPE, Beat, add_card, beat_hint, create,
+    lock_card, move, objective, order, reveal, set_effect,
 )
 from modkit.ops.strings import Table
 from probes import profile
@@ -85,14 +85,9 @@ EXTRA_SHAPES = (
     TRANSPORTER_SHAPE,
     # Check 6 kills with Penetration.
     DEATH_CAUSE_SHAPE,
-    # Check 6: ChangeStress is a class the game has, with Group, Value and DamageType, but no stock file uses it, so the
-    # shape gate admits the class too. Value and DamageType are ints, as SetFuel's stock MaxFuelRatio (<int32>) is;
-    # DamageType is an EDamageType and may not be 0 ([[changestress-damagetype-zero]]). Property order: alphabetical,
-    # as the natives' own properties are (KillAllUnit, SetEffect, SetFuel).
-    ("TGDDescriptorChangeStress", "DamageType", 0x02, None),
-    ("TGDDescriptorChangeStress", "Group", 0x09, "TGDVariableUnitGroup"),
-    ("TGDDescriptorChangeStress", "Value", 0x02, None),
-    ("TGDDescriptorSequential", "SubActions", 0x11, "TGDDescriptorChangeStress"),  # its place in the 6:00 beat
+    # Check 6 stuns with ChangeStress, a class no stock file uses (shapes.STRESS_SHAPES: the class, its properties, and
+    # its place in a Sequential, the 6:00 beat's) [[changestress-damagetype-zero]].
+    *STRESS_SHAPES,
     # Check 7: the UH-60A spawned with its AeroRifles aboard. ProductionUnites is stock (SigurdsStrike #1046-#1055),
     # but none of its 6 objects sets Group or Transporter; the class has both, and its load check tests
     # neither (modkit.core.ndfrules).
@@ -340,8 +335,7 @@ def strike(ctx: Ctx) -> Node:
             g_modify(half, DIVIDE, 2),
             g_seq([g_if(g_cmp(struck, op=STRICTLY_LESS, other=half), g_seq([transfer]))], runs=BOX_CAP),
             g_kill(struck, cause=PENETRATION),
-            *([] if ctx.safe else [Node("TGDDescriptorChangeStress", [("DamageType", i32(STUN)), ("Group", boxed),
-                                                                      ("Value", i32(STRESS_VALUE))])]),
+            *([] if ctx.safe else [g_stress(boxed, STRESS_VALUE, STUN)]),
             objective("od_obj6", "od_obj6l", g_cmp(ctx.int_var("od_obj6_end"), 1), counters=[caught]),  # stays up
         ]),
     ]))

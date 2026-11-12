@@ -267,7 +267,7 @@ class Ranges(unittest.TestCase):
 
 class Camera(unittest.TestCase):
     """The opening camera [[start-camera-before-loading-done]]: TS_Open, three keys flown in OPENING_S, then TS_Start,
-    its last key."""
+    its last key; and the strike's shot, TS_Strike."""
 
     def test_the_move_comes_down_and_turns_south(self):
         """Each key 40 degrees down, from 720,000 to 400,000 above the ground, never below stock's lowest start camera;
@@ -301,19 +301,42 @@ class Camera(unittest.TestCase):
         _, eye_y = TWIN_CITIES.world_to_px(ts_map.CAMERA.path_keys()[-1][0][:2])
         self.assertLess(eye_y, by0)
 
-    def test_the_file_holds_the_move_and_its_end(self):
-        """TS_Open (three keys) then TS_Start, one key, the move's last; the camera gate passes it."""
+    def test_the_file_holds_the_move_its_end_and_the_strike_shot(self):
+        """TS_Open (three keys) then TS_Start, one key, the move's last, then the strike's shot TS_Strike, one key; the
+        camera gate passes it."""
         (it,) = ts_map.CAMERA.items()
         self.assertEqual((it.pack, it.path, it.action, it.fixture),
                          ("Details", CAMPATHS_FILE, "generate", "CamPaths_LevelDesign.txt"))
         nb, _, _ = decode(b"".join(it.chunks()))
         self.assertEqual([nb.cname(ob.cls) for ob in nb.objects],
-                         ["TCameraPath", *["TCameraPathKey"] * 6, "TCameraPath", "TCameraPathKey", "TCameraPathKey"])
-        self.assertEqual(nb.strings, [b"TS_Open", b"TS_Start"])
+                         ["TCameraPath", *["TCameraPathKey"] * 6, *(["TCameraPath", "TCameraPathKey", "TCameraPathKey"]
+                                                                    * 2)])
+        self.assertEqual(nb.strings, [b"TS_Open", b"TS_Start", b"TS_Strike"])
         self.assertEqual(ts_map.CAMERA.check(b"".join(it.chunks())),
-                         "TS_Open (3 keys) then TS_Start, its last key: every eye over the map, at least 400,000 above "
+                         "TS_Open (3 keys) then TS_Start, its last key: every eye over the map, at least 390,000 above "
                          "the ground (stock's lowest start camera 376,057), the last view centred on (105.0, 245.0) "
-                         "px, inside the cut")
+                         "px, inside the cut; one-key shot TS_Strike on (156.0, 500.0) px, inside the cut")
+
+    def test_the_strike_shot_frames_the_zone(self):
+        """TS_Strike [[camera-shot-from-current-position]]: one key looking at ASSEMBLY, the strike zone's centre,
+        facing south, 40 degrees down from 390,000 above the ground (BlackHorsesLastStand's cam_02 stands 390,270 up
+        at 40 degrees; the camera gate's floor is 376,057); its eye over the cut, north of the zone, so the whole zone
+        (R round ASSEMBLY) lies ahead of it; flown in 4 s (stock's mid-battle shots: 3 to 10 s), then held 11 s."""
+        shot = ts_map.STRIKE_SHOT
+        self.assertEqual((shot.name, shot.key.at_px, shot.key.facing), ("TS_Strike", ts_map.POINTS["ASSEMBLY"],
+                                                                         (0.0, 1.0)))
+        (eye, d) = shot.key.key(TWIN_CITIES)
+        self.assertEqual(round(eye[2] - TWIN_CITIES.ground_z), 390000)
+        self.assertGreaterEqual(eye[2] - TWIN_CITIES.ground_z, START_CAMERA_MIN_HEIGHT)
+        self.assertAlmostEqual(math.degrees(math.asin(-d[2])), 40.0)
+        ex, ey = TWIN_CITIES.world_to_px(eye[:2])
+        self.assertEqual((round(ex, 1), round(ey, 1)), (156.0, 318.4))
+        x0, y0, x1, y1 = ts_map.CUT_PX
+        self.assertTrue(x0 <= ex <= x1 and y0 <= ey <= y1)
+        ax, ay = ts_map.POINTS["ASSEMBLY"]
+        self.assertLess(ey, ay - op.STRIKE_R_PX)                         # the zone's north edge lies ahead of the eye
+        self.assertTrue(3.0 <= shot.seconds <= 5.0)
+        self.assertEqual((shot.seconds, shot.hold), (4.0, 11.0))
 
     @LAYOUT_DATA
     def test_the_last_view_centres_where_camp0_does(self):
@@ -501,7 +524,7 @@ class Script(unittest.TestCase):
     def test_exports(self):
         """The names the mission uses are exported: the flag, the groups, the circle and the tags."""
         exported = {nd.export for nd in self.exports}
-        for var in (op.FALLEN, op.GROUPE_JOUEUR, op.GARRISON, op.HEAVY, op.ROCKETS, op.GUNS, op.STRIKER):
+        for var in (op.FALLEN, op.GROUPE_JOUEUR, op.GARRISON, op.HEAVY, op.ROCKETS, op.GUNS):
             self.assertIn(f"{GD}/TS/Variables/{var}", exported)
         self.assertIn(f"{GD}/GdItems/CircularZones/{op.VILLAGE_RING}", exported)
         for name in op.TAGS:
@@ -536,16 +559,16 @@ class Build(unittest.TestCase):
 
     def test_the_gates_that_hold_the_frame(self):
         """Every standard gate passes (the end funnel holding all nine endings; the script-effects gate holding the
-        strike's look and the dressing; the garrison the one smart-ordered group), and the extra gates: the 57 unit
+        strike's massed look; the garrison the one smart-ordered group), and the extra gates: the 57 unit
         types the op names (the supply's, the carriers', the ATGM teams', the Kubs' and the fighters' among them), no
         Survivors name, the cut's 40 tiles, the zones and arrivals, and the fire range: GUN_SPAWN's batteries in the
-        player's alliance, its 10 battery-target pairs in range; every unit the script creates inside the playable
+        player's alliance, its 9 battery-target pairs in range; every unit the script creates inside the playable
         zone."""
         for line in ("1 player reinforcement locations and 1 aerial corridors",
                      "12 never-finishing script actions",              # the three locks and the nine endings
                      "1 HUD restores with the buy-menu switch Default",
                      "9 TriggerEndGame, each under $/GDScript/TS/EndFunnel",
-                     "13 script effect launches, each a self-contained GameFx effect",
+                     "34 script effect launches, each a self-contained GameFx effect",   # the flash's 34 nodes
                      "1 smart-ordered groups, none ordered again after its smart order",
                      "gate 3 units: 57 unit descriptors exist",
                      "gate 3 no-template-name: 15 re-keyed or generated dumps without Survivors",
@@ -553,19 +576,35 @@ class Build(unittest.TestCase):
                      "gate 3 zone-layout: 3 zones and 2 arrivals laid out by stock's rules",
                      "CreateUnitOnPosition, each inside the shipped playable zone",
                      "gate 3 fire-range: TS_GunSpawn's batteries in Allie, the player's alliance (0), standing inside "
-                     "the playable zone; 10 battery-target pairs on 4 targets, each inside its band (closest: "
+                     "the playable zone; 9 battery-target pairs on 3 targets, each inside its band (closest: "
                      "TS_Village from 2S7M_Malka_SOV, 846 GRU inside)",
                      "gate 5 package: all 43 entries lie under challenge_OperationTwinStrike; no Gameplay file",
-                     "CamPaths_LevelDesign 10 objects vs 35 stock files"):   # gate 2: canonical, stock shapes
+                     "CamPaths_LevelDesign 13 objects vs 35 stock files"):   # gate 2: canonical, stock shapes
             self.assertIn(line, self.log)
 
     def test_the_shipped_camera_passes_the_camera_gate(self):
         """The camera gate on the camera paths file read back from the written Details pack, where the game reads it:
-        the move and its end, every eye over the map and 400,000 or more above the ground, the last view in the cut."""
+        the move and its end, the strike's shot, every eye over the map and 390,000 or more above the ground, the last
+        view and the shot's in the cut."""
         path = os.path.join(OUT, "TwinStrike", "Scenarios", f"{profile.SCENARIO}_Details.dat")
         entries = {e.path: edat.read_entry(path, e) for e in edat.read_index(path)}
-        self.assertIn("the last view centred on (105.0, 245.0) px, inside the cut",
-                      ts_map.CAMERA.check(entries[CAMPATHS_FILE]))
+        self.assertIn("the last view centred on (105.0, 245.0) px, inside the cut; one-key shot TS_Strike on (156.0, "
+                      "500.0) px, inside the cut", ts_map.CAMERA.check(entries[CAMPATHS_FILE]))
+
+    def test_the_camera_gate_fails_the_strike_shot_on_the_ground(self):
+        """The camera gate holds the strike's shot too: the same op with TS_Strike brought down to 100,000 above the
+        ground (stock's mid-battle shots go as low as 97,021, but the gate keeps every key above its floor) fails the
+        build with the gate's line, before anything is written."""
+        low = dataclasses.replace(ts_map.STRIKE_SHOT, key=dataclasses.replace(ts_map.STRIKE_KEY, height=100000.0))
+        camera = dataclasses.replace(ts_map.CAMERA, shots=(low,))
+        bad = dataclasses.replace(build_profile(), extra_items=(ts_map.CUT.items, camera.items))
+        out = os.path.join(OUT_ROOT, "bad-strike-camera")
+        with self.assertRaisesRegex(CheckError, r"^camera path TS_Strike key 0: its eye stands 100,000 above the "
+                                                r"ground, below stock's lowest start camera \(376,057, "
+                                                r"BlackHorsesLastStand's camera_start\)$"):
+            ops_testing.quiet_build(bad, op.content(), out)
+        self.assertFalse(os.path.exists(out))
+        remove_out(out)
 
     def test_the_camera_gate_fails_a_key_at_ground_level(self):
         """The camera gate's proof (it passes this build, above): the same op with the opening move's middle key
@@ -604,7 +643,7 @@ class Build(unittest.TestCase):
         4,577 GRU north of the cut, where the play's batteries stood on the cut's edge and the player's Ka-50s killed
         them [[created-units-stand-in-zone]], fails the build with the gate's line."""
         out = os.path.join(OUT_ROOT, "bad-zone")
-        with self.assertRaisesRegex(CheckError, r"^10 of \d+ CreateUnitOnPosition create units outside the playable "
+        with self.assertRaisesRegex(CheckError, r"^9 of \d+ CreateUnitOnPosition create units outside the playable "
                                                 r"zone:\n  2S7M_Malka_SOV is created at TS_GunSpawn, 4,577 GRU N of the "
                                                 r"playable zone: it stands on the zone's edge"):
             quiet_build(self.moved_spawn(140, 14), out)

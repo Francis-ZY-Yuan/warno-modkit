@@ -36,7 +36,9 @@ ai-grid-tiles-playable-zone):
 last key (``bricks.g_camera``), so a deployment phase opens on the op's own ground and not at the engine's default
 camera: ``OpeningCamera.items`` ships the two paths as the Details file ``CamPaths_LevelDesign.ndfbin`` in place of the
 map's own camera paths, held to the camera gate (``check_camera_paths``: stock's key shape, every eye over the map and
-at least stock's lowest start camera above the ground, the last view inside the cut).
+at least stock's lowest start camera above the ground, the last view inside the cut). Its mid-battle shots
+(``CameraShot``: a one-key path the camera flies to from wherever it is, then holds) ship in the same file, held to
+the same gate, each shot one key whose view lies inside the cut.
 
 Named places are content, not map facts: each op keeps its own. The ones more than one example op uses on Geisa are
 kept once here, read-only (``GEISA_POINTS``, ``GEISA_BOXES``).
@@ -390,22 +392,37 @@ def read_camera_paths(raw: bytes) -> dict[str, list[Key]]:
 
 
 def check_camera_paths(raw: bytes, on: StockMap, box_px: tuple[float, float, float, float], move: str,
-                       end: str) -> str:
+                       end: str, shots: Sequence[str] = ()) -> str:
     """The camera gate, on a camera paths file as it ships (the game reads it as the scenario's Details file
-    CAMPATHS_FILE) for an opening camera on `on` that flies `move` and then snaps to `end`:
-    - the file holds the two paths and nothing else, each in stock's key shape (read_camera_paths); `move` has two
+    CAMPATHS_FILE) for an opening camera on `on` that flies `move` and then snaps to `end`, with the mid-battle shots
+    `shots` (CameraShot names):
+    - the file holds those paths and nothing else, each in stock's key shape (read_camera_paths); `move` has two
       keys or more, and `end` is one key, the move's last, as stock ends an opening move (DelayedRetribution's
       camera_intro_end #79 is camera_intro #92's last key; GloryOrAttrition #74 and #96, TheHydra #168 and #167);
+    - each shot is one key, as 17 of the 18 stock paths flown from the current camera position are (BackhandBlow's
+      camera_intro2, two keys at one eye, aside), and its view centre lies inside `box_px`;
     - every key looks down, its direction a unit vector;
     - every key's eye stands over the map (0 to its minimap size on both axes), at least START_CAMERA_MIN_HEIGHT above
-      its ground_z (stock's lowest start camera);
+      its ground_z (stock's lowest start camera; stock's mid-battle shots stand 97,021 to 433,526 up, so a shot is
+      held to the upper part of their range);
     - the last key's view centre lies inside `box_px` (minimap px: the op's cut).
     Returns the build log's line."""
     min_height = START_CAMERA_MIN_HEIGHT
     paths = read_camera_paths(raw)
-    check(set(paths) == {move, end}, f"the camera paths file holds {sorted(paths)}, not the opening's {move} and {end}")
+    named = f" and the shots {', '.join(shots)}" if shots else ""
+    check(set(paths) == {move, end, *shots},
+          f"the camera paths file holds {sorted(paths)}, not the opening's {move} and {end}{named}")
     check(len(paths[move]) >= 2, f"camera path {move}: one key is a snap, not a move")
     check(paths[end] == paths[move][-1:], f"camera path {end} is not the one key {move} ends on")
+    x0, y0, x1, y1 = box_px
+    seen = []
+    for shot in shots:
+        check(len(paths[shot]) == 1, f"camera path {shot}: a shot is one key, flown from the current camera position, "
+                                     f"not {len(paths[shot])}")
+        sx, sy = on.world_to_px(view_centre(paths[shot][0], on.ground_z))
+        check(x0 <= sx <= x1 and y0 <= sy <= y1, f"camera path {shot}: its view centres on ({sx:.1f}, {sy:.1f}) px, "
+                                                 f"outside the cut x {x0:g}..{x1:g}, y {y0:g}..{y1:g} px")
+        seen.append(f"{shot} on ({sx:.1f}, {sy:.1f}) px")
     w, h = (n * on.world_per_px for n in on.minimap_px)
     low = math.inf
     for name, keys in paths.items():
@@ -419,12 +436,28 @@ def check_camera_paths(raw: bytes, on: StockMap, box_px: tuple[float, float, flo
                   f"camera ({min_height:,.0f}, BlackHorsesLastStand's camera_start)")
             low = min(low, z - on.ground_z)
     cx, cy = on.world_to_px(view_centre(paths[move][-1], on.ground_z))
-    x0, y0, x1, y1 = box_px
     check(x0 <= cx <= x1 and y0 <= cy <= y1, f"camera path {move}: its last view centres on ({cx:.1f}, {cy:.1f}) px, "
                                              f"outside the cut x {x0:g}..{x1:g}, y {y0:g}..{y1:g} px")
+    shot_line = f"; one-key shot{'s' if len(seen) > 1 else ''} {', '.join(seen)}, inside the cut" if seen else ""
     return (f"{move} ({len(paths[move])} keys) then {end}, its last key: every eye over the map, at least {low:,.0f} "
             f"above the ground (stock's lowest start camera {min_height:,.0f}), the last view centred on "
-            f"({cx:.1f}, {cy:.1f}) px, inside the cut")
+            f"({cx:.1f}, {cy:.1f}) px, inside the cut{shot_line}")
+
+
+@dataclass(frozen=True)
+class CameraShot:
+    """A mid-battle camera shot (the ops knowledge record camera-shot-from-current-position): the one-key path `name`,
+    giving the view `key`, which the camera flies to from wherever it is in `seconds`, easing in and out, Escape
+    skipping the move; the cutscene then holds the view `hold` seconds, the player's actions blocked throughout, before
+    control returns. It ships in its OpeningCamera's camera paths file, held to the same gate (check_camera_paths)."""
+    name: str
+    key: CameraKey
+    seconds: float
+    hold: float
+
+    def cutscene(self) -> Node:
+        """The shot's one script node: bricks.g_camera from the current camera position, then the hold."""
+        return g_camera(self.name, self.seconds, from_current=True, hold=self.hold)
 
 
 @dataclass(frozen=True)
@@ -435,33 +468,39 @@ class OpeningCamera:
     to the one-key path `end`, the move's last key, so a skipped move ends there too (DelayedRetribution's #64/#92
     then #65/#79). The script then restores the HUD, and the deployment phase opens on the last key's view.
 
-    * ``items`` is an ``OpProfile.extra_items`` entry: the Details file CAMPATHS_FILE holding the two paths
-      (zones.camera_paths_graph), generated, held to check_camera_paths when a build plans it (a failure fails the
-      build with one FAILED line) and dumped. The profile then ships no CAMPATHS_FILE among its ``map_copies``, and
-      names CAMERA_SHAPE_SOURCES among its ``shape_sources``.
-    * ``cutscenes`` are the script's two nodes, run right after LoadingDone (mission.script_frame's `opening`)."""
+    * ``items`` is an ``OpProfile.extra_items`` entry: the Details file CAMPATHS_FILE holding the two paths and the
+      `shots`' (zones.camera_paths_graph), generated, held to check_camera_paths when a build plans it (a failure
+      fails the build with one FAILED line) and dumped. The profile then ships no CAMPATHS_FILE among its
+      ``map_copies``, and names CAMERA_SHAPE_SOURCES among its ``shape_sources``.
+    * ``cutscenes`` are the script's two nodes, run right after LoadingDone (mission.script_frame's `opening`); each
+      shot's ``CameraShot.cutscene`` is the op's to place mid-battle."""
     cut: Cut
     move: str
     end: str
     keys: tuple[CameraKey, ...]
     seconds: float
+    shots: tuple[CameraShot, ...] = ()
 
     def path_keys(self) -> list[Key]:
         """The move's keys on the cut's map, world units."""
         return [k.key(self.cut.map) for k in self.keys]
 
     def paths(self) -> list[tuple[str, list, list]]:
-        """zones.camera_paths_graph's input: the move, then the end, its last key."""
+        """zones.camera_paths_graph's input: the move, then the end, its last key, then each shot's one key."""
         keys = self.path_keys()
-        return [(self.move, [e for e, _ in keys], [d for _, d in keys]), (self.end, [keys[-1][0]], [keys[-1][1]])]
+        shots = [(s.name, *s.key.key(self.cut.map)) for s in self.shots]      # (name, eye, direction)
+        return [(self.move, [e for e, _ in keys], [d for _, d in keys]), (self.end, [keys[-1][0]], [keys[-1][1]]),
+                *((name, [eye], [d]) for name, eye, d in shots)]
 
     def details(self) -> bytes:
-        """The camera paths file: the two paths."""
+        """The camera paths file: the two paths, then the shots'."""
         return encode(build_graph(camera_paths_graph(self.paths()), []), CAMPATHS_FILE)
 
     def check(self, raw: bytes) -> str:
-        """check_camera_paths of a camera paths file for this camera, inside the cut's box. Returns its line."""
-        return check_camera_paths(raw, self.cut.map, self.cut.box_px, self.move, self.end)
+        """check_camera_paths of a camera paths file for this camera and its shots, inside the cut's box. Returns its
+        line."""
+        return check_camera_paths(raw, self.cut.map, self.cut.box_px, self.move, self.end,
+                                  tuple(s.name for s in self.shots))
 
     def cutscenes(self) -> tuple[Node, Node]:
         """The move (bricks.g_camera with `seconds`), then the snap to its last key (bricks.g_camera)."""
@@ -473,8 +512,9 @@ class OpeningCamera:
         raw = self.details()
         self.check(raw)
         x, y = self.keys[-1].at_px
-        return [mem_item("Details", CAMPATHS_FILE, raw, "generate",
-                         f"generated (opening camera {self.move} then {self.end}, ending on x {x:g}, y {y:g} px)",
+        shots = "".join(f"; shot {s.name} on x {s.key.at_px[0]:g}, y {s.key.at_px[1]:g} px" for s in self.shots)
+        source = f"generated (opening camera {self.move} then {self.end}, ending on x {x:g}, y {y:g} px{shots})"
+        return [mem_item("Details", CAMPATHS_FILE, raw, "generate", source,
                          fixture=CAMPATHS_FILE.replace(".ndfbin", ".txt"))]
 
 # --------------------------------------------------------------------------- the overlay

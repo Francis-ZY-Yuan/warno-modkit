@@ -139,8 +139,8 @@ fire the 2S7Ms' alone. Nothing on the map is far enough for the BM-30, so it is 
 | 1. Assault | ~10 min | Take the village from its pre-placed garrison. A preparation fire on it is offered (5.4). | The village falls (5.1); deadline 20 min |
 | 2. Unlock | ~2 min | The best Soviet cards unlock. The recon screen is reported. | Timer |
 | 3. Counter-attack | ~12 min | US battalion 1 comes on both lanes, NATO fighters sweep the boxes. Fire missions and the division fire plan run. | Battalion 1 is broken (6.4), or 15 min with the village held |
-| 4. Surprise | ~5 min | Battalion 2 appears at ASSEMBLY with "attacks in 05:00". The release dialog follows. | Strike, or the countdown runs out |
-| 5. Hold | 5 min after a strike; up to 20 min after withholding; P3 shows the time left | Hold the village (5.8) | The end clock, NATO has no ground unit left, or the village is lost |
+| 4. Surprise | ~5 min | Battalion 2 appears at ASSEMBLY with "attacks in 05:00". The release dialog follows; after a strike, the Soviets finish what it left of battalion 2. | Battalion 2 broken after a strike (20 min at most), or the countdown runs out |
+| 5. Hold | 5 min after a struck battalion 2 breaks; up to 20 min after withholding; P3 shows the time left | Hold the village (5.8) | The end clock, NATO has no ground unit left, or the village is lost |
 
 ### 4.2 Deadlines and losses (no phase can hang)
 
@@ -167,13 +167,13 @@ fire the 2S7Ms' alone. Nothing on the map is far enough for the BM-30, so it is 
 | P1 | Take the village | "Enemy left in the village: N" | – |
 | P2 | Hold the village | "NATO N/60 s, empty N/180 s", the failures' clocks | NATO owns the village for 60 s, or its zone is empty of Soviet units for 3 min |
 | B1 | Break the first battalion | "Battalion 1 tanks destroyed: N / 31" (31 at Medium; the difficulty's company teams move it) | – |
-| B2 | Deal with the second battalion | the countdown, then "N tanks left" | – |
-| P3 | Hold on (phase 5): 5 min after a strike, or 20 min at most after withholding | the end clock, "Ends in 4:59", a running timer | – (done or failed with the ending) |
+| B2 | Deal with the second battalion; after a strike, finish it | the countdown, then "N tanks left" | – |
+| P3 | Hold on (phase 5): 5 min after a struck battalion 2 breaks, or 20 min at most after withholding | the end clock, "Ends in 4:59", a running timer | – (done or failed with the ending) |
 
 Objective counters ✓ [[objective-counters]]. Each label is pinned to its place [[objective-label-needs-position]]; B1,
 whose battalion comes on both lanes, shows in the objectives panel only. P3's label, its clock, is pinned on the
-village's command zone. The fire boxes' labels are done once nothing more comes through the boxes (the strike's kill,
-battalion 2 broken, or the end), so no label the player cannot act on stays open in phase 5.
+village's command zone. The fire boxes' labels are done once nothing more comes through the boxes (battalion 2
+broken, struck or not, or the end), so no label the player cannot act on stays open in phase 5.
 
 ### 4.3 Economy
 
@@ -282,42 +282,84 @@ gets far.
 - **The release dialog** follows the hint: "Request nuclear release / Fight it conventionally" ✓. It waits for no fire
   to hold the guns and no other dialog to be open, but 2 min at most, so a flag left set never hides it (in the first
   play the fire plan's flag stayed set and the dialog never showed); 2:50 of the countdown are left at worst.
-- **On release:**
-  1. A hint: "Release granted. Strike in 0:30. Keep clear of the marked zone." The zone's label is pinned.
-  2. With the hint, the round, a fire of its own (5.4): one `2S7M_Malka_SOV` created at GUN_SPAWN, ordered 20 s later
-     to fire at ASSEMBLY's Name tag: one salvo, its three shells, which leave after the gun's 30 s aiming time, so
-     they land on the zone after the effect. The 2S7 was the Soviet nuclear-capable gun.
-  3. At 0:30, the strike itself: the effect, then the kill (both below).
-  4. Dressing: ground fires (`feu_fx_script`, the game's script fire) and black smoke
-     (`fx_FumeeNoire_ForScript_RandomPosition`, the burning-wreck effect at random spots) across the zone for a
-     minute. The napalm binder (`fx_binder_fire_Napalm_Lourd`) declares three parameters, so a script cannot launch it
-     [[script-effects-self-contained]].
-  5. B2 completes. Phase 5 starts.
+- **On release** (seconds after the answer):
+  1. **0:00.** A hint: "Release granted. Strike in 0:30. Keep clear of the marked zone." The zone's label is pinned.
+     The guns stay held from the release on, so no fire lands in the strike's window.
+  2. **0:25, the camera.** It flies to the zone from wherever the player's camera is, in 4 s, easing in and out,
+     Escape skipping the move, and arrives a second before the flash; it holds the zone 11 s, the player's actions
+     blocked, then hands control back ◐ [[camera-shot-from-current-position]]. The view: ASSEMBLY, facing south,
+     40 degrees down from 390,000 world units above the ground, the whole zone ahead (`twinstrike.map.STRIKE_SHOT`,
+     the camera path `TS_Strike`).
+  3. **0:30, the flash.** Every effect at once (below).
+  4. **0:30.5, the toll**, inside the blasts (below): a share of battalion 2 killed, the rest damaged and stunned.
+     B2's countdown completes; B2 becomes "FINISH THE SECOND BATTALION: N tanks left".
+  5. **0:40, as the camera hands back control,** the guns are freed and a hint says what is left: "The strike has
+     gutted the second battalion. Its survivors are stunned and damaged: finish it." Timed, not chained to the
+     cutscene, so Escape or a slow cutscene holds nothing.
+  6. **Then the Soviets finish it.** B2 completes once battalion 2 is broken (BN2_BROKEN_N tanks or fewer left, as on
+     the withheld road; a destroyed battalion has none), with the hint "The second battalion is broken." Phase 5 starts
+     then, or at once when NATO has no ground unit left, or 20 min after the camera hands back at most (no phase
+     hangs, 4.2).
+     Phase 5 never starts inside the cutscene, so its end never opens a dialog there.
+  No gun fires the strike. The first build's lone 2S7M round landed 36 to 46 s after the kill, on a zone already
+  empty, and is gone.
 - **On "fight it conventionally":** the countdown runs, battalion 2 attacks, and the division fire plan, if unused, is
   still there. The ending text differs (5.8).
 
-**The effect.** `LaunchFXFireAndForgetOnPosition` with `$/GFX/GameFx/fx_HE_Mega_Bomb_ForScript`, the game's
-script-only mega bomb ? [[script-effects-self-contained]]. The game's own mushroom cloud, the tactical-nuke impact
-effect (`fx_impact_sol_Tactical_Nuke`, `fx_impact_Tactical_Nuke`), crashes the game when a script launches it
-[[scripted-nuke-effect]].
+**The flash: massed effects, all self-contained** ◐ [[script-effects-self-contained]]. The game's own mushroom cloud,
+the tactical-nuke impact effect (`fx_impact_sol_Tactical_Nuke`, `fx_impact_Tactical_Nuke`), crashes the game when a
+script launches it [[scripted-nuke-effect]]. One mega bomb is about a 203 mm shell's size. So the flash masses, at
+RedJuggernaut's scale (its intro launches 61 effects at once), only effects a script is known to launch, in one
+Simultaneous (97 launches):
+- **13 mega bombs** (`fx_HE_Mega_Bomb_ForScript`, seen in our smoke play): on ASSEMBLY and on twelve spots round it,
+  six inner ones over battalion 2 (0.15 to 0.32 R) and six outer ones about 0.5 R out. The two southern spots are
+  pulled north inside the cut.
+- **70 impacts of the 203 mm barrage** (`fx_HE_Artillery_203mm_ForScript_RandomPosition`, stock-launched 27 times):
+  ten each at ASSEMBLY and the six inner spots, each impact at a random spot up to about 900 m round its tag. This is
+  RedJuggernaut's form, a Sequential of ten launches per tag.
+- **Smoke, 14:** white smoke with a ground fire (`fx_FumeeBlanche_ForScript_RandomPosition`, stock-launched 45 times;
+  it lasts minutes) and black smoke, the burning-wreck effect at a random spot round its tag
+  (`fx_FumeeNoire_ForScript_RandomPosition`, stock-launched 3 times), at ASSEMBLY and the six outer spots.
+The napalm binder (`fx_binder_fire_Napalm_Lourd`) declares three parameters, so a script cannot launch it.
 
-**The kill: every NATO unit inside the zone.** No more and no less.
-1. A circular detector of radius R over ASSEMBLY, constrained to the NATO camps.
-2. `AddDetectedUnitsToUnitGroup` gathers them into one group ✓ [[detector-circles-only]].
-3. `KillAllUnit` kills the group with DeathCause Penetration, which leaves wrecks ?. Vanished ✓ [[vanished-removal]]
-   is the fallback if probe 3 shows no wrecks.
+It reads as a carpet of heavy impacts and lasting smoke across the zone, not as a mushroom cloud. The real nuke
+effect needs its parameters bound by a call; that is a probe of its own, not this build.
 
-Soviet units inside are not touched; the warning keeps them out.
+**No fog lift.** The zone lies in fog for the player; the camera and the effects are what make the strike seen.
+Script effects show in fog (the smoke play's player saw explosions on undetected units). No stock script lifts the
+fog, and no play of ours has, so the strike does not.
 
-**The radius.** R starts at 800 m and is tuned to the effect's visible size in probe 3. Battalion 2's layout fits
-inside 0.8 R.
+**The toll: kill, damage, stun; the Soviets finish them.** The strike no longer kills every NATO unit in the zone.
+1. **The zone.** A circular detector of radius R over ASSEMBLY, constrained to the NATO camps, gathers every NATO
+   unit inside into one group ✓ [[detector-circles-only]].
+2. **The kill: a share of battalion 2, by difficulty** (the knob `ts_kill_pct`): 50 % on Easy, 40 % on Medium, 30 %
+   on Hard, 26, 21 or 16 of its 52 units. They are whole units, apportioned over its types by largest remainder, so
+   tanks and IFVs both lose about the share (15, 12 or 9 of its 29 tanks; 4, 3 or 2 of its 8 Marders), and spread
+   through both halves' formations (`op.strike_kills`). Each is killed by its spawn tag: `KillAllUnit` on spawn tags
+   is stock (Marauders kills pre-placed units so) ◐, with DeathCause Penetration, which leaves wrecks ?; Vanished ✓
+   [[vanished-removal]] is the fallback. A count loop of `TransferUnitToUnitGroup` would have needed a shape no play
+   has run.
+3. **The damage:** `ChangeStress` Physical, 5 health points off every unit left in the zone: half of a tank's or a
+   Marder's 10, five of a Panzergrenadier squad's 6. It kills nothing ? [[changestress-damagetype-zero]].
+4. **The stun:** `ChangeStress` Stun, 240 points on every one of them, 0.8 of a ground unit's 300 cap ?. No stock
+   script writes `ChangeStress`; probe 1 loaded it with Stun, and no play has run it. Suppress cannot be written: it
+   fails at load.
+5. **The finish.** The survivors stay at ASSEMBLY: their tanks left (14, 17 or 20) are above the 9 that break the
+   battalion, so the Soviets must go in and finish it (step 6 above).
+
+Soviet units inside are not touched; the warning keeps them out. NATO units of battalion 1 caught in the zone are
+damaged and stunned, not killed.
+
+**The radius.** R is 800 m. Battalion 2's layout fits inside 0.8 R. The flash covers it: the mega bombs out to about
+0.55 R, the barrage's impacts out past R.
 
 ### 5.7 Difficulty
 
 Difficulty reaches the script as three conditions, with Medium as the baseline ◐ [[difficulty-branches]]. It scales:
 - the waves' company counts;
 - the fire-mission cooldown;
-- the garrison's threshold.
+- the garrison's threshold;
+- the strike's kill: 50, 40 or 30 % of battalion 2 (5.6).
 
 ### 5.8 End and grade
 
@@ -326,7 +368,8 @@ With CheckEndGame off, only the script ends the battle, and the first TriggerEnd
 
 - **Loss** (WinningAlliance 1): any loss in 4.2.
 - **The end clock** starts when phase 5 starts. Its length depends on the release dialog:
-  - **after a strike:** 5 min;
+  - **after a strike:** 5 min, from when the Soviets have broken what the strike left of battalion 2 (5.6), or NATO
+    has no ground unit left; 20 min after the strike at most, so the phase cannot hang;
   - **after withholding:** phase 5 runs until battalion 2 is broken or the village is lost, capped at 20 min. Battalion
     2 starts its attack when the countdown runs out, from about 5,200 GRU away, so the fight comes fast. It needs the
     longer window to be beaten.
@@ -345,8 +388,9 @@ With CheckEndGame off, only the script ends the battle, and the first TriggerEnd
   - **Minor:** the village is held, but the player lost more than half of what they bought.
 - **The end dialog** names the strike: "released" or "withheld". There is no moral score; the choice only changes the
   ending text and the battle that came before.
-- **Both roads reach the top grade.** Release makes Total easy. Withholding is the harder road to the same grade: break
-  battalion 2 in the field.
+- **Both roads reach the top grade.** Release makes Total easier: the strike guts battalion 2 and the Soviets finish
+  it. The strike alone no longer beats it. Withholding is the harder road to the same grade: break battalion 2 in the
+  field.
 
 ## 6. Forces and deck
 
@@ -409,7 +453,7 @@ All units are vanilla. Every name below is in the game's DeckPacks. Each build's
 | Group | Units | How |
 |---|---|---|
 | FOBs, at FOB_W and FOB_E | `FOB_SOV` ×2 | Pre-placed in the player's camp and auto-spawned, so they stand in the north zone from the deployment on. No deck that `SetDeck` can address holds a FOB [[deployment-phase-recipe]]. Marauders and SigurdsStrike place the player's FOB the same way (`C0_FOB_UK_2`, `C0_FOB_TCH_1`, in Camp 0) ◐. |
-| Division artillery | `2S7M_Malka_SOV` ×6, `BM27_Uragan_SOV` ×6, and one `2S7M_Malka_SOV` for the strike's round | Not pre-placed: each fire creates its battery at GUN_SPAWN, the cut's north-west corner, in the player's allied camp, and removes it once the salvo has landed (5.4). Uncontrolled; they fire on order only. In the first play they stood pre-placed in the allied camp there and drove toward the front; created north of the cut in an enemy camp, they stood on its edge and the player's units killed them. |
+| Division artillery | `2S7M_Malka_SOV` ×6, `BM27_Uragan_SOV` ×6 (no gun fires the strike, 5.6) | Not pre-placed: each fire creates its battery at GUN_SPAWN, the cut's north-west corner, in the player's allied camp, and removes it once the salvo has landed (5.4). Uncontrolled; they fire on order only. In the first play they stood pre-placed in the allied camp there and drove toward the front; created north of the cut in an enemy camp, they stood on its edge and the player's units killed them. |
 
 ### 6.3 NATO forces (all scripted)
 
@@ -500,12 +544,14 @@ points given are the start, the grant and one income tick a minute after the fal
     eye over the map and the last view inside the cut.
   - v0.1 snapped a one-key path over the village before LoadingDone instead. The deployment phase's start lost it, and
     the camera sat on the ground [[2026-11-11-twin-strike-opening-camera]].
+  - `TS_Strike`, the strike's shot (5.6): one key over ASSEMBLY, flown from the player's camera in 4 s and held 11 s
+    ◐ [[camera-shot-from-current-position]]; the camera gate holds it too.
 - **Text.** English. Simplified Chinese is a later build; the toolkit's glyph gate is ready for it.
 - **The Operations menu** takes stock's form: a briefing dated July 1989 in four numbered points, the forces line, the
   background and the outcome texts, at stock's lengths. Its emblems are RedJuggernaut's (the 79th Guards Tank
   Division's star, flag and Guards badge); its map picture is still Survivors'.
 - **Screenshots** for the README: the assault on the village under fire, the counter-attack's columns on the tactical
-  map, the mushroom cloud over ASSEMBLY, and the end screen.
+  map, the strike over ASSEMBLY, and the end screen.
 
 ## 8. Build route
 
@@ -581,7 +627,7 @@ Its answers set R (5.6), the death cause, and the deck bases (6.1, 6.3).
 
 | Risk | If it bites | Fallback |
 |---|---|---|
-| The nuke effect does not play from a script | No cloud | Stack the 203 mm script effect and the black smoke; keep the kill |
+| The nuke effect does not play from a script | No cloud | Built so: massed script effects, the strike camera, and a toll the Soviets finish (5.6) |
 | Penetration leaves no wrecks or fails at load | Units vanish | Vanished ✓, under the cloud |
 | A Soviet player camp breaks the clone | Twin Strike cannot be Soviet | Re-clone from a Soviet-player stock challenge. That is a new `Template`, and the largest cost. |
 | Battle size: about 160 at the peak, 35–40 min | Frame rate, script load | The scale knob; shorter phases |
