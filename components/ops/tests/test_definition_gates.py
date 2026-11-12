@@ -485,7 +485,7 @@ class DefinitionLayoutTest(unittest.TestCase):
         for classes in (("TNDFTagFile", "TNDFTagFile"), ("TOther",), ()):
             entries = definition() | {def_path("ScenarioInfo", TAG, S): tag_file(*classes)}
             with self.subTest(classes=classes), self.assertRaisesRegex(
-                    CheckError, rf"ScenarioInfo\.txn\.tag holds \[.*\], not one TNDFTagFile"):
+                    CheckError, r"ScenarioInfo\.txn\.tag holds \[.*\], not one TNDFTagFile"):
                 check_definition_layout(entries, S)
 
     def test_a_source_map_holds_a_line_per_object(self):
