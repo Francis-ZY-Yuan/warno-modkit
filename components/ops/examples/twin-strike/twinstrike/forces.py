@@ -42,14 +42,25 @@ FORCE_SCALE = 1.0       # design 6.4: 1x at release
 
 DECK_BASE = RJ_PLAYER_DECK            # Card (unit, count, transport or None) is modkit.ops.profile's
 
+# The ATGM team (game build 201602; a stock test re-derives both): the Soviet ATGM infantry team whose missile has the
+# highest AT penetration among the teams a Soviet division's rules field (DivisionRules.ndf), the longer range on a tie.
+# It is the Konkurs-M team, its 9M113M (late) 23 AP at 2,625 GRU, which the 27th Guards Motor Rifle Division fields in
+# a UAZ-469 or a BTR-80: the BTR-80 is its armoured carrier. Every other team's missile is 20 AP or less.
+ATGM_TEAM, ATGM_CARRIER = "ATteam_KonkursM_TTsko_SOV", "BTR_80_SOV"
+# The reserve's tank: the T-80U variant whose ATGM has 25 AP, the T-80U obr. 1989 (its 9M119M Invar; the T-80U, the
+# T-80UD and the T-80U command tank fire the 21 AP 9M119M Refleks). No command variant has the Invar, so the command
+# tank stays the T-80U's. A stock test re-checks the AP.
+T80U_TANK = "T80U_Obr89_SOV"
 # The start, at least: the forward detachment's tanks, command units (three, so the fall never hangs on one vehicle),
-# motor rifles in their BMP-2s, flamethrower engineers, recon, air defence, the regiment's 2S1s and four bare Ka-29s.
-# Every infantry card rides in a carrier, as stock fields these squads (no stock deck holds one bare): the engineers in
-# MT-LBs (RJ's deck fields the MT-LB, the 2S12's tractor; 5 Army General pawns pair them so) and the scouts in UAZ-469s
-# (RJ's deck fields them; the pairing of 170 of 198 pawns and of the 79th Guards Tank Division's own rule).
+# motor rifles in their BMP-2s, two ATGM teams, flamethrower engineers, recon, air defence, the regiment's 2S1s and four
+# bare Ka-29s. Every infantry card rides in a carrier, as stock fields these squads (no stock deck holds one bare): the
+# engineers in MT-LBs (RJ's deck fields the MT-LB, the 2S12's tractor; 5 Army General pawns pair them so) and the
+# scouts in UAZ-469s (RJ's deck fields them; the pairing of 170 of 198 pawns and of the 79th Guards Tank Division's own
+# rule); the ATGM teams in their BTR-80s.
 START_TARGETS: tuple[Card, ...] = (
     ("T80BV_SOV", 10, None), ("T80BV_CMD_SOV", 2, None), ("BMP_2_CMD_SOV", 1, None),
-    ("MotRifles_SOV", 8, "BMP_2_SOV"), ("Engineers_Flam_SOV", 2, "MTLB_transp_SOV"), ("BRM_1_SOV", 2, None),
+    ("MotRifles_SOV", 8, "BMP_2_SOV"), (ATGM_TEAM, 2, ATGM_CARRIER),
+    ("Engineers_Flam_SOV", 2, "MTLB_transp_SOV"), ("BRM_1_SOV", 2, None),
     ("Scout_SOV", 2, "UAZ_469_SOV"), ("ZSU_23_Shilka_SOV", 2, None), ("MTLB_Strela10_SOV", 1, None),
     ("2S1_Gvozdika_SOV", 4, None), ("Ka_29_SOV", 4, None),
 )
@@ -57,6 +68,7 @@ START_TARGETS: tuple[Card, ...] = (
 # Strela-10, so those add nothing; it holds 2 2S1, so 2 more. The stock test re-derives this.
 START_ADDS: tuple[Card, ...] = (
     ("T80BV_CMD_SOV", 2, None), ("BMP_2_CMD_SOV", 1, None), ("MotRifles_SOV", 8, "BMP_2_SOV"),
+    (ATGM_TEAM, 2, ATGM_CARRIER),
     ("Engineers_Flam_SOV", 2, "MTLB_transp_SOV"), ("Scout_SOV", 2, "UAZ_469_SOV"), ("ZSU_23_Shilka_SOV", 2, None),
     ("2S1_Gvozdika_SOV", 2, None), ("Ka_29_SOV", 4, None),
 )
@@ -69,13 +81,15 @@ SUPPLY: tuple[Card, ...] = SOVIET_PLAYER_SUPPLY
 START_LOCKS: tuple[str, ...] = ("Tunguska_2K22_SOV", "Su_24M_SOV", "Mi_24P_SOV")
 # The fall's cards: the division's reserve, added once the locks lift. The Metis teams ride in BMP-2s: none of RJ's
 # carriers pairs with them anywhere in stock; 8 Army General pawns pair them with the BMP-2, the start adds already
-# bring it, and "X in a BMP-2" is the transport card seen working in play. The heavy air defence against NATO's
-# fighter sweeps is the division's own SAM, the 2K12 Kub (in the 79th Guards Tank Division's multiplayer deck and
-# pawn, and Survivors' Soviet deck), bare as every stock pack holds it.
+# bring it, and "X in a BMP-2" is the transport card seen working in play. Four more Konkurs-M teams in their BTR-80s
+# hold the village against the Abrams. The heavy air defence against NATO's fighter sweeps is the division's own SAM,
+# the 2K12 Kub (in the 79th Guards Tank Division's multiplayer deck and pawn, and Survivors' Soviet deck), bare as every
+# stock pack holds it. The counts are the balance's (design 6.5): the reserve holds more than the fall's points buy.
 RESERVE: tuple[Card, ...] = (
-    ("T80U_SOV", 10, None), ("T80U_CMD_SOV", 1, None), ("Tunguska_2K22_SOV", 2, None), ("Osa_9K33M3_SOV", 2, None),
-    ("Mi_24V_AT_SOV", 4, None), ("Ka_50_SOV", 4, None), ("Su_25T_SOV", 2, None), ("Su_24M_clu_SOV", 2, None),
-    ("BRDM_2_Konkurs_SOV", 4, None), ("MotRifles_Metis_SOV", 4, "BMP_2_SOV"), ("2K12_KUB_SOV", 2, None),
+    (T80U_TANK, 15, None), ("T80U_CMD_SOV", 1, None), ("Tunguska_2K22_SOV", 2, None), ("Osa_9K33M3_SOV", 2, None),
+    ("Mi_24V_AT_SOV", 6, None), ("Ka_50_SOV", 4, None), ("Su_25T_SOV", 2, None), ("Su_24M_clu_SOV", 2, None),
+    ("BRDM_2_Konkurs_SOV", 6, None), ("MotRifles_Metis_SOV", 8, "BMP_2_SOV"), (ATGM_TEAM, 4, ATGM_CARRIER),
+    ("2K12_KUB_SOV", 2, None),
 )
 # The Soviet command units the player can field: RJ's own (T-80B CMD, BMP-1 CMD, and DShV CMD in its Mi-8s), the start
 # adds' and the reserve's. The village falls only with one of them inside (design 5.1) [[zone-capture-command-units]];

@@ -395,18 +395,19 @@ class Shapes(unittest.TestCase):
                                  ("TGDDescriptorSetShotReactionROEBehavior", group, shapes.AGGRESSIVE))
 
     def test_the_economy(self):
-        """Phase 1 deploys on 2,000 points with no income (SetIncomeToTeam with no amount); the fall gives 4,000 at
-        once, in a Simultaneous, then an income of 250 [[scripted-economy]]."""
-        self.assertEqual((op.DEPLOY_POINTS, op.START_INCOME, op.FALL_GRANT, op.FALL_INCOME), (2000, 0, 4000, 250))
+        """Phase 1 deploys on 3,000 points with no income (SetIncomeToTeam with no amount); the fall gives 8,000 at
+        once, in a Simultaneous, then an income of 500, double the first fix's 250 [[scripted-economy]] (design 4.3,
+        6.5)."""
+        self.assertEqual((op.DEPLOY_POINTS, op.START_INCOME, op.FALL_GRANT, op.FALL_INCOME), (3000, 0, 8000, 500))
         (grant,) = of(self.nodes, "GiveRessourceToTeam")
         self.assertEqual([(k, getattr(v, "v", None)) for k, v in grant.props if k != "Camp"],
-                         [("Quantite", 4000), ("ResourceType", 1)])
+                         [("Quantite", 8000), ("ResourceType", 1)])
         (simul,) = [s for s in of(self.nodes, "Simultaneous") if subs(s) == [grant]]
         (seq,) = [s for s in of(self.nodes, "Sequential") if simul in subs(s)]
         kids = subs(seq)
         income = kids[kids.index(simul) + 1]
-        self.assertEqual((income.cls, prop(income, "Quantite").v), ("TGDDescriptorSetIncomeToTeam", 250))
-        self.assertIn("4,000 points", STRINGS_LOC["ts_hfall"])
+        self.assertEqual((income.cls, prop(income, "Quantite").v), ("TGDDescriptorSetIncomeToTeam", 500))
+        self.assertIn(f"{op.FALL_GRANT:,} points", STRINGS_LOC["ts_hfall"])
 
     def test_the_sweeps(self):
         """Each sweep is Survivors' end strike (#1483-#1489, #1496, #1647/#1648): SpawnUnits on its hidden fighters,
@@ -537,7 +538,7 @@ class Phase1(unittest.TestCase):
 
 class Phase2(unittest.TestCase):
     def test_the_unlock_and_the_timer(self):
-        """On the fall: 4,000 points and an income of 250, the reserve's cards (the Kubs among them) a second later,
+        """On the fall: 8,000 points and an income of 500, the reserve's cards (the Kubs among them) a second later,
         phase 3 two minutes after the fall."""
         m = run(World(rings=FALLS), PH3_T + 1, "difficulty", "phase1", "phase2", "phase3")
         self.assertEqual((m.entries("points"), m.entries("income")),

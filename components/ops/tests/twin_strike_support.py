@@ -17,6 +17,7 @@ import tempfile
 import zipfile
 from collections.abc import Iterator
 from pathlib import Path
+from typing import NamedTuple
 
 COMPONENT = Path(__file__).resolve().parents[1]   # the ops component: its tests/, examples/, src/, ...
 TWIN_STRIKE = COMPONENT / "examples" / "twin-strike"
@@ -96,6 +97,61 @@ def stock_deck_groups(identifier: str) -> list[list[tuple[str, tuple[int, ...]]]
              for name, held in re.findall(r'TDeckSmartGroupDescriptor\s*\(\s*Name = "(\w+)"\s*'
                                           r"PackIndexUnitNumberList\s*=\s*\[(.*?)\]", group, re.S)]
             for group in groups]
+
+
+DIVISION_RULES = "GameData/Generated/Gameplay/Decks/DivisionRules.ndf"
+
+
+def division_rules() -> dict[str, dict[str, tuple[str, ...]]]:
+    """Every division's rule in the game's DivisionRules.ndf (the deck builder's: what a division can field), by the
+    rule's name -> {bare unit name: the transports its AvailableTransportList allows}."""
+    text = gates.database_text(gates.unit_archive(), DIVISION_RULES)
+    out = {}
+    for name, body in gates.top_blocks(text):
+        units = {}
+        for rule in re.split(r"\bTDeckUniteRule\b", body)[1:]:
+            unit = re.search(r"UnitDescriptor\s*=\s*\$/GFX/Unit/Descriptor_Unit_(\w+)", rule)
+            carriers = re.search(r"AvailableTransportList\s*=\s*\[(.*?)\]", rule, re.S)
+            units[unit.group(1)] = tuple(re.findall(r"Descriptor_Unit_(\w+)", carriers.group(1) if carriers else ""))
+        out[name] = units
+    return out
+
+
+class Unit(NamedTuple):
+    """What the tests read of a unit in the game's unit database: its country, whether it is infantry, its UI role, its
+    deck cost (Resource_CommandPoints) and its guided AT missiles as (AP, range in GRU)."""
+    country: str
+    infantry: bool
+    role: str
+    cost: int
+    missiles: tuple[tuple[int, float], ...]
+
+
+def unit_facts() -> dict[str, Unit]:
+    """Every unit of the game's unit database by bare name (UniteDescriptor.ndf, WeaponDescriptor.ndf and the
+    ammunition, read as gates' readers read them): a missile is an ammunition of the unit's weapons that is a guided
+    missile (EProjectileType/GuidedMissile) of the AP missile damage family, its AP that family's index."""
+    archive = gates.unit_archive()
+    ammo = {}
+    for inner in gates.AMMO_DATABASE:
+        for name, body in gates.top_blocks(gates.database_text(archive, inner)):
+            arme = re.search(r"Arme\s*=\s*TDamageTypeRTTI\(Family=DamageFamily_ap_missile Index=(\d+)\)", body)
+            reach = re.search(r"\bMaximumRangeGRU\s*=\s*([\d.]+)", body)
+            if arme and reach and "EProjectileType/GuidedMissile" in body:
+                ammo[name] = (int(arme.group(1)), float(reach.group(1)))
+    weapons = {name: tuple(ammo[a] for a in re.findall(r"\bAmmunition\s*=\s*\$/GFX/Weapon/(\w+)", body) if a in ammo)
+               for name, body in gates.top_blocks(gates.database_text(archive, gates.WEAPON_DATABASE))}
+    out = {}
+    for name, body in gates.top_blocks(gates.database_text(archive, gates.UNIT_DATABASE[0])):
+        if not name.startswith("Descriptor_Unit_"):
+            continue
+        country, role = (re.search(rf"\b{k}\s*=\s*'(\w+)'", body) for k in ("MotherCountry", "UnitRole"))
+        cost = re.search(r"Resource_CommandPoints\s*,\s*(\d+)", body)
+        out[name.removeprefix("Descriptor_Unit_")] = Unit(
+            country.group(1) if country else "", "TAcknowUnitType_Inf" in body, role.group(1) if role else "",
+            int(cost.group(1)) if cost else 0,
+            tuple(m for w in re.findall(r"\$/GFX/Weapon/(WeaponDescriptor_\w+)", body) for m in weapons.get(w, ())))
+    return out
 
 
 def supply_units() -> dict[str, bool]:

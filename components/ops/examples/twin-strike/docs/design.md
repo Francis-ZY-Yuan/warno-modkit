@@ -175,13 +175,14 @@ whose battalion comes on both lanes, shows in the objectives panel only.
 ### 4.3 Economy
 
 The player's points come only from the script (the rules' scripted-only income) ◐ [[scripted-economy]]:
-- **Phase 1:** 2,000 points to deploy the forward detachment, and no income (SetIncomeToTeam with no amount, as
+- **Phase 1:** 3,000 points to deploy the forward detachment, and no income (SetIncomeToTeam with no amount, as
   RunningTheGauntlet writes a zero income).
-- **The fall:** 4,000 points at once (GiveRessourceToTeam in a Simultaneous, BlackHorsesLastStand's form), then an
-  income of 250 from then on (SetIncomeToTeam, TheWingedHussars' mid-battle form). The fall's hint names both.
+- **The fall:** 8,000 points at once (GiveRessourceToTeam in a Simultaneous, BlackHorsesLastStand's form), then an
+  income of 500 a tick from then on (SetIncomeToTeam, TheWingedHussars' mid-battle form). The fall's hint names both.
 - No cap: nothing else pays under scripted-only income.
 The three values are named constants in `op.py` (`DEPLOY_POINTS`, `FALL_GRANT`, `FALL_INCOME`). The first play's 4,000
-with an income of 150 from the start ran short against battalion 1.
+with an income of 150 from the start ran short against battalion 1. Its fix, 2,000, then 4,000 and 250 at the fall,
+still left NATO well ahead in the next smoke play; the balance (6.5) sets the values now, the income doubled.
 
 ## 5. Mechanics
 
@@ -200,8 +201,8 @@ with an income of 150 from the start ran short against battalion 1.
 
 - **The cards.** The defence cards are in the deck from the start, locked with `LockDeckUnit` until the village
   falls, then unlocked and added to ◐ [[add-unit-to-deck]].
-- **The points.** 4,000 at once and an income from then on (4.3).
-- **The hint.** "Village taken. Front releases the division's reserve and 4,000 points, with income from now on. NATO
+- **The points.** 8,000 at once and an income from then on (4.3).
+- **The hint.** "Village taken. Front releases the division's reserve and 8,000 points, with income from now on. NATO
   recon is moving north."
 
 ### 5.3 The counter-attack
@@ -349,15 +350,25 @@ All units are vanilla. Every name below is in the game's DeckPacks. Each build's
 
 | When | Script | Cards |
 |---|---|---|
-| start | AddUnitToDeck, only what RJ lacks or holds too few of (diffed against RJ's packs, pinned in `forces.py`; a stock test re-derives it) | to reach at least `T80BV_SOV` ×10, `T80BV_CMD_SOV` ×2, `BMP_2_CMD_SOV` ×1, `BMP_2_SOV` ×8 with `MotRifles_SOV` ×8, `MTLB_transp_SOV` ×2 with `Engineers_Flam_SOV` ×2, `BRM_1_SOV` ×2, `UAZ_469_SOV` ×2 with `Scout_SOV` ×2, `ZSU_23_Shilka_SOV` ×2, `MTLB_Strela10_SOV` ×1, `2S1_Gvozdika_SOV` ×4, `Ka_29_SOV` ×4 |
+| start | AddUnitToDeck, only what RJ lacks or holds too few of (diffed against RJ's packs, pinned in `forces.py`; a stock test re-derives it) | to reach at least `T80BV_SOV` ×10, `T80BV_CMD_SOV` ×2, `BMP_2_CMD_SOV` ×1, `BMP_2_SOV` ×8 with `MotRifles_SOV` ×8, `BTR_80_SOV` ×2 with `ATteam_KonkursM_TTsko_SOV` ×2, `MTLB_transp_SOV` ×2 with `Engineers_Flam_SOV` ×2, `BRM_1_SOV` ×2, `UAZ_469_SOV` ×2 with `Scout_SOV` ×2, `ZSU_23_Shilka_SOV` ×2, `MTLB_Strela10_SOV` ×1, `2S1_Gvozdika_SOV` ×4, `Ka_29_SOV` ×4 |
 | start, after those | AddUnitToDeck, the Soviet player's supply (`modkit.ops.profile.SOVIET_PLAYER_SUPPLY`, `forces.SUPPLY`): RJ's deck has no supply helicopter, and its supply trucks sit only in battlegroups 2 and 3's HQ groups (a stock test re-checks both) | `Ural_4320_SOV` ×4, `Mi_8TZ_SOV` ×2 |
 | start, until the village falls | LockDeckUnit, by type | RJ's own defence-grade types: `Tunguska_2K22_SOV`, the Su-24M and Mi-24P variants it holds |
-| the fall | unlock, then AddUnitToDeck | `T80U_SOV` ×10, `T80U_CMD_SOV` ×1, `Tunguska_2K22_SOV` ×2, `Osa_9K33M3_SOV` ×2, `Mi_24V_AT_SOV` ×4, `Ka_50_SOV` ×4, `Su_25T_SOV` ×2, `Su_24M_clu_SOV` ×2, `BRDM_2_Konkurs_SOV` ×4, `BMP_2_SOV` ×4 with `MotRifles_Metis_SOV` ×4, `2K12_KUB_SOV` ×2 |
+| the fall | unlock, then AddUnitToDeck | `T80U_Obr89_SOV` ×15, `T80U_CMD_SOV` ×1, `Tunguska_2K22_SOV` ×2, `Osa_9K33M3_SOV` ×2, `Mi_24V_AT_SOV` ×6, `Ka_50_SOV` ×4, `Su_25T_SOV` ×2, `Su_24M_clu_SOV` ×2, `BRDM_2_Konkurs_SOV` ×6, `BMP_2_SOV` ×8 with `MotRifles_Metis_SOV` ×8, `BTR_80_SOV` ×4 with `ATteam_KonkursM_TTsko_SOV` ×4, `2K12_KUB_SOV` ×2 |
 
 - **Every infantry card rides in a carrier,** as stock fields each of these squads (no stock deck holds one bare): in
   the first play the bare engineers and scouts deployed on foot, while the motor rifles in their BMP-2s deployed
-  loaded ✓ [[add-unit-to-deck]]. Each carrier is one RJ's deck already fields or the start adds bring: the engineers
-  in MT-LBs (the 2S12's tractor), the scouts in UAZ-469s, the Metis teams in BMP-2s.
+  loaded ✓ [[add-unit-to-deck]]. Each carrier is one stock pairs the squad with: the engineers in MT-LBs (the 2S12's
+  tractor, in RJ's deck), the scouts in UAZ-469s (RJ's), the Metis teams in BMP-2s (the start adds'), the Konkurs-M
+  teams in BTR-80s (their division's).
+- **ATGM teams, with the best missile.** Two Konkurs-M teams in BTR-80s from the start, four more with the reserve.
+  The team (`ATteam_KonkursM_TTsko_SOV`) fires the 9M113M (late), 23 AP at 2,625 GRU: the highest AT penetration of
+  any Soviet ATGM infantry a Soviet division's rules field (every other is 20 AP or less). Its division, the 27th Guards
+  Motor Rifle, fields it in a UAZ-469 or a BTR-80; the BTR-80 is the armoured one. AT infantry is a defence asset, as
+  the reserve's are, but the smoke play asked for the start's two: they are in the deck from the deployment on, for
+  the assault's flank or to dig into the village once it falls. A stock test re-derives the team and its carrier.
+- **The T-80U is the obr. 1989** (`T80U_Obr89_SOV`), whose 9M119M Invar has 25 AP; the T-80U, the T-80UD and the
+  T-80U command tank fire the 21 AP Refleks. No command variant has the Invar, so the reserve's command tank stays
+  `T80U_CMD_SOV`. A stock test re-checks the AP.
 - **The buy menu opens on its BATTLEGROUP view** (`ChangeProductionType` Deck, 0, Twin Strike's alone through
   `profile.PRODUCTION_TYPE`; every other content keeps stock's Groups, 1). The cards the script adds join no
   battlegroup, so they show in that view only, as the first play showed; the view switch stays, so GROUPS is a click
@@ -423,12 +434,38 @@ fuel or ammunition. Each sweep is its own group, in its own branch, so none hold
   - Battalion 2 is broken at 30 %.
 - **Budget.**
   - Battalion 2 appears only after battalion 1 is broken.
-  - The peak is about 66 of the player's units (the supply's 4 trucks and 2 helicopters included), 20 left of
-    battalion 1, and 52 of battalion 2: about 140, with a battery of up to 12 guns in the north-west corner for a fire's
-    two minutes and a sweep's few fighters.
+  - The peak is about 90 of the player's units (what 14,000 to 17,000 points buy, the supply's 4 trucks and 2
+    helicopters included, before losses), 20 left of battalion 1, and 52 of battalion 2: about 160, with a battery of
+    up to 12 guns in the north-west corner for a fire's two minutes and a sweep's few fighters.
   - That is over Open Door's ~120 envelope. No play has gone that big yet ? [[script-and-battle-scale]].
   - All of it is packed into the 216 × 378 px cut. The density is the point: one concentrated battle.
   - If frame rate suffers, or the columns jam, the knob comes down.
+
+### 6.5 Balance
+
+A smoke play of the first play's fixes found NATO still well ahead. The rule since:
+- **The assault:** the start's points at least 3:1 over the garrison by value, the attacker's rule.
+- **Each battalion:** on Easy and Medium, the points the player has been given by the time the battalion is all in at
+  least its value: battalion 1 once its last wave is created, battalion 2 once it appears (never before that). Hard
+  may sit lower. The division's fires and the strike come on top.
+
+A unit's value is its deck cost in the game's unit database (a transport card costs its squad and its carrier). The
+points given are the start, the grant and one income tick a minute after the fall, the income's period
+[[scripted-economy]]; losses are not counted. The stock test `test_twin_strike_forces.Balance` holds the rule.
+
+| Phase: NATO | NATO units, value | Points counted at | Before (2,000 / 4,000 / 250) | Now (3,000 / 8,000 / 500) |
+|---|---|---|---|---|
+| 1: the garrison | 14, 945 | the start | 2.12 | 3.17 |
+| 3, Easy: battalion 1, 2 teams | 47, 8,480 | the fall + 5:00 | 0.85 | 1.59 |
+| 3, Medium: 3 teams | 67, 12,310 | the fall + 6:00 | 0.61 | 1.14 |
+| 3, Hard: 4 teams | 86, 15,990 | the fall + 7:00 | 0.48 | 0.91 |
+| 4: battalion 2, every level | 52, 9,335 | the fall + 5:20 to 7:20 | 0.78 to 0.83 | 1.45 to 1.55 |
+
+- **The reserve** is worth more than the fall's points buy: with RJ's three unlocked types, 11,590 against the 11,000
+  the grant and Medium's income bring by battalion 1's last wave. It holds 54 units (37 before), the deck at the start
+  122 (120).
+- **The knobs.** The economy's constants (4.3) are the player's side. Difficulty (5.7) and the scale knob (6.4) move
+  NATO alone, so lowering either only raises the ratios.
 
 ## 7. Presentation
 
@@ -535,7 +572,7 @@ Its answers set R (5.6), the death cause, and the deck bases (6.1, 6.3).
 | The nuke effect does not play from a script | No cloud | Stack the 203 mm script effect and the black smoke; keep the kill |
 | Penetration leaves no wrecks or fails at load | Units vanish | Vanished ✓, under the cloud |
 | A Soviet player camp breaks the clone | Twin Strike cannot be Soviet | Re-clone from a Soviet-player stock challenge. That is a new `Template`, and the largest cost. |
-| Battle size: about 130 at the peak, 35–40 min | Frame rate, script load | The scale knob; shorter phases |
+| Battle size: about 160 at the peak, 35–40 min | Frame rate, script load | The scale knob; shorter phases |
 | The cut's AI grid fails at load, as a whole-map grid under a smaller zone once did | The Operation does not load | Play the stock layout's whole 432 × 622 px zone, whose files ship as they are. The grid subset is the shape probe 1 played on Geisa ✓ [[ai-grid-tiles-playable-zone]]. |
 | Two battalions and the player's force in a 216 × 378 px box | Columns jam; frame rate | The scale knob; stagger the waves |
 | Transport cards (infantry in BMPs) | Infantry cannot be bought mounted | Separate infantry and vehicle cards |

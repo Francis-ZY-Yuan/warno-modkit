@@ -4,19 +4,24 @@ share thresholds (design 6.2-6.4), and the player's deck (design 6.1).
 `Tables`, `Thresholds` and `Deck` need no stock data. `StockDeck` re-derives the start cards from RedJuggernaut's own
 deck in the stock decks, so a game update that changes it fails here, not in the build; `StockSupply` re-checks why the
 Soviet player's supply is added (the deck has no supply helicopter, and its trucks sit only in the tank battalions'
-HQ groups); `Units` holds every name to the game's unit database. They skip without the extraction or the game
-folder."""
+HQ groups); `StockChoices` re-derives the ATGM team, its carrier and the reserve's T-80U variant; `Balance` holds the
+force ratios of design 6.5 by the unit database's deck costs; `Units` holds every name to the game's unit database.
+They skip without the extraction or the game folder."""
 from __future__ import annotations
 
 import unittest
 
-from twin_strike_support import DECK_DATA, GAME, stock_deck, stock_deck_groups, supply_units
+from twin_strike_support import (DECK_DATA, GAME, division_rules, stock_deck, stock_deck_groups, supply_units,
+                                 unit_facts)
 from modkit.ops import gates
 from modkit.ops import profile as ops_profile
 from modkit.ops.forces import scaled
 from modkit.ops.profile import RJ_PLAYER_DECK, SOVIET_PLAYER_SIDES, SOVIET_PLAYER_SUPPLY
-from twinstrike import forces
+from twinstrike import forces, op
 from twinstrike.map import POINTS
+
+EASY, MEDIUM, HARD = 0, 1, 2           # op.TEAMS' order
+INCOME_TICK_S = 60.0                   # the income's period, the game's constant [[scripted-economy]]
 
 
 def totals(rows) -> dict[str, int]:
@@ -127,24 +132,33 @@ class Deck(unittest.TestCase):
         self.assertIs(forces.Card, ops_profile.Card)
 
     def test_design_counts(self):
-        """Design 6.1's start targets (BMP-2s carrying 8 motor rifle squads, three command units, four Ka-29s) and
-        its reserve (T-80U x10 and its command tank, Ka-50 x4, ...)."""
+        """Design 6.1's start targets (BMP-2s carrying 8 motor rifle squads, two Konkurs-M teams in BTR-80s, three
+        command units, four Ka-29s) and its reserve (T-80U obr. 1989 x15 and the T-80U command tank, four more
+        Konkurs-M teams, Ka-50 x4, ...)."""
         self.assertEqual(forces.deck_units(forces.START_TARGETS)["T80BV_SOV"], 10)
         self.assertEqual(sum(n for u, n, _ in forces.START_TARGETS if "_CMD_" in u), 3)
         self.assertIn(("MotRifles_SOV", 8, "BMP_2_SOV"), forces.START_TARGETS)
+        self.assertEqual((forces.ATGM_TEAM, forces.ATGM_CARRIER, forces.T80U_TANK),
+                         ("ATteam_KonkursM_TTsko_SOV", "BTR_80_SOV", "T80U_Obr89_SOV"))
+        self.assertIn((forces.ATGM_TEAM, 2, forces.ATGM_CARRIER), forces.START_TARGETS)
         self.assertEqual(forces.deck_units(forces.RESERVE),
-                         {"T80U_SOV": 10, "T80U_CMD_SOV": 1, "Tunguska_2K22_SOV": 2, "Osa_9K33M3_SOV": 2,
-                          "Mi_24V_AT_SOV": 4, "Ka_50_SOV": 4, "Su_25T_SOV": 2, "Su_24M_clu_SOV": 2,
-                          "BRDM_2_Konkurs_SOV": 4, "MotRifles_Metis_SOV": 4, "2K12_KUB_SOV": 2})
+                         {"T80U_Obr89_SOV": 15, "T80U_CMD_SOV": 1, "Tunguska_2K22_SOV": 2, "Osa_9K33M3_SOV": 2,
+                          "Mi_24V_AT_SOV": 6, "Ka_50_SOV": 4, "Su_25T_SOV": 2, "Su_24M_clu_SOV": 2,
+                          "BRDM_2_Konkurs_SOV": 6, "MotRifles_Metis_SOV": 8, "ATteam_KonkursM_TTsko_SOV": 4,
+                          "2K12_KUB_SOV": 2})
 
     def test_every_infantry_card_rides_in_a_carrier(self):
         """The first play's fix: the engineers in MT-LBs, the scouts in UAZ-469s, the Metis teams in BMP-2s, the motor
-        rifles in their BMP-2s as before; the Kubs bare, as every stock pack holds them."""
-        carriers = {u: t for u, _, t in (*forces.START_TARGETS, *forces.START_ADDS, *forces.RESERVE)}
+        rifles in their BMP-2s as before, the Konkurs-M teams in BTR-80s wherever they are added; the Kubs bare, as
+        every stock pack holds them."""
+        cards = (*forces.START_TARGETS, *forces.START_ADDS, *forces.RESERVE)
+        carriers = {u: t for u, _, t in cards}
         self.assertEqual({u: carriers[u] for u in ("MotRifles_SOV", "Engineers_Flam_SOV", "Scout_SOV",
-                                                   "MotRifles_Metis_SOV", "2K12_KUB_SOV")},
+                                                   "MotRifles_Metis_SOV", forces.ATGM_TEAM, "2K12_KUB_SOV")},
                          {"MotRifles_SOV": "BMP_2_SOV", "Engineers_Flam_SOV": "MTLB_transp_SOV",
-                          "Scout_SOV": "UAZ_469_SOV", "MotRifles_Metis_SOV": "BMP_2_SOV", "2K12_KUB_SOV": None})
+                          "Scout_SOV": "UAZ_469_SOV", "MotRifles_Metis_SOV": "BMP_2_SOV",
+                          forces.ATGM_TEAM: "BTR_80_SOV", "2K12_KUB_SOV": None})
+        self.assertEqual({t for u, _, t in cards if u == forces.ATGM_TEAM}, {forces.ATGM_CARRIER})
 
 
 @DECK_DATA
@@ -210,6 +224,90 @@ class StockSupply(unittest.TestCase):
         """A Ural-4320 truck and an Mi-8TZ supply helicopter, both stock supply units."""
         self.assertEqual({u: self.supply.get(u) for u, _, _ in forces.SUPPLY},
                          {"Ural_4320_SOV": False, "Mi_8TZ_SOV": True})
+
+
+@GAME
+class StockChoices(unittest.TestCase):
+    """The deck's picks, re-derived from the game's unit database and division rules (game build 201602): the ATGM
+    team is the Soviet ATGM infantry whose missile has the highest AP among the units a Soviet division's rule fields
+    (the longer range on a tie), in a carrier that rule allows; the reserve's T-80U is the variant whose ATGM has 25
+    AP."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.units = unit_facts()
+        cls.rules = {name: units for name, units in division_rules().items() if "_SOV_" in name}
+
+    def test_the_atgm_team_fires_the_best_missile_a_soviet_division_fields(self):
+        """Every Soviet infantry unit with a guided AT missile that a Soviet division fields, by its best (AP, range):
+        the Konkurs-M team alone has the best, 23 AP at 2,625 GRU, and it is an AT team; no other has more than 20."""
+        fielded = {unit for units in self.rules.values() for unit in units}
+        atgm = {u: max(f.missiles) for u, f in self.units.items()
+                if u in fielded and f.country == "SOV" and f.infantry and f.missiles}
+        best = max(atgm.values())
+        self.assertEqual(([u for u, m in atgm.items() if m == best], best), ([forces.ATGM_TEAM], (23, 2625.0)))
+        self.assertEqual(self.units[forces.ATGM_TEAM].role, "AT")
+        self.assertLessEqual(max(m for u, m in atgm.items() if u != forces.ATGM_TEAM)[0], 20)
+
+    def test_its_carrier_is_the_armoured_one_its_division_allows(self):
+        """Only the 27th Guards Motor Rifle Division fields the team, in a UAZ-469 or a BTR-80: the BTR-80 (a BMP, BTR or
+        MT-LB, as the start's other squads ride)."""
+        held = {name: units[forces.ATGM_TEAM] for name, units in self.rules.items() if forces.ATGM_TEAM in units}
+        self.assertEqual(held, {"Descriptor_Deck_Division_SOV_27_Gds_Rifle_multi_Rule": ("UAZ_469_SOV", "BTR_80_SOV")})
+        self.assertEqual(forces.ATGM_CARRIER, "BTR_80_SOV")
+
+    def test_the_reserve_fields_the_25_ap_t80u(self):
+        """Every T-80U variant's ATGM: only the obr. 1989 fires a 25 AP missile; no command variant does, so the T-80U
+        command tank stays. The reserve holds no other T-80U tank."""
+        t80u = {u: max(f.missiles)[0] for u, f in self.units.items() if u.startswith("T80U") and f.missiles}
+        self.assertEqual(t80u, {"T80U_SOV": 21, "T80UD_SOV": 21, "T80U_CMD_SOV": 21, "T80U_Obr89_SOV": 25})
+        self.assertEqual(t80u[forces.T80U_TANK], 25)
+        self.assertEqual({u for u, _, _ in forces.RESERVE if u.startswith("T80U")}, {forces.T80U_TANK, "T80U_CMD_SOV"})
+
+
+@GAME
+class Balance(unittest.TestCase):
+    """Design 6.5's force ratios, by value (each unit's deck cost in the game's unit database; a transport card costs
+    its unit and its carrier): the start's points 3:1 over the garrison; on Easy and Medium, the points given by the
+    time each battalion is all in (battalion 1's last wave created; battalion 2 created, never before that) at least
+    its value. The points given by a moment after the fall: the start, the grant and one income tick a minute. Hard
+    sits below 1:1 against battalion 1 (the ruling lets it); the fires and the strike are not counted."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.facts = unit_facts()
+
+    def cost(self, cards) -> int:
+        return sum(n * (self.facts[u].cost + (self.facts[t].cost if t else 0)) for u, n, t in cards)
+
+    @staticmethod
+    def points_by(after_fall_s: float) -> int:
+        return op.DEPLOY_POINTS + op.FALL_GRANT + int(after_fall_s // INCOME_TICK_S) * op.FALL_INCOME
+
+    @staticmethod
+    def bn1(level: int) -> tuple[list, float]:
+        """Battalion 1's rows at `level` and when its last wave is created, in seconds after the fall."""
+        waves = [t.wave for t in op.BN1_WAVES if t.team <= op.TEAMS[level]]
+        return [row for w in waves for row in w.rows], op.PHASE2_S + max(w.offset for w in waves)
+
+    def test_the_assault_is_three_to_one(self):
+        garrison = [(r.descriptor, r.count, r.transport) for r in forces.force_rows("garrison")]
+        self.assertGreaterEqual(op.DEPLOY_POINTS, 3 * self.cost(garrison))
+
+    def test_each_battalion_is_met_on_easy_and_medium(self):
+        bn2 = [(r.descriptor, r.count, r.transport) for r in forces.force_rows("bn2")]
+        for level in (EASY, MEDIUM):
+            rows, all_in = self.bn1(level)
+            with self.subTest(level=level):
+                self.assertGreaterEqual(self.points_by(all_in), self.cost(rows))
+                self.assertGreaterEqual(self.points_by(all_in + op.BN2_GAP_S), self.cost(bn2))
+
+    def test_the_reserve_holds_what_the_fall_buys(self):
+        """The cards the fall unlocks and adds are worth at least the grant and Medium's income until battalion 1 is
+        all in, so the fall's points buy the division's reserve, not only what is left of the start's deck."""
+        unlocked = [c for c in gates.stock_deck_packs(RJ_PLAYER_DECK) if c[0] in forces.START_LOCKS]
+        _, all_in = self.bn1(MEDIUM)
+        self.assertGreaterEqual(self.cost([*unlocked, *forces.RESERVE]), self.points_by(all_in) - op.DEPLOY_POINTS)
 
 
 @GAME

@@ -135,13 +135,15 @@
          {"name": "Forward detachment", "when": "deck, at start", "note": "On top of RedJuggernaut's own 79th Guards Tank Division cards.", "units": [
            [10, "T-80BV", "T80BV_SOV"], [2, "T-80BV command", "T80BV_CMD_SOV"],
            [8, "BMP-2 with motor rifles x8", "BMP_2_SOV · MotRifles_SOV"], [1, "BMP-2 command", "BMP_2_CMD_SOV"],
+           [2, "BTR-80 with Konkurs-M ATGM teams x2", "BTR_80_SOV · ATteam_KonkursM_TTsko_SOV"],
            [2, "Flamethrower engineers", "Engineers_Flam_SOV"], [2, "BRM-1 recon", "BRM_1_SOV"], [2, "Scouts", "Scout_SOV"],
            [2, "ZSU-23-4 Shilka", "ZSU_23_Shilka_SOV"], [1, "Strela-10", "MTLB_Strela10_SOV"], [4, "2S1 Gvozdika", "2S1_Gvozdika_SOV"],
            [4, "Ka-29", "Ka_29_SOV"]]},
          {"name": "Division reserve", "when": "unlocks when the village falls", "note": "", "units": [
-           [10, "T-80U", "T80U_SOV"], [1, "T-80U command", "T80U_CMD_SOV"], [2, "2K22 Tunguska", "Tunguska_2K22_SOV"],
-           [2, "9K33 Osa", "Osa_9K33M3_SOV"], [4, "Mi-24V (AT)", "Mi_24V_AT_SOV"], [4, "Ka-50 (the game has no Ka-52)", "Ka_50_SOV"], [2, "Su-25T", "Su_25T_SOV"],
-           [2, "Su-24M (cluster)", "Su_24M_clu_SOV"], [4, "BRDM-2 Konkurs", "BRDM_2_Konkurs_SOV"], [4, "Motor rifles (Metis)", "MotRifles_Metis_SOV"]]},
+           [15, "T-80U obr. 1989", "T80U_Obr89_SOV"], [1, "T-80U command", "T80U_CMD_SOV"], [2, "2K22 Tunguska", "Tunguska_2K22_SOV"],
+           [2, "9K33 Osa", "Osa_9K33M3_SOV"], [6, "Mi-24V (AT)", "Mi_24V_AT_SOV"], [4, "Ka-50 (the game has no Ka-52)", "Ka_50_SOV"], [2, "Su-25T", "Su_25T_SOV"],
+           [2, "Su-24M (cluster)", "Su_24M_clu_SOV"], [6, "BRDM-2 Konkurs", "BRDM_2_Konkurs_SOV"], [8, "Motor rifles (Metis)", "MotRifles_Metis_SOV"],
+           [4, "BTR-80 with Konkurs-M ATGM teams x4", "BTR_80_SOV · ATteam_KonkursM_TTsko_SOV"]]},
          {"name": "Supply", "when": "placed on the map · yours from the start", "note": "No deck can carry a FOB, so both stand on the map in your camp, as stock's Marauders and SigurdsStrike place theirs.", "units": [
            [2, "FOB, at FOB_W and FOB_E in the north zone", "FOB_SOV"]]},
          {"name": "Division artillery", "when": "scripted · ally camp · at GUN_SPAWN, the cut's north-west corner", "note": "It fires only on your call: the preparation fire, fire missions, the fire plan and the strike's carrier round.", "units": [

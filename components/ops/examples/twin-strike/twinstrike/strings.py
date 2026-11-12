@@ -64,9 +64,11 @@ ENGLISH: dict[str, dict[str, str]] = {
                     "- NATO fighter sweeps.\n"
                     "\n"
                     "4. Under your command, the forward detachment of the 79th Guards Tank Division:\n"
-                    "- T-80BV tanks, motor rifles in BMP-2s, engineers, scouts, Shilkas, 2S1s and Ka-29s.\n"
+                    "- T-80BV tanks, motor rifles in BMP-2s, Konkurs-M teams in BTR-80s, engineers, scouts, Shilkas, "
+                    "2S1s and Ka-29s.\n"
                     "- The division's 2S7M and BM-27 batteries, on call.\n"
-                    "- In reserve: T-80U tanks, Ka-50 and Mi-24V helicopters, Tunguska, Osa and Kub air defence.",
+                    "- In reserve: T-80U tanks, Konkurs-M and Metis teams, Ka-50 and Mi-24V helicopters, Tunguska, Osa "
+                    "and Kub air defence.",
         # TexteObjectifs, under the title: the background (design 1), ending on the detachment's orders
         "ts_recap": "Two weeks into the war, the Soviet advance was still rolling west. The next bound of the 79th "
                     "Guards Tank Division hung on one road junction: a small village on the western edge of a pair of "
@@ -142,7 +144,7 @@ ENGLISH: dict[str, dict[str, str]] = {
                    "units is inside it.",
         "ts_hprep": "Division guns standing by. Keep the assault out of the village while the guns fire.",
         # phase 2 (design 5.2)
-        "ts_hfall": "Village taken. Front releases the division's reserve and 4,000 points, with income from now on. "
+        "ts_hfall": "Village taken. Front releases the division's reserve and 8,000 points, with income from now on. "
                     "NATO recon is moving north.",
         # phase 3 (design 5.3, 5.4): every fire mission names its box; the fire plan announces its target
         "ts_hph3": "PHASE 3: a US armoured battalion counter-attacks up both lanes, its recon first. Fire missions are "

@@ -53,9 +53,9 @@ Soviet ground in red with the star and the NATO ground in blue with its badge (`
 
 | Phase | What happens | Ends when |
 |---|---|---|
-| 0. Deploy | Buy and place the forward detachment in the north box (2,000 points, no income yet) | You launch the battle |
+| 0. Deploy | Buy and place the forward detachment in the north box (3,000 points, no income yet) | You launch the battle |
 | 1. Assault | Take the village from its West German garrison, which holds it. Division guns offer a preparation fire on it. | The village falls: few of its defenders left and one of your command units inside. Lost at 20 min. |
-| 2. Unlock | The division's reserve joins your deck, with 4,000 points and an income from then on; NATO's recon moves north | 2 min |
+| 2. Unlock | The division's reserve joins your deck, with 8,000 points and an income of 500 from then on; NATO's recon moves north | 2 min |
 | 3. Counter-attack | A US armoured battalion comes up both lanes, its recon screen first, then company teams with their air defence, each attacking your units once in the village; NATO fighters sweep the boxes. Fire missions on BOX W or BOX C, and one division fire plan. | The battalion is broken, or 15 min on (its survivors break off) |
 | 4. Surprise | A West German Panzer battalion appears at the assembly area: it attacks in 5:00. Front offers nuclear release. | The strike, or the countdown runs out |
 | 5. Hold | Hold the village | 5 min after a strike; after withholding, until the second battalion is broken, up to 20 min |
@@ -121,10 +121,10 @@ announces itself with a hint, so what you see can be matched to the sheet. (The 
    deployment box north of it, nothing playable east of the valley?
 2. Does the buy menu open on the BATTLEGROUP view, with the Ka-29s, the Ural and Mi-8TZ supply and the start cards in
    it without switching? Is the switch to the GROUPS view still there? Do the engineers and scouts come in their
-   MT-LBs and UAZs?
+   MT-LBs and UAZs, and the two Konkurs-M ATGM teams in their BTR-80s?
 3. Does the deploy screen open with a camera move of about 8 s, from high over the whole cut down to a view facing
    south, your deployment box in the near part of it and the village beyond? Does Escape skip straight to that view?
-   Do you start with 2,000 points and no income?
+   Do you start with 3,000 points and no income?
 
 **The guns** (no gun stands on the map at the start: friendly guns appear in the north-west forest corner for about 2
 minutes per fire, then vanish)
@@ -146,8 +146,9 @@ minutes per fire, then vanish)
 9. AI pathing: do the first battalion's columns drive up the roads (the main road through BOX W; the east road through
    BOX C, then west across the stream) into the village, and once there keep attacking your units rather than stand?
    Does the garrison fight from the village (into the houses, or holding its ground)?
-10. At the fall, did the village's zone turn yours, did 4,000 points arrive, and did the locked cards (Tunguska, Su-24M,
-    Mi-24P) unlock and the reserve (T-80U, Ka-50, the two Kubs and the rest) appear in the buy menu?
+10. At the fall, did the village's zone turn yours, did 8,000 points arrive and then 500 a minute, and did the locked
+    cards (Tunguska, Su-24M, Mi-24P) unlock and the reserve (T-80U obr. 1989, Ka-50, the Konkurs-M teams in BTR-80s,
+    the two Kubs and the rest) appear in the buy menu? Did the forces feel even against each battalion?
 11. The frame rate at the peak, when the second battalion appears with the first's survivors and your force on the
     map: smooth, or stuttering?
 
@@ -179,7 +180,8 @@ minutes per fire, then vanish)
 - The garrison is pre-placed, standing from the start, and holds the village by stock's orders
   [[garrison-roe-and-hold]]; the second battalion and the fighters are pre-placed hidden and revealed:
   [[spawn-and-create-units]] [[scripted-air-sweep]]. The circles are detectors: [[detector-circles-only]].
-- The economy: 2,000 points with no income, then 4,000 and an income at the fall [[scripted-economy]].
+- The economy: 3,000 points with no income, then 8,000 and an income at the fall, set by the balance's ratios
+  (design 6.5) [[scripted-economy]].
 - The deck: AddUnitToDeck adds only what RedJuggernaut's deck lacks, and LockDeckUnit holds its defence types back
   until the village falls: [[add-unit-to-deck]]. It adds the Soviet player's supply too: the deck has no supply
   helicopter, and its supply trucks sit only in the tank battalions' groups [[soviet-player-camp]].

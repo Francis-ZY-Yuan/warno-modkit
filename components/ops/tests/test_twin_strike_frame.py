@@ -536,17 +536,18 @@ class Build(unittest.TestCase):
 
     def test_the_gates_that_hold_the_frame(self):
         """Every standard gate passes (the end funnel holding all nine endings; the script-effects gate holding the
-        strike's look and the dressing; the garrison the one smart-ordered group), and the extra gates: the 55 unit
-        types the op names (the supply's, the carriers', the Kubs' and the fighters' among them), no Survivors name,
-        the cut's 40 tiles, the zones and arrivals, and the fire range: GUN_SPAWN's batteries in the player's
-        alliance, its 10 battery-target pairs in range; every unit the script creates inside the playable zone."""
+        strike's look and the dressing; the garrison the one smart-ordered group), and the extra gates: the 57 unit
+        types the op names (the supply's, the carriers', the ATGM teams', the Kubs' and the fighters' among them), no
+        Survivors name, the cut's 40 tiles, the zones and arrivals, and the fire range: GUN_SPAWN's batteries in the
+        player's alliance, its 10 battery-target pairs in range; every unit the script creates inside the playable
+        zone."""
         for line in ("1 player reinforcement locations and 1 aerial corridors",
                      "12 never-finishing script actions",              # the three locks and the nine endings
                      "1 HUD restores with the buy-menu switch Default",
                      "9 TriggerEndGame, each under $/GDScript/TS/EndFunnel",
                      "13 script effect launches, each a self-contained GameFx effect",
                      "1 smart-ordered groups, none ordered again after its smart order",
-                     "gate 3 units: 55 unit descriptors exist",
+                     "gate 3 units: 57 unit descriptors exist",
                      "gate 3 no-template-name: 15 re-keyed or generated dumps without Survivors",
                      "gate 3 grid: 40 AI tiles and 1,560 path costs of twincities_op/SM_SU_3x3_TwinCities_03_Details",
                      "gate 3 zone-layout: 3 zones and 2 arrivals laid out by stock's rules",

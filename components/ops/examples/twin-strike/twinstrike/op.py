@@ -97,10 +97,12 @@ from twinstrike.strings import BUTTONS, STRINGS
 # (START_INCOME 0, written as stock writes it, with no amount: RunningTheGauntlet #275); the village's fall brings
 # FALL_GRANT at once (GiveRessourceToTeam in a Simultaneous, BlackHorsesLastStand #312) and FALL_INCOME a tick from
 # then on (SetIncomeToTeam, TheWingedHussars #318). No cap: under the rules' scripted-only income nothing else pays.
-DEPLOY_POINTS = 2000
+# The values are the balance's (design 6.5): the start 3:1 over the garrison by value, and by the time each battalion is
+# all in, the points given at least its value on Easy and Medium (the income doubled from the first fix's 250).
+DEPLOY_POINTS = 3000
 START_INCOME = 0
-FALL_GRANT = 4000
-FALL_INCOME = 250
+FALL_GRANT = 8000
+FALL_INCOME = 500
 # The buy menu's Groups/factory-tabs switch at the HUD restore (Content.prod_menu_switch). The start cards belong to
 # no battlegroup, so the menu must be able to leave Groups mode, as Open Door's (BRICK_DEFAULT: stock writes Default by
 # leaving the property out).

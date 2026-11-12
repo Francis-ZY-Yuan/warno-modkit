@@ -23,10 +23,11 @@ points come only from the script:
 shape. `SetMaxMoneyForTeam` caps the bank in RunningTheGauntlet only, beside a larger start, so how it treats a start
 above the cap is not known.
 
-**Twin Strike** deploys on 2,000 with no income, then at the village's fall grants 4,000 in a Simultaneous and sets an
-income of 250 ([[2026-11-11-twin-strike-play1]]: 4,000 at the start with an income of 150 ran short against the
-first counter-attack). The toolkit writes a zero income as stock does (`bricks.g_income`), so only a content that asks
-for one changes.
+**Twin Strike** deploys on 3,000 with no income, then at the village's fall grants 8,000 in a Simultaneous and sets an
+income of 500, the values its balance's force ratios set (its design 6.5). Before: 4,000 at the start with an income
+of 150 ran short against the first counter-attack ([[2026-11-11-twin-strike-play1]]), and 2,000, then 4,000 and 250
+at the fall, still left NATO well ahead in a smoke play. The toolkit writes a zero income as stock does
+(`bricks.g_income`), so only a content that asks for one changes.
 
 **Not seen in play:** a zero start income, a grant above stock's largest (1,200), and an income turned on mid-battle
 for a player who had none. The income's period is read from the game's constants (60 s), not seen.
