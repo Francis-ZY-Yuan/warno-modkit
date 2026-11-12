@@ -15,7 +15,7 @@ Topic `files-and-formats`, declared by core. Back to [the map](../README.md).
 
 ### RE
 
-- [edat-revision-chain](../../components/core/knowledge/mechanisms/edat-revision-chain.md): Game data is a chain of edat archives, read newest revision first (core, verified 201602)
+- [edat-revision-chain](../../components/core/knowledge/mechanisms/edat-revision-chain.md): Game data is a chain of edat archives, read newest revision first (core, verified 210942)
 
 ## Lessons
 
@@ -27,6 +27,7 @@ Taught by the trials of these mechanisms.
 
 ## Trials, newest first
 
+- 2026-11-12 [2026-11-12-build-210942-port](../../components/core/knowledge/trials/2026-11-12-build-210942-port.md) (core): survey, pass
 - 2026-11-06 [2026-11-06-probe2-play-run-a](../../components/ops/knowledge/trials/2026-11-06-probe2-play-run-a.md) (ops): play, pass
 - 2026-11-02 [2026-11-02-ndfbin-round-trip](../../components/core/knowledge/trials/2026-11-02-ndfbin-round-trip.md) (core): re, pass
 - 2026-11-02 [2026-11-02-leveldesign-api-survey](../../components/ops/knowledge/trials/2026-11-02-leveldesign-api-survey.md) (ops): re, pass

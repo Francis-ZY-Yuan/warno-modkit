@@ -3,6 +3,16 @@
 
 A fact holds for the build it was last verified on. After a game update, a record still on an older build is unconfirmed until re-verified. Start with [topics/game-updates.md](topics/game-updates.md). Back to [the map](README.md).
 
+## 210942
+
+### Mechanisms last verified on it
+
+- [edat-revision-chain](../components/core/knowledge/mechanisms/edat-revision-chain.md) (core): Game data is a chain of edat archives, read newest revision first (RE, 2026-11-12)
+
+### Trials run on it
+
+- 2026-11-12 [2026-11-12-build-210942-port](../components/core/knowledge/trials/2026-11-12-build-210942-port.md) (core): survey, pass
+
 ## 201602
 
 ### Mechanisms last verified on it
@@ -24,7 +34,6 @@ A fact holds for the build it was last verified on. After a game update, a recor
 - [dialog-reask-loop](../components/ops/knowledge/mechanisms/dialog-reask-loop.md) (ops): A multiple-choice dialog can be asked again in a loop if the choice is reset before each ask (PLAYED, 2026-11-11)
 - [dialog-text-takes-no-variables](../components/ops/knowledge/mechanisms/dialog-text-takes-no-variables.md) (ops): Dialog text cannot show live numbers; counts go in an objective counter or a hint (STOCK, 2026-11-04)
 - [difficulty-branches](../components/ops/knowledge/mechanisms/difficulty-branches.md) (ops): Difficulty reaches a script as three conditions; give it a Medium baseline (STOCK, 2026-11-06)
-- [edat-revision-chain](../components/core/knowledge/mechanisms/edat-revision-chain.md) (core): Game data is a chain of edat archives, read newest revision first (RE, 2026-11-02)
 - [fast-move-and-attack-keeps-roads](../components/ops/knowledge/mechanisms/fast-move-and-attack-keeps-roads.md) (ops): MoveAndAttack goes cross-country; FastMoveAndAttack and ForceRoad moves keep to roads (PLAYED, 2026-11-06)
 - [fog-switch](../components/ops/knowledge/mechanisms/fog-switch.md) (ops): A script can switch the fog of war off with TGDDescriptorFow; whether it is map-wide and comes back on is unseen (PLAYED, 2026-11-11)
 - [gameplay-mod-relaunch](../components/ops/knowledge/mechanisms/gameplay-mod-relaunch.md) (ops): Operations and Gameplay mods don't mix; an Operation mod must ship none of the 16 Gameplay files (PLAYED, 2026-11-06)

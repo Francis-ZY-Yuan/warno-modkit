@@ -1,6 +1,7 @@
 # The stock corpus: how the install stores its data, and what setup builds from it
 
-Measured on game build 201602. Everything here was read from an install; nothing was written to it.
+Measured on game build 201602, with what build 210942 changed noted where it applies. Everything here was read
+from an install; nothing was written to it.
 
 ## The archives
 
@@ -10,6 +11,8 @@ Game data lives in edat archives (`.dat`) under the install's `Data/PC` folder, 
 - **The oldest revision folder is the full base install.** Each later revision adds a nested `<previous>/<revision>/`
   folder of **delta archives**: the same archive names, holding only the inner files that changed in that revision.
   Many deltas are empty 8 KiB stubs.
+- **The game's own NDF** is `Transactions.dat` from build 210942 (`.txn` files in the newest delta folder). Up to
+  201602 it was `Glad.dat` (`.ndfbin`), which 210942 still installs but no longer loads.
 - **Each top-level `<revision>/` folder holds full copies of the small packs**: `Glad.dat`, and the
   `*_Definition.dat` packs of scenarios, maps and decor sets.
 - **The content of an inner path is the newest revision's copy.** Overlay the base, then every delta up to the
@@ -30,7 +33,7 @@ A scenario named `<S>` ships as up to four packs under `Scenarios/`:
 
 | pack | holds |
 | --- | --- |
-| `<S>_Definition.dat` | `NDF/Scenarios/{GDScript,MapConfiguration,ScenarioInfo,ScenarioLoader,Trophy}/<S>.{ndfbin,tag}` |
+| `<S>_Definition.dat` | from build 210942, `NDF/Scenarios/<S>/{GDScript,MapConfiguration,ScenarioInfo,ScenarioLoader,TrophyDef}.{txn,txn.tag,dbg}`; up to 201602, `NDF/Scenarios/{GDScript,MapConfiguration,ScenarioInfo,ScenarioLoader,Trophy}/<S>.{ndfbin,tag}` |
 | `<S>_Details.dat` | `out/LevelDesign.ndfbin` (map items with GUIDs), the zone files under `out/`, `Items.sav`, `AIZones.sav`, camera paths |
 | `<S>_Assets.dat` | voiced dialog (`.ess`), textures, the scenario's compiled Python (`.xyz`), dictionaries |
 | `<S>_GameData.dat` | videos (`.webm`) |
@@ -39,7 +42,7 @@ A scenario named `<S>` ships as up to four packs under `Scenarios/`:
   ([[localisation-tokens-packed]]).
 - `GDScript/<S>.ndfbin` exists only from build 201602, and it is what the game runs
   ([[gdscript-is-what-loads]]).
-- Compiled NDF files (`.ndfbin`, `.tag`, `.sav`) are CNDF containers with a raw, LZ4 or zstd body. Current files are
+- Compiled NDF files (`.ndfbin`, `.txn`, `.tag`, `.sav`) are CNDF containers with a raw, LZ4 or zstd body. Current files are
   zstd. `python -m modkit.core.ndfbin dump|info|roundtrip` reads them ([[ndfbin-round-trip]]).
 - Localisation dictionaries (`.dic`) are TRAD files: `python -m modkit.core.trad dump`.
 

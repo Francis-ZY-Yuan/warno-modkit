@@ -2,6 +2,7 @@
 import contextlib
 import io
 import os
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -69,10 +70,15 @@ class Warning(Env):
 
 
 class Pin(unittest.TestCase):
-    def test_packaging_build_number_is_the_newest_verified_build(self):
-        newest = gamebuild.VERIFIED_BUILDS[-1]
-        self.assertEqual(packaging.VERSION_NDF, f"version is '{newest}'\n".encode())
-        self.assertIn(f"ModGenVersion = {newest} ", packaging.CONFIG_INI)
+    def test_packaging_build_number_is_never_older_than_the_newest_verified_build(self):
+        """Packaging names one build in both files, and a port moves it first: the new build joins VERIFIED_BUILDS
+        only after the probes play clean on it (CLAUDE.md), so packaging names the newest verified build or a newer
+        one."""
+        m = re.fullmatch(rb"version is '(\d+)'\n", packaging.VERSION_NDF)
+        self.assertIsNotNone(m, packaging.VERSION_NDF)
+        build = m.group(1).decode()
+        self.assertIn(f"ModGenVersion = {build} ", packaging.CONFIG_INI)
+        self.assertGreaterEqual(int(build), int(gamebuild.VERIFIED_BUILDS[-1]))
 
 
 class Cli(Env):

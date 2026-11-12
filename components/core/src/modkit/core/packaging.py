@@ -23,35 +23,38 @@ CONFIG_INI = "".join(line + "\n" for line in [
     "ID = 0 ; Mod Steam ID, do not modify",
     "Version = 0 ; Value to increment when an update in this mod is incompatible with the current version",
     "DeckFormatVersion = 0 ; At least 1 for Gameplay mods. Increment this value to invalidate all decks for this mod",
-    "ModGenVersion = 201602 ; ModGen revision, do not modify",
+    "ModGenVersion = 210942 ; ModGen revision, do not modify",
     "",
     # Cluster=md5 lines go here when a mod changes a GFX cluster; this one changes none.
     CONFIG_HEADER,
 ])
 
-# Byte-identical to Gen/Version.ndf in current (201602) Workshop mods.
-VERSION_NDF = b"version is '201602'\n"
+# Gen/Version.ndf. The game writes the build it generates a mod on into this file and into ModGenVersion: every
+# Workshop mod pairs the two with the build that made it (five builds seen, up to 201602). 210942 follows that rule;
+# no mod generated on 210942 has been seen yet.
+VERSION_NDF = b"version is '210942'\n"
 
 # A mod is tagged Gameplay when it ships a file under its Gen folder whose path ends with one of these (the Gameplay
-# tag's FilesForTag in the game's NDF/ModManager.ndfbin). While a Gameplay mod is active, starting an Operation makes
-# the game relaunch with every mod switched off, so an Operation mod ships none of them.
+# tag's FilesForTag in the game's NDF/ModManager.txn, build 210942; up to 201602 it was NDF/ModManager.ndfbin, which
+# named the .ndfbin files, and GFX/UnitConstantes instead of GFX/CriticalEffects). While a Gameplay mod is active,
+# starting an Operation makes the game relaunch with every mod switched off, so an Operation mod ships none of them.
 GAMEPLAY_FILES = (
-    "GFX/Constantes.ndfbin",
-    "GFX/Deck.ndfbin",
-    "GFX/Depiction.ndfbin",
-    "GFX/Division.ndfbin",
-    "GFX/EffectCapacity.ndfbin",
-    "GFX/Pawn.ndfbin",
-    "GFX/Resources.ndfbin",
-    "GFX/Skirmish.ndfbin",
-    "GFX/TeamAlliance.ndfbin",
-    "GFX/Terrains.ndfbin",
-    "GFX/Unit.ndfbin",
-    "GFX/UnitConstantes.ndfbin",
-    "GFX/VisionRules.ndfbin",
-    "GFX/Weapon.ndfbin",
-    "GFX/WorldInterface.ndfbin",
-    "InitialisationGameDistanceUnits.ndfbin",
+    "GFX/Constantes.txn",
+    "GFX/CriticalEffects.txn",
+    "GFX/Deck.txn",
+    "GFX/Depiction.txn",
+    "GFX/Division.txn",
+    "GFX/EffectCapacity.txn",
+    "GFX/Pawn.txn",
+    "GFX/Resources.txn",
+    "GFX/Skirmish.txn",
+    "GFX/TeamAlliance.txn",
+    "GFX/Terrains.txn",
+    "GFX/Unit.txn",
+    "GFX/VisionRules.txn",
+    "GFX/Weapon.txn",
+    "GFX/WorldInterface.txn",
+    "InitialisationGameDistanceUnits.txn",
 )
 
 

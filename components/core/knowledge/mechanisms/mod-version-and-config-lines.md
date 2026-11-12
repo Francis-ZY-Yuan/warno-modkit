@@ -6,7 +6,7 @@ last_verified: 201602 2026-11-06
 source: play
 topics: [mod-packaging, game-updates]
 shapes: [modkit.core.packaging.VERSION_NDF, modkit.core.packaging.CONFIG_INI]
-trials: [2026-11-02-same-name-pack-override, 2026-11-02-new-scenario-id-loads, 2026-11-02-workshop-publishing-survey, 2026-11-06-probe2-play-run-a]
+trials: [2026-11-02-same-name-pack-override, 2026-11-02-new-scenario-id-loads, 2026-11-02-workshop-publishing-survey, 2026-11-06-probe2-play-run-a, 2026-11-12-build-210942-port]
 stock_precedent: every current (201602) Workshop mod ships the same one-line Gen/Version.ndf
 ---
 **What the game does.** The Mod Center lists a mod folder that holds only `Config.ini` and `Scenarios/` as
@@ -23,11 +23,14 @@ outdated until it is rebuilt.
   since its packs depend on stock class schemas, map item GUIDs, dictionary tokens and cloned files. After each
   update: re-extract, rebuild, set the new build in `Gen/Version.ndf` and `ModGenVersion`, and play it again.
 - Whether the value in `Gen/Version.ndf` must equal the running build is not known.
+- Every Workshop mod pairs `Gen/Version.ndf` and `ModGenVersion` with the build that made it, across five builds up
+  to 201602. Packaging writes 210942 by that rule; no mod generated on 210942 has been seen yet
+  ([[2026-11-12-build-210942-port]]).
 
 <!-- referenced-by:start -->
 ## Referenced by
 
-- Trials: [2026-11-02-new-scenario-id-loads](../../../ops/knowledge/trials/2026-11-02-new-scenario-id-loads.md), [2026-11-02-same-name-pack-override](../trials/2026-11-02-same-name-pack-override.md), [2026-11-02-workshop-publishing-survey](../trials/2026-11-02-workshop-publishing-survey.md), [2026-11-06-probe2-play-run-a](../../../ops/knowledge/trials/2026-11-06-probe2-play-run-a.md)
+- Trials: [2026-11-02-new-scenario-id-loads](../../../ops/knowledge/trials/2026-11-02-new-scenario-id-loads.md), [2026-11-02-same-name-pack-override](../trials/2026-11-02-same-name-pack-override.md), [2026-11-02-workshop-publishing-survey](../trials/2026-11-02-workshop-publishing-survey.md), [2026-11-06-probe2-play-run-a](../../../ops/knowledge/trials/2026-11-06-probe2-play-run-a.md), [2026-11-12-build-210942-port](../trials/2026-11-12-build-210942-port.md)
 - Shapes: [`modkit.core.packaging.VERSION_NDF`](../../src/modkit/core/packaging.py), [`modkit.core.packaging.CONFIG_INI`](../../src/modkit/core/packaging.py)
 - Skills: [`components/core/skills/warno-launch-triage/SKILL.md`](../../skills/warno-launch-triage/SKILL.md), [`components/core/skills/warno-setup/SKILL.md`](../../skills/warno-setup/SKILL.md), [`components/core/skills/warno-ship/SKILL.md`](../../skills/warno-ship/SKILL.md), [`components/core/skills/warno-ship/references/workshop-publishing.md`](../../skills/warno-ship/references/workshop-publishing.md)
 - Records: [workshop-upload-folder](workshop-upload-folder.md)

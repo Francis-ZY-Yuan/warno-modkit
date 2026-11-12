@@ -137,8 +137,7 @@ class Package(unittest.TestCase):
     def test_refuses_a_mod_that_ships_a_gameplay_file(self):
         """The game tags a mod Gameplay when it ships, under Gen, a file whose path ends with one of the Gameplay
         tag's FilesForTag (packaging.GAMEPLAY_FILES), whatever its [Config] says."""
-        for rel in ("Gen/NDF/GFX/Unit.ndfbin", "Gen/challenge_X/GFX/Unit.ndfbin",
-                    "Gen/a/InitialisationGameDistanceUnits.ndfbin"):
+        for rel in ("Gen/NDF/GFX/Unit.txn", "Gen/challenge_X/GFX/Unit.txn", "Gen/a/InitialisationGameDistanceUnits.txn"):
             with self.subTest(rel=rel):
                 fx = self.tmp / "gp" / rel.replace("/", "_") / NAME
                 shutil.copytree(self.mod, fx)
@@ -149,7 +148,7 @@ class Package(unittest.TestCase):
                     install.package(fx, TITLE, self.tmp / "o2")
 
     def test_a_gameplay_name_outside_gen_or_another_suffix_is_fine(self):
-        for rel in ("Scenarios/GFX/Unit.ndfbin", "Gen/NDF/GFX/MyUnit.ndfbin", "Gen/Unit.ndfbin"):
+        for rel in ("Scenarios/GFX/Unit.txn", "Gen/NDF/GFX/MyUnit.txn", "Gen/Unit.ndfbin"):
             (self.mod / rel).parent.mkdir(parents=True, exist_ok=True)
             (self.mod / rel).write_bytes(b"x")
         self.assertFalse(install.is_gameplay(self.mod))

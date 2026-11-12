@@ -35,6 +35,7 @@ Taught by the trials of these mechanisms.
 
 ## Trials, newest first
 
+- 2026-11-12 [2026-11-12-build-210942-port](../../components/core/knowledge/trials/2026-11-12-build-210942-port.md) (core): survey, pass
 - 2026-11-11 [2026-11-11-fxprobe-play1](../../components/ops/knowledge/trials/2026-11-11-fxprobe-play1.md) (ops): play, pass
 - 2026-11-06 [2026-11-06-probe2-play-run-a](../../components/ops/knowledge/trials/2026-11-06-probe2-play-run-a.md) (ops): play, pass
 - 2026-11-03 [2026-11-03-probe1-play1-worked](../../components/ops/knowledge/trials/2026-11-03-probe1-play1-worked.md) (ops): play, pass

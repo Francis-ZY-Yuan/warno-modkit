@@ -9,7 +9,7 @@ A mechanism filed under two topics is listed under both.
 
 - [localisation-tokens-packed](mechanisms/localisation-tokens-packed.md): Localisation keys are tokens of up to 10 characters, packed 6 bits each (PLAYED, verified 201602 2026-11-06)
 - [ndfbin-round-trip](mechanisms/ndfbin-round-trip.md): Compiled NDF (CNDF ndfbin) decodes and re-encodes byte for byte (PLAYED, verified 201602 2026-11-06)
-- [edat-revision-chain](mechanisms/edat-revision-chain.md): Game data is a chain of edat archives, read newest revision first (RE, verified 201602 2026-11-02)
+- [edat-revision-chain](mechanisms/edat-revision-chain.md): Game data is a chain of edat archives, read newest revision first (RE, verified 210942 2026-11-12)
 
 ### Loading and crashes
 
@@ -25,7 +25,7 @@ A mechanism filed under two topics is listed under both.
 
 - [load-time-validation-rules](mechanisms/load-time-validation-rules.md): Every object is validated at load, and the first broken rule stops the load (PLAYED, verified 201602 2026-11-06)
 - [mod-version-and-config-lines](mechanisms/mod-version-and-config-lines.md): A mod is active only with Gen/Version.ndf, and its [Config] hashes mark it outdated after an update (PLAYED, verified 201602 2026-11-06)
-- [edat-revision-chain](mechanisms/edat-revision-chain.md): Game data is a chain of edat archives, read newest revision first (RE, verified 201602 2026-11-02)
+- [edat-revision-chain](mechanisms/edat-revision-chain.md): Game data is a chain of edat archives, read newest revision first (RE, verified 210942 2026-11-12)
 
 ## Symptom index
 
@@ -40,6 +40,7 @@ The game's own words in this component's trials, the mechanism behind them, and 
 
 ## Trials, newest first
 
+- 2026-11-12 [2026-11-12-build-210942-port](trials/2026-11-12-build-210942-port.md): survey, pass
 - 2026-11-03 [2026-11-03-probe1-launch1-damagetype](trials/2026-11-03-probe1-launch1-damagetype.md): launch, fail. Fatal error at load, Property 'DamageType' must be defined (TGDDescriptorChangeStress)
 - 2026-11-03 [2026-11-03-ndfrules-stock-sweep](trials/2026-11-03-ndfrules-stock-sweep.md): re, pass
 - 2026-11-02 [2026-11-02-workshop-publishing-survey](trials/2026-11-02-workshop-publishing-survey.md): survey, pass

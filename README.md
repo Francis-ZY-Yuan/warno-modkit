@@ -77,11 +77,22 @@ In a session, Claude picks a skill by what you ask; you can also call one by nam
 
 ## Game version
 
-This toolkit was verified on WARNO build **201602**. To see your own, run `python -m modkit.core.gamebuild`: it prints
-the installed build and the verified ones, and a `GAME BUILD:` warning when yours is another. The build driver prints
-the same warning when it starts. It is a warning only: nothing fails and no output changes.
+This toolkit was verified on WARNO build **201602**. Its core (stock paths, the load-time rules reader, packaging) has
+moved to build **210942**, which joins the verified builds once the probes play clean on it. To see your own, run
+`python -m modkit.core.gamebuild`: it prints the installed build and the verified ones, and a `GAME BUILD:` warning
+when yours is another. The build driver prints the same warning when it starts. It is a warning only: nothing fails
+and no output changes.
 
-Eugen's game updates often change how mods are built and loaded. What changed for mods at 201602:
+Eugen's game updates often change how mods are built and loaded. What changed for mods at 210942, found in
+[2026-11-12-build-210942-port](components/core/knowledge/trials/2026-11-12-build-210942-port.md):
+
+- The game's own NDF moved from `Glad.dat` to `Transactions.dat`, and compiled NDF ships as `.txn`, scenario and map
+  definitions included: [edat-revision-chain](components/core/knowledge/mechanisms/edat-revision-chain.md).
+- The Gameplay files a mod must not ship are now `.txn` files, with `GFX/CriticalEffects` in and
+  `GFX/UnitConstantes` out (`modkit.core.packaging.GAMEPLAY_FILES`).
+- The load-time rules changed with the classes: [load-time-validation-rules](components/core/knowledge/mechanisms/load-time-validation-rules.md).
+
+What changed for mods at 201602:
 
 - Archives are format version 3 (version 2 up to revision 197351): [edat-revision-chain](components/core/knowledge/mechanisms/edat-revision-chain.md).
 - Operations now run from the compiled GDScript: [gdscript-is-what-loads](components/ops/knowledge/mechanisms/gdscript-is-what-loads.md).

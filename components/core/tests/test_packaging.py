@@ -16,30 +16,30 @@ class ConstantsTest(unittest.TestCase):
         self.assertTrue(text.endswith("[Config] ; Used for mod compatibility check, do not modify\n"))
         self.assertNotIn("\r", text)
         self.assertIn("\nDescription = \n", text)  # empty values keep the space after '='
-        self.assertIn("\nModGenVersion = 201602 ;", text)
+        self.assertIn("\nModGenVersion = 210942 ;", text)
 
     def test_version_ndf(self):
-        self.assertEqual(packaging.VERSION_NDF, b"version is '201602'\n")
+        self.assertEqual(packaging.VERSION_NDF, b"version is '210942'\n")
 
     def test_gameplay_files(self):
         self.assertEqual(len(packaging.GAMEPLAY_FILES), 16)
         self.assertEqual(len(set(packaging.GAMEPLAY_FILES)), 16)
-        self.assertIn("GFX/Unit.ndfbin", packaging.GAMEPLAY_FILES)
-        self.assertTrue(all(f.endswith(".ndfbin") for f in packaging.GAMEPLAY_FILES))
+        self.assertIn("GFX/Unit.txn", packaging.GAMEPLAY_FILES)
+        self.assertTrue(all(f.endswith(".txn") for f in packaging.GAMEPLAY_FILES))  # build 210942: no .ndfbin
 
     def test_is_gameplay_file(self):
         """Under Gen/ and ending with one of the 16, as the game's lookup tests a mod's files."""
-        for rel in ("Gen/NDF/GFX/Unit.ndfbin", "Gen/challenge_X/GFX/Unit.ndfbin",
-                    "Gen/InitialisationGameDistanceUnits.ndfbin"):
+        for rel in ("Gen/NDF/GFX/Unit.txn", "Gen/challenge_X/GFX/Unit.txn", "Gen/InitialisationGameDistanceUnits.txn"):
             self.assertTrue(packaging.is_gameplay_file(rel), rel)
-        for rel in ("GFX/Unit.ndfbin", "Scenarios/Gen/GFX/Unit.ndfbin", "Gen/NDF/GFX/MyUnit.ndfbin", "Gen/Version.ndf"):
+        for rel in ("GFX/Unit.txn", "Scenarios/Gen/GFX/Unit.txn", "Gen/NDF/GFX/MyUnit.txn", "Gen/Version.ndf",
+                    "Gen/NDF/GFX/Unit.ndfbin"):  # the name up to build 201602: 210942's list no longer holds it
             self.assertFalse(packaging.is_gameplay_file(rel), rel)
 
     def test_is_gameplay_file_ignores_case(self):
         """The game reads a mod's files through Windows paths, where case names no other file: any spelling counts."""
-        for rel in ("gen/NDF/GFX/Unit.ndfbin", "GEN/ndf/gfx/unit.NDFBIN", "Gen/x/initialisationgamedistanceunits.ndfbin"):
+        for rel in ("gen/NDF/GFX/Unit.txn", "GEN/ndf/gfx/unit.TXN", "Gen/x/initialisationgamedistanceunits.txn"):
             self.assertTrue(packaging.is_gameplay_file(rel), rel)
-        for rel in ("gfx/unit.ndfbin", "Gen/NDF/GFX/myunit.ndfbin", "GEN/Version.ndf"):
+        for rel in ("gfx/unit.txn", "Gen/NDF/GFX/myunit.txn", "GEN/Version.ndf"):
             self.assertFalse(packaging.is_gameplay_file(rel), rel)
 
 
@@ -145,12 +145,13 @@ class WriteTest(unittest.TestCase):
 class StockTest(unittest.TestCase):
     @paths.skip_unless_extracted()
     def test_gameplay_files_match_stock_mod_manager(self):
-        """The list is the Gameplay tag's FilesForTag in the game's own ModManager descriptor."""
+        """The list is the Gameplay tag's FilesForTag in the game's own ModManager descriptor: NDF/ModManager.txn
+        from build 210942 on (Transactions.dat). Glad.dat's NDF/ModManager.ndfbin is build 201602's copy."""
         root = str(paths.extracted_root())
-        found = [p for p in glob.glob(os.path.join(root, "**", "NDF", "ModManager.ndfbin"), recursive=True)
+        found = [p for p in glob.glob(os.path.join(root, "**", "NDF", "ModManager.txn"), recursive=True)
                  if "older" not in os.path.relpath(p, root).replace(os.sep, "/").split("/")]
         if not found:
-            self.skipTest("NDF/ModManager.ndfbin is not in the extraction (see the warno-setup skill)")
+            self.skipTest("NDF/ModManager.txn is not in the extraction (see the warno-setup skill)")
         nb, _, _ = ndfbin.load(found[0])
         tags = {}
         for ob in nb.objects:

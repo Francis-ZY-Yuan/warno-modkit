@@ -37,12 +37,15 @@ before trusting the gate.
 It then counts stock: for each `defined` rule, how many stock objects of the class there are, and how many leave
 the property out.
 
-On build 201602 it found 3,870 rules on 1,565 classes. `show <class>` prints one class's rows.
+On build 201602 it found 3,870 rules on 1,565 classes; on 210942, 3,663 rules on 1,415 classes
+([[2026-11-12-build-210942-port]] says what changed). `show <class>` prints one class's rows.
 
 ## Testing the table against stock: `python -m modkit.core.ndfrules verify`
 
-Verify applies the evaluated rules to every stock file of the current build in your extraction. Every one of them
-loads in the game, so the expected result is `0 violations`.
+Verify applies the evaluated rules to every stock file of the current build in your extraction: every `.ndfbin`
+and `.txn` (build 210942 ships compiled NDF as `.txn`), except an earlier build's copy that the game no longer loads
+(a stock entry declared `corpus=False`, such as `Glad.dat` on 210942). Every one of them loads in the game, so the
+expected result is `0 violations`.
 
 The first pass of this sweep found 3,363 violations, every one a property left out and none an explicit zero. A
 property left out keeps a built-in default, which can be non-zero and pass. That gave the gate its rule:
@@ -50,7 +53,8 @@ property left out keeps a built-in default, which can be non-zero and pass. That
 - a zero value always fails;
 - a missing value fails only when **no** stock object of the class leaves it out.
 
-With that rule, all 888 stock files of 201602 pass, and the unfixed probe fails with the game's own message.
+With that rule, all 888 stock files of 201602 pass, and the unfixed probe fails with the game's own message. On
+210942, all 663 stock files pass.
 
 ## The gate: `modkit.core.ndfrules.check_file`
 
