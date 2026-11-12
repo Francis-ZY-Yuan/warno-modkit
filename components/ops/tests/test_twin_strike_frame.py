@@ -4,13 +4,15 @@ loads with every unit in place. The mission on it is test_twin_strike_mission's.
 `Identity`, `Profile`, `Items`, `Ranges`, `Camera` and `Strings` need no stock data: the identity beside Open Door and
 the probes, the profile's settings, where every item stands and in which camp, the guns' bands, the opening camera's
 keys and the string table. `Script` builds the frame's script from Survivors' and pins its shapes: the camps, the
-setup before LoadingDone (the village's owner), the opening camera after it, the deck's adds and locks and the groups
-of the pre-placed units. `Build` builds the op through its build.py front end, every gate included. Classes that read
-the stock extraction or the game install skip without them."""
+setup before LoadingDone (the village's owner), the opening camera after it, the own deck and its reserve pages'
+locks, the buy menu's GROUPS view against stock's trio, and the groups of the pre-placed units. `Build` builds the op
+through its build.py front end, every gate included, and proves the decks gate on bad builds and the stock-names
+fallback. Classes that read the stock extraction or the game install skip without them."""
 from __future__ import annotations
 
 import contextlib
 import dataclasses
+import importlib.util
 import io
 import math
 import os
@@ -27,7 +29,7 @@ from test_gates_stock import MENU_SPANS
 from twin_strike_support import (
     GAME, LAYOUT_DATA, OUT_ROOT, SCRIPT_DATA, TWIN_STRIKE, build_main, build_profile, gru, quiet_build,
 )
-from modkit.core import edat, paths, tgv, trad
+from modkit.core import edat, ndfbin, paths, tgv, trad
 from modkit.core.gates import CheckError
 from modkit.core.models import LANGS
 from modkit.ops import INGAME_DIC, gates, leveldesign, menuart
@@ -37,11 +39,13 @@ from modkit.ops.files import read_file
 from modkit.ops.graph import decode, nodes_of, walk
 from modkit.ops.items import MENU_ART
 from modkit.ops.maps import CAMPATHS_FILE, START_CAMERA_MIN_HEIGHT, TWIN_CITIES, view_centre
+from modkit.ops.models import ForceRow
 from modkit.ops.profile import (
     SOVIET_PLAYER_CAMP_ROWS, SOVIET_PLAYER_DECK_SWAP, SOVIET_PLAYER_SIDES, STOCK_ASSETS, SURVIVORS, extracted,
 )
 from modkit.ops.rekey import TXN, def_path
-from modkit.ops.script import BRICK_DEFAULT, PRODUCTION_DECK
+from modkit.ops.forces import DeckPage, Platoon, deck_packs
+from modkit.ops.script import BRICK_FORCE_HIDE, PROD_MENU_SWITCH, PRODUCTION_TYPE
 from modkit.ops.shapes import GRU_WORLD, TRANSPORTER_SHAPE
 from modkit.ops.strings import load
 from modkit.ops.testing import cmp_of, last, of, prop, remove_out, subs, token
@@ -139,10 +143,33 @@ class Identity(unittest.TestCase):
         self.assertNotEqual(profile.GUID_NAMESPACE, od_profile.GUID_NAMESPACE)
 
 
+class Front(unittest.TestCase):
+    def test_the_stock_names_flag(self):
+        """build.py --stock-names turns the fallback switch on before the build makes the profile and the content, and
+        hands the rest of the command line on; without it the switch stays off."""
+        spec = importlib.util.spec_from_file_location("twin_strike_build", TWIN_STRIKE / "build.py")
+        front = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(front)
+        seen = []
+        with mock.patch.object(front.ops_build, "cli", lambda *a, **k: seen.append((a[2], forces.STOCK_NAMES)) or 0),                 mock.patch.object(forces, "STOCK_NAMES", False):
+            self.assertEqual(front.main(["--content", "op"]), 0)
+            self.assertEqual(front.main(["--content", "op", "--stock-names", "--out", "x"]), 0)
+        self.assertEqual(seen, [(["--content", "op"], False), (["--content", "op", "--out", "x"], True)])
+        self.assertFalse(forces.STOCK_NAMES)
+
+
 class Profile(unittest.TestCase):
     def test_the_soviet_player_shape(self):
-        """The camps, sides and menu deck are modkit.ops.profile's Soviet-player shape, not a copy."""
-        self.assertIs(profile.CAMP_ROWS, SOVIET_PLAYER_CAMP_ROWS)
+        """The camps, sides and menu deck are modkit.ops.profile's Soviet-player shape, not a copy: every camp row is
+        the shared one but the player's, whose SetDeck names the op's own deck (DECK_ID, hash-derived); the menu's
+        deck stays RedJuggernaut's."""
+        self.assertEqual(profile.CAMP_ROWS[0], dataclasses.replace(SOVIET_PLAYER_CAMP_ROWS[0], deck=profile.DECK_ID))
+        for mine, shared in zip(profile.CAMP_ROWS[1:], SOVIET_PLAYER_CAMP_ROWS[1:]):
+            self.assertIs(mine, shared)
+        self.assertEqual(profile.CAMP_ROWS[2].deck, "OP_BASE_RJ_IA")
+        self.assertEqual(profile.DECK_ID, leveldesign.derived_deck_identifier(profile.SCENARIO, profile.GUID_NAMESPACE,
+                                                                              "TS", "Player"))
+        self.assertRegex(profile.DECK_ID, r"^TS_[0-9A-F]{12}_Player$")
         self.assertIs(profile.CAMPS, SOVIET_PLAYER_SIDES)
         self.assertIs(profile.DECK_SWAP, SOVIET_PLAYER_DECK_SWAP)
         self.assertEqual(profile.CAMPS[profile.PLAYER], "joueur")
@@ -168,7 +195,10 @@ class Profile(unittest.TestCase):
         self.assertEqual((p.player_camp, p.enemy_camp), ("joueur", "ordinateur_SOV"))
         self.assertEqual([g.name for g in p.extra_gates], ["units", "no-template-name", "grid", "zone-layout",
                                                            "menu-order", "fire-range"])
-        self.assertEqual(profile.PRODUCTION_TYPE, PRODUCTION_DECK)
+        self.assertEqual((profile.PRODUCTION_TYPE, profile.PROD_MENU_SWITCH), (PRODUCTION_TYPE, BRICK_FORCE_HIDE))
+        self.assertEqual(p.dictionary_lists, {"DECK_COMPANIES": "COMPANIES", "DECK_PLATOONS": "PLATOONS"})
+        self.assertEqual(p.dictionaries, (*profile.SCENARIO_DICTIONARIES, "DECK_COMPANIES", "DECK_PLATOONS"))
+        self.assertIn(gates.DECK_FILE, p.shape_sources["GDScript"])
         self.assertEqual(p.extra_items, (ts_map.CUT.items, ts_map.CAMERA.items))
         self.assertLessEqual({"out/PlayableZone.ndfbin", "out/IAStratZone.ndfbin", "out/IAStrat_PathCache.ndfbin",
                               CAMPATHS_FILE}, set(p.shape_sources))
@@ -370,7 +400,9 @@ class Strings(unittest.TestCase):
                     self.assertEqual([lang for lang, _ in texts.items()], ["SC", "US"])
                     self.assertTrue(all(" " <= ch <= "~" or ch == "\n" for ch in texts.US), texts.US)
                     trad.token_key(tok)
-        self.assertEqual(set(STRINGS), set(profile.DICTIONARIES))
+        self.assertEqual(set(STRINGS), set(profile.dictionaries(False)))
+        self.assertEqual(set(strings.table(True)), set(profile.dictionaries(True)))
+        self.assertEqual(set(profile.dictionaries(True)), set(profile.SCENARIO_DICTIONARIES))
 
     def test_every_token_is_ts_and_unique(self):
         toks = [t for tokens in ENGLISH.values() for t in tokens]
@@ -455,8 +487,8 @@ class Script(unittest.TestCase):
             self.assertEqual([(p, v.v) for p, v in camp.props[:-1]], [(p, v) for p, _, v in row.scalars])
             self.assertEqual(token(prop(camp, "PlayerName")), profile.CAMP_TOKENS[row.name])
         decks = [(last(prop(n, "Camp")), prop(n, "DeckIdentifier").text) for n in subs(self.main)[:4]]
-        self.assertEqual(decks, [(row.name, row.deck) for row in SOVIET_PLAYER_CAMP_ROWS])
-        self.assertEqual(decks[0], ("joueur", "OP_BASE_RJ_Player"))
+        self.assertEqual(decks, [(row.name, row.deck) for row in profile.CAMP_ROWS])
+        self.assertEqual(decks[0], ("joueur", profile.DECK_ID))
 
     def test_setup_ends_with_the_village_owner_and_the_camera_opens_after_loading_done(self):
         """Before LoadingDone: the deployment's setup, then NATO owns the village's zone (RedJuggernaut #73's place).
@@ -483,43 +515,76 @@ class Script(unittest.TestCase):
         self.assertEqual(of(list(walk(kids[:9])), "Camera"), [])
         self.assertEqual([k for k, _ in kids[7].props], ["Camp"])        # no income: stock leaves the amount out
         self.assertEqual(prop(kids[6], "Quantite").v, op.DEPLOY_POINTS)
-        self.assertEqual(prop(kids[5], "ProductionType").v, PRODUCTION_DECK)   # the buy menu's BATTLEGROUP view
+        self.assertEqual(prop(kids[5], "ProductionType").v, PRODUCTION_TYPE)   # the buy menu's GROUPS view
 
     def test_after_loading_done(self):
         """Main's Simultaneous: the frame's two load beats first (the mission's after them), the refresh loop, then the
         wait for "Launch battle" (the start hint beside it) before the timed beats (test_twin_strike_mission). The HUD
-        restore leaves the buy menu's switch at Default."""
+        restore keeps the buy menu's switch force-hidden."""
         kids = subs(self.main)
-        self.assertNotIn(("ShowProdMenuSwitchMenuTypeButtons"), [p for p, _ in kids[-2].props])
+        self.assertEqual(prop(kids[-2], PROD_MENU_SWITCH).v, BRICK_FORCE_HIDE)
         *_, refresh, battle = subs(kids[-1])
         launched = subs(battle)[0]
         self.assertEqual(refresh.export, profile.REFRESH_EXPORT)
         self.assertEqual(launched.cls, "TGDDescriptorCompetition")
         (hint,) = of(list(walk([launched])), "LDHint")
         self.assertEqual(token(prop(hint, "Info")), "ts_hdep")
-        self.assertEqual(op.PROD_MENU_SWITCH, BRICK_DEFAULT)
+        self.assertEqual(op.PROD_MENU_SWITCH, BRICK_FORCE_HIDE)
 
-    def test_deck_adds_and_locks(self):
-        """AddUnitToDeck for every start card, the motor rifles carried by their BMP-2s, and then for the Soviet
-        player's supply; then, last and beside each other, one LockDeckUnit per locked type, each until ts_fallen = 1
-        [[add-unit-to-deck]]."""
+    def test_the_reserve_pages_lock_until_the_fall(self):
+        """The deck beat: beside each other, one Competition[LockCombatGroup(joueur, [page]), WaitCondition(ts_fallen =
+        1)] per reserve page, 3 and 4, in stock's order (RunningTheGauntlet #178/#179) [[deck-page-lock]]. No card is
+        added to the deck, and no shape for an added card's carrier is admitted any more."""
         deck = subs(subs(self.main)[-1])[0]
-        *adds, locks = subs(deck)
-        got = [(prop(n, "TypeUnit").path, prop(n, "NbUnitsToAdd").v,
-                prop(n, "Transporter").path if prop(n, "Transporter") else None) for n in adds]
-        self.assertEqual(got, [(unit_path(c.unit), c.count, unit_path(c.transport) if c.transport else None)
-                               for c in (*forces.START_ADDS, *forces.SUPPLY)])
-        self.assertTrue(all(last(prop(n, "Camp")) == "joueur" for n in adds))
-        self.assertEqual(locks.cls, "TGDDescriptorSimultaneous")
-        units = []
-        for race in subs(locks):
-            wait, lock = subs(race)
-            self.assertEqual(race.cls, "TGDDescriptorCompetition")
+        self.assertEqual(deck.cls, "TGDDescriptorSimultaneous")
+        pages = []
+        for race in subs(deck):
+            lock, wait = subs(race)
+            self.assertEqual((race.cls, lock.cls), ("TGDDescriptorCompetition", "TGDDescriptorLockCombatGroup"))
+            self.assertEqual(last(prop(lock, "Camp")), "joueur")
             self.assertEqual(cmp_of(prop(wait, "Condition")), (op.FALLEN, 0, 1))
-            (deck_unit,) = prop(lock, "Units")
-            units.append(prop(deck_unit, "Unit").path)
-        self.assertEqual(units, [unit_path(u) for u in forces.START_LOCKS])
-        self.assertIn(TRANSPORTER_SHAPE, op.content().extra_shapes)
+            (index,) = prop(lock, "CombatGroupIndexes")
+            pages.append(prop(index, "Value").v)
+        self.assertEqual(pages, list(forces.RESERVE_PAGES))
+        self.assertEqual(of(self.nodes, "AddUnitToDeck"), [])
+        self.assertNotIn(TRANSPORTER_SHAPE, op.content().extra_shapes)
+
+    def test_the_deck_is_exported(self):
+        """The player's deck at TS/PlayerDeck, identified DECK_ID (the player's SetDeck names it), named by the
+        division's UNITS token, of RedJuggernaut's division: forces.DECK_PAGES' five pages, their platoons and
+        cards, every pack drawn once by its platoons [[op-exported-deck]]."""
+        (deck,) = [nd for nd in self.exports if nd.cls == "TDeckDescriptor"]
+        self.assertEqual(deck.export, f"{GD}/TS/PlayerDeck")
+        self.assertEqual((prop(deck, "DeckIdentifier").text, token(prop(deck, "DeckName")),
+                          prop(deck, "DeckDivision").path),
+                         (profile.DECK_ID, "ABQKCQLERY",
+                          "$/GFX/Division/Descriptor_Deck_Division_SOV_79_Gds_Tank_challenge"))
+        packs = [(prop(p, "UnitDescriptor").path, prop(p, "Number").v) for p in prop(deck, "DeckPackList")]
+        self.assertEqual(packs, [(unit_path(c.unit), c.count) for c in deck_packs(forces.DECK_PAGES)])
+        pages = prop(deck, "DeckCombatGroupList")
+        self.assertEqual([token(prop(g, "Name")) for g in pages], [page.name for page in forces.DECK_PAGES])
+        self.assertEqual([[token(prop(sg, "Name")) for sg in prop(g, "SmartGroupList")] for g in pages],
+                         [[p.name for p in page.platoons] for page in forces.DECK_PAGES])
+
+    @paths.skip_unless_extracted("scenarios", "challenge_Marauders")
+    def test_the_buy_menu_is_stocks_trio(self):
+        """The buy menu held in its GROUPS view with the view switch force-hidden, as stock pairs a page lock: Marauders
+        #107 (ChangeProductionType), #108 (the hide-all) and #162 (the buy menu shown), read from the stock file, set
+        the production type and the switch as the frame's three nodes do."""
+        nb, _, _ = decode(read_file(os.path.join(str(paths.extracted_root()), "scenarios", "challenge_Marauders",
+                                                 "NDF", "Scenarios", "challenge_Marauders", "GDScript.txn")))
+
+        def values(i: int) -> dict:
+            return {nb.pname(pi): v.v for pi, v in nb.objects[i].props}
+
+        change, hide, show = values(107), values(108), values(162)
+        kids = subs(self.main)
+        ours = [{k: v.v for k, v in n.props} for n in (kids[5], kids[4], kids[-2])]
+        self.assertEqual(ours[0], change)                                     # ProductionType 1, Groups
+        for stock, mine in ((hide, ours[1]), (show, ours[2])):
+            self.assertEqual(mine[PROD_MENU_SWITCH], stock[PROD_MENU_SWITCH])  # ForceHide
+        self.assertEqual((hide["ForceHideAll"], ours[1]["ForceHideAll"]), (1, 1))
+        self.assertEqual((show["ShowProdMenu"], ours[2]["ShowProdMenu"]), (2, 2))
 
     def test_the_garrison_holds_the_village(self):
         """The garrison's group from its 14 Camp_3 spawns, then, as stock gives a garrison in a camp with no AI: HOLD
@@ -575,19 +640,22 @@ class Build(unittest.TestCase):
 
     def test_the_gates_that_hold_the_frame(self):
         """Every standard gate passes (the end funnel holding all nine endings; the script-effects gate holding the
-        strike's look, its nuke through the script's own wrapper; the garrison the one smart-ordered group), and the
-        extra gates: the 57 unit
-        types the op names (the supply's, the carriers', the ATGM teams', the Kubs' and the fighters' among them), no
-        Survivors name, the cut's 40 tiles, the zones and arrivals, and the fire range: GUN_SPAWN's batteries in the
-        player's alliance, its 9 battery-target pairs in range; every unit the script creates inside the playable
-        zone."""
+        strike's look, its nuke through the script's own wrapper; the garrison the one smart-ordered group; the decks
+        gate holding the own deck, its two page locks and the four SetDecks; the deck's 28 names in the game's lists),
+        and the extra gates: the 56 unit types the op names (the deck's, the carriers', the ATGM teams', the Kubs' and
+        the fighters' among them), no Survivors name, the cut's 40 tiles, the zones and arrivals, and the fire range:
+        GUN_SPAWN's batteries in the player's alliance, its 9 battery-target pairs in range; every unit the script
+        creates inside the playable zone."""
         for line in ("1 player reinforcement locations and 1 aerial corridors",
-                     "12 never-finishing script actions",              # the three locks and the nine endings
-                     "1 HUD restores with the buy-menu switch Default",
+                     "11 never-finishing script actions",              # the two page locks and the nine endings
+                     "1 HUD restores with the buy-menu switch ForceHide",
+                     "28 deck names in the game's UNITS, COMPANIES and PLATOONS lists",
+                     "4 SetDecks, each naming a stock deck or one the script exports; 1 exported decks that pass the "
+                     "game's load checks and the op's deck rules, 2 page locks in range",
                      "9 TriggerEndGame, each under $/GDScript/TS/EndFunnel",
                      "19 script effect launches, each a self-contained GameFx effect",   # the flash's 19
                      "1 smart-ordered groups, none ordered again after its smart order",
-                     "gate 3 units: 57 unit descriptors exist",
+                     "gate 3 units: 56 unit descriptors exist",
                      # 18 read: the 11 Definition entries with a fixture or stock bytes (the generated GDScript .dbg
                      # has neither) and the 7 generated Details files
                      "gate 3 no-template-name: 18 re-keyed or generated dumps without Survivors",
@@ -597,8 +665,9 @@ class Build(unittest.TestCase):
                      "gate 3 fire-range: TS_GunSpawn's batteries in Allie, the player's alliance (0), standing inside "
                      "the playable zone; 9 battery-target pairs on 3 targets, each inside its band (closest: "
                      "TS_Village from 2S7M_Malka_SOV, 846 GRU inside)",
-                     # the Definition pack's 12 (4 kinds, each a .txn, .txn.tag and .dbg), Details' 7, Assets' 28
-                     "gate 5 package: all 47 entries lie under challenge_OperationTwinStrike; no Gameplay file",
+                     # the Definition pack's 12 (4 kinds, each a .txn, .txn.tag and .dbg), Details' 7, Assets' 44
+                     # (the deck's two dictionaries in 8 languages among them)
+                     "gate 5 package: all 63 entries lie under challenge_OperationTwinStrike; no Gameplay file",
                      # gate 2: canonical, stock shapes; 36 stock files: the 30 stock scenarios' (build 210942 added
                      # CampagneStrat_Invasion_of_Cuba) and Kreide's 6
                      "CamPaths_LevelDesign 13 objects vs 36 stock files"):
@@ -713,6 +782,83 @@ class Build(unittest.TestCase):
         strings_ = [s.decode("latin-1") for s in nb.strings]
         self.assertIn("OP_BASE_RJ_Player", strings_)
         self.assertNotIn("OP_NORTH_SURV_PLAYER", strings_)
+
+    def test_the_deck_names_ship_beside_the_menu_dictionary(self):
+        """MapConfiguration appends the deck's two dictionaries to the game's COMPANIES and PLATOONS lists beside its
+        MAPS one, each named as SCENARIO_DEFINITION is, and each ships in every language
+        [[deck-names-from-op-dictionaries]]."""
+        nb = self.map_configuration()
+        self.assertEqual(gates.appended_dictionaries(nb, profile.SCENARIO),
+                         [("MAPS", "SCENARIO_DEFINITION"), ("COMPANIES", "DECK_COMPANIES"),
+                          ("PLATOONS", "DECK_PLATOONS")])
+        assets = self.pack("Assets")
+        for name in ("DECK_COMPANIES", "DECK_PLATOONS"):
+            for lang in LANGS:
+                with self.subTest(name=name, lang=lang):
+                    rows = dict(trad.read_dic(assets[f"Localisation/{profile.SCENARIO}/{name}-{lang}.dic"]))
+                    self.assertEqual({trad.token_key(t) for t in STRINGS[name]}, set(rows) - {trad.CHARSET_KEY})
+
+    def bad_deck_build(self, pages, out: str):
+        """The op built with `pages` in place of forces.DECK_PAGES (the reserve pages still 3 and 4)."""
+        with mock.patch.object(forces, "DECK_PAGES", pages):
+            return quiet_build(op.content(), os.path.join(OUT_ROOT, out))
+
+    def test_the_decks_gate_fails_a_gunship_carrier(self):
+        """The decks gate's proof (it passes this build, above): motor rifles riding the Ka-29s, which carry no troops,
+        fail the build with the gate's line, before anything is written."""
+        pages = list(forces.DECK_PAGES)
+        hq = pages[0]
+        heli = Platoon("ts_pl_hel", (ForceRow("MotRifles_SOV", 4, "Ka_29_SOV"),))
+        pages[0] = DeckPage(hq.name, (*hq.platoons[:5], heli))
+        with self.assertRaisesRegex(CheckError, r"MotRifles_SOV in Ka_29_SOV\): the carrier is not a transport"):
+            self.bad_deck_build(tuple(pages), "bad-carrier")
+        remove_out(os.path.join(OUT_ROOT, "bad-carrier"))
+
+    def test_the_decks_gate_fails_a_key_across_the_lock(self):
+        """The reserve's Konkurs-M teams at the start's experience (0): one key on page 2 (open) and page 4 (locked),
+        which an open page would sell; the build fails with the gate's line."""
+        pages = list(forces.DECK_PAGES)
+        res = pages[4]
+        atgm = Platoon("ts_pl_atgm", (ForceRow(forces.ATGM_TEAM, 4, forces.ATGM_CARRIER),))
+        pages[4] = DeckPage(res.name, (*res.platoons[:2], atgm, *res.platoons[3:]))
+        with self.assertRaisesRegex(CheckError, r"ATteam_KonkursM_TTsko_SOV in BTR_80_SOV at experience 0 is on a "
+                                                r"locked page and an open one"):
+            self.bad_deck_build(tuple(pages), "bad-key")
+        remove_out(os.path.join(OUT_ROOT, "bad-key"))
+
+    def test_the_tokens_gate_fails_a_name_no_list_holds(self):
+        """A platoon named by a token neither the op's PLATOONS dictionary nor a declared stock token holds fails the
+        tokens gate (the game's dictionary error at the first SetDeck)."""
+        pages = list(forces.DECK_PAGES)
+        tank = pages[1]
+        pages[1] = DeckPage(tank.name, (Platoon("ts_pl_none", tank.platoons[0].cards), *tank.platoons[1:]))
+        with self.assertRaisesRegex(CheckError, r"deck name tokens missing from the game's PLATOONS list in \w+: "
+                                                r"\['ts_pl_none'\]"):
+            self.bad_deck_build(tuple(pages), "bad-name")
+        remove_out(os.path.join(OUT_ROOT, "bad-name"))
+
+    def test_the_stock_names_fallback_builds(self):
+        """The stock-names fallback (forces.STOCK_NAMES, build.py --stock-names): every gate passes, the deck carries
+        the stock picks, and the build ships neither deck dictionary nor the resources that append them."""
+        out = os.path.join(OUT_ROOT, "stock-names")
+        log = io.StringIO()
+        with mock.patch.object(forces, "STOCK_NAMES", True), contextlib.redirect_stdout(log):
+            code = build_main(["--content", "op", "--out", out])
+        self.assertEqual(code, 0, log.getvalue())
+        self.assertIn("19 deck names in the game's UNITS, COMPANIES and PLATOONS lists", log.getvalue())
+        path = os.path.join(out, "TwinStrike", "Scenarios", f"{profile.SCENARIO}_Definition.dat")
+        entries = {e.path: edat.read_entry(path, e) for e in edat.read_index(path)}
+        nb, _, _ = decode(entries[def_path("MapConfiguration", TXN, profile.SCENARIO)])
+        self.assertEqual(gates.appended_dictionaries(nb, profile.SCENARIO), [("MAPS", "SCENARIO_DEFINITION")])
+        gd, _, _ = decode(entries[def_path("GDScript", TXN, profile.SCENARIO)])
+        (deck,) = gates.read_decks(gd)
+        names = {ndfbin.token_unhash(int.from_bytes(v.v, "little")) for ob in gd.objects for pi, v in ob.props
+                 if gd.cname(ob.cls) in ("TDeckCombatGroupDescriptor", "TDeckSmartGroupDescriptor")
+                 and gd.pname(pi) == "Name"}
+        self.assertEqual(names, set(forces.STOCK_PICKS.values()))
+        assets = os.path.join(out, "TwinStrike", "Scenarios", f"{profile.SCENARIO}_Assets.dat")
+        self.assertFalse([e.path for e in edat.read_index(assets) if "DECK_" in e.path])
+        remove_out(out)
 
     def pack(self, name: str) -> dict[str, bytes]:
         path = os.path.join(OUT, "TwinStrike", "Scenarios", f"{profile.SCENARIO}_{name}.dat")

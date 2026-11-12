@@ -220,8 +220,9 @@ class Model:
     Sequential runs its children in turn (NbExecutions times), a Simultaneous all until all finish, a Competition until
     its first finishes; a WaitDuration takes its seconds (rounded to whole ones), a WaitCondition until its condition
     holds; a camera cutscene takes its path's TimeInSecond and its hold (CutsceneWaitDuree). An objective resolves on
-    the first tick its Condition (first) or ConditionEchec holds, then runs that action. TriggerEndGame, LockDeckUnit
-    and a (blocking) Attack never finish. A timer reads its seconds left: its Duree until StartTimer, then down to 0.
+    the first tick its Condition (first) or ConditionEchec holds, then runs that action. TriggerEndGame,
+    LockCombatGroup (logged as a lock, and as an unlock when its race retires it) and a (blocking) Attack never
+    finish. A timer reads its seconds left: its Duree until StartTimer, then down to 0.
     Instant actions are logged as (second, kind, ...); variables and script-filled groups are kept by name."""
 
     def __init__(self, world: World, values: dict[str, int] | None = None) -> None:
@@ -362,11 +363,13 @@ class Model:
             winner = prop(n, "WinningAlliance")
             self.note("end", prop(n, "VictoryType").v, winner.v if winner is not None else None)
             yield from self.wait(None)
-        elif cls == "LockDeckUnit":
-            self.note("lock", *(prop(u, "Unit").path.rsplit("_Unit_", 1)[1] for u in prop(n, "Units")))
-            yield from self.wait(None)
-        elif cls == "AddUnitToDeck":
-            self.note("card", prop(n, "TypeUnit").path.rsplit("_Unit_", 1)[1], prop(n, "NbUnitsToAdd").v)
+        elif cls == "LockCombatGroup":
+            pages = tuple(prop(v, "Value").v for v in prop(n, "CombatGroupIndexes"))
+            self.note("lock", *pages)
+            try:
+                yield from self.wait(None)
+            finally:
+                self.note("unlock", *pages)
         elif cls == "SetAmmo":
             self.note("ammo", [last(u) for u in prop(n, "Units")], prop(n, "MaxAmmoRatio") is not None)
         elif cls == "LaunchFXFireAndForgetOnPosition":

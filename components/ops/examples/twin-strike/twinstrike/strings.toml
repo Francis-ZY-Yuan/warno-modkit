@@ -1,9 +1,10 @@
 # Twin Strike's string table (modkit.ops.strings.load; twinstrike.op packs it): every text the op shows, per token,
 # in English (US) and Simplified Chinese (SC); the other six languages get the English. One section per token,
 # [<dictionary>.<token>], one key per language (US required; any other language optional, packed as the US text
-# where it has none). The order is the order the build writes each .dic's texts in. The dictionaries are the three
-# the profile packs (twinstrike.profile.DICTIONARIES). A dialog takes no variables, so no dialog text holds %1..%9;
-# hints and objectives may.
+# where it has none). The order is the order the build writes each .dic's texts in. The dictionaries are the ones
+# the profile packs (twinstrike.profile.dictionaries): the scenario's three, and the deck's two (DECK_COMPANIES,
+# DECK_PLATOONS), left out when the deck carries stock names (twinstrike.strings.table). A dialog takes no
+# variables, so no dialog text holds %1..%9; hints and objectives may.
 #
 # The menu texts (SCENARIO_DEFINITION, profile.MENU_RENAMES) take the form of the stock Operations' own, and in each
 # language stock's length range for their element (test_twin_strike_frame.Strings): the briefing (ts_order) is the
@@ -61,8 +62,8 @@ Front offers release for one tactical nuclear strike on that assembly area. The 
 4. Under your command, the forward detachment of the 79th Guards Tank Division:
 - T-80BV tanks, motor rifles in BMP-2s, Konkurs-M teams in BTR-80s, engineers, scouts, Shilkas, 2S1s and Ka-29s.
 - The division's 2S7M and BM-27 batteries, on call.
-- In reserve: T-80U tanks, Konkurs-M and Metis teams, Ka-50 and Mi-24V helicopters, Tunguska, Osa and Kub air \
-defence."""
+- In reserve, locked until the village falls: T-80U tanks, Konkurs-M and Metis teams, Ka-50 and Mi-24V \
+helicopters, Tunguska, Osa and Kub air defence."""
 SC = """
 1989年7月4日 04:30 UTC
 战斗命令第79/014号
@@ -71,7 +72,7 @@ SC = """
 
 1. 从北面夺取该村。师炮兵可实施冲击炮火准备，届时冲击分队须在村外。
 
-2. 夺取该村后，师预备队归您指挥。扼守该村，抗击北约两次突击：美军坦克营由南沿两路北上，\
+2. 夺取该村后，师预备队解锁，归您指挥。扼守该村，抗击北约两次突击：美军坦克营由南沿两路北上，\
 西德坦克营随后在村南集结。方面军可批准对该集结地域实施一次战术核突击，由您决定。
 
 3. 敌情：
@@ -324,9 +325,11 @@ SC = "师炮兵群已准备就绪。射击期间，冲击分队须留在村外�
 # phase 2 (design 5.2)
 ["Scripting/Localization".ts_hfall]
 US = """
-Village taken. Front releases the division's reserve and 8,000 points, with income from now on. NATO recon is \
-moving north."""
-SC = "村庄已夺取。方面军向您调拨师预备队和8,000点，此后持续提供收入。北约侦察分队正在向北移动。"
+Village taken. Front releases the division's reserve, its two pages of the buy menu now unlocked, and 8,000 points, \
+with income from now on. NATO recon is moving north."""
+SC = """
+村庄已夺取。方面军向您调拨师预备队（购买菜单中的两页现已解锁）和8,000点，此后持续提供收入。\
+北约侦察分队正在向北移动。"""
 
 # phase 3 (design 5.3, 5.4): every fire mission names its box; the fire plan announces its target
 ["Scripting/Localization".ts_hph3]
@@ -501,3 +504,116 @@ SC = "核突击区：不要进入"
 ["Scripting/Localization".ts_ozonel]
 US = "STRIKE ZONE"
 SC = "核突击区"
+
+# The deck's page names (twinstrike.forces.DECK_PAGES), read as part of the game's COMPANIES list. Stock has no page
+# name for a reserve, the main reason the op names its own. Stock's COMPANIES and PLATOONS lists are English in SC
+# too, so the Chinese names are the op's own, from its term table.
+[DECK_COMPANIES.ts_pg_hq]
+US = "Forward Detachment HQ"
+SC = "先遣支队指挥部"
+
+[DECK_COMPANIES.ts_pg_tank]
+US = "Tank Battalion"
+SC = "坦克营"
+
+[DECK_COMPANIES.ts_pg_mr]
+US = "Motor Rifle Company"
+SC = "摩步连"
+
+[DECK_COMPANIES.ts_pg_rtk]
+US = "Reserve: Tanks"
+SC = "预备队：坦克"
+
+[DECK_COMPANIES.ts_pg_rsp]
+US = "Reserve: Support"
+SC = "预备队：支援"
+
+# The deck's platoon names, read as part of the game's PLATOONS list: one token per distinct text, so the two tank
+# pages share their 2nd and 3rd platoons' and both ATGM platoons share one.
+[DECK_PLATOONS.ts_pl_cmd]
+US = "Command"
+SC = "指挥"
+
+[DECK_PLATOONS.ts_pl_rec]
+US = "Recon Platoon"
+SC = "侦察排"
+
+[DECK_PLATOONS.ts_pl_adp]
+US = "Air Defence Platoon"
+SC = "防空排"
+
+[DECK_PLATOONS.ts_pl_art]
+US = "Artillery Battery"
+SC = "炮兵连"
+
+[DECK_PLATOONS.ts_pl_sup]
+US = "Supply"
+SC = "补给"
+
+[DECK_PLATOONS.ts_pl_hel]
+US = "Helicopter Flight"
+SC = "直升机小队"
+
+[DECK_PLATOONS.ts_pl_t1]
+US = "1st Tank Platoon"
+SC = "坦克第1排"
+
+[DECK_PLATOONS.ts_pl_t2]
+US = "2nd Tank Platoon"
+SC = "坦克第2排"
+
+[DECK_PLATOONS.ts_pl_t3]
+US = "3rd Tank Platoon"
+SC = "坦克第3排"
+
+[DECK_PLATOONS.ts_pl_mr1]
+US = "1st MR Platoon"
+SC = "摩步第1排"
+
+[DECK_PLATOONS.ts_pl_mr2]
+US = "2nd MR Platoon"
+SC = "摩步第2排"
+
+[DECK_PLATOONS.ts_pl_mr3]
+US = "3rd MR Platoon"
+SC = "摩步第3排"
+
+[DECK_PLATOONS.ts_pl_atgm]
+US = "ATGM Platoon"
+SC = "反坦克导弹排"
+
+[DECK_PLATOONS.ts_pl_eng]
+US = "Assault Engineers"
+SC = "突击工兵"
+
+[DECK_PLATOONS.ts_pl_hq1]
+US = "HQ & 1st Tank Platoon"
+SC = "指挥部和坦克第1排"
+
+[DECK_PLATOONS.ts_pl_t4]
+US = "4th Tank Platoon"
+SC = "坦克第4排"
+
+[DECK_PLATOONS.ts_pl_at]
+US = "AT Platoon"
+SC = "反坦克排"
+
+[DECK_PLATOONS.ts_pl_me1]
+US = "1st MR Platoon (Metis)"
+SC = "摩步第1排（混血儿）"
+
+[DECK_PLATOONS.ts_pl_me2]
+US = "2nd MR Platoon (Metis)"
+SC = "摩步第2排（混血儿）"
+
+[DECK_PLATOONS.ts_pl_ad]
+US = "Air Defence"
+SC = "防空"
+
+[DECK_PLATOONS.ts_pl_atk]
+US = "Attack Helicopters"
+SC = "攻击直升机"
+
+[DECK_PLATOONS.ts_pl_str]
+US = "Strike Aircraft"
+SC = "攻击机"

@@ -48,5 +48,6 @@ registers), and whether a platoon is bought whole or unit by unit.
 - Gates: [`modkit.ops.gates.check_decks`](../../src/modkit/ops/gates.py)
 - Shapes: [`modkit.ops.shapes.player_deck`](../../src/modkit/ops/shapes.py), [`modkit.ops.shapes.DECK_SHAPE_SOURCES`](../../src/modkit/ops/shapes.py), [`modkit.ops.forces.deck_packs`](../../src/modkit/ops/forces.py), [`modkit.ops.leveldesign.derived_deck_identifier`](../../src/modkit/ops/leveldesign.py)
 - Skills: [`components/ops/skills/warno-new-operation/references/op-anatomy.md`](../../skills/warno-new-operation/references/op-anatomy.md)
+- Examples: [`components/ops/examples/twin-strike/twinstrike/forces.py`](../../examples/twin-strike/twinstrike/forces.py), [`components/ops/examples/twin-strike/twinstrike/op.py`](../../examples/twin-strike/twinstrike/op.py), [`components/ops/examples/twin-strike/twinstrike/profile.py`](../../examples/twin-strike/twinstrike/profile.py)
 - Records: [2026-11-12-deck-gate-bad-builds](../trials/2026-11-12-deck-gate-bad-builds.md), [2026-11-12-deck-gate-stock-survey](../trials/2026-11-12-deck-gate-stock-survey.md), [deck-page-lock](deck-page-lock.md)
 <!-- referenced-by:end -->

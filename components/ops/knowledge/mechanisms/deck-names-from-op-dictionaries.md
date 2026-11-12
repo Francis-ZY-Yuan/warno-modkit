@@ -39,5 +39,6 @@ rebuild.
 - Gates: [`modkit.ops.gates.check_tokens`](../../src/modkit/ops/gates.py)
 - Shapes: [`modkit.ops.rekey.append_dico_resources`](../../src/modkit/ops/rekey.py), [`modkit.ops.profile.OpProfile.dictionary_lists`](../../src/modkit/ops/profile.py), [`modkit.ops.profile.Content.list_tokens`](../../src/modkit/ops/profile.py)
 - Skills: [`components/ops/skills/warno-new-operation/references/op-anatomy.md`](../../skills/warno-new-operation/references/op-anatomy.md)
+- Examples: [`components/ops/examples/twin-strike/twinstrike/forces.py`](../../examples/twin-strike/twinstrike/forces.py), [`components/ops/examples/twin-strike/twinstrike/profile.py`](../../examples/twin-strike/twinstrike/profile.py), [`components/ops/examples/twin-strike/twinstrike/strings.py`](../../examples/twin-strike/twinstrike/strings.py)
 - Records: [2026-11-12-deck-gate-bad-builds](../trials/2026-11-12-deck-gate-bad-builds.md), [2026-11-12-deck-gate-stock-survey](../trials/2026-11-12-deck-gate-stock-survey.md), [op-exported-deck](op-exported-deck.md)
 <!-- referenced-by:end -->

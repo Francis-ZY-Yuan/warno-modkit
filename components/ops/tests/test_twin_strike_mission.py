@@ -605,11 +605,14 @@ class Phase1(unittest.TestCase):
         self.assertEqual(m.when("hint", "ts_hfall"), [FALL_T])
         self.assertEqual(m.entries("done"), [(FALL_T, "ts_p1", [4])])
 
-    def test_the_locks_lift_at_the_fall(self):
-        """The deck's three locks hold until the fall and end with it: their races finish, and with them the deck
-        beat, so the run ends at the fall (phase 1's beat ends there too)."""
+    def test_the_reserve_pages_unlock_at_the_fall(self):
+        """The reserve pages' two locks hold from the load until the fall and end with it: their races finish, and with
+        them the deck beat, so the run ends at the fall (phase 1's beat ends there too) [[deck-page-lock]]."""
         m = run(World(rings=FALLS), FALL_T + 50, "deck", "difficulty", "phase1")
-        self.assertEqual([e[2:] for e in m.log if e[1] == "lock"], [(u,) for u in forces.START_LOCKS])
+        self.assertEqual([e[1:] for e in m.log if e[1] == "lock"], [("lock", k) for k in forces.RESERVE_PAGES])
+        self.assertEqual({e[0] for e in m.log if e[1] == "lock"}, {0})
+        self.assertEqual([e for e in m.log if e[1] == "unlock"],     # the tick its race sees FALLEN
+                         [(FALL_T + 1, "unlock", k) for k in forces.RESERVE_PAGES])
         self.assertEqual(m.vars[op.FALLEN], 1)
         self.assertEqual(m.t, FALL_T + 1)       # the tick after the fall: every beat has ended
 
@@ -656,15 +659,13 @@ class Phase1(unittest.TestCase):
 
 
 class Phase2(unittest.TestCase):
-    def test_the_unlock_and_the_timer(self):
-        """On the fall: 8,000 points and an income of 500, the reserve's cards (the Kubs among them) a second later,
-        phase 3 two minutes after the fall."""
+    def test_the_points_and_the_timer(self):
+        """On the fall: 8,000 points and an income of 500, no card added (the reserve is on the deck's locked pages,
+        which unlock on the fall itself), phase 3 two minutes after the fall."""
         m = run(World(rings=FALLS), PH3_T + 1, "difficulty", "phase1", "phase2", "phase3")
         self.assertEqual((m.entries("points"), m.entries("income")),
                          ([(FALL_T, op.FALL_GRANT)], [(FALL_T, op.FALL_INCOME)]))
-        cards = m.entries("card")
-        self.assertEqual(cards, [(FALL_T + 1, c.unit, c.count) for c in forces.RESERVE])
-        self.assertIn((FALL_T + 1, "2K12_KUB_SOV", 2), cards)
+        self.assertEqual(m.entries("card"), [])
         self.assertEqual(m.when("hint", "ts_hph3"), [PH3_T])
 
 

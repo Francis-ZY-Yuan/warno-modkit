@@ -140,6 +140,22 @@ source.SC = "stock, throughout"
 US = "Panzergrenadier"
 SC = "装甲掷弹兵"
 source.SC = "stock UNITS"
+[screens.Command]
+US = "Command"
+SC = "指挥"
+source.SC = "stock INTERFACE_OUTGAME EG_COMMD (a deck platoon's name)"
+[screens.Supply]
+US = "Supply"
+SC = "补给"
+source.SC = "stock UNITS FAUT01 (a deck platoon's name)"
+[screens.Support]
+US = "Support"
+SC = "支援"
+source.SC = "stock INTERFACE_INGAME CA_HELO (a deck page's name)"
+[screens.platoon]
+US = "platoon"
+SC = "排"
+source.SC = "stock INTERFACE_INGAME SGR_DEFLT"
 
 # military wording: the doctrinal register
 [military."Operation Twin Strike"]
@@ -302,6 +318,22 @@ source.SC = "doctrine: сапёры"
 US = "scouts"
 SC = "侦察兵"
 source.SC = "doctrine: разведчики"
+[military.company]
+US = "company"
+SC = "连"
+source.SC = "doctrine: рота"
+[military.HQ]
+US = "HQ"
+SC = "指挥部"
+source.SC = "doctrine: штаб"
+[military."an arm's Nth platoon (1st Tank Platoon)"]
+US = "an arm's Nth platoon (1st Tank Platoon)"
+SC = "坦克第1排"
+source.SC = "doctrine: 1-й танковый взвод (the arm, then 第N排)"
+[military."Reserve (a deck page's name)"]
+US = "Reserve (a deck page's name)"
+SC = "预备队"
+source.SC = "doctrine: резерв"
 
 # weapons: a designation in Latin with a class word; a name that is only a nickname in stock's Chinese for it,
 # without its quotes (term sheet: 豹2A4)
@@ -365,6 +397,22 @@ source.SC = "stock UNITS"
 US = "Metis"
 SC = "混血儿"
 source.SC = "ours: the PRC name; stock has none"
+[weapons.ATGM]
+US = "ATGM"
+SC = "反坦克导弹"
+source.SC = "stock UNITS HISSOVDON"
+[weapons.AT]
+US = "AT"
+SC = "反坦克"
+source.SC = "stock platoons UCNMOCDWRK"
+[weapons."Attack Helicopters"]
+US = "Attack Helicopters"
+SC = "攻击直升机"
+source.SC = "stock UNITS SUMSO35VDV"
+[weapons."Strike Aircraft"]
+US = "Strike Aircraft"
+SC = "攻击机"
+source.SC = "stock UNITS HISSO119OG"
 
 # the op's own coinages
 [coinages."BOX W"]
@@ -427,3 +475,19 @@ source.SC = "ours"
 US = "Intel indicates hostile forces include (the briefing's point 3)"
 SC = "敌情"
 source.SC = "ours: an order's heading"
+[coinages."Assault Engineers"]
+US = "Assault Engineers"
+SC = "突击工兵"
+source.SC = "ours"
+[coinages."Helicopter Flight"]
+US = "Helicopter Flight"
+SC = "直升机小队"
+source.SC = "ours: звено"
+[coinages.unlocked]
+US = "unlocked"
+SC = "解锁"
+source.SC = "ours"
+[coinages."the buy menu"]
+US = "the buy menu"
+SC = "购买菜单"
+source.SC = "ours, on stock's 购买 (INTERFACE_OUTGAME GAME_N_OWN)"

@@ -3,13 +3,16 @@ every unit in place, then its phases run.
 
 The op is its own scenario, challenge_OperationTwinStrike, in its own mod folder, TwinStrike, with its own GUID and
 menu tokens (ts_*: twinstrike.profile), so it installs beside Open Door and the probes [[content-identity-unique]].
-Build it with `python build.py --content op`. The player is Soviet [[soviet-player-camp]].
+Build it with `python build.py --content op`. The player is Soviet [[soviet-player-camp]], on the op's own deck: the
+script exports it (player_deck, from twinstrike.forces.DECK_PAGES) and the player camp's SetDeck names it
+[[op-exported-deck]].
 
-  Main: SetDeck x4, HUD hidden, deployment setup (DEPLOY_POINTS and no income; the buy menu on its BATTLEGROUP view;
+  Main: SetDeck x4, HUD hidden, deployment setup (DEPLOY_POINTS and no income; the buy menu held in its GROUPS view;
         the village zone given to NATO, as RedJuggernaut gives the enemy its zones, #73), LoadingDone, the opening
         camera (CAMERA: a move from high over the cut down to the Soviet box and the village, then a snap to its last
         key) [[start-camera-before-loading-done]], HUD restored, then
-        Simultaneous[ the load beats (the deck, the garrison's group and orders, the difficulty, the end funnel),
+        Simultaneous[ the load beats (the reserve pages' locks, the garrison's group and orders, the difficulty, the
+                      end funnel),
                       the Groupe_Joueur refresh loop,
                       Sequential[ wait for "Launch battle" (the start hint ts_hdep, naming the village),
                                   Simultaneous[ one Sequential[wait t, beat] per timed beat ] ] ]
@@ -32,7 +35,7 @@ The phases, every one with a deadline (design 4.2), each a timed beat from "Laun
 - phase 1 (phase1, H+0:00): P1 on the village, its count and the fall (the garrison left in the circle at or below
   ts_fall_n and a Soviet command unit inside: the zone forced to the player, FALLEN), the 20 min deadline, and the
   preparation fire's dialog, asked again every 2 min (prep);
-- phase 2 (phase2): on FALLEN FALL_GRANT points and FALL_INCOME, the deck's locks lift and the reserve is added;
+- phase 2 (phase2): on FALLEN FALL_GRANT points and FALL_INCOME, and the deck's reserve pages unlock (load_deck);
   PHASE2_S later phase 3 (PH3) [[scripted-economy]];
 - the losses (losses, from FALLEN): P2, NATO owning the village for 60 s, no Soviet unit in its command zone for
   3 min (warned at EMPTY_WARN_S, the clock P2's second counter);
@@ -83,19 +86,16 @@ from modkit.ops.mission import (
 )
 from modkit.ops.models import Ending, ExtraShape, ForceRow, Knobs
 from modkit.ops.profile import Content
-from modkit.ops.script import BRICK_DEFAULT
 from modkit.ops.shapes import (
     AGGRESSIVE, AIRPLANE_EVACUATE, AIRPLANE_MOVE_AND_ENGAGE, DEATH_CAUSE_SHAPE, FAST_MOVE_AND_ATTACK, FOW_SHAPES,
     FX_WRAPPER_SHAPES, IDLE_HOLD_POSITION, MOVE_AND_ATTACK, PHYSICAL, SHOOT_ON_POSITION, STRESS_SHAPES, STUN,
-    TRANSPORTER_SHAPE, Beat, add_card, beat_hint, create, lock_card, nuke_wrapper, objective, order, seconds_while,
-    set_end,
+    Beat, beat_hint, create, lock_page, nuke_wrapper, objective, order, player_deck, seconds_while, set_end,
 )
-from modkit.ops.strings import load
 from modkit.ops.zones import heading
 from twinstrike import forces, profile
 from twinstrike.map import CAMERA, MAP, POINTS, STRIKE_SHOT
 from twinstrike.map import items as map_items
-from twinstrike.strings import BUTTONS, TABLE
+from twinstrike.strings import BUTTONS, table
 
 # --------------------------------------------------------------------------- knobs
 
@@ -109,10 +109,9 @@ DEPLOY_POINTS = 3000
 START_INCOME = 0
 FALL_GRANT = 8000
 FALL_INCOME = 500
-# The buy menu's Groups/factory-tabs switch at the HUD restore (Content.prod_menu_switch). The start cards belong to
-# no battlegroup, so the menu must be able to leave Groups mode, as Open Door's (BRICK_DEFAULT: stock writes Default by
-# leaving the property out).
-PROD_MENU_SWITCH = BRICK_DEFAULT
+# The buy menu's Groups/factory-tabs switch at the HUD restore (Content.prod_menu_switch): force-hidden, so the menu
+# stays on the deck's pages (twinstrike.profile.PROD_MENU_SWITCH: stock's pairing with a page lock).
+PROD_MENU_SWITCH = profile.PROD_MENU_SWITCH
 
 # --------------------------------------------------------------------------- the strike (design 5.6)
 
@@ -178,8 +177,7 @@ STRIKE_SMOKE_SPOTS = tuple(STRIKE_OUTER[k] for k in (0, 3))
 def extra_shapes() -> tuple[ExtraShape, ...]:
     """The GDScript shapes no stock file uses that the op writes (Content.extra_shapes), from the knobs as they
     stand when the content is made."""
-    return (TRANSPORTER_SHAPE,                                        # the infantry cards carry their carriers
-            *((DEATH_CAUSE_SHAPE,) if STRIKE_CAUSE is not None else ()),     # the strike's KillAllUnit DeathCause
+    return (*((DEATH_CAUSE_SHAPE,) if STRIKE_CAUSE is not None else ()),     # the strike's KillAllUnit DeathCause
             *(STRESS_SHAPES if STRIKE_DAMAGE or STRIKE_STUN else ()),        # the strike's damage and stun
             *FX_WRAPPER_SHAPES,                                               # the nuke's wrapper
             *(FOW_SHAPES if STRIKE_FOG_LIFT else ()))                        # the strike window's fog lift
@@ -191,7 +189,7 @@ PLAYER = profile.PLAYER                # "Soviet": joueur, the player
 ENEMY = "NATO"                         # ordinateur_SOV: the garrison, both battalions and the fighters
 GUN_CAMP = "SovietAlly"                # Allie, the player's AI ally: each fire's battery, never engaged by the player
 # Flags several beats read, declared at 0 (script_frame's flags), each written once (but BUSY, a lock).
-FALLEN = "ts_fallen"                   # 1: the village has fallen (phase 1's end); the deck's locks lift
+FALLEN = "ts_fallen"                   # 1: the village has fallen (phase 1's end); the reserve pages unlock
 END = "ts_end"                         # the ending (ENDINGS), written only through shapes.set_end: the first stands
 PH3 = "ts_ph3"                         # 1: phase 3, the counter-attack, has started (PHASE2_S after the fall)
 BN1_DONE = "ts_bn1_done"               # 1: battalion 1 is beaten, broken or at its deadline
@@ -274,9 +272,7 @@ GARRISON_N = group_total(forces.force_rows("garrison"), "garrison")   # P1's cou
 DIFF_HINT_T = 15.0
 PREP_HINT_T, PREP_ASK_T, PREP_GAP_S = 30.0, 40.0, 120.0
 NOW = 0                                # button 0: FIRE AT WILL (prep, plan), ROCKET (which guns), ALPHA = BOX W (where)
-# Phase 2 (design 5.2): the reserve's cards RESERVE_DELAY_S after the fall (the locks lift on FALLEN first), and phase 3
-# PHASE2_S after the fall.
-RESERVE_DELAY_S = 1.0
+# Phase 2 (design 5.2): phase 3 PHASE2_S after the fall (the reserve pages unlock on FALLEN itself: load_deck).
 PHASE2_S = 120.0
 # Phase 3 (seconds after PH3, design 5.3). Battalion 1 is beaten when broken (B1's kills reach ts_b1_need) or
 # BN1_DEADLINE_S on; at the deadline its survivors break off by road to their lane's entry, in the south zone, and are
@@ -612,13 +608,20 @@ class Ctx(profile.Ctx):
 # --------------------------------------------------------------------------- the load beats
 
 def load_deck(ctx: Ctx) -> Node:
-    """Load: AddUnitToDeck for each start card (forces.START_ADDS; the motor rifles in their BMP-2s) and then for the
-    Soviet player's supply (forces.SUPPLY), then, beside each other, a LockDeckUnit by type for each of
-    forces.START_LOCKS until FALLEN = 1 (shapes.lock_card: a race that never finishes before the unlock, so the locks
-    go last, in one Simultaneous)."""
-    cards = [add_card(ctx, c.unit, c.count, transport=c.transport) for c in (*forces.START_ADDS, *forces.SUPPLY)]
+    """Load: the division's reserve, the deck's pages forces.RESERVE_PAGES, locked until FALLEN = 1, one
+    LockCombatGroup per page beside each other (shapes.lock_page: a race that ends at the unlock, as RunningTheGauntlet
+    locks its two pages) [[deck-page-lock]]. The deck itself is the script's export (player_deck), which the player
+    camp's SetDeck names; the fall adds no card."""
     fallen = ctx.int_var(FALLEN)
-    return g_seq([*cards, g_simul([lock_card(ctx, unit, g_cmp(fallen, 1)) for unit in forces.START_LOCKS])])
+    return g_simul([lock_page(ctx, k, g_cmp(fallen, 1)) for k in forces.RESERVE_PAGES])
+
+
+def player_deck_export() -> Node:
+    """The player's deck, exported at profile.DECK_EXPORT as profile.DECK_ID [[op-exported-deck]]: forces.DECK_PAGES
+    (its names the op's own tokens, or the stock picks with forces.STOCK_NAMES), named forces.DECK_NAME, of the
+    division forces.DECK_DIVISION (shapes.player_deck)."""
+    return player_deck(profile.DECK_EXPORT, profile.DECK_ID, forces.DECK_NAME, forces.DECK_DIVISION,
+                       forces.deck_pages())
 
 
 def load_groups(ctx: Ctx) -> Node:
@@ -742,16 +745,13 @@ def phase1(ctx: Ctx) -> Node:
 # --------------------------------------------------------------------------- phase 2: the unlock (design 5.2)
 
 def phase2(ctx: Ctx) -> Node:
-    """From H+0:00: once FALLEN (the deck's locks lift on it: load_deck), the fall's points [[scripted-economy]]:
+    """From H+0:00: once FALLEN (the reserve pages unlock on it: load_deck), the fall's points [[scripted-economy]]:
     FALL_GRANT at once (GiveRessourceToTeam in a Simultaneous, BlackHorsesLastStand #312), then FALL_INCOME from now on
-    (SetIncomeToTeam after the wait, TheWingedHussars #318); RESERVE_DELAY_S later the reserve's cards
-    (forces.RESERVE, AddUnitToDeck) [[add-unit-to-deck]]; PHASE2_S after the fall, PH3 = 1. The fall's hint ts_hfall
+    (SetIncomeToTeam after the wait, TheWingedHussars #318); PHASE2_S after the fall, PH3 = 1. The fall's hint ts_hfall
     (phase1) names them: the reserve, the points, and NATO's recon moving north."""
     joueur = ctx.camp(PLAYER)
     return g_seq([g_until(g_cmp(ctx.int_var(FALLEN), 1)), g_simul([g_grant(joueur, FALL_GRANT)]),
-                  g_income(joueur, FALL_INCOME), g_wait(RESERVE_DELAY_S),
-                  *(add_card(ctx, c.unit, c.count, transport=c.transport) for c in forces.RESERVE),
-                  g_wait(PHASE2_S - RESERVE_DELAY_S), g_set(ctx.int_var(PH3), 1)])
+                  g_income(joueur, FALL_INCOME), g_wait(PHASE2_S), g_set(ctx.int_var(PH3), 1)])
 
 
 # --------------------------------------------------------------------------- the losses (design 4.2)
@@ -1195,7 +1195,7 @@ BEATS: list[Beat] = [
 
 def deploy_phase(tpl: ndfbin.NdfBin, ctx: Ctx) -> ops_script.DeployPhase:
     """The deployment phase (modkit.ops.script.deploy_phase): DEPLOY_POINTS and START_INCOME (none, written with no
-    amount), the buy menu on the profile's PRODUCTION_TYPE (its BATTLEGROUP view), the profile's refresh, the start hint
+    amount), the buy menu on the profile's PRODUCTION_TYPE (its GROUPS view), the profile's refresh, the start hint
     ts_hdep until "Launch battle"; its setup then gives the village's zone to NATO, the last node before LoadingDone.
     The camera is set after LoadingDone (script's opening): the deployment phase, which starts there, loses a snap made
     here."""
@@ -1211,18 +1211,34 @@ def script(tpl: ndfbin.NdfBin) -> tuple[list[Node], list[Node]]:
     """The op's GDScript (layout in the module docstring; modkit.ops.mission.script_frame), from Survivors' GDScript
     template `tpl`: FLAGS are declared even before a beat writes them, the end funnel is exported, and the opening
     camera (CAMERA's move, then its snap) runs right after LoadingDone, before the HUD returns
-    [[start-camera-before-loading-done]]; the strike's nuke wrapper is exported beside the frame's exports."""
+    [[start-camera-before-loading-done]]; the strike's nuke wrapper and the player's deck (player_deck_export) are
+    exported beside the frame's exports."""
     ctx = Ctx()
     roots, exports = ops_mission.script_frame(tpl, profile.TEMPLATES, ctx, deploy_phase(tpl, ctx), BEATS,
                                               camp_rows=profile.CAMP_ROWS, folder=profile.FOLDER,
                                               start_delay_s=profile.START_DELAY_S, prod_menu_switch=PROD_MENU_SWITCH,
                                               flags=FLAGS, opening=CAMERA.cutscenes())
-    return roots, [*exports, nuke_wrapper_export()]
+    return roots, [*exports, nuke_wrapper_export(), player_deck_export()]
+
+
+# The stock tokens of the game's own dictionary lists the deck names (Content.list_tokens): its DeckName always, and
+# with the stock-names fallback every page and platoon name (forces.STOCK_PICKS).
+def list_tokens(stock_names: bool) -> dict[str, tuple[str, ...]]:
+    """{list: stock tokens} the deck names: DeckName in UNITS; with `stock_names`, the stock picks of the pages
+    (COMPANIES) and platoons (PLATOONS)."""
+    out = {"UNITS": (forces.DECK_NAME,)}
+    if stock_names:
+        pages = forces.deck_pages(True)
+        out["COMPANIES"] = tuple(dict.fromkeys(page.name for page in pages))
+        out["PLATOONS"] = tuple(dict.fromkeys(p.name for page in pages for p in page.platoons))
+    return out
 
 
 def content() -> Content:
-    """The op (its own scenario, mod folder, GUID and menu tokens, of which the title check holds the two titles);
-    its buy menu may switch to the factory tabs (PROD_MENU_SWITCH, which its script's HUD restore writes)."""
-    return Content("op", tuple(ITEMS), script, load(TABLE), profile.TITLE_TOKENS, extra_shapes=extra_shapes(),
+    """The op (its own scenario, mod folder, GUID and menu tokens, of which the title check holds the two titles); its
+    buy menu held in the GROUPS view (PROD_MENU_SWITCH, which its script's HUD restore writes); its string table and
+    the deck's stock tokens as forces.STOCK_NAMES stands when it is called."""
+    stock_names = forces.STOCK_NAMES
+    return Content("op", tuple(ITEMS), script, table(stock_names), profile.TITLE_TOKENS, extra_shapes=extra_shapes(),
                    scenario=profile.SCENARIO, mod_name=profile.MOD_NAME, menu_renames=profile.MENU_RENAMES,
-                   prod_menu_switch=PROD_MENU_SWITCH)
+                   prod_menu_switch=PROD_MENU_SWITCH, list_tokens=list_tokens(stock_names))
