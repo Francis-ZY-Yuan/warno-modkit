@@ -24,6 +24,7 @@ TWIN_STRIKE = COMPONENT / "examples" / "twin-strike"
 sys.path.insert(0, str(TWIN_STRIKE))
 
 from modkit.core import paths  # noqa: E402
+from modkit.ops import LIST_DICS  # noqa: E402
 from modkit.ops import build as ops_build  # noqa: E402
 from modkit.ops import testing  # noqa: E402
 from modkit.ops.maps import WORLD_PER_MINIMAP_PX  # noqa: E402
@@ -35,12 +36,14 @@ from twinstrike import CONTENTS, profile  # noqa: E402
 OUT_ROOT = tempfile.mkdtemp(prefix="modkit-ops-twin-strike-")   # test builds, removed after each test
 atexit.register(shutil.rmtree, OUT_ROOT, True)
 # What the tests read: Survivors' Definition (every script's input), Twin Cities' small layout (the cut and its
-# camera), the stock decks (the deck diff) and the game's unit database (the build's unit gate). A class needing one
-# skips without it.
+# camera), the stock decks (the deck diff), the game's unit database (the build's unit gate) and the game's deck-name
+# lists (the tokens gate). A class needing one skips without it.
 SCRIPT_DATA = paths.skip_unless_extracted("kreide_op", "challenge_Survivors_Definition")
 LAYOUT_DATA = paths.skip_unless_extracted("twincities_op", "SM_SU_3x3_TwinCities_03_Details", "out")
 DECK_DATA = paths.skip_unless_extracted("moddata_base", "GameData", "Generated", "Gameplay", "Decks", "DeckPacks.ndf")
 GAME = paths.skip_unless_game_dir("Mods", "ModData", "base.zip")
+# The game's own deck-name lists (modkit.ops.LIST_DICS), which the tokens gate holds the deck's declared names to.
+LIST_DATA = paths.skip_unless_extracted(*LIST_DICS["UNITS"].format(lang="US").split("/"))
 
 
 def build_profile():

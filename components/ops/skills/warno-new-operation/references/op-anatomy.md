@@ -86,7 +86,7 @@ AI-controlled ally and the enemy ([[custom-operation-from-stock-parts]]).
 | `tiered_arrivals` | player arrivals that end in a command zone only, opened and closed by the script |
 | `prod_menu_switch` | the buy menu's switch at the HUD restore |
 | `deck_swap`, `scalar_edits` | the profile's, replaced for this content: another player deck, or its own derived menu order when one profile builds several Operations |
-| `list_tokens` | stock tokens of the game's UNITS, COMPANIES and PLATOONS lists the content's own deck names, by list ([[deck-names-from-op-dictionaries]]) |
+| `list_tokens` | stock tokens of the game's UNITS, COMPANIES and PLATOONS lists the content's own deck names, by list; the tokens gate holds each to the game's own dictionary of its list ([[deck-names-from-op-dictionaries]]) |
 
 Two contents with the same scenario id or mod folder replace each other on install.
 

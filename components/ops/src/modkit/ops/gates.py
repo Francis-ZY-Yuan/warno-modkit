@@ -747,23 +747,35 @@ def ingame_keys(path: str) -> frozenset[int]:
         return frozenset(k for k, _ in trad.read_dic(fh.read()))
 
 
+@functools.cache
+def list_keys(path: str, lst: str) -> frozenset[int]:
+    """The token hashes of the game's own dictionary of the list `lst` (UNITS, COMPANIES or PLATOONS) at `path`, one
+    language (modkit.ops.LIST_DICS)."""
+    check(os.path.isfile(path), f"missing {paths.rel_source(path)}, the game's {lst} dictionary: {SETUP_FIX}")
+    with open(path, "rb") as fh:
+        return frozenset(k for k, _ in trad.read_dic(fh.read()))
+
+
 def ingame_misses(nb: ndfbin.NdfBin, path: str) -> list[str]:
     """The INGAME_PROPS tokens of `nb` that the game's INGAME dictionary at `path` lacks."""
     return sorted(ndfbin.token_unhash(t) or hex(t) for t in split_tokens(nb)[1] - ingame_keys(path))
 
 
 def check_tokens(items: list[Item], scenario: str, langs: Iterable[str], *, global_tokens: Iterable[str],
-                 ingame_dic: str, list_tokens_declared: Mapping[str, Iterable[str]] | None = None
-                 ) -> tuple[int, int, int]:
+                 ingame_dic: str, list_tokens_declared: Mapping[str, Iterable[str]] | None = None,
+                 list_dics: Mapping[str, str] | None = None) -> tuple[int, int, int]:
     """Each loc token a Definition ndfbin uses exists in every language of `langs` of its scenario dictionaries
     (DICTIONARY_USES), or is one of `global_tokens` (stock tokens a mod uses without shipping them). A dialog button's
     token must instead be in the game's INGAME dictionary (INGAME_PROPS; `ingame_dic`: its path with '{lang}'),
     which the scenario's own dictionaries cannot extend.
 
     A deck's names (LIST_PROPS) must be in the game's dictionary list the game looks each up in: the game's own
-    (`list_tokens_declared`, {list: stock tokens of it the content names}, declared as `global_tokens` are) or a file
-    a shipped MapConfiguration appends to that list (appended_dictionaries), which must ship in every language of
-    `langs` [[deck-names-from-op-dictionaries]]. Returns (tokens, of which button tokens, of which deck names)."""
+    (`list_tokens_declared`, {list: stock tokens of it the content names}), or a file a shipped MapConfiguration
+    appends to that list (appended_dictionaries), which must ship in every language of `langs`
+    [[deck-names-from-op-dictionaries]]. Each declared stock token must be in the game's own dictionary of its list in
+    every language of `langs` (`list_dics`, {list: its path with '{lang}'}: modkit.ops.LIST_DICS, as `ingame_dic`),
+    so a wrong declaration fails here, not as a dictionary error at the first SetDeck. Returns (tokens, of which
+    button tokens, of which deck names)."""
     by_path = {it.path: it for it in items if it.pack == "Assets" and it.path.endswith(".dic")}
 
     def keys(name: str, lang: str) -> set[int]:
@@ -776,6 +788,17 @@ def check_tokens(items: list[Item], scenario: str, langs: Iterable[str], *, glob
     unknown = sorted(set(declared) - set(LISTS))
     check(not unknown, f"declared stock tokens for {unknown}: the gate knows the deck name lists {list(LISTS)}")
     langs = tuple(langs)
+    dics = dict(list_dics or {})
+    unread = sorted(lst for lst, toks in declared.items() if toks and lst not in dics)
+    check(not unread, f"declared stock tokens for {unread}, but no game dictionary of the list to hold them to "
+                      f"(list_dics: modkit.ops.LIST_DICS)")
+    for lst, toks in declared.items():
+        for lang in langs if toks else ():
+            missing = sorted(ndfbin.token_unhash(t) or hex(t) for t in toks - list_keys(dics[lst].format(lang=lang), lst))
+            check(not missing, f"declared stock tokens missing from the game's {lst} dictionary in {lang}: {missing} "
+                               f"(Content.list_tokens may name only tokens of the game's own list: the game looks a "
+                               f"deck's names up there, and a token it lacks is a dictionary error at the first "
+                               f"SetDeck)")
     appended: dict[str, list[str]] = {}
     for it in items:
         entry = def_entry(it.path) if it.pack == "Definition" else None

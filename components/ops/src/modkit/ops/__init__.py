@@ -20,6 +20,12 @@ MENU_PICTURES = "PC/Texture/*/MapPackAssets/Textures/*.tgv"
 # The game's own INTERFACE_INGAME dictionary of one language (format `lang`), relative to the extraction: where the
 # game looks dialog button labels up (modkit.ops.gates.INGAME_PROPS). STOCK_PATHS declares its folder.
 INGAME_DIC = "glad_201602/Localisation/Core/INTERFACE_INGAME-{lang}.dic"
+# The game's own dictionary lists a deck's names resolve in (modkit.ops.gates.LIST_PROPS), each of one language (format
+# `lang`, as INGAME_DIC), relative to the extraction: where the tokens gate holds a content's declared stock tokens
+# (Content.list_tokens). Core's STOCK_PATHS declares their folder (`localisation`, the game's own dictionaries).
+LIST_DICS = {"UNITS": "localisation/Localisation/Localisation/Core/UNITS-{lang}.dic",
+             "COMPANIES": "localisation/Localisation/Localisation/SteelMan/companies-{lang}.dic",
+             "PLATOONS": "localisation/Localisation/Localisation/SteelMan/platoons-{lang}.dic"}
 
 # What ops' readers need from the stock extraction (see modkit.core.stock).
 STOCK_PATHS = (

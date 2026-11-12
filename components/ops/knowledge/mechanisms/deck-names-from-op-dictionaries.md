@@ -26,7 +26,8 @@ fallback is the game's own words: any token of COMPANIES or PLATOONS resolves, d
 
 **The gate** (`modkit.ops.gates.check_tokens`): each deck name is in its list, counting the declared stock tokens and
 every file a shipped MapConfiguration appends to that list, in every language; a file appended but not shipped in a
-language fails.
+language fails. Each declared stock token is held to the game's own dictionary of its list, in every language
+(`modkit.ops.LIST_DICS`, read from the extraction), so a wrong declaration fails the build, not the first SetDeck.
 
 **Not yet seen in play:** a scenario file appending to COMPANIES or PLATOONS (no stock scenario does). If it fails,
 the first `SetDeck` in battle shows the dictionary error naming a page or platoon token; the stock-names fallback is a

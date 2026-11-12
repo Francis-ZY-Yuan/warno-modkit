@@ -10,13 +10,14 @@ resources to Survivors' MapConfiguration; they skip without the extraction."""
 from __future__ import annotations
 
 import dataclasses
+import functools
 import os
 import tempfile
 import unittest
 
-from modkit.core import dbg, ndfbin, paths, trad
+from modkit.core import STOCK_PATHS, dbg, ndfbin, paths, trad
 from modkit.core.gates import CheckError
-from modkit.ops import gates, rekey
+from modkit.ops import LIST_DICS, gates, rekey
 from modkit.ops.bricks import g_cmp, unit_path
 from modkit.ops.files import read_file
 from modkit.ops.forces import DeckPage, Platoon, deck_packs
@@ -273,15 +274,24 @@ def map_configuration(*resources: tuple[str, str]) -> bytes:
     return encode(build_graph([info, *res], []), "MapConfiguration")
 
 
+# The game's own lists in the synthetic tests: every stock token the tests declare, in every language.
+GAME_LISTS = {"UNITS": ("u_name",), "COMPANIES": ("pg_a", "pg_b"), "PLATOONS": ("pl_a", "pl_b", "pl_c")}
+
+
 class Tokens(unittest.TestCase):
-    """A deck's names resolve in the game's lists: its own (declared stock tokens) or a file appended to the list."""
+    """A deck's names resolve in the game's lists: its own (declared stock tokens, each held to the game's own
+    dictionary of its list) or a file appended to the list."""
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.ingame = os.path.join(self.tmp.name, "INTERFACE_INGAME-{lang}.dic")
+        self.lists = {lst: os.path.join(self.tmp.name, f"{lst}-{{lang}}.dic") for lst in GAME_LISTS}
         for lang in LANGS:
             with open(self.ingame.format(lang=lang), "wb") as fh:
                 fh.write(trad.build_dic({"BTN_OK": "OK"}))
+            for lst, toks in GAME_LISTS.items():
+                with open(self.lists[lst].format(lang=lang), "wb") as fh:
+                    fh.write(trad.build_dic({t: t for t in toks}))
         self.scenario = dictionary_items({"SCENARIO_DEFINITION": {"m_name": "x"},
                                           "Scripting/Dialog": {"m_other": "x"},
                                           "Scripting/Localization": {"m_other": "x"}})
@@ -297,8 +307,9 @@ class Tokens(unittest.TestCase):
                          "t"),
                 *self.scenario, *dictionary_items(dictionaries or {})]
 
-    def check(self, items, declared):
-        return check_tokens(items, S, LANGS, global_tokens=(), ingame_dic=self.ingame, list_tokens_declared=declared)
+    def check(self, items, declared, lists=None):
+        return check_tokens(items, S, LANGS, global_tokens=(), ingame_dic=self.ingame, list_tokens_declared=declared,
+                            list_dics=self.lists if lists is None else lists)
 
     def test_declared_stock_tokens_pass(self):
         """Every name a stock token of its list: 1 deck name, 2 page names, 3 platoon names."""
@@ -332,6 +343,30 @@ class Tokens(unittest.TestCase):
         with self.assertRaisesRegex(CheckError, r"appends DECK_C\.csv to the game's COMPANIES list, but DECK_C-SC\.dic "
                                                 r"is not shipped"):
             self.check(items, {"UNITS": ("u_name",), "PLATOONS": ("pl_a", "pl_b", "pl_c")})
+
+    def test_a_declared_token_the_game_lacks_fails(self):
+        """A declared stock token must be in the game's own dictionary of its list, in every language: one the game
+        lacks fails (it would be a dictionary error at the first SetDeck), even unused; one missing from a single
+        language (SC) fails naming it."""
+        declared = {"UNITS": ("u_name",), "COMPANIES": ("pg_a", "pg_b", "pg_gone"), "PLATOONS": ("pl_a", "pl_b", "pl_c")}
+        with self.assertRaisesRegex(CheckError, r"declared stock tokens missing from the game's COMPANIES dictionary "
+                                                r"in DEV: \['pg_gone'\]"):
+            self.check(self.items(), declared)
+        with open(self.lists["PLATOONS"].format(lang="SC"), "wb") as fh:
+            fh.write(trad.build_dic({"pl_a": "a", "pl_b": "b"}))
+        with self.assertRaisesRegex(CheckError, r"missing from the game's PLATOONS dictionary in SC: \['pl_c'\]"):
+            self.check(self.items(), dict(GAME_LISTS))
+
+    def test_declared_tokens_need_the_game_dictionary(self):
+        """No game dictionary to hold a declared list's tokens to: the gate fails rather than trust the declaration;
+        a missing dictionary file names the setup commands."""
+        with self.assertRaisesRegex(CheckError, r"declared stock tokens for \['COMPANIES', 'PLATOONS', 'UNITS'\], but no "
+                                                r"game dictionary"):
+            self.check(self.items(), dict(GAME_LISTS), lists={})
+        gone = {lst: os.path.join(self.tmp.name, "nowhere", f"{lst}-{{lang}}.dic") for lst in GAME_LISTS}
+        with self.assertRaisesRegex(CheckError, r"missing .*the game's \w+ dictionary: run python -m modkit\.core\.setup "
+                                                r"check"):
+            self.check(self.items(), dict(GAME_LISTS), lists=gone)
 
     def test_only_known_lists(self):
         with self.assertRaisesRegex(CheckError, r"declared stock tokens for \['MAPS'\]"):
@@ -466,6 +501,53 @@ class StockGate(unittest.TestCase):
         self.assertIn(gates.DECK_FILE, gates.STOCK_CLASS_SOURCES)
         self.assertLessEqual({"TDeckDescriptor", "TDeckPackDescriptor", "TDeckCombatGroupDescriptor",
                               "TDeckSmartGroupDescriptor"}, gates.stock_classes().classes)
+
+
+class ListDictionaries(unittest.TestCase):
+    def test_the_list_dictionaries_are_declared_stock_paths(self):
+        """LIST_DICS, the game's UNITS, COMPANIES and PLATOONS dictionaries, lie in a folder core's STOCK_PATHS
+        declares (the game's own dictionaries), so the scripted extraction writes them; one path per list the gate
+        knows, each with the language."""
+        self.assertEqual(set(LIST_DICS), set(gates.LISTS))
+        for lst, path in LIST_DICS.items():
+            with self.subTest(list=lst):
+                self.assertIn("{lang}", path)
+                self.assertTrue(any(path.startswith(stock.dest + "/") for stock in STOCK_PATHS))
+
+
+@paths.skip_unless_extracted(*LIST_DICS["UNITS"].format(lang="US").split("/"))
+class StockLists(unittest.TestCase):
+    """The game's own lists in the extraction (game build 210942): every language of every list is there, the deck
+    name the toolkit's example declares is in UNITS, and a token the game lacks is not."""
+
+    def test_every_language_of_every_list(self):
+        for lst, path in LIST_DICS.items():
+            for lang in LANGS:
+                with self.subTest(list=lst, lang=lang):
+                    keys = gates.list_keys(extracted(path.format(lang=lang)), lst)
+                    self.assertGreater(len(keys), 1000)
+
+    def test_the_gate_on_the_game_lists(self):
+        """The deck name `ABQKCQLERY` (the 79th Guards Tank Division's), RedJuggernaut's HQ page `AIFMQGIAGU` and the
+        platoon `SUJBJHQBBH` pass against the game's own lists; `ts_nodeck`, no token of the game's UNITS, fails."""
+        pages = (DeckPage("AIFMQGIAGU", (Platoon("SUJBJHQBBH", (ForceRow("Tank", 1),)),)),)
+        gd = player_deck("$/GDScript/T/Deck", "T_X", "ABQKCQLERY", DIVISION, pages)
+        items = [mem_item("Definition", def_path("GDScript", TXN, S), encode(build_graph([], [gd]), "GDScript"),
+                          "generate", "t"),
+                 mem_item("Definition", def_path("MapConfiguration", TXN, S), map_configuration(), "rekey", "t"),
+                 *dictionary_items({"SCENARIO_DEFINITION": {"m_name": "x"}, "Scripting/Dialog": {"m": "x"},
+                                    "Scripting/Localization": {"m": "x"}})]
+        declared = {"COMPANIES": ("AIFMQGIAGU",), "PLATOONS": ("SUJBJHQBBH",)}
+        with tempfile.TemporaryDirectory() as tmp:
+            ingame = os.path.join(tmp, "INTERFACE_INGAME-{lang}.dic")
+            for lang in LANGS:
+                with open(ingame.format(lang=lang), "wb") as fh:
+                    fh.write(trad.build_dic({"BTN_OK": "OK"}))
+            run = functools.partial(check_tokens, items, S, LANGS, global_tokens=(), ingame_dic=ingame,
+                                    list_dics={lst: extracted(path) for lst, path in LIST_DICS.items()})
+            self.assertEqual(run(list_tokens_declared={**declared, "UNITS": ("ABQKCQLERY",)})[2], 3)
+            with self.assertRaisesRegex(CheckError, r"missing from the game's UNITS dictionary in DEV: \['ts_nodeck'\]"):
+                run(list_tokens_declared={**declared, "UNITS": ("ABQKCQLERY", "ts_nodeck")})
 
 
 @paths.skip_unless_extracted("kreide_op", "challenge_Survivors_Definition")

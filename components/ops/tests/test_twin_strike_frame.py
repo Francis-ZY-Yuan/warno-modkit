@@ -27,7 +27,7 @@ from unittest import mock
 
 from test_gates_stock import MENU_SPANS
 from twin_strike_support import (
-    GAME, LAYOUT_DATA, OUT_ROOT, SCRIPT_DATA, TWIN_STRIKE, build_main, build_profile, gru, quiet_build,
+    GAME, LAYOUT_DATA, LIST_DATA, OUT_ROOT, SCRIPT_DATA, TWIN_STRIKE, build_main, build_profile, gru, quiet_build,
 )
 from modkit.core import edat, ndfbin, paths, tgv, trad
 from modkit.core.gates import CheckError
@@ -613,6 +613,7 @@ class Script(unittest.TestCase):
 
 @SCRIPT_DATA
 @LAYOUT_DATA
+@LIST_DATA
 @GAME
 class Build(unittest.TestCase):
     """The op built through build.py's front end (every gate, the extra four included) into a temporary folder."""
@@ -836,6 +837,22 @@ class Build(unittest.TestCase):
                                                 r"\['ts_pl_none'\]"):
             self.bad_deck_build(tuple(pages), "bad-name")
         remove_out(os.path.join(OUT_ROOT, "bad-name"))
+
+    def test_the_tokens_gate_fails_a_declared_name_the_game_lacks(self):
+        """The tokens gate holds every declared stock name to the game's own list, in every language: the deck named
+        `ts_nodeck` (no UNITS token) fails the own-names build, and a stock-names fallback whose Command platoon is
+        `ts_nopl` (no PLATOONS token) fails too; both pass with the real names (above, and the fallback build below)."""
+        with mock.patch.object(forces, "DECK_NAME", "ts_nodeck"), \
+                self.assertRaisesRegex(CheckError, r"declared stock tokens missing from the game's UNITS dictionary in "
+                                                   r"DEV: \['ts_nodeck'\]"):
+            quiet_build(op.content(), os.path.join(OUT_ROOT, "bad-unit-name"))
+        remove_out(os.path.join(OUT_ROOT, "bad-unit-name"))
+        with mock.patch.object(forces, "STOCK_NAMES", True), \
+                mock.patch.dict(forces.STOCK_PICKS, {"ts_pl_cmd": "ts_nopl"}), \
+                self.assertRaisesRegex(CheckError, r"declared stock tokens missing from the game's PLATOONS dictionary "
+                                                   r"in DEV: \['ts_nopl'\]"):
+            quiet_build(op.content(), os.path.join(OUT_ROOT, "bad-pick"))
+        remove_out(os.path.join(OUT_ROOT, "bad-pick"))
 
     def test_the_stock_names_fallback_builds(self):
         """The stock-names fallback (forces.STOCK_NAMES, build.py --stock-names): every gate passes, the deck carries

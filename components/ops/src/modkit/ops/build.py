@@ -33,7 +33,7 @@ from modkit.core.glossary import stock_dictionaries
 from modkit.core.models import LANGS, Dropped, Fired
 from modkit.core.ndfbin import Value
 from modkit.core.packaging import clean_out, write_manifest, write_mod_files
-from modkit.ops import INGAME_DIC
+from modkit.ops import INGAME_DIC, LIST_DICS
 from modkit.ops import gates
 from modkit.ops import items as ops_items
 from modkit.ops.files import read_file, rel_source
@@ -261,7 +261,8 @@ def check_script(profile: OpProfile, content: Content, p: Plan, run: GateRun | N
     deploy = gates.has_deployment_phase(content.items)
     ingame = extracted(INGAME_DIC)
     tokens = functools.partial(gates.check_tokens, global_tokens=profile.template.global_tokens, ingame_dic=ingame,
-                               list_tokens_declared=content.list_tokens)
+                               list_tokens_declared=content.list_tokens,
+                               list_dics={lst: extracted(path) for lst, path in LIST_DICS.items()})
     bound = (g("binding", gates.check_binding, payload(gd), payload(ld)) if ld is not None
              else "0 (no LevelDesign shipped)")
     toks, buttons, listed = g("tokens", tokens, items, scenario, LANGS, pending=(PENDING, PENDING, PENDING))
