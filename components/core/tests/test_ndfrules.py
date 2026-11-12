@@ -184,6 +184,52 @@ class Slot(unittest.TestCase):
             ndfrules.check_chain(set(), {1})
 
 
+class FakeExe:
+    """Just enough of _Exe for never_returns / is_thrower: functions as {start: (end, [(at, instruction)])}."""
+
+    def __init__(self, funcs):
+        self.funcs = funcs
+        self.pe = self
+
+    def func_of(self, at):
+        return next(((b, e) for b, (e, _) in self.funcs.items() if b <= at < e), None)
+
+    def insns(self, fn):
+        return self.funcs[fn][1]
+
+
+class Thrower(unittest.TestCase):
+    """A thrower helper is told from a routine that tests a value inline by its shape, not its compiler: it never
+    returns (no ret, no jump out of its body)."""
+
+    HELPER = (0x60, [(0x00, "push rbp"), (0x08, "lea rdx, [5000]"), (0x10, "call 900"), (0x20, "call 990"),
+                     (0x25, "int3")])
+    INLINE = (0x60, [(0x00, "cmp [rcx+0xec], 0x2"), (0x08, "jae 10"), (0x0a, "ret"), (0x10, "call 990"),
+                     (0x15, "int3")])
+    TAIL = (0x60, [(0x00, "cmp [rcx+0xec], 0x2"), (0x08, "jae 10"), (0x0a, "jmp 700"), (0x10, "call 990"),
+                   (0x15, "int3")])
+    LOOP = (0x60, [(0x00, "cmp rax, rcx"), (0x04, "jne 10"), (0x06, "jmp 0"), (0x10, "call 990"), (0x15, "int3")])
+
+    def test_a_helper_never_returns(self):
+        x = FakeExe({0: self.HELPER})
+        self.assertTrue(ndfrules.never_returns(x, 0))
+        self.assertTrue(ndfrules.is_thrower(x, (0, 0x60)))
+
+    def test_a_routine_that_returns_or_tail_calls_is_no_helper(self):
+        for shape in (self.INLINE, self.TAIL):
+            x = FakeExe({0: shape})
+            self.assertFalse(ndfrules.never_returns(x, 0))
+            self.assertFalse(ndfrules.is_thrower(x, (0, 0x60)))
+
+    def test_jumps_inside_the_body_are_no_way_out(self):
+        self.assertTrue(ndfrules.never_returns(FakeExe({0: self.LOOP}), 0))
+
+    def test_a_helper_is_small(self):
+        x = FakeExe({0: (ndfrules.HELPER_MAX + 1, self.HELPER[1])})
+        self.assertFalse(ndfrules.is_thrower(x, (0, ndfrules.HELPER_MAX + 1)))
+        self.assertFalse(ndfrules.is_thrower(x, None))
+
+
 class Output(unittest.TestCase):
     """What the CLI prints names no place in the exe: the table keeps its grouping key, `show` and `extract` never
     print it, and the stamp holds counts only."""
@@ -351,9 +397,10 @@ class Table(unittest.TestCase):
         cls.rules, cls.size = ndfrules.load_table()
 
     def test_change_stress_rows(self):
-        """The rows behind the fatal 'DamageType must be defined' load error, both in one validate."""
+        """ChangeStress's validation, a check the gate is known to need. Up to build 201602 it tested DamageType and
+        Group, and DamageType was the probe's fatal 'must be defined' load error; build 210942's tests Group alone."""
         rows = self.rules["TGDDescriptorChangeStress"]
-        self.assertEqual({(r.kind, r.prop) for r in rows}, {("defined", "DamageType"), ("defined", "Group")})
+        self.assertEqual({(r.kind, r.prop) for r in rows}, {("defined", "Group")})
         self.assertEqual(len({r.validate for r in rows}), 1)
 
     def test_reviewed_rows_exist(self):
@@ -404,15 +451,15 @@ class Stock(unittest.TestCase):
 @paths.skip_unless_game_dir("WARNO.exe")
 class Exe(unittest.TestCase):
     def test_validate_slot_found_at_run_time(self):
-        """The slot is read from the exe, not assumed: the routine it gives for ChangeStress holds the check behind
-        the game's 'DamageType must be defined' load error."""
+        """The slot is read from the exe, not assumed: the routine it gives for ChangeStress holds its Group check
+        (build 210942; up to 201602 it also held the one behind the 'DamageType must be defined' load error)."""
         x = ndfrules._Exe(str(ndfrules.exe_path()))
         helpers, _, _ = ndfrules.find_helpers(x)
         tabs = ndfrules.vtables(x)
         slot = ndfrules.validate_slot(x, helpers, tabs)
         fns = {(x.q(vt + 8 * slot) or 0) - x.pe.base for name, vt in tabs if name == "TGDDescriptorChangeStress"}
         found = {(kind, prop) for fn in fns for kind, prop, _, _ in ndfrules.checks_in(x, fn, helpers)}
-        self.assertIn(("defined", "DamageType"), found)
+        self.assertIn(("defined", "Group"), found)
 
 
 if __name__ == "__main__":

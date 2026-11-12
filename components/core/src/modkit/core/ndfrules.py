@@ -65,7 +65,8 @@ TEMPLATES = {  # message -> kind; the thrower helpers are found through these st
 COND = "Failed condition for property '%1': '%2'"  # formatted inline, thrown through a generic helper
 COMPARE = {"ge": lambda v, b: v >= b, "gt": lambda v, b: v > b, "le": lambda v, b: v <= b,
            "lt": lambda v, b: v < b, "eq": lambda v, b: v == b}
-HELPER_MAX = 128  # bytes: a thrower helper only formats its message and throws, so it is a small function
+HELPER_MAX = 256  # bytes: a thrower helper only formats its message and throws, so it is a small function that
+#                   never returns (see `never_returns`)
 SLOT_MARGIN = 4   # the validate slot must hold at least this many times more checkers than any other slot
 CHAIN_SHARE = 0.9  # of the checking routines at that slot, at least this share must chain to the root validation
 
@@ -199,16 +200,35 @@ def _branch(t: str) -> tuple[str, int] | None:
     return (m.group(1), int(m.group(2), 16)) if m else None
 
 
+def never_returns(x: _Exe, fn: int) -> bool:
+    """Whether the function at `fn` has no way back to its caller: no ret, and no jump out of its own body (a tail
+    call). A thrower helper ends in the throw. A routine that tests a value inline, the message in its own body (as
+    an optimising compiler leaves many range and comparison checks), returns when the value passes, so it is never
+    taken for a helper however small it is."""
+    b, e = x.pe.func_of(fn) or (fn, fn)
+    for _, t in x.insns(fn):
+        br = _branch(t)
+        if t.startswith("ret") or br and br[0] != "call" and not b <= br[1] < e:
+            return False
+    return True
+
+
+def is_thrower(x: _Exe, f: tuple[int, int] | None) -> bool:
+    """Whether the function `f` (start, end) can be a thrower helper: small, and it never returns."""
+    return bool(f) and f[1] - f[0] <= HELPER_MAX and never_returns(x, f[0])
+
+
 def find_helpers(x: _Exe) -> tuple[dict[int, str], int, int]:
-    """({helper: kind}, the root validation, the C++ throw). Every helper calls the throw; any other small function
-    that calls it directly is a `custom` thrower."""
+    """({helper: kind}, the root validation, the C++ throw). A helper is a small function that never returns and
+    passes a message template to the throw; any other such function that calls the throw directly is a `custom`
+    thrower."""
     helpers = {}
     for text, kind in TEMPLATES.items():
         hits = [mt.start() for mt in re.finditer(re.escape(text + b"\0"), x.pe.m)]
         check(len(hits) == 1, f"message {text!r} found {len(hits)} times in the exe")
         for site in x.rip_refs(x.pe.off2rva(hits[0])):
             f = x.pe.func_of(site)
-            if f and f[1] - f[0] <= HELPER_MAX:
+            if is_thrower(x, f):
                 helpers[f[0]] = kind
     must = [h for h, k in helpers.items() if k == "defined"]
     check(len(must) == 1, f"{len(must)} 'must be defined' helpers")
@@ -216,7 +236,7 @@ def find_helpers(x: _Exe) -> tuple[dict[int, str], int, int]:
     throw = calls[-1][1]  # format, build the exception, throw it
     for site, _ in x.branch_sites(CALL, {throw}):
         f = x.pe.func_of(site)
-        if f and f[1] - f[0] <= HELPER_MAX and f[0] not in helpers:
+        if f and f[0] not in helpers and is_thrower(x, f):
             helpers[f[0]] = "custom"
     # the root: the function the validations call first, before any check (most common first call of the callers of
     # 'must be defined')
