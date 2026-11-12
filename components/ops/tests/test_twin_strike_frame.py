@@ -26,9 +26,9 @@ from test_gates_stock import MENU_SPANS
 from twin_strike_support import (
     GAME, LAYOUT_DATA, OUT_ROOT, SCRIPT_DATA, TWIN_STRIKE, build_main, build_profile, gru, quiet_build,
 )
-from modkit.core import edat, paths, trad
+from modkit.core import edat, paths, tgv, trad
 from modkit.core.gates import CheckError
-from modkit.ops import INGAME_DIC, gates, leveldesign
+from modkit.ops import INGAME_DIC, gates, leveldesign, menuart
 from modkit.ops import testing as ops_testing
 from modkit.ops.bricks import unit_path
 from modkit.ops.files import read_file
@@ -149,11 +149,14 @@ class Profile(unittest.TestCase):
     def test_settings(self):
         """Survivors on Twin Cities: no map Details copied (the cut and the camera are generated), the cut's and the
         camera's stock shape sources, the five extra gates, the end funnel's export, and RedJuggernaut's three menu
-        emblems with Survivors' map picture."""
+        emblems with the op's own generated map picture."""
         p = profile.profile()
         self.assertIs(p.template, SURVIVORS)
-        self.assertEqual(p.menu_art, dict.fromkeys(("CornerLogo", "MissionCountry", "EndgameBlazon"),
-                                                   "challenge_RedJuggernaut"))
+        stock_art = {name: stock for name, stock in p.menu_art.items() if isinstance(stock, str)}
+        self.assertEqual(stock_art, dict.fromkeys(("CornerLogo", "MissionCountry", "EndgameBlazon"),
+                                                  "challenge_RedJuggernaut"))
+        self.assertEqual(set(p.menu_art) - set(stock_art), {"MapTexture"})
+        self.assertTrue(callable(p.menu_art["MapTexture"]))
         self.assertEqual((p.map_details, p.map_copies, p.ground_z), (TWIN_CITIES.details, (), TWIN_CITIES.ground_z))
         self.assertEqual(p.map_strings, {"_3x3_Railway": "_3x3_TwinCities"})
         self.assertEqual(p.map_trans, {"Railway": "TwinCities"})
@@ -628,8 +631,8 @@ class Build(unittest.TestCase):
     def test_menu_art_is_red_juggernauts(self):
         """The menu pictures' FileNames are Survivors' re-keyed, unchanged: ScenariosData:/<scenario>/MapPackAssets/
         Textures/<name>.png. Behind them, the Assets pack's CornerLogo, MissionCountry and EndgameBlazon are
-        RedJuggernaut's files byte for byte and MapTexture is Survivors'; MANIFEST.tsv names each one's source and lists
-        Survivors' three as given up."""
+        RedJuggernaut's files byte for byte and MapTexture is the op's own card (test_menu_card); MANIFEST.tsv names
+        each one's source and lists Survivors' four as given up."""
         def file_names(nb) -> set[str]:
             return {nb.strings[dict(nd.props)["FileName"].v].decode() for nd in nodes_of(nb)
                     if nd.cls == "TUIAutoRegisteredResourceTexture"}
@@ -644,7 +647,9 @@ class Build(unittest.TestCase):
         with open(os.path.join(OUT, "MANIFEST.tsv"), encoding="utf-8") as fh:
             rows = {r[1]: r for r in (line.rstrip("\n").split("\t") for line in fh)}
         for name in MENU_PICTURES:
-            stock = profile.MENU_ART.get(name, SURVIVORS.source)
+            stock = profile.MENU_ART[name]
+            if not isinstance(stock, str):
+                continue
             folder = extracted(STOCK_ASSETS.format(stock))
             with self.subTest(picture=name, stock=stock):
                 self.assertEqual(assets[MENU_ART.format(profile.SCENARIO, name)],
@@ -654,8 +659,29 @@ class Build(unittest.TestCase):
                                  ("Assets", "copy", f"extracted/scenarios/{stock}/{MENU_ART.format(stock, name)}"))
         given_up = {k: r[3:] for k, r in rows.items() if r[0] == "-" and "MapPackAssets" in k}
         self.assertEqual(given_up, {f"extracted/scenarios/{SURVIVORS.source}/{MENU_ART.format(SURVIVORS.source, n)}":
-                                    ["drop", f"menu art: challenge_RedJuggernaut's {n} ships in its place"]
-                                    for n in profile.MENU_ART})
+                                    ["drop", f"menu art: challenge_RedJuggernaut's {n} ships in its place"
+                                     if isinstance(stock, str) else f"menu art: a generated {n} ships in its place"]
+                                    for n, stock in profile.MENU_ART.items()})
+
+    def test_menu_card(self):
+        """The Assets pack's MapTexture is modkit.ops.menuart's card for the op, byte for byte: Survivors' card titled
+        TWIN STRIKE over the cut of Twin Cities, with the two sides' ground and stickers. It parses with the TGV reader
+        at the stock card's size and format, and MANIFEST.tsv names it generated, from the stock card and the map."""
+        inner = MENU_ART.format(profile.SCENARIO, "MapTexture")
+        shipped = self.pack("Assets")[inner]
+        card = menuart.build_card(profile.CARD_TITLE, menuart.cut_view(ts_map.CUT), profile.CARD_ZONES,
+                                  profile.CARD_STICKERS)
+        self.assertEqual(shipped, card.tgv)
+        hdr, _ = tgv.decode_tgv(shipped)
+        self.assertEqual((hdr.width, hdr.height, hdr.fmt, tgv.unwritable(hdr)), (*menuart.SURVIVORS.size,
+                                                                                 "A8B8G8R8_LIN", ""))
+        with open(os.path.join(OUT, "MANIFEST.tsv"), encoding="utf-8") as fh:
+            rows = {r[1]: r for r in (line.rstrip("\n").split("\t") for line in fh)}
+        pack, _, _, action, source = rows[inner][:5]
+        self.assertEqual((pack, action), ("Assets", "generate"))
+        self.assertEqual(source, profile.MENU_ART["MapTexture"](None)[1])
+        self.assertIn(f"extracted/{menuart.SURVIVORS_CARD} titled 'TWIN STRIKE'", source)
+        self.assertIn(f"extracted/{TWIN_CITIES.picture('Preview')}", source)
 
 
 if __name__ == "__main__":

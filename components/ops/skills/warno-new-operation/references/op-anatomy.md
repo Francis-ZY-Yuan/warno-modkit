@@ -30,7 +30,8 @@ extraction and resolved only when a build runs.
   byte (`map_copies`). With `details_from_template` the template's Details ship whole instead.
 - **Assets:** the string table as one dictionary per language (the Chinese column for SC, English for the other
   seven), and the template's files kept by `asset_rules` (its menu pictures; its voice, Python, video and portraits
-  are dropped). `menu_art` swaps a menu picture for another stock Operation's, at the same path.
+  are dropped). `menu_art` swaps a menu picture for another stock Operation's, or for one generated at build time,
+  at the same path.
 
 ## The profile
 
@@ -45,7 +46,7 @@ new op on Geisa, change the identity and leave the rest until you know why.
 | `scalar_edits` | Definition scalars changed: the menu order (`OrderToChainMission`) and the duration | the menu order `derived_menu_order(SCENARIO, GUID_NAMESPACE)` ([[content-identity-unique]]); keep the rest. Left out, the build derives it |
 | `deck_swap` | MapConfiguration's player deck | change with the player's `CAMP_ROWS` deck |
 | `dictionaries`, `asset_rules` | the three dictionaries; what to do with each template asset | keep |
-| `menu_art` | menu pictures from another stock Operation: `{picture name: stock scenario}`, shipped in place of the template's at the path MapConfiguration names | empty keeps the template's; Twin Strike takes RedJuggernaut's three emblems |
+| `menu_art` | menu pictures from another stock Operation, or generated: `{picture name: stock scenario or a MenuPicture}`, shipped in place of the template's at the path MapConfiguration names | empty keeps the template's; Twin Strike takes RedJuggernaut's three emblems and makes its own map card (`modkit.ops.menuart.card_picture`) |
 | `import_rule`, `shape_sources` | the canonical-layout rule; the stock files each generated file's shapes are held to | keep |
 | `player_camp`, `enemy_camp` | the camps the tier gate reads | keep (the examples' NATO and PACT camps) |
 | `end_exports` | the end funnel's export paths; `()` for none | your `FOLDER`'s funnel |

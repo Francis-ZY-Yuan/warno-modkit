@@ -43,7 +43,10 @@ Strike its own menu order, `OrderToChainMission` derived from its scenario GUID
 Its Operations menu reads as a stock Operation's: a dated briefing in four numbered points, the forces line, the
 background under the title and the two outcome texts, each in stock's form and length (`twinstrike/strings.py`), under
 the emblems of RedJuggernaut, the 79th Guards Tank Division's stock Operation (`profile.MENU_ART`, the toolkit's
-`OpProfile.menu_art`). The map picture is still Survivors'.
+`OpProfile.menu_art`). The map picture is its own card, generated at build time from Survivors'
+(`modkit.ops.menuart`): retitled TWIN STRIKE, the cut of Twin Cities in place of Survivors' map, and on it the
+Soviet ground in red with the star and the NATO ground in blue with its badge (`profile.CARD_ZONES`,
+`profile.CARD_STICKERS`).
 
 ## The op
 

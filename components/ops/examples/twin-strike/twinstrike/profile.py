@@ -6,7 +6,8 @@ challenge_OperationTwinStrike and its own GUID, its map rows point at Twin Citie
 ts_*. Survivors' four camps stay (its CampList and SetDeck block), flipped to the stock Soviet-player shape
 [[soviet-player-camp]] (modkit.ops.profile.SOVIET_PLAYER_CAMP_ROWS): the player Soviet on RedJuggernaut's deck, its AI
 ally (the division artillery's camp) Soviet, the two Alliance 1 camps NATO. The menu's player deck follows
-(SOVIET_PLAYER_DECK_SWAP), and so do its emblems: RedJuggernaut's, in place of Survivors' (MENU_ART).
+(SOVIET_PLAYER_DECK_SWAP), and so do its emblems: RedJuggernaut's, in place of Survivors' (MENU_ART). Its map picture
+is its own card, generated at build time (CARD_TITLE, CARD_ZONES, CARD_STICKERS).
 
 The op plays on a cut of the stock layout SM_SU_3x3_TwinCities_03 (twinstrike.map.CUT): the cut ships its own
 playable zone and AI grid [[ai-grid-tiles-playable-zone]], and the op its own start camera (twinstrike.map.CAMERA) in
@@ -23,6 +24,7 @@ from typing import Sequence
 
 from modkit.core import paths
 from modkit.core.ndfbin import Value
+from modkit.ops import menuart
 from modkit.ops.gates import fire_range_gate, menu_order_gate, template_name_gate, unit_gate, zone_layout_gate
 from modkit.ops.leveldesign import LD_FILE, ZONE_FILES, LdItem, derived_menu_order
 from modkit.ops.maps import CAMERA_SHAPE_SOURCES, CUT_SHAPE_SOURCES, TWIN_CITIES
@@ -34,7 +36,7 @@ from modkit.ops.script import PRODUCTION_DECK
 from modkit.ops.shapes import Ctx as ShapesCtx
 from modkit.ops.shapes import GRU_WORLD, camp_nodes
 from modkit.ops.zones import rect_polygon
-from twinstrike.map import CAMERA, CUT
+from twinstrike.map import CAMERA, CUT, NATO_DZ, POINTS, SOV_DZ, VILLAGE_CZ
 
 # --------------------------------------------------------------------------- identity
 
@@ -97,12 +99,31 @@ ASSET_RULES = (
     (f"PC/Texture/{SOURCE}/*", "drop", "Survivors dialog portraits; not referenced"),
     (f"PC/Video/{SOURCE}/*", "drop", "Survivors videos; not referenced"),
 )
+# The menu card (the MapTexture, modkit.ops.menuart): Survivors' card, its caption retitled, its map Twin Cities' cut
+# (map.CUT), and on it the two sides' ground at the start as stock marks it, in minimap px from map.py:
+# - red, the Soviet side: the deployment box (map.SOV_DZ) and the assault fields south of it, down to 6 px short of
+#   the village's north edge (y 331.6) so the two outlines stay apart. The polaroid covers the box's west part; the
+#   star stands where the red shows, east of the polaroid at the visible red's mid-height (its centroid, x 155, y 251,
+#   moved 17 px east so the sticker clears the polaroid);
+# - blue, the NATO side: the village's command zone (map.VILLAGE_CZ, x 6.125-132.125, y 331.6-421.6), the ground
+#   south of it and NATO's deployment band (map.NATO_DZ), one area; the NATO badge on the village (POINTS["VILLAGE"]).
+CARD_TITLE = "TWIN STRIKE"
+_VILLAGE = [TWIN_CITIES.world_to_px(p) for p in VILLAGE_CZ]
+_V_X0, _V_Y0 = min(x for x, _ in _VILLAGE), min(y for _, y in _VILLAGE)
+_V_X1 = max(x for x, _ in _VILLAGE)
+CARD_ZONES = (
+    ([(SOV_DZ[0], SOV_DZ[1]), (SOV_DZ[2], SOV_DZ[1]), (SOV_DZ[2], _V_Y0 - 6), (SOV_DZ[0], _V_Y0 - 6)], "red"),
+    ([(_V_X0, _V_Y0), (_V_X1, _V_Y0), (_V_X1, NATO_DZ[1]), (NATO_DZ[2], NATO_DZ[1]), (NATO_DZ[2], NATO_DZ[3]),
+      (NATO_DZ[0], NATO_DZ[3])], "blue"),
+)
+CARD_STICKERS = (("SOV", (172, 251)), ("NATO", POINTS["VILLAGE"]))
 # The menu's emblems from RedJuggernaut, the stock Operation of the 79th Guards Tank Division whose deck the player
 # fields [[soviet-player-camp]], in place of Survivors' British ones (OpProfile.menu_art): its corner logo (the red
 # star), its country flag (the Soviet Union's) and its end-of-game blazon (the division's Guards badge). The map
-# picture stays Survivors' MapTexture.
+# picture is the op's own card, generated at build time.
 MENU_ART = {"CornerLogo": "challenge_RedJuggernaut", "MissionCountry": "challenge_RedJuggernaut",
-            "EndgameBlazon": "challenge_RedJuggernaut"}
+            "EndgameBlazon": "challenge_RedJuggernaut",
+            "MapTexture": menuart.card_picture(CARD_TITLE, CUT, CARD_ZONES, CARD_STICKERS)}
 SHAPE_SOURCES = {  # generated file -> stock files whose shapes it may use, relative to the extraction
     "GDScript": ("scenarios/challenge_*/NDF/Scenarios/GDScript/challenge_*.ndfbin",),
     LD_FILE: ("scenarios/challenge_*/out/LevelDesign.ndfbin", "kreide_op/*/out/LevelDesign.ndfbin"),

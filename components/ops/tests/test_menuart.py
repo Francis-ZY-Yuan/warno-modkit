@@ -304,6 +304,19 @@ class MarkedCardTest(unittest.TestCase):
     def test_no_markings_is_the_plain_map_card(self):
         self.assertEqual(menuart.build_card("TWIN STRIKE", self.view, zones=(), stickers=()).tgv, self.mapped.tgv)
 
+    def test_card_picture_is_the_card_and_names_its_sources(self):
+        """OpProfile.menu_art's generated MapTexture: the same bytes as build_card, and a MANIFEST source line naming
+        the stock card, the title, the map and its box, and the markings."""
+        raw, line = menuart.card_picture("TWIN STRIKE", Cut(TWIN_CITIES, TWIN_STRIKE_CUT), ZONES, STICKERS)(None)
+        self.assertEqual(raw, self.card.tgv)
+        self.assertEqual(line, f"generated (modkit.ops.menuart: extracted/{SURVIVORS.source} titled 'TWIN STRIKE'; "
+                               f"the map extracted/{TWIN_CITIES.picture('Preview')} x 0.0..756.2, y 292.0..1048.0 px; "
+                               "2 zones, 2 stickers)")
+        plain_raw, plain_line = menuart.card_picture("TWIN STRIKE")(None)
+        self.assertEqual(plain_raw, menuart.build_card("TWIN STRIKE").tgv)
+        self.assertEqual(plain_line,
+                         f"generated (modkit.ops.menuart: extracted/{SURVIVORS.source} titled 'TWIN STRIKE')")
+
     def test_it_parses_and_is_deterministic(self):
         hdr, pixels = tgv.decode_tgv(self.card.tgv)
         self.assertEqual((hdr.width, hdr.height, hdr.fmt, tgv.unwritable(hdr)), (*SURVIVORS.size, "A8B8G8R8_LIN", ""))

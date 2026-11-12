@@ -138,19 +138,26 @@ MENU_ART = "PC/Texture/{}/MapPackAssets/Textures/{}.tgv"
 DescriptionTextureElements entry of that name (FileName ScenariosData:/<scenario>/MapPackAssets/Textures/<name>.png)."""
 
 
-def menu_art(items: Iterable[Item], art: Mapping[str, tuple[str, str]], source: str, scenario: str
-             ) -> tuple[list[Item], list[tuple[str, str]]]:
+def menu_art(items: Iterable[Item], art: Mapping[str, tuple[str, str]], source: str, scenario: str,
+             made: Mapping[str, tuple[bytes, str]] | None = None) -> tuple[list[Item], list[tuple[str, str]]]:
     """The planned Assets `items` with each menu picture `art` names (picture name -> (stock scenario, that scenario's
     Assets folder)) copied from that scenario in place of the template's: the same inner path, which the re-keyed
-    MapConfiguration names, now holding the stock scenario's file byte for byte, with that file as its source.
+    MapConfiguration names, now holding the stock scenario's file byte for byte, with that file as its source. Each
+    picture `made` names (picture name -> (its bytes, its source line)) ships there the same way, generated.
     Returns (items, the template's pictures given up: (inner path, why), listed with the dropped files)."""
     out, given_up = list(items), []
-    for name, (stock, stock_dir) in art.items():
-        mine, theirs = MENU_ART.format(scenario, name), MENU_ART.format(stock, name)
+
+    def replace(name: str, raw: Callable[[], bytes], action: str, source_line: str, why: str) -> None:
+        mine = MENU_ART.format(scenario, name)
         at = [k for k, it in enumerate(out) if it.pack == "Assets" and it.path == mine]
         check(len(at) == 1, f"menu art {name}: the template's {MENU_ART.format(source, name)} is not shipped, so there "
                             f"is no menu picture to replace (the asset rules must copy it)")
-        raw = read_file(os.path.join(stock_dir, *theirs.split("/")))
-        out[at[0]] = mem_item("Assets", mine, raw, "copy", rel_source(stock_dir, theirs))
-        given_up.append((MENU_ART.format(source, name), f"menu art: {stock}'s {name} ships in its place"))
+        out[at[0]] = mem_item("Assets", mine, raw(), action, source_line)
+        given_up.append((MENU_ART.format(source, name), why))
+    for name, (stock, stock_dir) in art.items():
+        theirs = MENU_ART.format(stock, name)
+        replace(name, lambda: read_file(os.path.join(stock_dir, *theirs.split("/"))), "copy",
+                rel_source(stock_dir, theirs), f"menu art: {stock}'s {name} ships in its place")
+    for name, (raw, source_line) in (made or {}).items():
+        replace(name, lambda: raw, "generate", source_line, f"menu art: a generated {name} ships in its place")
     return out, given_up

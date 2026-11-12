@@ -23,7 +23,8 @@ time from the user's own extraction; the toolkit ships no picture.
 The result (``Card``) is a TGV in the stock card's exact format and size (``modkit.core.tgv.encode_tgv``), and a PNG
 for review. An op ships ``build_card(TITLE, cut_view(CUT)).tgv`` (or ``build_card(TITLE).tgv``, the stock map kept) in
 place of its template's ``MapTexture.tgv``, its markings passed as ``zones=[(polygon, "red" | "blue")]`` and
-``stickers=[("SOV" | "NATO", (x, y))]`` in minimap px (none by default).
+``stickers=[("SOV" | "NATO", (x, y))]`` in minimap px (none by default). ``card_picture`` wraps that for
+``OpProfile.menu_art``: the build makes the card and names its sources in MANIFEST.tsv.
 
 A card's geometry is measured off one stock picture (``CardLayout``) and pinned to it by SHA-256, so a different or
 changed stock card fails rather than drawing in the wrong place. ``SURVIVORS`` is Survivors' card, the one an op
@@ -121,7 +122,8 @@ class CardLayout:
 
     def repainted_pixels(self) -> list[tuple[int, int]]:
         """(x, y) of every pixel the band and the clean boxes cover whole: the pixels no stock value survives in."""
-        corners = [self.to_image(u, v) for u0, v0, u1, v1 in (self.band, *self.clean) for u in (u0, u1) for v in (v0, v1)]
+        corners = [self.to_image(u, v)
+                   for u0, v0, u1, v1 in (self.band, *self.clean) for u in (u0, u1) for v in (v0, v1)]
         return [(x, y) for y, x in _bbox_pixels(corners, self.size) if self.repainted(x, y) == 1]
 
 
@@ -620,6 +622,24 @@ def build_card(title: str, view: MapView | None = None, zones: Sequence[tuple[Se
     with `view`, that map in place of the stock one, marked with `zones` ((polygon, 'red' or 'blue')) and `stickers`
     ((name, centre)), both in the view's units (a cut's view: minimap px)."""
     return render(layout, _read(layout.source), title, view, zones, stickers)
+
+
+def card_picture(title: str, cut=None, zones: Sequence[tuple[Sequence[Point], str]] = (),
+                 stickers: Sequence[tuple[str, Point]] = (), layout: CardLayout = SURVIVORS):
+    """An op's MapTexture as OpProfile.menu_art takes a generated picture (modkit.ops.profile.MenuPicture): at build
+    time, build_card(title, cut_view(cut), zones, stickers) (no cut: the stock map kept), and its MANIFEST source line
+    naming the stock card, the title and the map. Nothing is read until the build calls it."""
+    def make(content=None) -> tuple[bytes, str]:
+        view = cut_view(cut, layout) if cut is not None else None
+        card = build_card(title, view, zones, stickers, layout)
+        where = ""
+        if view is not None:
+            x0, y0, x1, y1 = view.box
+            where = (f"; the map {paths.rel_source(extracted(view.picture))} x {x0:.1f}..{x1:.1f}, "
+                     f"y {y0:.1f}..{y1:.1f} px; {len(zones)} zones, {len(stickers)} stickers")
+        return card.tgv, (f"generated (modkit.ops.menuart: {paths.rel_source(extracted(layout.source))} titled "
+                          f"{title!r}{where})")
+    return make
 
 
 # --------------------------------------------------------------------------- CLI

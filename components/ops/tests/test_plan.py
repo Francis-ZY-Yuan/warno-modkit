@@ -161,6 +161,22 @@ class MenuArtTest(TempDirTest):
         self.assertEqual(given_up, [(MENU_ART.format(SOURCE, "CornerLogo"),
                                      "menu art: challenge_C's CornerLogo ships in its place")])
 
+    def test_a_generated_picture_ships_at_the_templates_path(self):
+        """MapTexture made at build time (OpProfile.menu_art's MenuPicture): its bytes at the template's path,
+        generated, with its own source line; the template's MapTexture is listed as given up, after the stock
+        pictures."""
+        items, given_up = menu_art(self.items, {"CornerLogo": ("challenge_C", self.stock)}, SOURCE, NEW,
+                                   {"MapTexture": (b"a new card", "generated (a card)")})
+        self.assertEqual([it.path for it in items], [it.path for it in self.items])
+        got = {it.path.rsplit("/", 1)[-1]: it for it in items}
+        self.assertEqual((payload(got["MapTexture.tgv"]), got["MapTexture.tgv"].action, got["MapTexture.tgv"].source),
+                         (b"a new card", "generate", "generated (a card)"))
+        self.assertEqual(payload(got["CornerLogo.tgv"]), b"stock CornerLogo")
+        self.assertEqual(given_up, [(MENU_ART.format(SOURCE, "CornerLogo"),
+                                     "menu art: challenge_C's CornerLogo ships in its place"),
+                                    (MENU_ART.format(SOURCE, "MapTexture"),
+                                     "menu art: a generated MapTexture ships in its place")])
+
     def test_no_menu_art_changes_nothing(self):
         items, given_up = menu_art(self.items, {}, SOURCE, NEW)
         self.assertEqual([(it.path, it.digest, it.source) for it in items],
@@ -171,6 +187,8 @@ class MenuArtTest(TempDirTest):
         with self.assertRaisesRegex(CheckError, r"menu art EndgameBlazon: the template's "
                                                 rf"{MENU_ART.format(SOURCE, 'EndgameBlazon')} is not shipped"):
             menu_art(self.items, {"EndgameBlazon": ("challenge_C", self.stock)}, SOURCE, NEW)
+        with self.assertRaisesRegex(CheckError, r"menu art EndgameBlazon: the template's "):
+            menu_art(self.items, {}, SOURCE, NEW, {"EndgameBlazon": (b"x", "generated")})
 
     def test_a_missing_stock_picture_fails(self):
         with self.assertRaises(FileNotFoundError):

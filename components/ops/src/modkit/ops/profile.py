@@ -221,6 +221,7 @@ class ExtraGate(NamedTuple):
 LooseFiles = Callable[[Content], Iterable[Item]]   # loose files under the mod folder (each with Item.pack == 'Loose')
 ExtraItems = Callable[[Content], Iterable[Item]]   # more entries for the profile's own packs (Item.pack one of them)
 ReviewOutput = Callable[[Content, str], str]       # writes a review file into the out folder; returns a log line
+MenuPicture = Callable[[Content], tuple[bytes, str]]   # a generated menu picture: its bytes and its MANIFEST source
 
 
 @dataclass(frozen=True)
@@ -256,11 +257,12 @@ class OpProfile:
     # Config.ini's ID, the mod's Steam Workshop ID: 0 until its first upload (the bytes are then the template's), then the
     # item's ID, so a rebuild keeps it (packaging.check_mod_id: a non-negative integer that fits in a uint64).
     mod_id: int = 0
-    # The menu pictures taken from another stock Operation: a picture's name (MapConfiguration's
+    # The menu pictures taken from another stock Operation, or generated: a picture's name (MapConfiguration's
     # DescriptionTextureElements: CornerLogo, MissionCountry, EndgameBlazon, MapTexture) -> the stock scenario whose
-    # file ships in its place, at the path the re-keyed MapConfiguration names (modkit.ops.items.menu_art; the
-    # scenario's Assets folder is STOCK_ASSETS). Empty: the template's own pictures, as the asset rules copy them.
-    menu_art: Mapping[str, str] = field(default_factory=dict)
+    # file ships in its place, or a MenuPicture making the file at build time (modkit.ops.menuart.card_picture), at
+    # the path the re-keyed MapConfiguration names (modkit.ops.items.menu_art; a scenario's Assets folder is
+    # STOCK_ASSETS). Empty: the template's own pictures, as the asset rules copy them.
+    menu_art: Mapping[str, str | MenuPicture] = field(default_factory=dict)
     # --- extension points
     extra_config_rows: tuple[str, ...] = ()                     # whole lines under Config.ini's [Config]
     extra_manifest_rows: tuple[tuple[str, str, str], ...] = ()  # (name, action, source) rows of MANIFEST.tsv
