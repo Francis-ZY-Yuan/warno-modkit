@@ -39,10 +39,14 @@ WARNO.
   check .`, `-m modkit.core.repocheck --history .` and both test suites; `claude plugin validate .` after a manifest
   change. Commit the generated pages (the `knowledge/` folder, each `INDEX.md`, the "referenced by" footers) with
   the change that caused them; never edit them by hand.
-- **Commits:** one task per commit, the message starting with the component (`core: ...`, `ops: ...`). Stage files
-  by explicit path. Commit with `TZ=UTC` set and the neutral identity (`modkit.repo.toml`, `[identity]`; the
-  history scan fails any other); never commit, merge or edit in GitHub's web interface (merge locally); don't sign
-  commits with a personal key.
+- **Commits:** one task per commit, the message starting with the component (`core: ...`, `ops: ...`, `docs: ...`).
+  Stage files by explicit path. Commit with `TZ=UTC` set and the neutral identity (`modkit.repo.toml`, `[identity]`;
+  the history scan fails any other); don't sign commits with a personal key.
+- **Pull requests:** `main` is protected. Changes reach it only through a pull request, with linear history and no
+  force pushes. Branch from `origin/main`, push the branch, and open the PR with `gh pr create --base main`. Merge
+  locally once the maintainer approves: on an up-to-date `main`, `git merge --ff-only <branch>`, then push `main`;
+  GitHub marks the PR merged. Never use GitHub's merge button or edit in the web interface: a web merge commits under
+  GitHub's identity and fails the history scan.
 
 ## Rules for the public tree
 
