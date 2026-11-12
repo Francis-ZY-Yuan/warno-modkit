@@ -19,7 +19,7 @@ from modkit.core import paths
 from modkit.core.ndfbin import Value
 from modkit.ops.gates import menu_order_gate, unit_gate
 from modkit.ops.leveldesign import LD_FILE, ZONE_FILES
-from modkit.ops.maps import GEISA
+from modkit.ops.maps import GEISA, camera_look_gate
 from modkit.ops.profile import SURVIVORS, SURVIVORS_PLAYER_DECK, Content, ExtraGate, OpProfile, Script
 from modkit.ops.rekey import ScalarEdit
 from modkit.ops.shapes import Ctx as ShapesCtx
@@ -147,7 +147,8 @@ def content(name: str, items, script: Script | None, strings: Table, menu_tokens
 
 def profile() -> OpProfile:
     """The probes' profile: Survivors on Geisa under GUID_NAMESPACE, stock's trie import rule, the sides for the tier
-    gate, the end funnel, the unit-database and menu-order gates and the review overlay (od_overlay.png)."""
+    gate, the end funnel, the unit-database, menu-order and camera-look gates and the review overlay
+    (od_overlay.png)."""
     return OpProfile(
         template=SURVIVORS, guid_namespace=GUID_NAMESPACE,
         map_strings=MAP_SWAP_STRINGS, map_trans=MAP_SWAP_TRANS, map_details=GEISA.details, map_copies=GEISA.copies,
@@ -156,7 +157,8 @@ def profile() -> OpProfile:
         import_rule="trie", shape_sources=SHAPE_SOURCES, player_camp=CAMPS["NATO"], enemy_camp=CAMPS["PACT"],
         end_exports=(END_FUNNEL, END_RACE),
         build_root=os.path.abspath(paths.build_root()), dumps=True, mod_id=0,
-        extra_gates=(ExtraGate("units", unit_gate), ExtraGate("menu-order", menu_order_gate)),
+        extra_gates=(ExtraGate("units", unit_gate), ExtraGate("menu-order", menu_order_gate),
+                     ExtraGate("camera-looks", camera_look_gate(GEISA))),
         extra_outputs=(MAP.map.overlay_output("od_overlay.png"),),
     )
 

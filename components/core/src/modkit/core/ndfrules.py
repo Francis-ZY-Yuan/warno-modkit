@@ -76,6 +76,11 @@ REVIEWED: dict[tuple[str, str, str], tuple[str, str]] = {
     ("TCutsceneDescriptor", "cond", "Key"): (
         "nonzero", "the condition is the Key's localisation token being valid, which fails only for a zero token; "
                    "every stock object of the class sets Key (none leaves it out)"),
+    ("TSimultaneousAction", "custom", "Action %1 referenced in %2 must have no input parameters"): (
+        "modelled", "a group of effects may not list an effect that declares parameters; stock reaches one through a "
+                    "TActionCall that binds them (fx_FumeeNoire_ForScript_RandomPosition's "
+                    "FX_Vehicule_Dest_Fire_FireAndForget), and the ops script-effects gate refuses a script whose "
+                    "group lists one directly"),
 }
 
 # Classes whose every property the gate must know: on an object of one of these, a property that none of the class's

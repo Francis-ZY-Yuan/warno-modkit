@@ -10,7 +10,8 @@ from __future__ import annotations
 from typing import Callable, Sequence
 
 from modkit.core.names import unit_path  # noqa: F401 - core's, re-exported here for the bricks' users
-from modkit.ops.graph import TRUE, Imp, Node, Str, f32, i32, loc, u32
+from modkit.core.ndfbin import Value
+from modkit.ops.graph import TRUE, Imp, Map, Node, Str, f32, i32, loc, u32
 
 
 def g_seq(actions: list[object], runs: int = 1, export: str | None = None) -> Node:
@@ -271,6 +272,32 @@ def g_camera(path: str, seconds: float | None = None, *, from_current: bool = Fa
         start = Node("TGDDescriptorCutsceneSequential", [("SubActions", [
             start, Node("TGDDescriptorCutsceneWaitDuree", [("WaitDuration", f32(hold))])])])
     return Node("TGDDescriptorEncapsuleCutscene", [("SubActions", [start]), ("BlockPlayerActions", TRUE)])
+
+
+def g_fow(on: bool) -> Node:
+    """TGDDescriptorFow: the fog of war switched on (`on`, the GameRules default every Operation starts with) or off,
+    for every camp, until the next switch. The class is the game's (the scenario API's DescriptorFow); no stock script
+    uses it, so a content that does admits shapes.FOW_SHAPES."""
+    return Node("TGDDescriptorFow", [("Fow", Value(0x00, 1 if on else 0))])
+
+
+def fx_wrapper(export: str, target: str, bindings: Sequence[tuple[str, float | tuple[float, float, float]]]) -> Node:
+    """A script-launchable wrapper of the parameterised GameFx effect `target` ('$/GFX/GameFx/...'), exported at
+    `export` in the op's own script: TSimultaneousAction[TActionCall(NamedParams, Action `target`)], the shape of
+    stock's fx_FumeeNoire_ForScript_RandomPosition, whose TActionCall FX_Vehicule_Dest_Fire_FireAndForget binds the
+    parameter FX_Vehicule_Dest_Fire has no default for. Each binding is a parameter name and its constant: a float
+    (TConstantFloat) or a float3 (TConstantFloat3), in the given order. A launch names `export`
+    (g_fx(export, position)); gates.check_script_effects holds the call to bind every parameter `target` declares
+    with no default [[script-effects-self-contained]]."""
+    def constant(v: float | tuple[float, float, float]) -> Node:
+        if isinstance(v, tuple):
+            return Node("TConstantFloat3", [("Value", Value(0x0B, tuple(float(x) for x in v)))])
+        return Node("TConstantFloat", [("Value", f32(v))])
+
+    call = Node("TActionCall", [("NamedParams", Map(tuple((Str(name), constant(v)) for name, v in bindings))),
+                                ("Action", Imp(target))])
+    return Node("TSimultaneousAction", [("_ShortDatabaseName", Str(export.rsplit("/", 1)[-1])), ("Actions", [call])],
+                export=export)
 
 
 def g_hint(token: str, seconds: float, component: str) -> Node:

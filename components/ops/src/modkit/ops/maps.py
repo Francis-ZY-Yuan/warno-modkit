@@ -63,6 +63,7 @@ from modkit.ops.graph import Node, build_graph, decode, encode
 from modkit.ops.items import Item, mem_item
 from modkit.ops.leveldesign import LdItem
 from modkit.ops.profile import Content, ExtraGate, extracted
+from modkit.ops.rekey import def_path
 from modkit.ops.zones import (
     area_bbox, camera_paths_graph, ia_grid_subset, ia_zone_graph, path_cache_graph, playable_zone_graph,
     read_ia_grid, read_playable_polygon, rect_polygon,
@@ -458,6 +459,64 @@ class CameraShot:
     def cutscene(self) -> Node:
         """The shot's one script node: bricks.g_camera from the current camera position, then the hold."""
         return g_camera(self.name, self.seconds, from_current=True, hold=self.hold)
+
+
+def camera_looks(gd_raw: bytes) -> list[str]:
+    """The camera path of every look in the shipped script `gd_raw`: a CutsceneStartCameraPath that flies from where
+    the player has the camera (StartFromCurrentCameraPosition, bricks.g_camera(from_current=True)), in script order."""
+    nb, _, _ = decode(gd_raw)
+    out = []
+    for ob in nb.objects:
+        if nb.cname(ob.cls) != "TGDDescriptorCutsceneStartCameraPath":
+            continue
+        props = {nb.pname(pi): v for pi, v in ob.props}
+        current = props.get("StartFromCurrentCameraPosition")
+        if current is not None and current.v:
+            name = props.get("CameraPathName")
+            out.append(nb.strings[name.v].decode("latin-1") if name is not None else "")
+    return out
+
+
+def check_camera_looks(gd_raw: bytes, campaths_raw: bytes | None, on: StockMap) -> int:
+    """The camera gate for a look in mid-mission (camera_looks), on the camera paths file as it ships: stock's look is
+    a one-key path flown from the player's view (SigurdsStrike's MLRS and COBRA, Sledgehammer's camera_hades: one key
+    each), so each looked-at path is in the file (read_camera_paths: stock's key shape), has one key, looks down along
+    a unit direction, its view centre lies on the map, and its eye stands at least START_CAMERA_MIN_HEIGHT above its
+    ground_z. The eye itself may stand off the map, as Geisa's stock Camp1 does (x 895 px of 768, looking west).
+    Returns the number of looks."""
+    looks = camera_looks(gd_raw)
+    if not looks:
+        return 0
+    check(campaths_raw is not None, f"the script looks along camera paths {looks}, but ships no {CAMPATHS_FILE}")
+    paths = read_camera_paths(campaths_raw)
+    w, h = (n * on.world_per_px for n in on.minimap_px)
+    for name in looks:
+        check(name in paths, f"the script looks along camera path {name!r}, which {CAMPATHS_FILE} lacks "
+                             f"(it holds {sorted(paths)})")
+        check(len(paths[name]) == 1, f"camera path {name}: a look flown from the player's view is one key in stock, "
+                                     f"not {len(paths[name])}")
+        (x, y, z), d = paths[name][0]
+        check(abs(math.hypot(*d) - 1.0) <= DIRECTION_TOLERANCE and d[2] < 0,
+              f"camera path {name}: its direction {d} is not a unit vector looking down")
+        cx, cy = view_centre(paths[name][0], on.ground_z)
+        check(0 <= cx <= w and 0 <= cy <= h,
+              f"camera path {name}: its view centres on {on.world_to_px((cx, cy))} px, off the map")
+        check(z - on.ground_z >= START_CAMERA_MIN_HEIGHT,
+              f"camera path {name}: its eye stands {z - on.ground_z:,.0f} above the ground, below "
+              f"{START_CAMERA_MIN_HEIGHT:,.0f}")
+    return len(looks)
+
+
+def camera_look_gate(on: StockMap) -> Callable[[list[Item], Content], str]:
+    """An extra gate (profile.ExtraGate) holding the content's camera looks (check_camera_looks) to the shipped
+    script and camera paths file, on the map `on`."""
+    def gate(items: list[Item], content: Content) -> str:
+        gd_path = def_path("GDScript", "ndfbin", content.scenario)
+        gd = b"".join(next(it for it in items if it.path == gd_path).chunks())
+        cam = shipped_details(items, CAMPATHS_FILE)
+        n = check_camera_looks(gd, cam, on)
+        return f"{n} camera looks, each a one-key path of the shipped {CAMPATHS_FILE} in stock's shape"
+    return gate
 
 
 @dataclass(frozen=True)

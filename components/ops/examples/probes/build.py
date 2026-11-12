@@ -1,6 +1,6 @@
 """Build one of the probe mods.
 
-    python build.py --content {empty,spike,spike_safe,spike2,nuke,nuke_sov} [--out DIR]
+    python build.py --content {empty,spike,spike_safe,spike2,nuke,nuke_sov,fxprobe} [--out DIR]
 
 DIR defaults to probes/<content> in the build folder (`build/` beside your modkit.local.toml, or in the working
 folder without one, unless you set another; see modkit.core.paths.build_root). Every gate of modkit.ops.build runs

@@ -17,10 +17,11 @@ gate, from the blocks in `modkit.ops.shapes` and `modkit.ops.bricks`.
 | `spike2` | `challenge_OpenDoorTest`, `OpenDoorTest` | Probe 2: capture, objectives, endings; three short runs |
 | `nuke` | `challenge_OpenDoorNuke`, `OpenDoorNuke` | Probe 3: a scripted strike's look on two groups of tanks |
 | `nuke_sov` | `challenge_OpenDoorNukeSov`, `OpenDoorNukeSov` | Probe 3 again, with a Soviet player and NATO victims |
+| `fxprobe` | `challenge_OpenDoorFx`, `OpenDoorFx` | Every strike effect at once: camera, fog, massed effects, kill, damage, stun, the real nuke |
 
-`empty`, `spike` and `spike_safe` share one identity: install one at a time. `spike2`, `nuke` and `nuke_sov` each have
-their own and install beside them. Every Operation active at once also needs its own menu order (`OrderToChainMission`)
-[[content-identity-unique]]: `nuke` and `nuke_sov` hold their derived orders
+`empty`, `spike` and `spike_safe` share one identity: install one at a time. `spike2`, `nuke`, `nuke_sov` and `fxprobe`
+each have their own and install beside them. Every Operation active at once also needs its own menu order (`OrderToChainMission`)
+[[content-identity-unique]]: `nuke`, `nuke_sov` and `fxprobe` hold their derived orders
 (`modkit.ops.leveldesign.derived_menu_order`, a hash of the scenario GUID), but `empty`, `spike`, `spike_safe` and
 `spike2` keep Open Door's 1001, as regression baselines whose builds never change. Have only one of those four, or Open
 Door, active at a time.
@@ -28,7 +29,7 @@ Door, active at a time.
 ## Build
 
 ```
-python build.py --content {empty,spike,spike_safe,spike2,nuke,nuke_sov} [--out DIR]
+python build.py --content {empty,spike,spike_safe,spike2,nuke,nuke_sov,fxprobe} [--out DIR]
 ```
 
 `DIR` defaults to `probes/<content>` in the build folder: `build/` beside your `modkit.local.toml` (in the working
@@ -138,6 +139,59 @@ For `nuke_sov` also:
 12. At N1b, how did the 203 mm effect alone look beside N3's barrage with smoke?
 13. Were the supply trucks (Ural-4320) and supply helicopters (Mi-8TZ) in the buy menu, and could they deliver supply
     to your units?
+
+### `fxprobe` (strike effects)
+
+One launch tries every way a script can make a strike look massive and visible, on one target group, so the player
+sees each in turn. The player is Soviet, as in `nuke_sov` ([[soviet-player-camp]]); the targets are NATO. Every step
+runs on the battle clock: its hint shows 5 s before it acts and names it, and the riskiest steps come last, so a crash
+points at the step its hint named. Each step is its own branch. The probe's camera paths file is Geisa's stock one,
+shipped as is; the build's `camera-looks` gate holds the look to it (`modkit.ops.maps.check_camera_looks`).
+
+The real nuke (F8, F9) is the game's tactical-nuke impact effect, which crashed a direct script launch
+([[scripted-nuke-effect]]). Here the script exports its own wrapper (`modkit.ops.bricks.fx_wrapper`): a
+TSimultaneousAction whose TActionCall binds all four of the effect's parameters, the shape of stock's script-launched
+`fx_FumeeNoire_ForScript_RandomPosition`, whose TActionCall binds the one parameter its effect has no default for.
+The launch names the wrapper's export path. The script-effects gate holds each such call to bind every parameter its
+effect declares with no default ([[script-effects-self-contained]]).
+
+| Step | Time | What happens |
+|---|---|---|
+| F1 | 0:15 | 6 M1A1HA Abrams and 6 M2A2 Bradleys appear at T (pinned), off their camp's AI and without ammunition |
+| F2 | 0:40 | the camera flies from your view to Geisa's stock path Camp1, over T, in 4 s (stock's mid-battle look, SigurdsStrike's MLRS); Escape skips |
+| F3 | 1:05 | fog off: `TGDDescriptorFow` (the scenario API's fog switch; no stock script uses it) |
+| F3b | 1:25 | 3 BRDM-2 of yours appear at V, 400 m west of T: vision if the fog stayed |
+| F4 | 1:50 | the proven effects massed, at RedJuggernaut's scale: 10 `fx_HE_Mega_Bomb_ForScript` (T and a ring of 9 at 300 m), the 203 mm random barrage 10 times at 5 tags (50), white and black smoke at 4 tags |
+| F5 | 2:20 | 40 % of the targets (4 of 12) move to a subgroup (TransferUnitToUnitGroup) and are killed with Penetration |
+| F6 | 2:45 | the survivors take ChangeStress with DamageType Physical, 5 of their 10 hit points |
+| F7 | 3:10 | the survivors take ChangeStress with DamageType Stun, 240 ([[changestress-damagetype-zero]]) |
+| F8 | 3:40 | the nuke wrapper with parPosition 0, on T |
+| F9 | 4:10 | the nuke wrapper with parPosition U's world position, on U (595 m east of T) |
+| F10 | 4:45 | fog back on; "probe done" |
+
+**Install:** `OpenDoorFx` beside the other mods; it has its own identity and menu order. **Where to deploy:** one cheap
+unit west of the central forest, nothing east of it, then launch the battle. Your own units must not see T before F3.
+
+Play sheet: for each step, report seen, not seen, or a crash after its hint.
+
+| Step | Look at | Report |
+|---|---|---|
+| F1 | the pin T on the map | did the targets show before F3? (they should not) |
+| F2 | the screen | did the camera fly to T on its own? did Escape skip it? |
+| F3 | T, before F3b | did the 12 targets show with nothing of yours near? did other NATO units show anywhere? |
+| F3b | west of T | did the BRDM-2s appear? |
+| F4 | T and around | how big, against the 12 vehicles and against the ring of pins? sound? camera shake? a hitch? |
+| F5 | T | did 4 die? wrecks, or nothing? |
+| F6 | the survivors' health bars | did they lose about half, or die, or nothing? |
+| F7 | the survivors | stunned (icons, no movement), or nothing? |
+| F8 | T, and the map's north-west corner | a crash right after the hint? where did it show: on T, at the corner, nowhere? a mushroom? how big? |
+| F9 | U | the same questions; which of F8 and F9 sat on its pin? |
+| F10 | the map | did the fog come back? |
+
+The trial to record after the play: `YYYY-MM-DD-fxprobe-play1`, kind `play`, the build's commit, mechanisms
+`script-effects-self-contained`, `scripted-nuke-effect`, `changestress-damagetype-zero`, `soviet-player-camp`;
+outcome and result from the sheet. Each step's answer goes to its record: F4, F8 and F9 to `scripted-nuke-effect`
+(F5 answers its wrecks question), F6 and F7 to `changestress-damagetype-zero`.
 
 ## After a game update
 

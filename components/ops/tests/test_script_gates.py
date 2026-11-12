@@ -12,8 +12,8 @@ from unittest import mock
 from modkit.core import paths
 from modkit.core.gates import CheckError
 from modkit.ops.bricks import (
-    c_type, g_and, g_cmp, g_compete, g_detect, g_dialog, g_fx, g_hint, g_if, g_or, g_seq, g_simul, g_until, g_vanish,
-    g_wait,
+    c_type, fx_wrapper, g_and, g_cmp, g_compete, g_detect, g_dialog, g_fx, g_hint, g_if, g_or, g_seq, g_simul, g_until,
+    g_vanish, g_wait,
 )
 from modkit.ops.build import details_files
 from modkit.ops.gates import (
@@ -464,10 +464,36 @@ class ScriptEffects(unittest.TestCase):
         with open(self.gamefx, "wb") as fh:
             fh.write(encode(build_graph([plain, param], [plain, param]), "GameFx"))
 
-    def script(self, *names: str) -> bytes:
-        """A GDScript launching each of `names` on one position."""
+    def script(self, *names: str, extra: tuple[Node, ...] = ()) -> bytes:
+        """A GDScript launching each of `names` on one position, exporting `extra` too (effect wrappers)."""
         pos = Node("TGDTagPosition", export="$/GDScript/RootDescriptor/t_fx")
-        return encode(build_graph([g_seq([g_fx(name, pos) for name in names])], [pos]), "GDScript")
+        return encode(build_graph([g_seq([g_fx(name, pos) for name in names])], [pos, *extra]), "GDScript")
+
+    WRAP = "$/GDScript/OD/FxWrap"
+
+    def test_an_own_wrapper_that_binds_every_parameter_passes(self):
+        """The script's own export, a TSimultaneousAction[TActionCall] binding both of fx_Param's parameters (the
+        fixture's have no default), is launched by its export path."""
+        wrap = fx_wrapper(self.WRAP, self.FX + "fx_Param", (("parPosition", (0.0, 0.0, 0.0)), ("parRadius", 1.0)))
+        self.assertEqual(check_script_effects(self.script(self.WRAP, extra=(wrap,)), self.gamefx), 1)
+
+    def test_an_own_wrapper_missing_a_binding_fails(self):
+        wrap = fx_wrapper(self.WRAP, self.FX + "fx_Param", (("parPosition", (0.0, 0.0, 0.0)),))
+        with self.assertRaisesRegex(CheckError, r"^the script's own effect wrappers break the call rule: "
+                                                r"\$/GDScript/OD/FxWrap: its call to \$/GFX/GameFx/fx_Param leaves "
+                                                r"parRadius unbound \(no default\)"):
+            check_script_effects(self.script(self.WRAP, extra=(wrap,)), self.gamefx)
+
+    def test_an_own_group_listing_a_parameterised_effect_fails(self):
+        """The game's load check on TSimultaneousAction: a group may not list a parameterised effect directly."""
+        bad = Node("TSimultaneousAction", [("_ShortDatabaseName", Str("FxWrap")),
+                                           ("Actions", [Imp(self.FX + "fx_Param")])], export=self.WRAP)
+        with self.assertRaisesRegex(CheckError, r"lists \$/GFX/GameFx/fx_Param, which declares 2 parameters"):
+            check_script_effects(self.script(self.WRAP, extra=(bad,)), self.gamefx)
+
+    def test_an_own_export_that_is_no_effect_fails(self):
+        with self.assertRaisesRegex(CheckError, r"t_fx is a TGDTagPosition, not an effect"):
+            check_script_effects(self.script("$/GDScript/RootDescriptor/t_fx"), self.gamefx)
 
     def test_the_fixture_reads_as_declared(self):
         """Each effect with its parameters' names (the toolkit's writer also exports a TBaseClass per folder)."""

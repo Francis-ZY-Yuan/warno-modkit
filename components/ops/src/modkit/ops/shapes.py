@@ -88,6 +88,19 @@ STRESS_SHAPES = (
     ("TGDDescriptorChangeStress", "Value", 0x02, None),
     ("TGDDescriptorSequential", "SubActions", 0x11, "TGDDescriptorChangeStress"),
 )
+# bricks.g_fow: the scenario API's fog switch, a bool Fow, in a Sequential. No stock script writes the class.
+FOW_SHAPES = (("TGDDescriptorFow", "Fow", 0x00, None),
+              ("TGDDescriptorSequential", "SubActions", 0x11, "TGDDescriptorFow"))
+# bricks.fx_wrapper: an effect wrapper exported by the op's own script, in GameFx's own class and value shapes
+# (fx_FumeeNoire_ForScript_RandomPosition, FX_Vehicule_Dest_Fire_FireAndForget, TConstantFloat/TConstantFloat3), which
+# no stock script holds.
+FX_WRAPPER_SHAPES = (("TSimultaneousAction", "_ShortDatabaseName", 0x07, None),
+                     ("TSimultaneousAction", "Actions", 0x11, "TActionCall"),
+                     ("TActionCall", "NamedParams", 0x12, "TConstantFloat3"),
+                     ("TActionCall", "NamedParams", 0x12, "TConstantFloat"),
+                     ("TActionCall", "Action", 0x09, "import $/GFX/GameFx"),
+                     ("TConstantFloat3", "Value", 0x0B, None),
+                     ("TConstantFloat", "Value", 0x05, None))
 
 # One camp of the template's CampList: export name, TGDVariableCamp scalars before PlayerName as (property, value
 # tag, value), and its SetDeck id.

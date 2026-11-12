@@ -1731,7 +1731,12 @@ def check_prod_menu_switch(content: Content, roots: Iterable[Node]) -> int:
 # more. The game looks the name up among the exports of its GameFx namespace, the stock file gamefx_file(). An effect
 # whose declaration takes parameters (FX_PARAMS: the NDF Params block, each parameter a TActionAlias, which is also
 # what a Template_Param_* compiles to) waits for its caller to bind them, as the impact system does for a shell's
-# impact; a script launch binds nothing. An Operation cannot add a GameFx export (gate 5), so stock's are all it has.
+# impact; a script launch binds nothing. An Operation cannot add a GameFx export (gate 5). It can export an effect
+# wrapper from its own script (bricks.fx_wrapper), launched by its export path: a TSimultaneousAction whose TActionCall
+# binds the parameters, the shape of stock's script-launched fx_FumeeNoire_ForScript_RandomPosition, whose
+# FX_Vehicule_Dest_Fire_FireAndForget binds FX_Vehicule_Dest_Fire's parDuration (no default) and leaves parScaleFactor
+# to its default. Such a launch is held to that shape: every call binds each parameter its target declares with no
+# default, and a group never lists a parameterised effect directly (the game's load check on TSimultaneousAction).
 
 LAUNCH_FX = "TGDDescriptorLaunchFXFireAndForgetOnPosition"
 FX_PARAMS = "InputParameters"
@@ -1777,6 +1782,79 @@ def gamefx_declarations(path: str) -> dict[str, tuple[str, ...]]:
     return out
 
 
+@functools.cache
+def gamefx_required(path: str) -> dict[str, tuple[str, ...]]:
+    """Each export of the GameFx file at `path` with the parameters its declaration takes with no DefaultValue: the
+    ones a call must bind."""
+    nb, _, _ = decode(read_file(path))
+    out = {}
+    for name, i in ndfbin.tree_paths(nb, nb.exports):
+        params = _props(nb, i).get(FX_PARAMS)
+        refs = params.v if params is not None and params.tag == 0x11 else []
+        out[name] = tuple(_text(nb, _props(nb, p.v.index).get("_ShortDatabaseName")) or "?" for p in refs
+                          if p.tag == 0x09 and p.v.kind == ndfbin.REF_OBJECT
+                          and "DefaultValue" not in _props(nb, p.v.index))
+    return out
+
+
+FX_GROUP, FX_CALL = "TSimultaneousAction", "TActionCall"
+FX_WRAPPER_ROOTS = (FX_GROUP, FX_CALL)
+
+
+def own_effect_violations(nb: ndfbin.NdfBin, names: Iterable[str], declared: Mapping[str, tuple[str, ...]],
+                          required: Mapping[str, tuple[str, ...]]) -> list[str]:
+    """One line per break of the wrapper rule in the decoded script `nb`, for the launched `names` that are its own
+    exports: the export is a TSimultaneousAction or a TActionCall; every TActionCall in its tree names a GameFx export
+    (`declared`) and binds (NamedParams) each parameter `required` lists for it, and nothing it does not declare; no
+    TSimultaneousAction of the script lists a parameterised GameFx effect directly."""
+    exports = {p: i for p, i in ndfbin.tree_paths(nb, nb.exports)}
+    imports = {i: p for p, i in ndfbin.tree_paths(nb, nb.imports)}
+    bad: list[str] = []
+
+    def target(v: Value | None) -> str | None:
+        ok = v is not None and v.tag == 0x09 and v.v.kind == ndfbin.REF_IMPORT
+        return imports.get(v.v.index) if ok else None
+
+    for i, ob in enumerate(nb.objects):   # the load check holds every group of the file, launched or not
+        if nb.cname(ob.cls) != FX_GROUP:
+            continue
+        actions = _props(nb, i).get("Actions")
+        for x in (ndfbin.iter_values(actions) if actions is not None else ()):
+            t = target(x)
+            if t is not None and declared.get(t):
+                bad.append(f"#{i} {FX_GROUP} lists {t}, which declares {len(declared[t])} parameters: call it "
+                           f"through a {FX_CALL} that binds them")
+    for name in sorted(set(names)):
+        root = exports[name]
+        cls = nb.cname(nb.objects[root].cls)
+        if cls not in FX_WRAPPER_ROOTS:
+            bad.append(f"{name} is a {cls}, not an effect ({' or '.join(FX_WRAPPER_ROOTS)})")
+            continue
+        seen, stack = set(), [root]
+        while stack:
+            i = stack.pop()
+            if i in seen:
+                continue
+            seen.add(i)
+            props = _props(nb, i)
+            if nb.cname(nb.objects[i].cls) == FX_CALL:
+                t = target(props.get("Action"))
+                if t is None or t not in declared:
+                    bad.append(f"{name}: its {FX_CALL} #{i} calls {t or 'nothing imported'}, not a GameFx export")
+                else:
+                    pairs = props.get("NamedParams")
+                    bound = {_text(nb, k) for k, _ in (pairs.v if pairs is not None and pairs.tag == 0x12 else [])}
+                    missing = [q for q in required[t] if q not in bound]
+                    unknown = sorted(bound - set(declared[t]))
+                    if missing:
+                        bad.append(f"{name}: its call to {t} leaves {', '.join(missing)} unbound (no default)")
+                    if unknown:
+                        bad.append(f"{name}: its call to {t} binds {', '.join(unknown)}, which it does not declare")
+            for _, v in nb.objects[i].props:
+                stack += [x.v.index for x in ndfbin.iter_values(v) if x.tag == 0x09 and x.v.kind == ndfbin.REF_OBJECT]
+    return bad
+
+
 def effect_violations(names: Iterable[str], declared: Mapping[str, tuple[str, ...]]) -> list[str]:
     """One line per distinct effect of `names` that a script may not launch: not an export of `declared`
     (gamefx_declarations), or one whose declaration takes parameters."""
@@ -1794,14 +1872,25 @@ def check_script_effects(raw: bytes, gamefx: str | None = None) -> int:
     GameFx file `gamefx` (gamefx_file() by default, read only when the script launches an effect): effect_violations
     finds nothing. This is the game's own lookup, by name among GameFx's exports. Stock: every launch of the 31 stock
     GDScripts passes (STOCK_SCRIPT_EFFECTS), and both tactical-nuke impact effects fail (fx_impact_sol_Tactical_Nuke
-    declares 4 parameters, fx_impact_Tactical_Nuke 5). Returns the number of launches."""
-    names = effect_launches(decode(raw)[0])
+    declares 4 parameters, fx_impact_Tactical_Nuke 5). A launch that names an export of the script itself is an
+    effect wrapper (bricks.fx_wrapper), held to the call rule instead (own_effect_violations). Returns the number of
+    launches."""
+    nb = decode(raw)[0]
+    names = effect_launches(nb)
     if names:
-        bad = effect_violations(names, gamefx_declarations(gamefx or gamefx_file()))
+        path = gamefx or gamefx_file()
+        own = {p for p, _ in ndfbin.tree_paths(nb, nb.exports)}
+        bad = effect_violations([n for n in names if n not in own], gamefx_declarations(path))
         check(not bad, f"the script launches effects a script may not launch: {'; '.join(bad)}. A script launch "
                        f"carries only the effect's name and a position, and binds no parameters: launch a GameFx "
                        f"effect that declares none, as every stock script launch does "
                        f"({', '.join(n.rsplit('/', 1)[-1] for n in STOCK_SCRIPT_EFFECTS)})")
+        bad = own_effect_violations(nb, [n for n in names if n in own], gamefx_declarations(path),
+                                    gamefx_required(path))
+        check(not bad, f"the script's own effect wrappers break the call rule: {'; '.join(bad)}. A script launch "
+                       f"binds no parameters, so a parameterised effect is reached through a {FX_CALL} that binds "
+                       f"every parameter it declares with no default, as stock's "
+                       f"fx_FumeeNoire_ForScript_RandomPosition does (bricks.fx_wrapper)")
     return len(names)
 
 

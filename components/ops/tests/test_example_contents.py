@@ -90,8 +90,9 @@ class Registered(unittest.TestCase):
         prefix; spike_safe is spike's fallback, one mod with it, and empty is never installed. Every content's menu
         order is its derived one, but the frozen group's shared 1001; all are distinct otherwise."""
         contents = registered()
-        self.assertEqual(sorted(contents), ["open-door/op", "probes/empty", "probes/nuke", "probes/nuke_sov",
-                                            "probes/spike", "probes/spike2", "probes/spike_safe", "twin-strike/op"])
+        self.assertEqual(sorted(contents), ["open-door/op", "probes/empty", "probes/fxprobe", "probes/nuke",
+                                            "probes/nuke_sov", "probes/spike", "probes/spike2", "probes/spike_safe",
+                                            "twin-strike/op"])
         ids = {}
         for key, (c, module) in contents.items():
             self.assertEqual(c.name, key.split("/")[1])
@@ -109,10 +110,11 @@ class Registered(unittest.TestCase):
         self.assertEqual({key: order for key, order in orders.items() if key in FROZEN}, dict.fromkeys(FROZEN, 1001))
 
     def test_the_derived_orders_are_pinned(self):
-        """The three published contents' orders, pinned so that a change of scheme (the hash, MENU_ORDER_BASE or
+        """The published contents' orders, pinned so that a change of scheme (the hash, MENU_ORDER_BASE or
         MENU_ORDER_SPAN) shows up in review."""
         orders = {key: menu_order(c, module) for key, (c, module) in registered().items() if key not in FROZEN}
-        self.assertEqual(orders, {"probes/nuke": 1157107, "probes/nuke_sov": 8406806, "twin-strike/op": 9348213})
+        self.assertEqual(orders, {"probes/nuke": 1157107, "probes/nuke_sov": 8406806, "probes/fxprobe": 2558343,
+                                  "twin-strike/op": 9348213})
         self.assertEqual(orders, {key: d for key, d in derived_orders(registered()).items() if key in orders})
 
     def test_a_taken_order_breaks_the_rule(self):

@@ -41,7 +41,7 @@ class Node:
     """An object to emit: class name, (property, value spec) pairs in stock order, export path.
 
     Value specs: a Node (object reference), Imp (import reference), Str (STRG entry),
-    a ndfbin.Value (scalar, written as is) or a list of specs (0x11 list).
+    a ndfbin.Value (scalar, written as is), a list of specs (0x11 list) or a Map of spec pairs (0x12, an NDF MAP).
     """
 
     def __init__(self, cls: str, props: Iterable[tuple[str, object]] = (), export: str | None = None):
@@ -56,6 +56,10 @@ def prop_nodes(spec: object) -> Iterator[Node]:
         yield spec
     elif isinstance(spec, list):
         for x in spec:
+            yield from prop_nodes(x)
+    elif isinstance(spec, Map):
+        for k, x in spec.pairs:
+            yield from prop_nodes(k)
             yield from prop_nodes(x)
 
 
@@ -104,6 +108,13 @@ class Str:
     tag: int = 0x07  # 0x1C for a resource path
 
 
+@dataclass(frozen=True)
+class Map:
+    """An NDF MAP value (0x12): (key, value) spec pairs in file order, as a TActionCall's NamedParams
+    (('parDuration', a TConstantInteger) in GameFx's FX_Vehicule_Dest_Fire_FireAndForget)."""
+    pairs: tuple[tuple[object, object], ...]
+
+
 def i32(n: int) -> Value:
     return Value(0x02, n)
 
@@ -136,6 +147,10 @@ def _node_refs(spec: object) -> Iterable[Node]:
         yield spec
     elif isinstance(spec, list):
         for x in spec:
+            yield from _node_refs(x)
+    elif isinstance(spec, Map):
+        for k, x in spec.pairs:
+            yield from _node_refs(k)
             yield from _node_refs(x)
 
 
@@ -224,6 +239,8 @@ def build_graph(roots: list[Node], exports: list[Node],
             return Value(spec.tag, nb.intern_string(spec.text))
         if isinstance(spec, list):
             return Value(0x11, [resolve(x) for x in spec])
+        if isinstance(spec, Map):
+            return Value(0x12, [(resolve(k), resolve(x)) for k, x in spec.pairs])
         raise TypeError(f"bad value spec {spec!r}")
 
     for nd in order:
