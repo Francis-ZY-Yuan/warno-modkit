@@ -18,17 +18,18 @@ A mechanism filed under two topics is listed under both.
 ### Script flow
 
 - [dialog-reask-loop](mechanisms/dialog-reask-loop.md): A multiple-choice dialog can be asked again in a loop if the choice is reset before each ask (PLAYED, verified 201602 2026-11-11)
+- [fog-switch](mechanisms/fog-switch.md): A script can switch the fog of war off with TGDDescriptorFow; whether it is map-wide and comes back on is unseen (PLAYED, verified 201602 2026-11-11)
 - [gdscript-is-what-loads](mechanisms/gdscript-is-what-loads.md): Build 201602 runs an Operation from its GDScript ndfbin, a compiled form of the stock Python (PLAYED, verified 201602 2026-11-06)
 - [mission-ends-only-by-script](mechanisms/mission-ends-only-by-script.md): With CheckEndGame off, only the script's TriggerEndGame ends the battle, and the first one wins (PLAYED, verified 201602 2026-11-06)
 - [script-container-semantics](mechanisms/script-container-semantics.md): How script containers run their children, and when each action finishes (PLAYED, verified 201602 2026-11-06)
+- [script-effects-self-contained](mechanisms/script-effects-self-contained.md): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (PLAYED, verified 201602 2026-11-11)
+- [scripted-nuke-effect](mechanisms/scripted-nuke-effect.md): A script plays the tactical-nuke impact effect only through a wrapper of its own that binds its parameters; a direct launch crashes the game (PLAYED, verified 201602 2026-11-11)
 - [seteffect-never-finishes](mechanisms/seteffect-never-finishes.md): SetEffect and other lasting actions never finish, so nothing after them in a Sequential ever runs (PLAYED, verified 201602 2026-11-06)
 - [objective-waits-until-resolved](mechanisms/objective-waits-until-resolved.md): An objective finishes only after it resolves and its chosen actions finish (PROBED, verified 201602 2026-11-06)
 - [camera-shot-from-current-position](mechanisms/camera-shot-from-current-position.md): Mid-battle, a script flies the camera from wherever it is to a one-key path, in a cutscene that can hold the view (STOCK, verified 201602 2026-11-11)
 - [difficulty-branches](mechanisms/difficulty-branches.md): Difficulty reaches a script as three conditions; give it a Medium baseline (STOCK, verified 201602 2026-11-06)
-- [script-effects-self-contained](mechanisms/script-effects-self-contained.md): A script may launch only a self-contained effect, one that takes no parameters (STOCK, verified 201602 2026-11-11)
 - [scripted-economy](mechanisms/scripted-economy.md): A script sets the player's points, a zero income, one-time grants and a later income in stock's own nodes (STOCK, verified 201602 2026-11-11)
 - [wave-ends-with-attack](mechanisms/wave-ends-with-attack.md): An AI-less wave stops at its last waypoint unless its route ends with an Attack on the player's units (STOCK, verified 201602 2026-11-11)
-- [scripted-nuke-effect](mechanisms/scripted-nuke-effect.md): A script cannot launch the tactical-nuke impact effect; the game crashes (FAILED, verified 201602 2026-11-11)
 - [script-and-battle-scale](mechanisms/script-and-battle-scale.md): How big a script and a battle can get is untested beyond the probes (UNTESTED)
 
 ### Zones and map
@@ -37,6 +38,7 @@ A mechanism filed under two topics is listed under both.
 - [count-race-forced-owner](mechanisms/count-race-forced-owner.md): Decide a zone by a timed unit count, then force its owner so the map shows it (PLAYED, verified 201602 2026-11-06)
 - [deployment-phase-recipe](mechanisms/deployment-phase-recipe.md): A deployment phase needs six parts, and buying after the launch needs player arrival entries (PLAYED, verified 201602 2026-11-03)
 - [detector-circles-only](mechanisms/detector-circles-only.md): DetectUnitDansDetecteur works only on circular zones (PLAYED, verified 201602 2026-11-06)
+- [fog-switch](mechanisms/fog-switch.md): A script can switch the fog of war off with TGDDescriptorFow; whether it is map-wide and comes back on is unseen (PLAYED, verified 201602 2026-11-11)
 - [leveldesign-guid-binding](mechanisms/leveldesign-guid-binding.md): A script names a map item by the four words of the item's GUID in LevelDesign (PLAYED, verified 201602 2026-11-06)
 - [zone-capture-command-units](mechanisms/zone-capture-command-units.md): Only command units capture a zone, and an enemy command unit inside makes it neutral at once (PLAYED, verified 201602 2026-11-06)
 - [zone-lookup-by-point](mechanisms/zone-lookup-by-point.md): Zone conditions find their zone by a tag's point, and a point in no zone fails silently (PLAYED, verified 201602 2026-11-06)
@@ -48,22 +50,22 @@ A mechanism filed under two topics is listed under both.
 ### Units and orders
 
 - [add-unit-to-deck](mechanisms/add-unit-to-deck.md): AddUnitToDeck adds a card at load or mid-battle, a transport card included; added cards show in the battlegroup view (PLAYED, verified 201602 2026-11-11)
+- [changestress-damagetype-zero](mechanisms/changestress-damagetype-zero.md): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load (PLAYED, verified 201602 2026-11-11)
 - [fast-move-and-attack-keeps-roads](mechanisms/fast-move-and-attack-keeps-roads.md): MoveAndAttack goes cross-country; FastMoveAndAttack and ForceRoad moves keep to roads (PLAYED, verified 201602 2026-11-06)
 - [kill-counts-by-type](mechanisms/kill-counts-by-type.md): Kill counts are by unit type, not by group; count a group's survivors instead (PLAYED, verified 201602 2026-11-06)
+- [script-effects-self-contained](mechanisms/script-effects-self-contained.md): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (PLAYED, verified 201602 2026-11-11)
 - [scripted-fires](mechanisms/scripted-fires.md): A battery created just before its ShootOnPosition fires; created where the player's units can reach, it must be in their alliance (PLAYED, verified 201602 2026-11-11)
+- [scripted-nuke-effect](mechanisms/scripted-nuke-effect.md): A script plays the tactical-nuke impact effect only through a wrapper of its own that binds its parameters; a direct launch crashes the game (PLAYED, verified 201602 2026-11-11)
 - [seteffect-never-finishes](mechanisms/seteffect-never-finishes.md): SetEffect and other lasting actions never finish, so nothing after them in a Sequential ever runs (PLAYED, verified 201602 2026-11-06)
 - [spawn-and-create-units](mechanisms/spawn-and-create-units.md): SpawnUnits reveals pre-placed units; CreateUnitOnPosition makes new ones at a tag (PLAYED, verified 201602 2026-11-06)
 - [vanished-removal](mechanisms/vanished-removal.md): KillAllUnit with Vanished removes units at once; count them before you remove them (PLAYED, verified 201602 2026-11-06)
-- [changestress-damagetype-zero](mechanisms/changestress-damagetype-zero.md): A script's ChangeStress cannot suppress; DamageType 0 fails at load (RE, verified 201602 2026-11-03)
 - [arrival-end-in-zone](mechanisms/arrival-end-in-zone.md): Every player arrival entry must end inside a deployment zone of its side or a command zone (STOCK, verified 201602 2026-11-04)
 - [garrison-roe-and-hold](mechanisms/garrison-roe-and-hold.md): A garrison in a camp with no AI holds its ground only with the ROE and smart orders the script gives it (STOCK, verified 201602 2026-11-11)
-- [script-effects-self-contained](mechanisms/script-effects-self-contained.md): A script may launch only a self-contained effect, one that takes no parameters (STOCK, verified 201602 2026-11-11)
 - [scripted-air-sweep](mechanisms/scripted-air-sweep.md): Hidden aircraft revealed, sent over a circle and sent home once spent give an AI-less camp air sweeps (STOCK, verified 201602 2026-11-11)
 - [wave-ends-with-attack](mechanisms/wave-ends-with-attack.md): An AI-less wave stops at its last waypoint unless its route ends with an Attack on the player's units (STOCK, verified 201602 2026-11-11)
 - [weapons-jammed-effect](mechanisms/weapons-jammed-effect.md): The "weapons jammed" effect only zeroes weapon ranges; to keep a unit silent, empty its ammunition (STOCK, verified 201602 2026-11-03)
 - [created-units-stand-in-zone](mechanisms/created-units-stand-in-zone.md): A script cannot hide a unit outside the playable zone; a unit created there stands on the zone's edge, where the player's units see and engage it (FAILED, verified 201602 2026-11-11)
 - [helicopter-boarding](mechanisms/helicopter-boarding.md): Scripted infantry boarding of a helicopter does not work (FAILED, verified 201602 2026-11-03)
-- [scripted-nuke-effect](mechanisms/scripted-nuke-effect.md): A script cannot launch the tactical-nuke impact effect; the game crashes (FAILED, verified 201602 2026-11-11)
 
 ### Objectives and text
 
@@ -82,8 +84,8 @@ A mechanism filed under two topics is listed under both.
 ### Loading and crashes
 
 - [ai-grid-tiles-playable-zone](mechanisms/ai-grid-tiles-playable-zone.md): The AI strategic grid must tile the playable zone (PLAYED, verified 201602 2026-11-03)
+- [changestress-damagetype-zero](mechanisms/changestress-damagetype-zero.md): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load (PLAYED, verified 201602 2026-11-11)
 - [dialog-button-ingame-dictionary](mechanisms/dialog-button-ingame-dictionary.md): Dialog button labels resolve only in the game's in-game interface dictionary (PLAYED, verified 201602 2026-11-03)
-- [changestress-damagetype-zero](mechanisms/changestress-damagetype-zero.md): A script's ChangeStress cannot suppress; DamageType 0 fails at load (RE, verified 201602 2026-11-03)
 
 ### Mod packaging
 
@@ -128,6 +130,12 @@ The game's own words in this component's trials, the mechanism behind them, and 
 | The division's guns drove toward the front and died; the release dialog never showed after the fire plan was fired | [wave-ends-with-attack](mechanisms/wave-ends-with-attack.md) | none yet |
 | The friendly decoy tanks fired and killed, and showed no broken-tracks icon | [seteffect-never-finishes](mechanisms/seteffect-never-finishes.md) | `modkit.ops.gates.check_never_finishing` |
 | The friendly decoy tanks fired and killed, and showed no broken-tracks icon | [weapons-jammed-effect](mechanisms/weapons-jammed-effect.md) | none yet |
+| The game became really slow after the black smoke, and slower through the last steps | [changestress-damagetype-zero](mechanisms/changestress-damagetype-zero.md) | `modkit.core.ndfrules.check_file` |
+| The game became really slow after the black smoke, and slower through the last steps | [fog-switch](mechanisms/fog-switch.md) | none yet |
+| The game became really slow after the black smoke, and slower through the last steps | [script-effects-self-contained](mechanisms/script-effects-self-contained.md) | `modkit.ops.gates.check_script_effects` |
+| The game became really slow after the black smoke, and slower through the last steps | [scripted-fires](mechanisms/scripted-fires.md) | `modkit.ops.gates.check_fire_range` |
+| The game became really slow after the black smoke, and slower through the last steps | [scripted-nuke-effect](mechanisms/scripted-nuke-effect.md) | `modkit.ops.gates.check_script_effects` |
+| The game became really slow after the black smoke, and slower through the last steps | [soviet-player-camp](mechanisms/soviet-player-camp.md) | none yet |
 | The game crashed during the deploy phase, at the effect steps | [script-effects-self-contained](mechanisms/script-effects-self-contained.md) | `modkit.ops.gates.check_script_effects` |
 | The game crashed during the deploy phase, at the effect steps | [scripted-nuke-effect](mechanisms/scripted-nuke-effect.md) | `modkit.ops.gates.check_script_effects` |
 | The game crashed during the deploy phase, at the effect steps | [soviet-player-camp](mechanisms/soviet-player-camp.md) | none yet |
@@ -153,6 +161,7 @@ The game's own words in this component's trials, the mechanism behind them, and 
 - 2026-11-11 [2026-11-11-strike-camera-stock-survey](trials/2026-11-11-strike-camera-stock-survey.md): survey, pass
 - 2026-11-11 [2026-11-11-probe3b-play1-no-supply](trials/2026-11-11-probe3b-play1-no-supply.md): play, fail. The Soviet player found no supply trucks or supply helicopters to buy
 - 2026-11-11 [2026-11-11-opening-camera-stock-survey](trials/2026-11-11-opening-camera-stock-survey.md): survey, pass
+- 2026-11-11 [2026-11-11-fxprobe-play1](trials/2026-11-11-fxprobe-play1.md): play, pass. The game became really slow after the black smoke, and slower through the last steps
 - 2026-11-10 [2026-11-10-probe3-play1-effect-crash](trials/2026-11-10-probe3-play1-effect-crash.md): play, fail. The game crashed during the deploy phase, at the effect steps
 - 2026-11-06 [2026-11-06-spawns-and-deck-survey](trials/2026-11-06-spawns-and-deck-survey.md): re, pass
 - 2026-11-06 [2026-11-06-probe2-play-run-a](trials/2026-11-06-probe2-play-run-a.md): play, pass

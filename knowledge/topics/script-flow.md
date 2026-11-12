@@ -10,9 +10,12 @@ Topic `script-flow`, declared by ops. Back to [the map](../README.md).
 ### PLAYED
 
 - [dialog-reask-loop](../../components/ops/knowledge/mechanisms/dialog-reask-loop.md): A multiple-choice dialog can be asked again in a loop if the choice is reset before each ask (ops, verified 201602)
+- [fog-switch](../../components/ops/knowledge/mechanisms/fog-switch.md): A script can switch the fog of war off with TGDDescriptorFow; whether it is map-wide and comes back on is unseen (ops, verified 201602)
 - [gdscript-is-what-loads](../../components/ops/knowledge/mechanisms/gdscript-is-what-loads.md): Build 201602 runs an Operation from its GDScript ndfbin, a compiled form of the stock Python (ops, verified 201602)
 - [mission-ends-only-by-script](../../components/ops/knowledge/mechanisms/mission-ends-only-by-script.md): With CheckEndGame off, only the script's TriggerEndGame ends the battle, and the first one wins (ops, verified 201602)
 - [script-container-semantics](../../components/ops/knowledge/mechanisms/script-container-semantics.md): How script containers run their children, and when each action finishes (ops, verified 201602)
+- [script-effects-self-contained](../../components/ops/knowledge/mechanisms/script-effects-self-contained.md): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (ops, verified 201602)
+- [scripted-nuke-effect](../../components/ops/knowledge/mechanisms/scripted-nuke-effect.md): A script plays the tactical-nuke impact effect only through a wrapper of its own that binds its parameters; a direct launch crashes the game (ops, verified 201602)
 - [seteffect-never-finishes](../../components/ops/knowledge/mechanisms/seteffect-never-finishes.md): SetEffect and other lasting actions never finish, so nothing after them in a Sequential ever runs (ops, verified 201602)
 
 ### PROBED
@@ -23,13 +26,8 @@ Topic `script-flow`, declared by ops. Back to [the map](../README.md).
 
 - [camera-shot-from-current-position](../../components/ops/knowledge/mechanisms/camera-shot-from-current-position.md): Mid-battle, a script flies the camera from wherever it is to a one-key path, in a cutscene that can hold the view (ops, verified 201602)
 - [difficulty-branches](../../components/ops/knowledge/mechanisms/difficulty-branches.md): Difficulty reaches a script as three conditions; give it a Medium baseline (ops, verified 201602)
-- [script-effects-self-contained](../../components/ops/knowledge/mechanisms/script-effects-self-contained.md): A script may launch only a self-contained effect, one that takes no parameters (ops, verified 201602)
 - [scripted-economy](../../components/ops/knowledge/mechanisms/scripted-economy.md): A script sets the player's points, a zero income, one-time grants and a later income in stock's own nodes (ops, verified 201602)
 - [wave-ends-with-attack](../../components/ops/knowledge/mechanisms/wave-ends-with-attack.md): An AI-less wave stops at its last waypoint unless its route ends with an Attack on the player's units (ops, verified 201602)
-
-### FAILED
-
-- [scripted-nuke-effect](../../components/ops/knowledge/mechanisms/scripted-nuke-effect.md): A script cannot launch the tactical-nuke impact effect; the game crashes (ops, verified 201602)
 
 ### UNTESTED
 
@@ -53,6 +51,7 @@ Taught by the trials of these mechanisms.
 - 2026-11-11 [2026-11-11-twin-strike-strike-unseen](../../components/ops/knowledge/trials/2026-11-11-twin-strike-strike-unseen.md) (ops): play, mixed
 - 2026-11-11 [2026-11-11-twin-strike-play1](../../components/ops/knowledge/trials/2026-11-11-twin-strike-play1.md) (ops): play, mixed
 - 2026-11-11 [2026-11-11-strike-camera-stock-survey](../../components/ops/knowledge/trials/2026-11-11-strike-camera-stock-survey.md) (ops): survey, pass
+- 2026-11-11 [2026-11-11-fxprobe-play1](../../components/ops/knowledge/trials/2026-11-11-fxprobe-play1.md) (ops): play, pass
 - 2026-11-10 [2026-11-10-probe3-play1-effect-crash](../../components/ops/knowledge/trials/2026-11-10-probe3-play1-effect-crash.md) (ops): play, fail
 - 2026-11-06 [2026-11-06-probe2-play-run-a](../../components/ops/knowledge/trials/2026-11-06-probe2-play-run-a.md) (ops): play, pass
 - 2026-11-04 [2026-11-04-lifecycle-survey](../../components/ops/knowledge/trials/2026-11-04-lifecycle-survey.md) (ops): re, pass

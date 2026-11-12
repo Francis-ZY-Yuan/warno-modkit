@@ -7,6 +7,7 @@ How far each mechanism is proven: `PLAYED` worked in a real play; `PROBED` loade
 
 - [add-unit-to-deck](../components/ops/knowledge/mechanisms/add-unit-to-deck.md) (ops): AddUnitToDeck adds a card at load or mid-battle, a transport card included; added cards show in the battlegroup view
 - [ai-grid-tiles-playable-zone](../components/ops/knowledge/mechanisms/ai-grid-tiles-playable-zone.md) (ops): The AI strategic grid must tile the playable zone
+- [changestress-damagetype-zero](../components/ops/knowledge/mechanisms/changestress-damagetype-zero.md) (ops): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load
 - [content-identity-unique](../components/ops/knowledge/mechanisms/content-identity-unique.md) (ops): Two mods cloned from one template must not share an identity
 - [count-race-forced-owner](../components/ops/knowledge/mechanisms/count-race-forced-owner.md) (ops): Decide a zone by a timed unit count, then force its owner so the map shows it
 - [custom-operation-from-stock-parts](../components/ops/knowledge/mechanisms/custom-operation-from-stock-parts.md) (ops): A custom Operation can be built entirely from cloned stock files plus a generated LevelDesign and GDScript
@@ -15,6 +16,7 @@ How far each mechanism is proven: `PLAYED` worked in a real play; `PROBED` loade
 - [dialog-button-ingame-dictionary](../components/ops/knowledge/mechanisms/dialog-button-ingame-dictionary.md) (ops): Dialog button labels resolve only in the game's in-game interface dictionary
 - [dialog-reask-loop](../components/ops/knowledge/mechanisms/dialog-reask-loop.md) (ops): A multiple-choice dialog can be asked again in a loop if the choice is reset before each ask
 - [fast-move-and-attack-keeps-roads](../components/ops/knowledge/mechanisms/fast-move-and-attack-keeps-roads.md) (ops): MoveAndAttack goes cross-country; FastMoveAndAttack and ForceRoad moves keep to roads
+- [fog-switch](../components/ops/knowledge/mechanisms/fog-switch.md) (ops): A script can switch the fog of war off with TGDDescriptorFow; whether it is map-wide and comes back on is unseen
 - [gameplay-mod-relaunch](../components/ops/knowledge/mechanisms/gameplay-mod-relaunch.md) (ops): Operations and Gameplay mods don't mix; an Operation mod must ship none of the 16 Gameplay files
 - [gdscript-is-what-loads](../components/ops/knowledge/mechanisms/gdscript-is-what-loads.md) (ops): Build 201602 runs an Operation from its GDScript ndfbin, a compiled form of the stock Python
 - [kill-counts-by-type](../components/ops/knowledge/mechanisms/kill-counts-by-type.md) (ops): Kill counts are by unit type, not by group; count a group's survivors instead
@@ -27,7 +29,9 @@ How far each mechanism is proven: `PLAYED` worked in a real play; `PROBED` loade
 - [objective-counters](../components/ops/knowledge/mechanisms/objective-counters.md) (ops): Objective text shows live counters from a variable list
 - [operation-menu-registration](../components/ops/knowledge/mechanisms/operation-menu-registration.md) (ops): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden
 - [script-container-semantics](../components/ops/knowledge/mechanisms/script-container-semantics.md) (ops): How script containers run their children, and when each action finishes
+- [script-effects-self-contained](../components/ops/knowledge/mechanisms/script-effects-self-contained.md) (ops): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them
 - [scripted-fires](../components/ops/knowledge/mechanisms/scripted-fires.md) (ops): A battery created just before its ShootOnPosition fires; created where the player's units can reach, it must be in their alliance
+- [scripted-nuke-effect](../components/ops/knowledge/mechanisms/scripted-nuke-effect.md) (ops): A script plays the tactical-nuke impact effect only through a wrapper of its own that binds its parameters; a direct launch crashes the game
 - [seteffect-never-finishes](../components/ops/knowledge/mechanisms/seteffect-never-finishes.md) (ops): SetEffect and other lasting actions never finish, so nothing after them in a Sequential ever runs
 - [spawn-and-create-units](../components/ops/knowledge/mechanisms/spawn-and-create-units.md) (ops): SpawnUnits reveals pre-placed units; CreateUnitOnPosition makes new ones at a tag
 - [vanished-removal](../components/ops/knowledge/mechanisms/vanished-removal.md) (ops): KillAllUnit with Vanished removes units at once; count them before you remove them
@@ -42,7 +46,6 @@ How far each mechanism is proven: `PLAYED` worked in a real play; `PROBED` loade
 
 ## RE
 
-- [changestress-damagetype-zero](../components/ops/knowledge/mechanisms/changestress-damagetype-zero.md) (ops): A script's ChangeStress cannot suppress; DamageType 0 fails at load
 - [crash-dump-names-the-error](../components/core/knowledge/mechanisms/crash-dump-names-the-error.md) (core): The crash report's dump names the real error
 - [edat-revision-chain](../components/core/knowledge/mechanisms/edat-revision-chain.md) (core): Game data is a chain of edat archives, read newest revision first
 
@@ -54,7 +57,6 @@ How far each mechanism is proven: `PLAYED` worked in a real play; `PROBED` loade
 - [difficulty-branches](../components/ops/knowledge/mechanisms/difficulty-branches.md) (ops): Difficulty reaches a script as three conditions; give it a Medium baseline
 - [garrison-roe-and-hold](../components/ops/knowledge/mechanisms/garrison-roe-and-hold.md) (ops): A garrison in a camp with no AI holds its ground only with the ROE and smart orders the script gives it
 - [objective-label-needs-position](../components/ops/knowledge/mechanisms/objective-label-needs-position.md) (ops): An objective's map label needs a position, or it pins the map corner
-- [script-effects-self-contained](../components/ops/knowledge/mechanisms/script-effects-self-contained.md) (ops): A script may launch only a self-contained effect, one that takes no parameters
 - [scripted-air-sweep](../components/ops/knowledge/mechanisms/scripted-air-sweep.md) (ops): Hidden aircraft revealed, sent over a circle and sent home once spent give an AI-less camp air sweeps
 - [scripted-economy](../components/ops/knowledge/mechanisms/scripted-economy.md) (ops): A script sets the player's points, a zero income, one-time grants and a later income in stock's own nodes
 - [start-camera-before-loading-done](../components/ops/knowledge/mechanisms/start-camera-before-loading-done.md) (ops): An Operation that opens in the deployment phase sets its opening camera after LoadingDone, a move then a snap to its last key
@@ -65,7 +67,6 @@ How far each mechanism is proven: `PLAYED` worked in a real play; `PROBED` loade
 
 - [created-units-stand-in-zone](../components/ops/knowledge/mechanisms/created-units-stand-in-zone.md) (ops): A script cannot hide a unit outside the playable zone; a unit created there stands on the zone's edge, where the player's units see and engage it
 - [helicopter-boarding](../components/ops/knowledge/mechanisms/helicopter-boarding.md) (ops): Scripted infantry boarding of a helicopter does not work
-- [scripted-nuke-effect](../components/ops/knowledge/mechanisms/scripted-nuke-effect.md) (ops): A script cannot launch the tactical-nuke impact effect; the game crashes
 
 ## UNTESTED
 

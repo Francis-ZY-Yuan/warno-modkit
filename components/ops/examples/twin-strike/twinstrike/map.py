@@ -147,7 +147,7 @@ OPENING_S = 8.0
 # flies to from wherever the player's camera is, easing in and out, Escape skipping the move, then holds while the
 # strike lands, the player's actions blocked. Stock's mid-battle shots fly so in 3 to 10 s (SigurdsStrike's MLRS and
 # COBRA 3, Sledgehammer's camera_hades and camera_viper 5); STRIKE_SHOT_S is 4. STRIKE_HOLD_S (11 s) runs from the
-# camera's arrival, a second before the flash, through the kill and the mega bombs' 10 s of dust (twinstrike.op's
+# camera's arrival, a second before the flash, through the kill and the nuke's first 10 s of fireball (twinstrike.op's
 # strike timeline). The view: ASSEMBLY, the strike zone's centre, facing south as the opening's last view does, 40
 # degrees down from 390,000 above the ground, as BlackHorsesLastStand's cam_02 (390,270 up, 40.0 degrees, flown from
 # the current camera in 6 s). Stock's mid-battle shots stand 97,021 to 433,526 up; this one keeps above the camera

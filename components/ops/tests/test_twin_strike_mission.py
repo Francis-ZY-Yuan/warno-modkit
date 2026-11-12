@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import math
 import unittest
+from unittest import mock
 from collections import Counter
 
 from twin_strike_support import JOUEUR, NATO, SCRIPT_DATA, Model, World, beats_root
@@ -464,13 +465,16 @@ class Shapes(unittest.TestCase):
                                  [("Blocking", True), ("OrderType", shapes.AIRPLANE_EVACUATE)])
 
     def test_the_strike_launches_and_kills(self):
-        """The script launches the strike's look only: the mega bomb, seen in the smoke play, and the three effects
-        stock's scripts launch, all self-contained (the script-effects gate builds them); the strike kills with
-        STRIKE_CAUSE the NATO units its zone's detector gathers, the break-off's removal is Vanished."""
+        """The script launches the strike's look only: the nuke through the script's own wrapper, the mega bomb and
+        two of the effects stock's scripts launch, no black smoke (the script-effects gate builds them); the strike
+        kills with STRIKE_CAUSE the NATO units its zone's detector gathers, the break-off's removal is Vanished."""
         fx = sorted({prop(n, "DatabaseName").text for n in of(self.nodes, "LaunchFXFireAndForgetOnPosition")})
-        self.assertEqual(fx, sorted({op.STRIKE_FX, op.BARRAGE_FX, *op.SMOKE_FX}))
-        self.assertEqual(op.STRIKE_FX, "$/GFX/GameFx/fx_HE_Mega_Bomb_ForScript")
-        self.assertEqual(sorted({op.BARRAGE_FX, *op.SMOKE_FX}), sorted(gates.STOCK_SCRIPT_EFFECTS))
+        self.assertEqual(fx, sorted({op.NUKE_WRAP, op.STRIKE_FX, op.BARRAGE_FX, op.SMOKE_FX}))
+        self.assertEqual((op.NUKE_WRAP, op.STRIKE_FX),
+                         ("$/GDScript/TS/FxNuke", "$/GFX/GameFx/fx_HE_Mega_Bomb_ForScript"))
+        self.assertEqual(sorted({op.BARRAGE_FX, op.SMOKE_FX, "$/GFX/GameFx/fx_FumeeNoire_ForScript_RandomPosition"}),
+                         sorted(gates.STOCK_SCRIPT_EFFECTS))
+        self.assertNotIn("$/GFX/GameFx/fx_FumeeNoire_ForScript_RandomPosition", fx)
         kills = of(self.nodes, "KillAllUnit")
         self.assertEqual(sorted((prop(k, "DeathCause").v if prop(k, "DeathCause") else None) for k in kills
                                 if prop(k, "DeathCause")), [shapes.PENETRATION] * 3)    # one per difficulty
@@ -481,24 +485,41 @@ class Shapes(unittest.TestCase):
         self.assertIn(shapes.DEATH_CAUSE_SHAPE, op.content().extra_shapes)
 
     def test_the_flash_is_one_simultaneous(self):
-        """Every launch sits in the flash's one Simultaneous, RedJuggernaut's form: 13 mega bombs first (the zone's
-        centre and its 12 spots), then a Sequential of NbExecutions 10 launching the 203 mm barrage at the centre and
-        each inner spot, then white and black smoke at the centre and each outer spot: 97 launches."""
+        """Every launch sits in the flash's one Simultaneous, 19 in all: the nuke's wrapper first, on the zone's centre,
+        then the accent: 4 mega bombs on the outer spots off the axes, the 203 mm barrage once on each of the 12 spots,
+        white smoke on the two outer spots on the axis (W, E)."""
         launches = of(self.nodes, "LaunchFXFireAndForgetOnPosition")
         (flash,) = [n for n in of(self.nodes, "Simultaneous") if set(map(id, launches)) & {id(k) for k in subs(n)}]
         kids = subs(flash)
-        mega, barrage, smoke = kids[:13], kids[13:20], kids[20:]
-        self.assertEqual(len(kids), 34)
-        self.assertEqual([(prop(n, "DatabaseName").text, last(prop(n, "Position"))) for n in mega],
-                         [(op.STRIKE_FX, t) for t in ("TS_Assembly", *op.STRIKE_SPOTS)])
-        for seq, tag in zip(barrage, ("TS_Assembly", *op.STRIKE_INNER)):
-            (fx,) = subs(seq)
-            self.assertEqual((seq.cls, prop(seq, "NbExecutions").v, prop(fx, "DatabaseName").text,
-                              last(prop(fx, "Position"))), ("TGDDescriptorSequential", 10, op.BARRAGE_FX, tag))
-        self.assertEqual([(prop(n, "DatabaseName").text, last(prop(n, "Position"))) for n in smoke],
-                         [(fx, t) for t in ("TS_Assembly", *op.STRIKE_OUTER) for fx in op.SMOKE_FX])
-        self.assertEqual(len(launches), 13 + 7 + 14)
-        self.assertEqual(13 + 7 * op.BARRAGE_N + 14, 97)
+        self.assertEqual((len(kids), len(launches)), (19, 19))
+        self.assertTrue(all(k.cls == "TGDDescriptorLaunchFXFireAndForgetOnPosition" for k in kids))
+        got = [(prop(n, "DatabaseName").text, last(prop(n, "Position"))) for n in kids]
+        self.assertEqual(got, [(op.NUKE_WRAP, "TS_Assembly"),
+                               *((op.STRIKE_FX, t) for t in ("TS_Fx8", "TS_Fx9", "TS_Fx11", "TS_Fx12")),
+                               *((op.BARRAGE_FX, t) for t in op.STRIKE_SPOTS),
+                               *((op.SMOKE_FX, t) for t in ("TS_Fx7", "TS_Fx10"))])
+
+    def test_the_nuke_wrapper(self):
+        """The script exports the nuke's wrapper at NUKE_WRAP: TSimultaneousAction[TActionCall] calling the game's
+        tactical-nuke impact effect with its four parameters bound, parPosition ASSEMBLY's world position on the map's
+        ground (the fxprobe play's F9 form), parRadiusPhysical NUKE_RADIUS; the content admits the wrapper's shapes."""
+        (wrap,) = [n for n in self.exports if n.export == op.NUKE_WRAP]
+        (call,) = prop(wrap, "Actions")
+        self.assertEqual((wrap.cls, call.cls, prop(call, "Action").path),
+                         ("TSimultaneousAction", "TActionCall", "$/GFX/GameFx/fx_impact_sol_Tactical_Nuke"))
+        bound = {k.text: prop(v, "Value").v for k, v in prop(call, "NamedParams").pairs}
+        ax, ay = ts_map.MAP.map.px_to_world(ts_map.POINTS["ASSEMBLY"])
+        self.assertEqual(bound, {"parPosition": (ax, ay, ts_map.MAP.map.ground_z), "parDirection": (0.0, 0.0, 0.0),
+                                 "parRadiusPhysical": 60000.0, "parRadiusSuppress": 0.0})
+        self.assertLessEqual(set(shapes.FX_WRAPPER_SHAPES), set(op.content().extra_shapes))
+        self.assertGreater(math.dist(ts_map.POINTS["ASSEMBLY"], ts_map.POINTS["VILLAGE"]) * ts_map.MAP.map.world_per_px,
+                           op.NUKE_RADIUS * 6)            # its scorch and scenery loss stop far from the village
+
+    def test_no_fog_lift_by_default(self):
+        """STRIKE_FOG_LIFT is off: the script writes no fog switch, and the content admits none."""
+        self.assertFalse(op.STRIKE_FOG_LIFT)
+        self.assertEqual(of(self.nodes, "TGDDescriptorFow"), [])
+        self.assertFalse(set(shapes.FOW_SHAPES) & set(op.content().extra_shapes))
 
     def test_the_strike_camera(self):
         """The strike's one camera cutscene: EncapsuleCutscene(BlockPlayerActions)[CutsceneSequential[the one-key
@@ -985,19 +1006,33 @@ class Strike(unittest.TestCase):
         self.assertEqual(freed.vars[op.BUSY], 0)
 
     def test_the_flash(self):
-        """At the flash, every launch at once: 13 mega bombs (the centre and the 12 spots), the 203 mm barrage 10
-        times at the centre and at each inner spot (70), white and black smoke at the centre and each outer spot (14):
-        97 launches, RedJuggernaut's 61 and more."""
+        """At the flash, every launch at once, 19: the nuke on the zone's centre first, then 4 mega bombs, the 203 mm
+        barrage once on each of the 12 spots and white smoke on two; no black smoke. The kill, the damage and the stun
+        fall inside the fireball, half a second on."""
         fx = Counter((name, tag) for _, name, tag in self.m.entries("fx"))
-        centre = "TS_Assembly"
-        self.assertEqual(fx, Counter({**{("fx_HE_Mega_Bomb_ForScript", t): 1 for t in (centre, *op.STRIKE_SPOTS)},
-                                      **{("fx_HE_Artillery_203mm_ForScript_RandomPosition", t): 10
-                                         for t in (centre, *op.STRIKE_INNER)},
-                                      **{(name, t): 1 for t in (centre, *op.STRIKE_OUTER)
-                                         for name in ("fx_FumeeBlanche_ForScript_RandomPosition",
-                                                      "fx_FumeeNoire_ForScript_RandomPosition")}}))
-        self.assertEqual(sum(fx.values()), 97)
-        self.assertEqual(self.m.entries("fx")[0], (FLASH_T, "fx_HE_Mega_Bomb_ForScript", centre))
+        self.assertEqual(fx, Counter({("FxNuke", "TS_Assembly"): 1,
+                                      **{("fx_HE_Mega_Bomb_ForScript", t): 1 for t in op.STRIKE_MEGA_SPOTS},
+                                      **{("fx_HE_Artillery_203mm_ForScript_RandomPosition", t): 1
+                                         for t in op.STRIKE_SPOTS},
+                                      **{("fx_FumeeBlanche_ForScript_RandomPosition", t): 1
+                                         for t in op.STRIKE_SMOKE_SPOTS}}))
+        self.assertEqual(sum(fx.values()), 19)
+        self.assertEqual(self.m.entries("fx")[0], (FLASH_T, "FxNuke", "TS_Assembly"))
+        self.assertEqual({t for t, *_ in self.m.entries("fx")}, {FLASH_T})
+        self.assertEqual([t for t, *_ in self.m.entries("kill")], [STRUCK_T])
+
+    def test_the_fog_lift_when_on(self):
+        """With STRIKE_FOG_LIFT on: the fog off as the camera starts (CAMERA_T), back on as it hands control back
+        (BACK_T), timed, not chained to the cutscene; the content admits the fog switch's shapes. Off (the default):
+        no switch."""
+        world = dict(rings={op.STRIKE_RING: {NATO: [(0, 52)]}}, answers={"ts_drel": [0]},
+                     groups={**NATO_LEFT, **struck(None)})
+        self.assertEqual(phase45(World(**world), BACK_T + 5).entries("fow"), [])
+        with mock.patch.object(op, "STRIKE_FOG_LIFT", True):
+            m = phase45(World(**world), BACK_T + 5)
+            self.assertLessEqual(set(shapes.FOW_SHAPES), set(op.content().extra_shapes))
+        self.assertEqual(m.entries("fow"), [(CAMERA_T, False), (BACK_T, True)])
+        self.assertEqual(m.entries("camera"), [(CAMERA_T, "TS_Strike", True, 4.0, 11.0)])
 
     def test_no_attack_after_a_strike(self):
         self.assertEqual(self.m.vars.get(op.ATTACK, 0), 0)

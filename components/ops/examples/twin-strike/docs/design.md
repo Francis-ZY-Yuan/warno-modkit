@@ -289,11 +289,12 @@ gets far.
      Escape skipping the move, and arrives a second before the flash; it holds the zone 11 s, the player's actions
      blocked, then hands control back ◐ [[camera-shot-from-current-position]]. The view: ASSEMBLY, facing south,
      40 degrees down from 390,000 world units above the ground, the whole zone ahead (`twinstrike.map.STRIKE_SHOT`,
-     the camera path `TS_Strike`).
-  3. **0:30, the flash.** Every effect at once (below).
-  4. **0:30.5, the toll**, inside the blasts (below): a share of battalion 2 killed, the rest damaged and stunned.
+     the camera path `TS_Strike`). With the fog lift switched on (below), the fog goes off as the camera starts.
+  3. **0:30, the flash.** The game's own tactical-nuke effect on ASSEMBLY, with a light accent round it (below).
+  4. **0:30.5, the toll**, inside the fireball (below): a share of battalion 2 killed, the rest damaged and stunned.
      B2's countdown completes; B2 becomes "FINISH THE SECOND BATTALION: N tanks left".
-  5. **0:40, as the camera hands back control,** the guns are freed and a hint says what is left: "The strike has
+  5. **0:40, as the camera hands back control,** the fog comes back on if the lift is on, the guns are freed, and a
+     hint says what is left: "The strike has
      gutted the second battalion. Its survivors are stunned and damaged: finish it." Timed, not chained to the
      cutscene, so Escape or a slow cutscene holds nothing.
   6. **Then the Soviets finish it.** B2 completes once battalion 2 is broken (BN2_BROKEN_N tanks or fewer left, as on
@@ -306,28 +307,31 @@ gets far.
 - **On "fight it conventionally":** the countdown runs, battalion 2 attacks, and the division fire plan, if unused, is
   still there. The ending text differs (5.8).
 
-**The flash: massed effects, all self-contained** ◐ [[script-effects-self-contained]]. The game's own mushroom cloud,
-the tactical-nuke impact effect (`fx_impact_sol_Tactical_Nuke`, `fx_impact_Tactical_Nuke`), crashes the game when a
-script launches it [[scripted-nuke-effect]]. One mega bomb is about a 203 mm shell's size. So the flash masses, at
-RedJuggernaut's scale (its intro launches 61 effects at once), only effects a script is known to launch, in one
-Simultaneous (97 launches):
-- **13 mega bombs** (`fx_HE_Mega_Bomb_ForScript`, seen in our smoke play): on ASSEMBLY and on twelve spots round it,
-  six inner ones over battalion 2 (0.15 to 0.32 R) and six outer ones about 0.5 R out. The two southern spots are
-  pulled north inside the cut.
-- **70 impacts of the 203 mm barrage** (`fx_HE_Artillery_203mm_ForScript_RandomPosition`, stock-launched 27 times):
-  ten each at ASSEMBLY and the six inner spots, each impact at a random spot up to about 900 m round its tag. This is
-  RedJuggernaut's form, a Sequential of ten launches per tag.
-- **Smoke, 14:** white smoke with a ground fire (`fx_FumeeBlanche_ForScript_RandomPosition`, stock-launched 45 times;
-  it lasts minutes) and black smoke, the burning-wreck effect at a random spot round its tag
-  (`fx_FumeeNoire_ForScript_RandomPosition`, stock-launched 3 times), at ASSEMBLY and the six outer spots.
-The napalm binder (`fx_binder_fire_Napalm_Lourd`) declares three parameters, so a script cannot launch it.
+**The flash: the game's own nuke, with a light accent** ✓ [[scripted-nuke-effect]]. In one Simultaneous, 19
+launches:
+- **The nuke, once, on ASSEMBLY.** The game's tactical-nuke impact effect (`fx_impact_sol_Tactical_Nuke`) crashes the
+  game when a script launches it directly: its four parameters are left unbound. The script exports a wrapper of its
+  own instead (`$/GDScript/TS/FxNuke`, `shapes.nuke_wrapper`), a call that binds all four, as stock's black smoke binds
+  its effect's one ✓ [[script-effects-self-contained]]. The launch names the wrapper. parPosition is ASSEMBLY's world
+  position on the map's ground, the form the strike-effects probe played on its tag; parRadiusPhysical is the probe's
+  60,000 world units (some 280 m of ground scorch and scenery destroyed, far short of the village). In that play it
+  made a large nuclear fireball and dust cloud, with no crash, and killed nothing: the toll below does.
+- **The accent, 18 self-contained launches round the fireball:** 4 mega bombs (`fx_HE_Mega_Bomb_ForScript`) on the
+  four outer spots off the axes (NNW, NNE, SE, SW; the spots are six inner ones over battalion 2, 0.15 to 0.32 R, and
+  six outer ones about 0.5 R out, the two southern ones pulled north inside the cut); the 203 mm barrage
+  (`fx_HE_Artillery_203mm_ForScript_RandomPosition`, each launch one impact up to about 900 m round its tag) once on
+  each of the 12 spots; white smoke with a ground fire (`fx_FumeeBlanche_ForScript_RandomPosition`, it lasts minutes)
+  on the two outer spots on the axis, W and E.
+- **No black smoke.** In the probe's play, black smoke at 4 tags beside 10 mega bombs and 50 impacts grew into huge
+  plumes that lingered for minutes, and the game slowed, worse with time. The first build of this flash launched 97
+  effects, 7 of them black smoke; this one launches 19.
+The napalm binder (`fx_binder_fire_Napalm_Lourd`) declares three parameters; it is not used.
 
-It reads as a carpet of heavy impacts and lasting smoke across the zone, not as a mushroom cloud. The real nuke
-effect needs its parameters bound by a call; that is a probe of its own, not this build.
-
-**No fog lift.** The zone lies in fog for the player; the camera and the effects are what make the strike seen.
-Script effects show in fog (the smoke play's player saw explosions on undetected units). No stock script lifts the
-fog, and no play of ours has, so the strike does not.
+**The fog: a lift, off by default** (`STRIKE_FOG_LIFT` in `twinstrike/op.py`). Switched on, the fog goes off as the
+camera starts (0:25) and back on as it hands control back (0:40), map-wide (`TGDDescriptorFow`) [[fog-switch]]. The
+probe's play showed the switch lift the fog; it did not show the fog come back, and no stock script switches it. So
+the build leaves it off: the zone lies in fog for the player, and the camera and the effects show the strike through
+it (script effects show in fog).
 
 **The toll: kill, damage, stun; the Soviets finish them.** The strike no longer kills every NATO unit in the zone.
 1. **The zone.** A circular detector of radius R over ASSEMBLY, constrained to the NATO camps, gathers every NATO
@@ -340,9 +344,10 @@ fog, and no play of ours has, so the strike does not.
    [[vanished-removal]] is the fallback. A count loop of `TransferUnitToUnitGroup` would have needed a shape no play
    has run.
 3. **The damage:** `ChangeStress` Physical, 5 health points off every unit left in the zone: half of a tank's or a
-   Marder's 10, five of a Panzergrenadier squad's 6. It kills nothing ? [[changestress-damagetype-zero]].
+   Marder's 10, five of a Panzergrenadier squad's 6. It kills nothing ✓ [[changestress-damagetype-zero]]: in the
+   probe's play, Value 5 left an Abrams and a Bradley at 5 of 10 health segments.
 4. **The stun:** `ChangeStress` Stun, 240 points on every one of them, 0.8 of a ground unit's 300 cap ?. No stock
-   script writes `ChangeStress`; probe 1 loaded it with Stun, and no play has run it. Suppress cannot be written: it
+   script writes `ChangeStress`; in the probe's play Stun 240 showed no visible sign. Suppress cannot be written: it
    fails at load.
 5. **The finish.** The survivors stay at ASSEMBLY: their tanks left (14, 17 or 20) are above the 9 that break the
    battalion, so the Soviets must go in and finish it (step 6 above).
@@ -350,8 +355,8 @@ fog, and no play of ours has, so the strike does not.
 Soviet units inside are not touched; the warning keeps them out. NATO units of battalion 1 caught in the zone are
 damaged and stunned, not killed.
 
-**The radius.** R is 800 m. Battalion 2's layout fits inside 0.8 R. The flash covers it: the mega bombs out to about
-0.55 R, the barrage's impacts out past R.
+**The radius.** R is 800 m. Battalion 2's layout fits inside 0.8 R. The nuke's fireball sits on its centre; the
+mega bombs stand about 0.5 R out, and the barrage's impacts reach past R.
 
 ### 5.7 Difficulty
 
@@ -627,7 +632,7 @@ Its answers set R (5.6), the death cause, and the deck bases (6.1, 6.3).
 
 | Risk | If it bites | Fallback |
 |---|---|---|
-| The nuke effect does not play from a script | No cloud | Built so: massed script effects, the strike camera, and a toll the Soviets finish (5.6) |
+| The nuke effect does not play from a script | No cloud | Answered: a direct launch crashes; the script's own wrapper plays it (fxprobe). Fallback: the mega bombs and the 203 mm barrage massed, as the first build did |
 | Penetration leaves no wrecks or fails at load | Units vanish | Vanished ✓, under the cloud |
 | A Soviet player camp breaks the clone | Twin Strike cannot be Soviet | Re-clone from a Soviet-player stock challenge. That is a new `Template`, and the largest cost. |
 | Battle size: about 160 at the peak, 35–40 min | Frame rate, script load | The scale knob; shorter phases |

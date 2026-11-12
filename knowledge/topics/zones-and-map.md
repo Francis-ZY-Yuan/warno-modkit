@@ -13,6 +13,7 @@ Topic `zones-and-map`, declared by ops. Back to [the map](../README.md).
 - [count-race-forced-owner](../../components/ops/knowledge/mechanisms/count-race-forced-owner.md): Decide a zone by a timed unit count, then force its owner so the map shows it (ops, verified 201602)
 - [deployment-phase-recipe](../../components/ops/knowledge/mechanisms/deployment-phase-recipe.md): A deployment phase needs six parts, and buying after the launch needs player arrival entries (ops, verified 201602)
 - [detector-circles-only](../../components/ops/knowledge/mechanisms/detector-circles-only.md): DetectUnitDansDetecteur works only on circular zones (ops, verified 201602)
+- [fog-switch](../../components/ops/knowledge/mechanisms/fog-switch.md): A script can switch the fog of war off with TGDDescriptorFow; whether it is map-wide and comes back on is unseen (ops, verified 201602)
 - [leveldesign-guid-binding](../../components/ops/knowledge/mechanisms/leveldesign-guid-binding.md): A script names a map item by the four words of the item's GUID in LevelDesign (ops, verified 201602)
 - [zone-capture-command-units](../../components/ops/knowledge/mechanisms/zone-capture-command-units.md): Only command units capture a zone, and an enemy command unit inside makes it neutral at once (ops, verified 201602)
 - [zone-lookup-by-point](../../components/ops/knowledge/mechanisms/zone-lookup-by-point.md): Zone conditions find their zone by a tag's point, and a point in no zone fails silently (ops, verified 201602)
@@ -48,6 +49,7 @@ Taught by the trials of these mechanisms.
 - 2026-11-11 [2026-11-11-twin-strike-guns-on-the-edge](../../components/ops/knowledge/trials/2026-11-11-twin-strike-guns-on-the-edge.md) (ops): play, mixed
 - 2026-11-11 [2026-11-11-strike-camera-stock-survey](../../components/ops/knowledge/trials/2026-11-11-strike-camera-stock-survey.md) (ops): survey, pass
 - 2026-11-11 [2026-11-11-opening-camera-stock-survey](../../components/ops/knowledge/trials/2026-11-11-opening-camera-stock-survey.md) (ops): survey, pass
+- 2026-11-11 [2026-11-11-fxprobe-play1](../../components/ops/knowledge/trials/2026-11-11-fxprobe-play1.md) (ops): play, pass
 - 2026-11-06 [2026-11-06-spawns-and-deck-survey](../../components/ops/knowledge/trials/2026-11-06-spawns-and-deck-survey.md) (ops): re, pass
 - 2026-11-06 [2026-11-06-probe2-play-run-a](../../components/ops/knowledge/trials/2026-11-06-probe2-play-run-a.md) (ops): play, pass
 - 2026-11-04 [2026-11-04-zone-capture-survey](../../components/ops/knowledge/trials/2026-11-04-zone-capture-survey.md) (ops): re, pass

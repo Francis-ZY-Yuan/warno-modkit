@@ -23,7 +23,8 @@ from dataclasses import dataclass
 from modkit.core.gates import check
 from modkit.core.ndfbin import Value, token_unhash
 from modkit.ops.bricks import (
-    g_cmp, g_compete, g_create, g_hint, g_if, g_modify, g_seq, g_set, g_simul, g_timer, g_until, g_wait, unit_path,
+    fx_wrapper, g_cmp, g_compete, g_create, g_hint, g_if, g_modify, g_seq, g_set, g_simul, g_timer, g_until, g_wait,
+    unit_path,
 )
 from modkit.ops.graph import TRUE, Imp, Node, Str, i32, loc, walk
 from modkit.ops.leveldesign import LdItem, gd_tags
@@ -101,6 +102,21 @@ FX_WRAPPER_SHAPES = (("TSimultaneousAction", "_ShortDatabaseName", 0x07, None),
                      ("TActionCall", "Action", 0x09, "import $/GFX/GameFx"),
                      ("TConstantFloat3", "Value", 0x0B, None),
                      ("TConstantFloat", "Value", 0x05, None))
+
+TACTICAL_NUKE_FX = "$/GFX/GameFx/fx_impact_sol_Tactical_Nuke"   # the game's tactical-nuke ground impact effect
+
+
+def nuke_wrapper(export: str, position: tuple[float, float, float], radius_physical: float,
+                 radius_suppress: float = 0.0) -> Node:
+    """bricks.fx_wrapper of the game's tactical-nuke impact effect (TACTICAL_NUKE_FX) at `export`, all four of its
+    parameters bound: parPosition `position` (the world position it plays at; (0, 0, 0) plays it at its launch
+    position: both played on their tag), parDirection 0 (its inner effect's default), parRadiusPhysical
+    `radius_physical` (its ground scorch, 0.75 of it, and the scenery it destroys), parRadiusSuppress
+    `radius_suppress` [[scripted-nuke-effect]]. A content that exports it admits FX_WRAPPER_SHAPES."""
+    return fx_wrapper(export, TACTICAL_NUKE_FX, (("parPosition", position), ("parDirection", (0.0, 0.0, 0.0)),
+                                                 ("parRadiusPhysical", radius_physical),
+                                                 ("parRadiusSuppress", radius_suppress)))
+
 
 # One camp of the template's CampList: export name, TGDVariableCamp scalars before PlayerName as (property, value
 # tag, value), and its SetDeck id.

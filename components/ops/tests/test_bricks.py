@@ -2,7 +2,7 @@
 import unittest
 
 from modkit.core import ndfbin
-from modkit.ops import bricks
+from modkit.ops import bricks, shapes
 from modkit.ops.bricks import (
     c_all, c_any, c_none, c_team, c_type, g_and, g_attack, g_cmp, g_collect, g_compete, g_count, g_create, g_detect,
     g_dialog, g_end_sequence, g_fx, g_grant, g_hint, g_hold, g_idle_roe, g_if, g_ignored, g_income, g_int_compare,
@@ -163,6 +163,20 @@ class DialogTest(unittest.TestCase):
         path, wait = seq.props[0][1]
         self.assertEqual(path.props, fly.props)
         self.assertEqual((wait.cls, wait.props), ("TGDDescriptorCutsceneWaitDuree", [("WaitDuration", f32(11.0))]))
+
+    def test_nuke_wrapper(self):
+        """The tactical-nuke effect's wrapper: fx_wrapper of fx_impact_sol_Tactical_Nuke binding its four parameters in
+        the order the probe played them (parPosition, parDirection 0, parRadiusPhysical, parRadiusSuppress)."""
+        wrap = shapes.nuke_wrapper("$/GDScript/X/FxNuke", (1.0, 2.0, 3.0), 60000.0)
+        (call,) = dict(wrap.props)["Actions"]
+        self.assertEqual((wrap.cls, wrap.export, dict(wrap.props)["_ShortDatabaseName"], call.cls),
+                         ("TSimultaneousAction", "$/GDScript/X/FxNuke", Str("FxNuke"), "TActionCall"))
+        self.assertEqual(dict(call.props)["Action"], Imp("$/GFX/GameFx/fx_impact_sol_Tactical_Nuke"))
+        bound = [(k.text, v.cls, dict(v.props)["Value"].v) for k, v in dict(call.props)["NamedParams"].pairs]
+        self.assertEqual(bound, [("parPosition", "TConstantFloat3", (1.0, 2.0, 3.0)),
+                                 ("parDirection", "TConstantFloat3", (0.0, 0.0, 0.0)),
+                                 ("parRadiusPhysical", "TConstantFloat", 60000.0),
+                                 ("parRadiusSuppress", "TConstantFloat", 0.0)])
 
     def test_ammo(self):
         """SetAmmo in stock's two forms: refilled, MaxAmmoRatio 100 then Units (HoldUntilRelieved #281); emptied, Units

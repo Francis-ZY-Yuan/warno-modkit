@@ -44,7 +44,7 @@
      "summary": "A West German Panzer battalion appears at ASSEMBLY, about 5,200 GRU south of the village. It attacks in 05:00.",
      "details": ["Front asks: request nuclear release, or fight it conventionally."]},
     {"id": "5", "name": "Strike and hold", "time": "5 min, or up to 20",
-     "summary": "Released: a 30 s warning, a 2S7M carrier round, the mushroom cloud, and every NATO unit in the zone dies. Hold 5 min.",
+     "summary": "Released: a 30 s warning, the camera flown to ASSEMBLY, the game's own nuclear fireball; part of battalion 2 dies, the rest is left reeling for you to finish. Hold 5 min once it breaks.",
      "details": ["Withheld: battalion 2 attacks north into the village. Hold until it breaks or the village falls, up to 20 min.",
                  "Both roads can reach the top grade. The end text names your choice."]}
   ],
@@ -101,16 +101,16 @@
      "title": "Fire box on the centre lane, about 11,800 GRU from the guns."},
 
     {"kind": "ring", "style": "nuke", "at": [156, 500], "r": 24, "dashed": true, "phases": ["4", "5"],
-     "title": "The nuke zone: radius R, tuned to the effect's size in probe 3."},
+     "title": "The nuke zone: radius R, 800 m."},
     {"kind": "units", "style": "nato", "at": [156, 500], "count": 4, "phases": ["4"],
      "title": "Battalion 2: Leopard 2A4 x28, Marder 1A3 with Panzergrenadiere x8, Gepard, Roland, Luchs (52)."},
     {"kind": "label", "style": "nuke", "at": [106, 470], "text": "ASSEMBLY", "size": "large", "phases": ["4", "5"]},
     {"kind": "label", "style": "nuke", "at": [70, 456], "text": "battalion 2 · attacks in 05:00", "size": "small", "phases": ["4"]},
 
     {"kind": "arc", "style": "nuke", "from": [18, 167], "to": [154, 478], "bend": [200, 290], "phases": ["5"],
-     "title": "The carrier round: one 2S7M shell, fired 2 s before the strike."},
+     "title": "Not built: the first design's carrier round, one 2S7M shell. No gun fires the strike."},
     {"kind": "burst", "style": "nuke", "at": [156, 500], "phases": ["5"],
-     "title": "Released: the game's tactical-nuke effect, then every NATO unit inside the zone dies."},
+     "title": "Released: the game's tactical-nuke effect; a share of battalion 2 dies, the rest is damaged and stunned for you to finish."},
     {"kind": "arrow", "style": "nuke", "points": [[148, 486], [150, 440], [142, 404], [134, 388]], "phases": ["5"], "dashed": true,
      "label": {"text": "if withheld: battalion 2 attacks", "at": [8, 454]},
      "title": "Withheld: battalion 2 attacks north into the village when the countdown runs out."}
@@ -146,7 +146,7 @@
            [4, "BTR-80 with Konkurs-M ATGM teams x4", "BTR_80_SOV · ATteam_KonkursM_TTsko_SOV"]]},
          {"name": "Supply", "when": "placed on the map · yours from the start", "note": "No deck can carry a FOB, so both stand on the map in your camp, as stock's Marauders and SigurdsStrike place theirs.", "units": [
            [2, "FOB, at FOB_W and FOB_E in the north zone", "FOB_SOV"]]},
-         {"name": "Division artillery", "when": "scripted · ally camp · at GUN_SPAWN, the cut's north-west corner", "note": "It fires only on your call: the preparation fire, fire missions, the fire plan and the strike's carrier round.", "units": [
+         {"name": "Division artillery", "when": "scripted · ally camp · at GUN_SPAWN, the cut's north-west corner", "note": "It fires only on your call: the preparation fire, fire missions and the fire plan.", "units": [
            [6, "2S7M Malka, 203 mm, reach 7,000–35,000 GRU: every target", "2S7M_Malka_SOV"],
            [6, "BM-27 Uragan, 220 mm, reach 10,000–35,000 GRU: the boxes and ASSEMBLY, not the village", "BM27_Uragan_SOV"]]}
        ]},
@@ -174,7 +174,7 @@
          ["Your helicopter cards: Ka-29 at the start, Ka-50 at the fall", {"mark": "half", "text": "stock"}, "RedJuggernaut's player deck flies Mi-8s, Mi-2s and Mi-24s; stock adds aircraft cards mid-battle"],
          ["Your FOBs, placed on the map in your camp", {"mark": "half", "text": "stock"}, "Marauders and SigurdsStrike place the player's FOB this way. Fallback: create them by script at launch, played."],
          ["Soviet player camp on RedJuggernaut's deck", {"mark": "open", "text": "open"}, "Stock precedent: RedJuggernaut, Götterdämmerung"],
-         ["The nuke effect from a script", {"mark": "open", "text": "open"}, "fx_impact_sol_Tactical_Nuke: the game's own effect, which no weapon uses"],
+         ["The nuke effect from a script", {"mark": "ok", "text": "played"}, "fx_impact_sol_Tactical_Nuke, which no weapon uses, through the script's own wrapper: played in the strike-effects probe"],
          ["The kill leaving wrecks (Penetration)", {"mark": "open", "text": "open"}, "Fallback: Vanished, played"],
          ["The cut: a 40-tile box of SM_SU_03's own AI grid", {"mark": "half", "text": "shape played"}, "The grid-subset shape played on Geisa in probe 1; this cut is not built yet. Fallback: SM_SU_03's whole zone."],
          ["Battle size, about 130 units at the peak, in a small box", {"mark": "open", "text": "open"}, "The scale knob comes down if the frame rate suffers or columns jam"]]}

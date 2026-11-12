@@ -10,12 +10,12 @@ Topic `loading-and-crashes`, declared by core. Back to [the map](../README.md).
 ### PLAYED
 
 - [ai-grid-tiles-playable-zone](../../components/ops/knowledge/mechanisms/ai-grid-tiles-playable-zone.md): The AI strategic grid must tile the playable zone (ops, verified 201602)
+- [changestress-damagetype-zero](../../components/ops/knowledge/mechanisms/changestress-damagetype-zero.md): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load (ops, verified 201602)
 - [dialog-button-ingame-dictionary](../../components/ops/knowledge/mechanisms/dialog-button-ingame-dictionary.md): Dialog button labels resolve only in the game's in-game interface dictionary (ops, verified 201602)
 - [load-time-validation-rules](../../components/core/knowledge/mechanisms/load-time-validation-rules.md): Every object is validated at load, and the first broken rule stops the load (core, verified 201602)
 
 ### RE
 
-- [changestress-damagetype-zero](../../components/ops/knowledge/mechanisms/changestress-damagetype-zero.md): A script's ChangeStress cannot suppress; DamageType 0 fails at load (ops, verified 201602)
 - [crash-dump-names-the-error](../../components/core/knowledge/mechanisms/crash-dump-names-the-error.md): The crash report's dump names the real error (core, verified 201602)
 
 ## Lessons
@@ -35,6 +35,7 @@ Taught by the trials of these mechanisms.
 
 ## Trials, newest first
 
+- 2026-11-11 [2026-11-11-fxprobe-play1](../../components/ops/knowledge/trials/2026-11-11-fxprobe-play1.md) (ops): play, pass
 - 2026-11-06 [2026-11-06-probe2-play-run-a](../../components/ops/knowledge/trials/2026-11-06-probe2-play-run-a.md) (ops): play, pass
 - 2026-11-03 [2026-11-03-probe1-play1-worked](../../components/ops/knowledge/trials/2026-11-03-probe1-play1-worked.md) (ops): play, pass
 - 2026-11-03 [2026-11-03-probe1-launch2-dialog-buttons](../../components/ops/knowledge/trials/2026-11-03-probe1-launch2-dialog-buttons.md) (ops): launch, fail

@@ -46,19 +46,21 @@ inside each battery's band from where it stands, from the shipped files and the 
 allied guns were pre-placed), and whether a created battery's removal after its fire shows.
 
 **Not yet seen in play** (built into the first probe, but play 2 froze before they ran):
-- `LaunchFXFireAndForgetOnPosition` impacts across a box (a script may launch only a self-contained effect:
-  [[script-effects-self-contained]]);
-- destroying a share of a group with `TransferUnitToUnitGroup` and `KillAllUnit` Penetration (stock does this only
-  in the campaign tutorials);
-- stunning the rest with ChangeStress Stun ([[changestress-damagetype-zero]]; no stock use);
+- stunning the rest with ChangeStress Stun ([[changestress-damagetype-zero]]; no stock use; the strike-effects
+  probe's play showed no sign of it);
 - `SetFuel` to starve a pocket.
+
+**Since seen,** in the strike-effects probe's play ([[2026-11-11-fxprobe-play1]]): `LaunchFXFireAndForgetOnPosition`
+impacts massed round a target (a script may launch only a self-contained effect, or its own wrapper:
+[[script-effects-self-contained]]), and a share of a group destroyed with `TransferUnitToUnitGroup` (one unit at a
+time, no CopyUnits) and `KillAllUnit` Penetration: 4 of 12 died.
 
 <!-- referenced-by:start -->
 ## Referenced by
 
-- Trials: [2026-11-03-probe1-play1-worked](../trials/2026-11-03-probe1-play1-worked.md), [2026-11-03-probe1-play2-soviet-freeze](../trials/2026-11-03-probe1-play2-soviet-freeze.md), [2026-11-11-twin-strike-guns-on-the-edge](../trials/2026-11-11-twin-strike-guns-on-the-edge.md), [2026-11-11-twin-strike-play1](../trials/2026-11-11-twin-strike-play1.md)
+- Trials: [2026-11-03-probe1-play1-worked](../trials/2026-11-03-probe1-play1-worked.md), [2026-11-03-probe1-play2-soviet-freeze](../trials/2026-11-03-probe1-play2-soviet-freeze.md), [2026-11-11-fxprobe-play1](../trials/2026-11-11-fxprobe-play1.md), [2026-11-11-twin-strike-guns-on-the-edge](../trials/2026-11-11-twin-strike-guns-on-the-edge.md), [2026-11-11-twin-strike-play1](../trials/2026-11-11-twin-strike-play1.md)
 - Gates: [`modkit.ops.gates.check_fire_range`](../../src/modkit/ops/gates.py)
 - Skills: [`components/core/skills/warno-launch-triage/SKILL.md`](../../../core/skills/warno-launch-triage/SKILL.md), [`components/ops/skills/warno-new-operation/references/script-recipes.md`](../../skills/warno-new-operation/references/script-recipes.md)
 - Examples: [`components/ops/examples/open-door/docs/design.md`](../../examples/open-door/docs/design.md), [`components/ops/examples/probes/README.md`](../../examples/probes/README.md), [`components/ops/examples/twin-strike/README.md`](../../examples/twin-strike/README.md), [`components/ops/examples/twin-strike/docs/design.md`](../../examples/twin-strike/docs/design.md), [`components/ops/examples/twin-strike/twinstrike/op.py`](../../examples/twin-strike/twinstrike/op.py)
-- Records: [2026-11-11-twin-strike-guns-on-the-edge](../trials/2026-11-11-twin-strike-guns-on-the-edge.md), [2026-11-11-twin-strike-play1](../trials/2026-11-11-twin-strike-play1.md), [created-units-stand-in-zone](created-units-stand-in-zone.md)
+- Records: [2026-11-11-fxprobe-play1](../trials/2026-11-11-fxprobe-play1.md), [2026-11-11-twin-strike-guns-on-the-edge](../trials/2026-11-11-twin-strike-guns-on-the-edge.md), [2026-11-11-twin-strike-play1](../trials/2026-11-11-twin-strike-play1.md), [created-units-stand-in-zone](created-units-stand-in-zone.md)
 <!-- referenced-by:end -->

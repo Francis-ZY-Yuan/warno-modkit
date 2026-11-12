@@ -19,13 +19,13 @@ What the game does (mechanisms), what was tried and how it came out (trials), an
 | Topic | Scope | Mechanisms | PLAYED |
 | --- | --- | --- | --- |
 | [Files and formats](topics/files-and-formats.md) | The game's archives and file formats (edat, compiled NDF, dictionaries and tokens), and how the toolkit reads and writes them. | 4 | 3 |
-| [Loading and crashes](topics/loading-and-crashes.md) | What the game checks when a mod loads, how a load or a launch fails, and how to read a crash. | 5 | 3 |
+| [Loading and crashes](topics/loading-and-crashes.md) | What the game checks when a mod loads, how a load or a launch fails, and how to read a crash. | 5 | 4 |
 | [Mod packaging](topics/mod-packaging.md) | How a mod folder is laid out, activated, kept apart from other mods, and shared. | 4 | 3 |
 | [Game updates](topics/game-updates.md) | What changed between game builds, and the facts most likely to change with the next update. | 4 | 3 |
 | [Operation setup](topics/operation-setup.md) | How an Operation is assembled from stock parts and registered: its packs, its identity, its deployment phase and its menu entry. | 7 | 5 |
-| [Script flow](topics/script-flow.md) | How the script graph runs: containers, when each action finishes, loops, difficulty and how a battle ends. | 13 | 5 |
-| [Zones and map](topics/zones-and-map.md) | The map side of an Operation: LevelDesign items and tags, zones and their owners, the playable zone, the AI grid and the camera. | 11 | 7 |
-| [Units and orders](topics/units-and-orders.md) | Creating, revealing, ordering, counting and removing units, their effects, and the deck cards they come from. | 17 | 7 |
+| [Script flow](topics/script-flow.md) | How the script graph runs: containers, when each action finishes, loops, difficulty and how a battle ends. | 14 | 8 |
+| [Zones and map](topics/zones-and-map.md) | The map side of an Operation: LevelDesign items and tags, zones and their owners, the playable zone, the AI grid and the camera. | 12 | 8 |
+| [Units and orders](topics/units-and-orders.md) | Creating, revealing, ordering, counting and removing units, their effects, and the deck cards they come from. | 17 | 10 |
 | [Objectives and text](topics/objectives-and-text.md) | Objectives, dialogs, counters, map labels and the text the player reads. | 7 | 3 |
 
 ## Components
@@ -33,7 +33,7 @@ What the game does (mechanisms), what was tried and how it came out (trials), an
 | Component | Knows | Mechanisms | Trials | Lessons |
 | --- | --- | --- | --- | --- |
 | [core](../components/core/knowledge/INDEX.md) | WARNO modding foundations: setup from your own install, file formats, load-time gates, crash triage, packaging and the knowledge base. | 7 | 6 | 12 |
-| [ops](../components/ops/knowledge/INDEX.md) | Build, gate and playtest custom scripted Operations (scenario mods) for WARNO, with worked examples. | 44 | 38 | 9 |
+| [ops](../components/ops/knowledge/INDEX.md) | Build, gate and playtest custom scripted Operations (scenario mods) for WARNO, with worked examples. | 45 | 39 | 9 |
 
 ## Writing records
 

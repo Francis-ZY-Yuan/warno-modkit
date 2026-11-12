@@ -188,9 +188,11 @@ Play sheet: for each step, report seen, not seen, or a crash after its hint.
 | F9 | U | the same questions; which of F8 and F9 sat on its pin? |
 | F10 | the map | did the fog come back? |
 
-The trial to record after the play: `YYYY-MM-DD-fxprobe-play1`, kind `play`, the build's commit, mechanisms
-`script-effects-self-contained`, `scripted-nuke-effect`, `changestress-damagetype-zero`, `soviet-player-camp`;
-outcome and result from the sheet. Each step's answer goes to its record: F4, F8 and F9 to `scripted-nuke-effect`
+The first play is recorded as [[2026-11-11-fxprobe-play1]] (build d7ca595): no crash; the nuke played on its tag through
+the wrapper both ways; ChangeStress Physical 5 took 5 of 10 hit points; the fog lifted; black smoke beside the massed
+effects slowed the game. A next play is recorded the same way: `YYYY-MM-DD-fxprobe-play2`, kind `play`, the build's
+commit, mechanisms `script-effects-self-contained`, `scripted-nuke-effect`, `changestress-damagetype-zero`,
+`soviet-player-camp`, `fog-switch`; outcome and result from the sheet. Each step's answer goes to its record: F4, F8 and F9 to `scripted-nuke-effect`
 (F5 answers its wrecks question), F6 and F7 to `changestress-damagetype-zero`.
 
 ## After a game update

@@ -559,7 +559,8 @@ class Build(unittest.TestCase):
 
     def test_the_gates_that_hold_the_frame(self):
         """Every standard gate passes (the end funnel holding all nine endings; the script-effects gate holding the
-        strike's massed look; the garrison the one smart-ordered group), and the extra gates: the 57 unit
+        strike's look, its nuke through the script's own wrapper; the garrison the one smart-ordered group), and the
+        extra gates: the 57 unit
         types the op names (the supply's, the carriers', the ATGM teams', the Kubs' and the fighters' among them), no
         Survivors name, the cut's 40 tiles, the zones and arrivals, and the fire range: GUN_SPAWN's batteries in the
         player's alliance, its 9 battery-target pairs in range; every unit the script creates inside the playable
@@ -568,7 +569,7 @@ class Build(unittest.TestCase):
                      "12 never-finishing script actions",              # the three locks and the nine endings
                      "1 HUD restores with the buy-menu switch Default",
                      "9 TriggerEndGame, each under $/GDScript/TS/EndFunnel",
-                     "34 script effect launches, each a self-contained GameFx effect",   # the flash's 34 nodes
+                     "19 script effect launches, each a self-contained GameFx effect",   # the flash's 19
                      "1 smart-ordered groups, none ordered again after its smart order",
                      "gate 3 units: 57 unit descriptors exist",
                      "gate 3 no-template-name: 15 re-keyed or generated dumps without Survivors",
@@ -590,6 +591,19 @@ class Build(unittest.TestCase):
         entries = {e.path: edat.read_entry(path, e) for e in edat.read_index(path)}
         self.assertIn("the last view centred on (105.0, 245.0) px, inside the cut; one-key shot TS_Strike on (156.0, "
                       "500.0) px, inside the cut", ts_map.CAMERA.check(entries[CAMPATHS_FILE]))
+
+    def test_the_fog_lift_builds_when_on(self):
+        """STRIKE_FOG_LIFT on (the play sheet's switch): the op still passes every gate, the shape gate admitting the
+        fog switch, and its script holds the switch twice, off then on."""
+        out = os.path.join(OUT_ROOT, "fog-lift")
+        with mock.patch.object(op, "STRIKE_FOG_LIFT", True):
+            items = quiet_build(op.content(), out)
+        (gd,) = [it for it in items if it.path.endswith(f"GDScript/{profile.SCENARIO}.ndfbin")]
+        nb, _, _ = decode(b"".join(gd.chunks()))
+        fows = [{nb.pname(pi): v for pi, v in ob.props}["Fow"].v for ob in nb.objects
+                if nb.cname(ob.cls) == "TGDDescriptorFow"]
+        self.assertEqual(sorted(fows), [0, 1])
+        remove_out(out)
 
     def test_the_camera_gate_fails_the_strike_shot_on_the_ground(self):
         """The camera gate holds the strike's shot too: the same op with TS_Strike brought down to 100,000 above the

@@ -44,6 +44,7 @@ Taught by the trials of these mechanisms.
 - 2026-11-11 [2026-11-11-twin-strike-play1](../../components/ops/knowledge/trials/2026-11-11-twin-strike-play1.md) (ops): play, mixed
 - 2026-11-11 [2026-11-11-twin-strike-launch1-duplicate-menu-order](../../components/ops/knowledge/trials/2026-11-11-twin-strike-launch1-duplicate-menu-order.md) (ops): play, fail
 - 2026-11-11 [2026-11-11-probe3b-play1-no-supply](../../components/ops/knowledge/trials/2026-11-11-probe3b-play1-no-supply.md) (ops): play, fail
+- 2026-11-11 [2026-11-11-fxprobe-play1](../../components/ops/knowledge/trials/2026-11-11-fxprobe-play1.md) (ops): play, pass
 - 2026-11-10 [2026-11-10-probe3-play1-effect-crash](../../components/ops/knowledge/trials/2026-11-10-probe3-play1-effect-crash.md) (ops): play, fail
 - 2026-11-06 [2026-11-06-probe2-play-run-a](../../components/ops/knowledge/trials/2026-11-06-probe2-play-run-a.md) (ops): play, pass
 - 2026-11-03 [2026-11-03-probe1-play2-land-buys](../../components/ops/knowledge/trials/2026-11-03-probe1-play2-land-buys.md) (ops): play, fail

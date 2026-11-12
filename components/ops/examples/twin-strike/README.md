@@ -12,7 +12,8 @@ second. You play the Soviets.
 > - the release dialog;
 > - the economy;
 > - NATO fighter sweeps;
-> - a strike you can see: massed explosions, a camera move to it, and a second battalion left for you to finish.
+> - a strike you can see: the game's own nuke effect, a camera move to it, and a second battalion left for you to
+>   finish.
 >
 > Known issues:
 > - RedJuggernaut's stock cards still show in the buy menu beside the op's own (the op is getting its own deck).
@@ -155,19 +156,23 @@ minutes per fire, then vanish)
     map: smooth, or stuttering?
 
 **The strike** (answer Yes to the release). What it should look like: 25 s after Yes the camera flies to the
-assembly area by itself; at 0:30 big explosions burst across the whole zone at once, then white and black smoke and
-burning wrecks that last minutes; part of the second battalion dies in the blasts, and the rest is left reeling for you
-to finish.
+assembly area by itself; at 0:30 the game's own nuclear fireball and dust cloud rise on the battalion, with a few big
+explosions, a ring of shell bursts and two white smoke columns round it; part of the second battalion dies in the
+fireball, and the rest is left reeling for you to finish.
 12. Did the release dialog show (after the fire plan too)? Did the camera fly to the zone in about 4 s, wherever you
     were looking, hold it about 11 s with your orders blocked, then hand control back? Does Escape skip the move?
-13. Did the flash read as one massive strike, or as scattered shells? How much of the zone did it cover from the
-    camera's view? Did the frame rate hold?
+13. Did the nuclear fireball rise on the assembly area (not elsewhere)? Sound, shake? Did the frame rate hold during
+    the strike and after it (the black smoke that slowed the probe is gone)?
 14. Kill (new: kill by spawn tag): about half of the second battalion should die on Easy, 40 % on Medium, 30 % on
     Hard, tanks and Marders both. Roughly how many died? Did they leave wrecks, or vanish?
-15. Damage and stun (new: no stock script damages or stuns this way): did the survivors' health drop (vehicles to about
-    half)? Did they stop firing or moving for a while, and for how long?
+15. Damage and stun: did the survivors' vehicles drop to about half health (the probe showed this)? Did they stop
+    firing or moving for a while, and for how long (the probe showed no sign of the stun)?
 16. Did "FINISH THE SECOND BATTALION: N tanks left" show at the assembly area, count down as you killed tanks, and
     complete at 9 left with "The second battalion is broken"? Did the survivors fight back when you went in?
+
+*Optional, a second run with the fog lift* (off by default: the probe saw the fog lift, not come back). Set
+`STRIKE_FOG_LIFT = True` in `twinstrike/op.py`, rebuild and reinstall. Did the fog lift as the camera flew in (every
+NATO unit showing, the division's guns too), and did it come back when control returned at 0:40?
 
 **The end** (after a strike: once the second battalion is broken, HOLD ON counts down from 5:00 on the village and in
 the objectives, BOX W and BOX C are done, and the end dialog comes at 0:00, or at once when NATO has no ground unit
@@ -205,8 +210,9 @@ left)
 - The fires: ShootOnPosition from a battery created for each fire in your allied camp, inside the playable zone, and
   removed after [[scripted-fires]] [[created-units-stand-in-zone]]; the dialogs [[dialog-reask-loop]]
   [[dialog-button-ingame-dictionary]].
-- The strike: 97 self-contained script effects at once [[script-effects-self-contained]] (the nuke impact effects
-  crash a script [[scripted-nuke-effect]]), the camera flown to the zone [[camera-shot-from-current-position]], then a
+- The strike: the game's tactical-nuke effect through the script's own wrapper, with 18 self-contained effects round
+  it [[scripted-nuke-effect]] [[script-effects-self-contained]], the camera flown to the zone
+  [[camera-shot-from-current-position]], an optional fog lift [[fog-switch]], then a
   share of the second battalion killed by its spawn tags and the rest in the zone damaged and stunned with ChangeStress
   [[changestress-damagetype-zero]], for you to finish.
 - The endings: [[mission-ends-only-by-script]], phase 5's end clock shown as a stock objective timer

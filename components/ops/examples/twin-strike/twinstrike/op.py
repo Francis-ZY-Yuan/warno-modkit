@@ -71,7 +71,7 @@ from modkit.ops import shapes
 from modkit.ops.bricks import (
     c_all, c_any, c_none, c_team, c_type, g_and, g_attack, g_choice, g_cmp, g_collect, g_compete, g_count,
     g_detect, g_fx, g_grant, g_hint, g_idle_roe, g_if, g_ignored, g_income, g_kill, g_losses, g_modify, g_or,
-    g_planes_spent, g_roe, g_seq, g_set, g_simul, g_smart_hold, g_spawn, g_start_timer, g_stress, g_union,
+    g_fow, g_planes_spent, g_roe, g_seq, g_set, g_simul, g_smart_hold, g_spawn, g_start_timer, g_stress, g_union,
     g_units_in_zones, g_until, g_vanish, g_wait, g_zone_control, g_zone_owner, unit_path,
 )
 from modkit.ops.forces import group_total, share_count
@@ -83,9 +83,10 @@ from modkit.ops.mission import (
 from modkit.ops.profile import Content
 from modkit.ops.script import BRICK_DEFAULT
 from modkit.ops.shapes import (
-    AGGRESSIVE, AIRPLANE_EVACUATE, AIRPLANE_MOVE_AND_ENGAGE, DEATH_CAUSE_SHAPE, FAST_MOVE_AND_ATTACK,
-    IDLE_HOLD_POSITION, MOVE_AND_ATTACK, PHYSICAL, SHOOT_ON_POSITION, STRESS_SHAPES, STUN, TRANSPORTER_SHAPE, Beat,
-    add_card, beat_hint, create, lock_card, objective, order, seconds_while, set_end,
+    AGGRESSIVE, AIRPLANE_EVACUATE, AIRPLANE_MOVE_AND_ENGAGE, DEATH_CAUSE_SHAPE, FAST_MOVE_AND_ATTACK, FOW_SHAPES,
+    FX_WRAPPER_SHAPES, IDLE_HOLD_POSITION, MOVE_AND_ATTACK, PHYSICAL, SHOOT_ON_POSITION, STRESS_SHAPES, STUN,
+    TRANSPORTER_SHAPE, Beat, add_card, beat_hint, create, lock_card, nuke_wrapper, objective, order, seconds_while,
+    set_end,
 )
 from modkit.ops.zones import heading
 from twinstrike import forces, profile
@@ -112,24 +113,27 @@ PROD_MENU_SWITCH = BRICK_DEFAULT
 
 # --------------------------------------------------------------------------- the strike (design 5.6)
 
-# The look, all at the flash: effects a script is known to launch, each self-contained
-# [[script-effects-self-contained]], massed at RedJuggernaut's scale (its intro launches 61 at once: the 203 mm barrage
-# 10 times at each of 5 tags, 8 white smokes and 3 black, in one Simultaneous). The tactical-nuke impact effects crash
-# the game when a script launches them [[scripted-nuke-effect]] (the script-effects gate refuses them). Each a
-# one-line change:
-# - STRIKE_FX, the game's script-only mega bomb (a 203 mm-sized fireball with a heavier shake and a bomb's sound; seen
-#   in Twin Strike's smoke play): one on the zone's centre and one on each of its spots, 13;
-# - BARRAGE_FX, the 203 mm barrage (each launch one impact at a random spot up to about 900 m round its tag;
-#   stock-launched 27 times): BARRAGE_N at the centre and at each inner spot, 70;
-# - SMOKE_FX at the centre and at each outer spot, 14: white smoke with a ground fire (stock-launched 45 times; it
-#   lasts minutes) and black smoke, the burning-wreck effect at a random spot round its tag (stock-launched 3 times,
-#   seen in the smoke play).
-# The design's napalm, fx_binder_fire_Napalm_Lourd, declares three parameters, so a script cannot launch it.
+# The look, all at the flash, 19 launches in one Simultaneous:
+# - the game's own tactical-nuke impact effect, once, on the zone's centre, through the script's own wrapper NUKE_WRAP
+#   (shapes.nuke_wrapper: a TActionCall binding its four parameters, parPosition ASSEMBLY's world position): the
+#   fxprobe play's F9 form, which played a large nuclear fireball and dust cloud on its tag, with no crash
+#   [[scripted-nuke-effect]] [[script-effects-self-contained]]. NUKE_RADIUS sizes its ground scorch and the scenery it
+#   destroys (the probe's played value, some 280 m round ASSEMBLY, well short of the village);
+# - a light accent round the fireball, each self-contained: STRIKE_FX, the game's script-only mega bomb, on four outer
+#   spots (STRIKE_MEGA_SPOTS); BARRAGE_FX, the 203 mm barrage (one impact at a random spot up to about 900 m round its
+#   tag), once on each of the 12 spots; SMOKE_FX, white smoke with a ground fire, on two outer spots
+#   (STRIKE_SMOKE_SPOTS).
+# No black smoke: in the fxprobe play, black smoke at 4 tags beside the massed effects grew into huge lingering plumes
+# and the game slowed, worse with time; the first build's 97 launches held 7 of them.
 STRIKE_FX = "$/GFX/GameFx/fx_HE_Mega_Bomb_ForScript"
 BARRAGE_FX = "$/GFX/GameFx/fx_HE_Artillery_203mm_ForScript_RandomPosition"
-BARRAGE_N = 10
-SMOKE_FX = ("$/GFX/GameFx/fx_FumeeBlanche_ForScript_RandomPosition",
-            "$/GFX/GameFx/fx_FumeeNoire_ForScript_RandomPosition")
+SMOKE_FX = "$/GFX/GameFx/fx_FumeeBlanche_ForScript_RandomPosition"
+NUKE_WRAP = f"{profile.FOLDER}/FxNuke"
+NUKE_RADIUS = 60000.0
+# The fog over the strike window (design 5.6): STRIKE_FOG_LIFT switches it off as the camera starts and back on as it
+# hands control back (bricks.g_fow, map-wide). The fxprobe play showed the switch lift the fog; it did not show the fog
+# come back, so it stays off by default: the camera and the effects show the strike through the fog.
+STRIKE_FOG_LIFT = False
 # The toll, inside the blasts (design 5.6): the strike does not kill every NATO unit in the zone; the Soviets finish
 # battalion 2.
 # - The kill: STRIKE_KILL_SHARES of battalion 2 (Easy, Medium, Hard: 50/40/30 %, the difficulty knob ts_kill_pct), in
@@ -162,9 +166,20 @@ STRIKE_INNER_PX = ((-20.0, -8.0), (0.0, -12.0), (20.0, -8.0), (-20.0, 8.0), (0.0
 STRIKE_OUTER_PX = ((-37.0, 0.0), (-19.0, -32.0), (19.0, -32.0), (37.0, 0.0), (26.0, 20.0), (-26.0, 20.0))
 STRIKE_SPOTS = tuple(f"TS_Fx{k + 1}" for k in range(len(STRIKE_INNER_PX) + len(STRIKE_OUTER_PX)))
 STRIKE_INNER, STRIKE_OUTER = STRIKE_SPOTS[:len(STRIKE_INNER_PX)], STRIKE_SPOTS[len(STRIKE_INNER_PX):]
-EXTRA_SHAPES = (TRANSPORTER_SHAPE,                                   # the infantry cards carry their carriers
-                *((DEATH_CAUSE_SHAPE,) if STRIKE_CAUSE is not None else ()),   # the strike's KillAllUnit DeathCause
-                *(STRESS_SHAPES if STRIKE_DAMAGE or STRIKE_STUN else ()))      # the strike's damage and stun
+# The accent's spots among the outer six: the mega bombs on the four off the axes (NNW, NNE, SE, SW), the white smoke
+# on the two on it (W, E).
+STRIKE_MEGA_SPOTS = tuple(STRIKE_OUTER[k] for k in (1, 2, 4, 5))
+STRIKE_SMOKE_SPOTS = tuple(STRIKE_OUTER[k] for k in (0, 3))
+
+
+def extra_shapes() -> tuple[tuple[str, str, int, str | None], ...]:
+    """The GDScript shapes no stock file uses that the op writes (Content.extra_shapes), from the knobs as they
+    stand when the content is made."""
+    return (TRANSPORTER_SHAPE,                                        # the infantry cards carry their carriers
+            *((DEATH_CAUSE_SHAPE,) if STRIKE_CAUSE is not None else ()),     # the strike's KillAllUnit DeathCause
+            *(STRESS_SHAPES if STRIKE_DAMAGE or STRIKE_STUN else ()),        # the strike's damage and stun
+            *FX_WRAPPER_SHAPES,                                               # the nuke's wrapper
+            *(FOW_SHAPES if STRIKE_FOG_LIFT else ()))                        # the strike window's fog lift
 
 # --------------------------------------------------------------------------- the names the mission uses
 
@@ -303,7 +318,7 @@ RELEASED, WITHHELD = 1, 2              # STRIKE's values: the dialog's Yes (butt
 BN2_BROKEN_N = forces.threshold("bn2")
 # The strike's timeline (seconds after the release, design 5.6): the warning at once; at STRIKE_SHOT_T the camera flies
 # to the zone (twinstrike.map.STRIKE_SHOT), arriving STRIKE_LEAD_S before the flash, and holds; at STRIKE_T the flash,
-# every effect at once; STRIKE_KILL_S later, inside its blasts (the mega bombs' dust lasts 10 s), the toll (the kill,
+# every effect at once; STRIKE_KILL_S later, inside the nuke's fireball, the toll (the kill,
 # the damage and the stun). The camera holds 8 s or more past it; at STRIKE_BACK_T, when it hands control back, the
 # guns are freed (BUSY: the release held them), so no fire lands in the strike's window, and the hint names what is
 # left to do. Phase 5 waits for battalion 2's break after that, so its end never opens a dialog inside the strike's
@@ -971,16 +986,21 @@ def bn2_attack(ctx: Ctx) -> Node:
 
 
 def flash(ctx: Ctx) -> Node:
-    """The strike's flash: every effect at once, in one Simultaneous, as RedJuggernaut's intro launches its 61
-    [[script-effects-self-contained]]: the mega bombs first (STRIKE_FX on the zone's centre, TS_Assembly, and on each
-    of STRIKE_SPOTS), then the 203 mm barrage (BARRAGE_FX BARRAGE_N times, each tag's in a Sequential of NbExecutions
-    BARRAGE_N, RedJuggernaut #69's form) at the centre and each inner spot, then the smokes (SMOKE_FX) at the centre and
-    each outer spot."""
-    centre = "TS_Assembly"
-    mega = [g_fx(STRIKE_FX, ctx.tag(name)) for name in (centre, *STRIKE_SPOTS)]
-    barrage = [g_seq([g_fx(BARRAGE_FX, ctx.tag(name))], runs=BARRAGE_N) for name in (centre, *STRIKE_INNER)]
-    smoke = [g_fx(fx, ctx.tag(name)) for name in (centre, *STRIKE_OUTER) for fx in SMOKE_FX]
-    return g_simul([*mega, *barrage, *smoke])
+    """The strike's flash: every effect at once, in one Simultaneous [[script-effects-self-contained]]: the nuke first
+    (NUKE_WRAP, the script's own wrapper, on the zone's centre, TS_Assembly) [[scripted-nuke-effect]], then the accent:
+    the mega bombs (STRIKE_FX on STRIKE_MEGA_SPOTS), the 203 mm ring (BARRAGE_FX once on each of STRIKE_SPOTS) and the
+    white smoke (SMOKE_FX on STRIKE_SMOKE_SPOTS)."""
+    nuke = g_fx(NUKE_WRAP, ctx.tag("TS_Assembly"))
+    mega = [g_fx(STRIKE_FX, ctx.tag(name)) for name in STRIKE_MEGA_SPOTS]
+    ring = [g_fx(BARRAGE_FX, ctx.tag(name)) for name in STRIKE_SPOTS]
+    smoke = [g_fx(SMOKE_FX, ctx.tag(name)) for name in STRIKE_SMOKE_SPOTS]
+    return g_simul([nuke, *mega, *ring, *smoke])
+
+
+def nuke_wrapper_export() -> Node:
+    """The nuke's wrapper, exported by the script at NUKE_WRAP: the game's tactical-nuke impact effect bound to play
+    at ASSEMBLY's world position (its minimap point on Twin Cities' ground_z), NUKE_RADIUS (shapes.nuke_wrapper)."""
+    return nuke_wrapper(NUKE_WRAP, (*MAP.map.px_to_world(POINTS["ASSEMBLY"]), MAP.map.ground_z), NUKE_RADIUS)
 
 
 def strike_kill(ctx: Ctx) -> Node:
@@ -1002,18 +1022,20 @@ def strike(ctx: Ctx) -> Node:
       - at once the hint ts_hrel, and the zone's label ts_ozone pinned at its centre (done at the kill), last;
       - STRIKE_SHOT_T: the camera flies to the zone from wherever it is and holds there, the player's actions blocked
         (twinstrike.map.STRIKE_SHOT's cutscene) [[camera-shot-from-current-position]], arriving STRIKE_LEAD_S before
-        the flash;
+        the flash; with STRIKE_FOG_LIFT, the fog switched off just before it [[fog-switch]];
       - STRIKE_T: the flash (flash); STRIKE_KILL_S later, inside its blasts, the toll: every NATO unit in the zone's
         circle (STRIKE_RING, radius R) gathered into ts_struck_g [[detector-circles-only]], the difficulty's share of
         battalion 2 killed (strike_kill), then every unit left in the zone damaged STRIKE_DAMAGE health points and
         stunned STRIKE_STUN points (ChangeStress Physical, then Stun [[changestress-damagetype-zero]]), and STRUCK = 1
         (the countdown done; B2's "finish the second battalion" shows, phase4); at STRIKE_BACK_T, as the camera hands
-        control back, the guns freed (BUSY = 0: the release held them) and the hint ts_hstruck; then phase 5 (PH5 = 1)
+        control back, the fog back on (with STRIKE_FOG_LIFT), the guns freed (BUSY = 0: the release held them) and the
+        hint ts_hstruck; then phase 5 (PH5 = 1)
         once battalion 2 is broken (BN2_BROKEN) or NATO has no ground unit left (nato_spent), or STRIKE_FINISH_MAX_S
         on at most.
     The detector takes the NATO camp only: Soviet units inside are not touched (the warning keeps them out)."""
     zone, caught = ctx.tag(STRIKE_RING), ctx.group("ts_struck_g")
-    camera = g_seq([g_wait(STRIKE_SHOT_T), STRIKE_SHOT.cutscene()])
+    fog = STRIKE_FOG_LIFT
+    camera = g_seq([g_wait(STRIKE_SHOT_T), *([g_fow(False)] if fog else []), STRIKE_SHOT.cutscene()])
     finished = g_compete([g_until(g_cmp(ctx.int_var(BN2_BROKEN), 1)), g_until(nato_spent(ctx)),
                           g_wait(STRIKE_FINISH_MAX_S)])
     blast = g_seq([g_wait(STRIKE_T), flash(ctx), g_wait(STRIKE_KILL_S),
@@ -1021,7 +1043,8 @@ def strike(ctx: Ctx) -> Node:
                    strike_kill(ctx), *([g_stress(caught, STRIKE_DAMAGE, PHYSICAL)] if STRIKE_DAMAGE else []),
                    *([g_stress(caught, STRIKE_STUN, STUN)] if STRIKE_STUN else []),
                    g_set(ctx.int_var(STRUCK), 1),
-                   g_wait(STRIKE_BACK_T - STRIKE_T - STRIKE_KILL_S), g_set(ctx.int_var(BUSY)),
+                   g_wait(STRIKE_BACK_T - STRIKE_T - STRIKE_KILL_S), *([g_fow(True)] if fog else []),
+                   g_set(ctx.int_var(BUSY)),
                    g_simul([g_hint("ts_hstruck", HINT_S, "shint")]), finished, g_set(ctx.int_var(PH5), 1)])
     label = objective("ts_ozone", "ts_ozonel", g_cmp(ctx.int_var(STRUCK), 1), zone, kind="Bonus")
     return g_simul([g_hint("ts_hrel", HINT_S, "shint"), camera, blast, label])
@@ -1179,17 +1202,18 @@ def script(tpl: ndfbin.NdfBin) -> tuple[list[Node], list[Node]]:
     """The op's GDScript (layout in the module docstring; modkit.ops.mission.script_frame), from Survivors' GDScript
     template `tpl`: FLAGS are declared even before a beat writes them, the end funnel is exported, and the opening
     camera (CAMERA's move, then its snap) runs right after LoadingDone, before the HUD returns
-    [[start-camera-before-loading-done]]."""
+    [[start-camera-before-loading-done]]; the strike's nuke wrapper is exported beside the frame's exports."""
     ctx = Ctx()
-    return ops_mission.script_frame(tpl, profile.TEMPLATES, ctx, deploy_phase(tpl, ctx), BEATS,
-                                    camp_rows=profile.CAMP_ROWS, folder=profile.FOLDER,
-                                    start_delay_s=profile.START_DELAY_S, prod_menu_switch=PROD_MENU_SWITCH,
-                                    flags=FLAGS, opening=CAMERA.cutscenes())
+    roots, exports = ops_mission.script_frame(tpl, profile.TEMPLATES, ctx, deploy_phase(tpl, ctx), BEATS,
+                                              camp_rows=profile.CAMP_ROWS, folder=profile.FOLDER,
+                                              start_delay_s=profile.START_DELAY_S, prod_menu_switch=PROD_MENU_SWITCH,
+                                              flags=FLAGS, opening=CAMERA.cutscenes())
+    return roots, [*exports, nuke_wrapper_export()]
 
 
 def content() -> Content:
     """The op (its own scenario, mod folder, GUID and menu tokens, of which the title check holds the two titles);
     its buy menu may switch to the factory tabs (PROD_MENU_SWITCH, which its script's HUD restore writes)."""
-    return Content("op", tuple(ITEMS), script, STRINGS, profile.TITLE_TOKENS, extra_shapes=EXTRA_SHAPES,
+    return Content("op", tuple(ITEMS), script, STRINGS, profile.TITLE_TOKENS, extra_shapes=extra_shapes(),
                    scenario=profile.SCENARIO, mod_name=profile.MOD_NAME, menu_renames=profile.MENU_RENAMES,
                    prod_menu_switch=PROD_MENU_SWITCH)

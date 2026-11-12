@@ -33,8 +33,8 @@ from typing import NamedTuple
 from modkit.core import ndfbin
 from modkit.ops import script as ops_script
 from modkit.ops.bricks import (
-    fx_wrapper, g_ammo, g_camera, g_cmp, g_count, g_fow, g_fx, g_hint, g_if, g_ignored, g_kill, g_modify, g_seq,
-    g_set, g_simul, g_wait, unit_path,
+    g_ammo, g_camera, g_cmp, g_count, g_fow, g_fx, g_hint, g_if, g_ignored, g_kill, g_modify, g_seq,
+    g_set, g_simul, g_stress, g_wait, unit_path,
 )
 from modkit.ops.graph import Node, i32
 from modkit.ops.leveldesign import LdItem, derived_menu_order
@@ -43,8 +43,8 @@ from modkit.ops.mission import script_frame
 from modkit.ops.profile import SOVIET_PLAYER_CAMP_ROWS, SOVIET_PLAYER_DECK_SWAP, SOVIET_PLAYER_SIDES, Content
 from modkit.ops.script import BRICK_FORCE_HIDE
 from modkit.ops.shapes import (
-    DEATH_CAUSE_SHAPE, DIVIDE, FOW_SHAPES, FX_WRAPPER_SHAPES, HINT_S, PENETRATION, STRICTLY_LESS, STUN, Beat,
-    camp_nodes, create, objective,
+    DEATH_CAUSE_SHAPE, DIVIDE, FOW_SHAPES, FX_WRAPPER_SHAPES, HINT_S, PENETRATION, PHYSICAL, STRESS_SHAPES,
+    STRICTLY_LESS, STUN, TACTICAL_NUKE_FX, Beat, camp_nodes, create, nuke_wrapper, objective,
 )
 from modkit.ops.shapes import Ctx as ShapesCtx
 from modkit.ops.strings import Table
@@ -80,7 +80,6 @@ VISION_UNIT, VISION_COUNT = "BRDM_2_SOV", 3
 KILL_NUM, KILL_DEN = 2, 5            # F5 kills count x 2 / 5 of the targets, rounded down: 4 of 12 (40 %)
 TRANSFER_CAP = 20                    # the one-unit transfer loop's bound (spike's check 6 shape)
 DAMAGE_VALUE = 5                     # F6: ChangeStress Physical, 5 of a vehicle's 10 hit points (MaxPhysicalDamages)
-PHYSICAL = 1                         # EDamageType Physical (shapes.STUN is 2)
 STRESS_VALUE = spike.STRESS_VALUE    # F7: 240, 0.8 of the ground-unit stun cap, as probe 1's check 6
 MULTIPLY = 3                         # EVariableIntegerModification Multiply
 LEAD_S = 5.0                         # each step's hint shows this long before the step acts
@@ -94,15 +93,10 @@ HE_TAGS = ("FX_T", "FX_R1", "FX_R3", "FX_R5", "FX_R7")
 SMOKE_TAGS = ("FX_R2", "FX_R4", "FX_R6", "FX_R8")
 
 # The real nuke: the game's tactical-nuke impact effect, whose 4 parameters have no default, called through the
-# script's own wrapper. parRadiusPhysical sizes its ground scorch (0.75 x) and the scenery it destroys; the inner
-# effect's own default is 25,000. parDirection takes the inner effect's default, 0.
-FX_NUKE = "$/GFX/GameFx/fx_impact_sol_Tactical_Nuke"
+# script's own wrapper (shapes.nuke_wrapper). parRadiusPhysical sizes its ground scorch (0.75 x) and the scenery it
+# destroys; the inner effect's own default is 25,000. parDirection takes the inner effect's default, 0.
+FX_NUKE = TACTICAL_NUKE_FX
 NUKE_RADIUS = 60000.0
-
-
-def nuke_bindings(position: tuple[float, float, float]) -> tuple[tuple[str, object], ...]:
-    return (("parPosition", position), ("parDirection", (0.0, 0.0, 0.0)), ("parRadiusPhysical", NUKE_RADIUS),
-            ("parRadiusSuppress", 0.0))
 
 
 WRAP_ZERO = f"{profile.FOLDER}/FxNukeP0"
@@ -113,11 +107,7 @@ EXTRA_SHAPES = (
     DEATH_CAUSE_SHAPE,               # F5 kills with Penetration
     *FOW_SHAPES,                     # F3, F10
     *FX_WRAPPER_SHAPES,              # F8, F9
-    # F6, F7: ChangeStress, as probe 1's check 6 admits it (spike.EXTRA_SHAPES)
-    ("TGDDescriptorChangeStress", "DamageType", 0x02, None),
-    ("TGDDescriptorChangeStress", "Group", 0x09, "TGDVariableUnitGroup"),
-    ("TGDDescriptorChangeStress", "Value", 0x02, None),
-    ("TGDDescriptorSequential", "SubActions", 0x11, "TGDDescriptorChangeStress"),
+    *STRESS_SHAPES,                  # F6, F7: ChangeStress, as probe 1's check 6 admits it
 )
 
 
@@ -213,19 +203,14 @@ def kill(ctx: Ctx) -> Node:
     ])
 
 
-def change_stress(group: Node, damage_type: int, value: int) -> Node:
-    return Node("TGDDescriptorChangeStress", [("DamageType", i32(damage_type)), ("Group", group),
-                                              ("Value", i32(value))])
-
-
 def damage(ctx: Ctx) -> Node:
     """F6: ChangeStress Physical on the survivors."""
-    return step("fx_h6", [change_stress(ctx.group("fx_targets"), PHYSICAL, DAMAGE_VALUE)])
+    return step("fx_h6", [g_stress(ctx.group("fx_targets"), DAMAGE_VALUE, PHYSICAL)])
 
 
 def stun(ctx: Ctx) -> Node:
     """F7: ChangeStress Stun on the survivors."""
-    return step("fx_h7", [change_stress(ctx.group("fx_targets"), STUN, STRESS_VALUE)])
+    return step("fx_h7", [g_stress(ctx.group("fx_targets"), STRESS_VALUE, STUN)])
 
 
 def nuke_zero(ctx: Ctx) -> Node:
@@ -250,8 +235,7 @@ BEATS: list[Beat] = [Beat(s.t - LEAD_S, s.name, BUILDERS[s.name]) for s in TIMEL
 
 def wrappers() -> list[Node]:
     """The two nuke wrappers, exported by the script under profile.FOLDER."""
-    return [fx_wrapper(WRAP_ZERO, FX_NUKE, nuke_bindings((0.0, 0.0, 0.0))),
-            fx_wrapper(WRAP_WORLD, FX_NUKE, nuke_bindings(U_WORLD))]
+    return [nuke_wrapper(WRAP_ZERO, (0.0, 0.0, 0.0), NUKE_RADIUS), nuke_wrapper(WRAP_WORLD, U_WORLD, NUKE_RADIUS)]
 
 
 # --------------------------------------------------------------------------- strings

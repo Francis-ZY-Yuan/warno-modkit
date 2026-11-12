@@ -370,6 +370,8 @@ class Model:
             self.note("ammo", [last(u) for u in prop(n, "Units")], prop(n, "MaxAmmoRatio") is not None)
         elif cls == "LaunchFXFireAndForgetOnPosition":
             self.note("fx", prop(n, "DatabaseName").text.rsplit("/", 1)[1], last(prop(n, "Position")))
+        elif cls == "Fow":
+            self.note("fow", bool(prop(n, "Fow").v))
         elif cls == "ChangeStress":
             self.note("stress", last(prop(n, "Group")), prop(n, "DamageType").v, prop(n, "Value").v)
         elif cls == "KillAllUnit":
