@@ -56,6 +56,7 @@ How far each mechanism is proven: `PLAYED` worked in a real play; `PROBED` loade
 
 - [arrival-end-in-zone](../components/ops/knowledge/mechanisms/arrival-end-in-zone.md) (ops): Every player arrival entry must end inside a deployment zone of its side or a command zone
 - [camera-shot-from-current-position](../components/ops/knowledge/mechanisms/camera-shot-from-current-position.md) (ops): Mid-battle, a script flies the camera from wherever it is to a one-key path, in a cutscene that can hold the view
+- [deck-page-lock](../components/ops/knowledge/mechanisms/deck-page-lock.md) (ops): LockCombatGroup locks a page of a camp's deck while it runs; stock holds the buy menu in its GROUPS view with the view switch hidden
 - [dialog-text-takes-no-variables](../components/ops/knowledge/mechanisms/dialog-text-takes-no-variables.md) (ops): Dialog text cannot show live numbers; counts go in an objective counter or a hint
 - [difficulty-branches](../components/ops/knowledge/mechanisms/difficulty-branches.md) (ops): Difficulty reaches a script as three conditions; give it a Medium baseline
 - [game-build-classes](../components/ops/knowledge/mechanisms/game-build-classes.md) (ops): A game update removes and renames classes and properties; a mod's files may hold only those the installed build's stock holds
@@ -75,4 +76,6 @@ How far each mechanism is proven: `PLAYED` worked in a real play; `PROBED` loade
 
 ## UNTESTED
 
+- [deck-names-from-op-dictionaries](../components/ops/knowledge/mechanisms/deck-names-from-op-dictionaries.md) (ops): A deck's page and platoon names resolve in the game's COMPANIES and PLATOONS lists, to which an Operation can append its own dictionaries
+- [op-exported-deck](../components/ops/knowledge/mechanisms/op-exported-deck.md) (ops): An Operation can export its own deck from its script and give it to a camp with SetDeck
 - [script-and-battle-scale](../components/ops/knowledge/mechanisms/script-and-battle-scale.md) (ops): How big a script and a battle can get is untested beyond the probes

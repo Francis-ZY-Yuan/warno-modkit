@@ -25,5 +25,5 @@ dictionary list that failed ([[dialog-button-ingame-dictionary]]), while the box
 - Trials: [2026-11-03-probe1-launch2-dialog-buttons](../../../ops/knowledge/trials/2026-11-03-probe1-launch2-dialog-buttons.md)
 - Gates: [`modkit.core.crashdump.in_flight`](../../src/modkit/core/crashdump.py)
 - Skills: [`components/core/skills/warno-launch-triage/SKILL.md`](../../skills/warno-launch-triage/SKILL.md), [`components/core/skills/warno-launch-triage/references/crash-dumps.md`](../../skills/warno-launch-triage/references/crash-dumps.md)
-- Records: [2026-11-03-probe1-launch2-dialog-buttons](../../../ops/knowledge/trials/2026-11-03-probe1-launch2-dialog-buttons.md), [crash-box-hides-the-error](../lessons/crash-box-hides-the-error.md)
+- Records: [2026-11-03-probe1-launch2-dialog-buttons](../../../ops/knowledge/trials/2026-11-03-probe1-launch2-dialog-buttons.md), [crash-box-hides-the-error](../lessons/crash-box-hides-the-error.md), [deck-names-from-op-dictionaries](../../../ops/knowledge/mechanisms/deck-names-from-op-dictionaries.md)
 <!-- referenced-by:end -->

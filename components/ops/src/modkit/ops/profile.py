@@ -28,6 +28,7 @@ from modkit.core import ndfbin, paths
 from modkit.core.gates import check
 from modkit.core.models import Dropped, ManifestRow, Pending, StringTable
 from modkit.core.packaging import check_mod_id
+from modkit.ops.gates import LISTS
 from modkit.ops.graph import Node
 from modkit.ops.items import Item
 from modkit.ops.leveldesign import LdItem
@@ -197,6 +198,10 @@ class Content:
     # MapConfiguration differs from its siblings': its own Operations menu order (OrderToChainMission), which every
     # Operation active at once needs [[content-identity-unique]].
     scalar_edits: tuple[ScalarEdit, ...] | None = field(kw_only=True, default=None)
+    # Stock tokens of the game's own dictionary lists (gates.LIST_PROPS: UNITS, COMPANIES, PLATOONS) that the content's
+    # deck names without shipping them, by list, declared as Template.global_tokens are: the tokens gate admits them in
+    # their list [[deck-names-from-op-dictionaries]].
+    list_tokens: Mapping[str, tuple[str, ...]] = field(kw_only=True, default_factory=dict)
 
 
 class ExtraPack(NamedTuple):
@@ -258,6 +263,11 @@ class OpProfile:
     # the path the re-keyed MapConfiguration names (modkit.ops.items.menu_art; a scenario's Assets folder is
     # STOCK_ASSETS). Empty: the template's own pictures, as the asset rules copy them.
     menu_art: Mapping[str, str | MenuPicture] = field(default_factory=dict)
+    # Dictionaries of `dictionaries` the game reads as part of one of its own dictionary lists (gates.LISTS), not as the
+    # scenario's: a dictionary's name -> the list (a deck's page names: {'DECK_COMPANIES': 'COMPANIES'}). The build
+    # appends a TLocalisationDicoResource per entry to MapConfiguration (modkit.ops.rekey.append_dico_resources)
+    # [[deck-names-from-op-dictionaries]]. Empty: MapConfiguration as the template's.
+    dictionary_lists: Mapping[str, str] = field(default_factory=dict)
     # --- extension points
     extra_config_rows: tuple[str, ...] = ()                     # whole lines under Config.ini's [Config]
     extra_manifest_rows: tuple[ManifestRow, ...] = ()           # rows of MANIFEST.tsv of the op's own
@@ -275,6 +285,10 @@ class OpProfile:
         check(tuple(self.packs) == PACKS,
               f"OpProfile.packs is {list(self.packs)}, but a build always plans and writes the packs {list(PACKS)}, "
               f"in that order: leave packs out (a new pack goes in extra_packs)")
+        unpacked = sorted(set(self.dictionary_lists) - set(self.dictionaries))
+        check(not unpacked, f"OpProfile.dictionary_lists names {unpacked}, which dictionaries does not pack")
+        unknown = sorted(set(self.dictionary_lists.values()) - set(LISTS))
+        check(not unknown, f"OpProfile.dictionary_lists appends to {unknown}: the gates know the lists {list(LISTS)}")
 
     def shape_globs(self, inner: str) -> tuple[str, ...]:
         """The stock files whose shapes the generated `inner` may use, as absolute globs."""

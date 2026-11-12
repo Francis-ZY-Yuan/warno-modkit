@@ -23,6 +23,10 @@ Topic `objectives-and-text`, declared by ops. Back to [the map](../README.md).
 - [dialog-text-takes-no-variables](../../components/ops/knowledge/mechanisms/dialog-text-takes-no-variables.md): Dialog text cannot show live numbers; counts go in an objective counter or a hint (ops, verified 201602)
 - [objective-label-needs-position](../../components/ops/knowledge/mechanisms/objective-label-needs-position.md): An objective's map label needs a position, or it pins the map corner (ops, verified 201602)
 
+### UNTESTED
+
+- [deck-names-from-op-dictionaries](../../components/ops/knowledge/mechanisms/deck-names-from-op-dictionaries.md): A deck's page and platoon names resolve in the game's COMPANIES and PLATOONS lists, to which an Operation can append its own dictionaries (ops)
+
 ## Lessons
 
 Taught by the trials of these mechanisms.
@@ -39,6 +43,8 @@ Taught by the trials of these mechanisms.
 ## Trials, newest first
 
 - 2026-11-12 [2026-11-12-sc-glyph-every-dictionary](../../components/ops/knowledge/trials/2026-11-12-sc-glyph-every-dictionary.md) (ops): survey, pass
+- 2026-11-12 [2026-11-12-deck-gate-stock-survey](../../components/ops/knowledge/trials/2026-11-12-deck-gate-stock-survey.md) (ops): survey, pass
+- 2026-11-12 [2026-11-12-deck-gate-bad-builds](../../components/ops/knowledge/trials/2026-11-12-deck-gate-bad-builds.md) (ops): survey, fail
 - 2026-11-11 [2026-11-11-twin-strike-play1](../../components/ops/knowledge/trials/2026-11-11-twin-strike-play1.md) (ops): play, mixed
 - 2026-11-06 [2026-11-06-probe2-play-run-a](../../components/ops/knowledge/trials/2026-11-06-probe2-play-run-a.md) (ops): play, pass
 - 2026-11-04 [2026-11-04-lifecycle-survey](../../components/ops/knowledge/trials/2026-11-04-lifecycle-survey.md) (ops): re, pass

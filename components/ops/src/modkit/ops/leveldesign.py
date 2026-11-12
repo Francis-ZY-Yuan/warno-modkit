@@ -8,7 +8,8 @@ wrote it as four int32 words, GUID1..GUID4, big-endian.
 
 Item GUIDs are uuid5 names under a namespace string the mod chooses (``ld_guid``), so two mods cloning one stock
 template never share a GUID. The scenario's GUID (``scenario_guid``) is hashed the same way, and a published
-Operation's menu order (``derived_menu_order``) is derived from it.
+Operation's menu order (``derived_menu_order``) is derived from it, as is an op-exported deck's identifier
+(``derived_deck_identifier``).
 """
 from __future__ import annotations
 
@@ -95,6 +96,25 @@ def derived_menu_order(scenario: str, namespace: str) -> int:
     and hand picks cluster just above stock's numbers. The scenario's GUID, because it already is the Operation's hashed
     identity (its own namespace and scenario id), so one identity drives both."""
     return MENU_ORDER_BASE + int.from_bytes(scenario_guid(scenario, namespace), "big") % MENU_ORDER_SPAN
+
+
+DECK_ID_DIGITS = 12   # hex digits of a derived deck identifier's hash: 48 bits
+
+
+def derived_deck_identifier(scenario: str, namespace: str, prefix: str, name: str) -> str:
+    """An op-exported deck's DeckIdentifier [[op-exported-deck]]: '<prefix>_<hash>_<name>', the hash the first
+    DECK_ID_DIGITS hex digits (upper case) of the GUID of '<scenario>/Deck/<name>' under `namespace` (ld_guid's scheme).
+
+    A hash, because the game registers every deck it loads under its identifier, stock's and every active mod's, and a
+    second deck with one identifier stops the load [[derive-cross-mod-ids-from-a-hash]]. `prefix` and `name` are
+    letters and digits, and the identifier never holds the scenario id, which the references gate reads as a path
+    to resolve."""
+    for part in (prefix, name):
+        check(part.isascii() and part.isalnum(), f"deck identifier part {part!r}: letters and digits only")
+    digest = name_guid(namespace, f"{scenario}/Deck/{name}").hex()[:DECK_ID_DIGITS].upper()
+    identifier = f"{prefix}_{digest}_{name}"
+    check(scenario not in identifier, f"deck identifier {identifier} holds the scenario id {scenario}")
+    return identifier
 
 
 def zone_addon_extra(it: LdItem) -> list[tuple[str, object]]:

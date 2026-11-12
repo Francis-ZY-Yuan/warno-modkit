@@ -46,5 +46,5 @@ lifts it (TheWingedHussars #165) [[scripted-economy]].
 - Shapes: [`modkit.ops.shapes.reveal`](../../src/modkit/ops/shapes.py)
 - Skills: [`components/core/skills/warno-launch-triage/SKILL.md`](../../../core/skills/warno-launch-triage/SKILL.md), [`components/core/skills/warno-stock-precedent/SKILL.md`](../../../core/skills/warno-stock-precedent/SKILL.md), [`components/ops/skills/warno-new-operation/SKILL.md`](../../skills/warno-new-operation/SKILL.md)
 - Examples: [`components/ops/examples/open-door/README.md`](../../examples/open-door/README.md), [`components/ops/examples/probes/README.md`](../../examples/probes/README.md)
-- Records: [add-unit-to-deck](add-unit-to-deck.md), [know-whether-an-action-finishes](../lessons/know-whether-an-action-finishes.md), [script-container-semantics](script-container-semantics.md), [scripted-economy](scripted-economy.md), [weapons-jammed-effect](weapons-jammed-effect.md)
+- Records: [add-unit-to-deck](add-unit-to-deck.md), [deck-page-lock](deck-page-lock.md), [know-whether-an-action-finishes](../lessons/know-whether-an-action-finishes.md), [script-container-semantics](script-container-semantics.md), [scripted-economy](scripted-economy.md), [weapons-jammed-effect](weapons-jammed-effect.md)
 <!-- referenced-by:end -->

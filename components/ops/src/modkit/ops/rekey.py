@@ -15,12 +15,17 @@ ship. Its source hashes stay stock's; the game ignores a source the install lack
 ``Rekey`` holds every value of one such clone; ``rekey_definition``, ``rekey_tag`` and ``rekey_dbg`` apply it, and
 ``dump_rows`` lists the changes it may make. ``modkit.ops.gates.check_dump_diff`` then compares typed dumps (a .dbg's
 text) line by line: every new line must equal the stock line with the applicable ``DumpRow`` patterns applied.
+
+One re-keying adds objects: a clone that ships its own dictionary for one of the game's dictionary lists (a deck's
+page and platoon names [[deck-names-from-op-dictionaries]]) appends a ``TLocalisationDicoResource`` per dictionary to
+MapConfiguration, in the shape of the template's own (``append_dico_resources``), and a source line for each to its
+``.dbg``; the dump rows name the lines each adds.
 """
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Mapping
+from typing import Callable, Mapping
 
 from modkit.core import dbg, ndfbin
 from modkit.core.gates import check
@@ -86,11 +91,14 @@ class ScalarEdit:
 
 @dataclass(frozen=True)
 class DumpRow:
-    """A re-keying row as seen in a typed dump: `pattern` in a stock line becomes `repl`."""
+    """A re-keying row as seen in a typed dump: `pattern` in a stock line becomes `repl` (a string, or a function of
+    the match as re.sub takes one); `append` holds the patterns (re.fullmatch) of the lines an entry's dump gains after
+    its last stock line, in order (objects a re-keying adds: Rekey.dico_resources)."""
     label: str
     kinds: tuple[str, ...] | None  # entries it may touch (None = any)
     pattern: str
-    repl: str
+    repl: str | Callable[[re.Match], str]
+    append: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -107,6 +115,9 @@ class Rekey:
     map_trans: Mapping[str, str]    # whole TRAN entries (e.g. the EnvironmentSettings import's map name)
     deck_swap: Mapping[str, str]    # whole MapConfiguration STRG entries (LocalPlayerDeck), each hit exactly once
     kinds: tuple[str, ...]          # the Definition kinds shipped (re-keyed or generated)
+    # (game dictionary list, dictionary name): a TLocalisationDicoResource appended to MapConfiguration per row, beside
+    # the template's own (append_dico_resources) [[deck-names-from-op-dictionaries]]
+    dico_resources: tuple[tuple[str, str], ...] = ()
 
 
 # The Definition kinds holding the scenario GUID once each (TChallengeMapInfo.GUID, TScenarioDefinition.GUID).
@@ -151,7 +162,45 @@ def rekey_definition(raw: bytes, kind: str, rk: Rekey) -> bytes:
         check(len(sites) == 1, f"{kind} {ed.cls}.{ed.prop}: {len(sites)} sites hold {ed.old}, expected 1")
         ob, k = sites[0]
         ob.props[k] = (ob.props[k][0], ed.new)
+    if kind == DICO_KIND and rk.dico_resources:
+        append_dico_resources(nb, rk.scenario, rk.dico_resources)
     return encode(nb, kind)
+
+
+# A dictionary a clone appends to one of the game's dictionary lists: a TLocalisationDicoResource in MapConfiguration,
+# the file its kind already appends SCENARIO_DEFINITION.csv to the game's MAPS list with (13 stock MapConfigurations
+# do; MapConfiguration loads at the game's start and stays loaded). The file ships per language as
+# Localisation/<scenario>/<name>-<LANG>.dic, the path the game maps "ScenariosData:/<scenario>/<name>.csv" to.
+DICO_KIND = "MapConfiguration"
+DICO_RESOURCE = "TLocalisationDicoResource"
+
+
+def dico_file(scenario: str, name: str) -> str:
+    """The FileName a TLocalisationDicoResource names the dictionary `name` of `scenario` by."""
+    return f"ScenariosData:/{scenario}/{name}.csv"
+
+
+def append_dico_resources(nb: ndfbin.NdfBin, scenario: str, resources: tuple[tuple[str, str], ...]) -> None:
+    """Append to the decoded MapConfiguration `nb` one TLocalisationDicoResource per (list, name) of `resources`: the
+    template's own resource (exactly one) copied with DicoToken loc'<list>' and FileName dico_file(scenario, name), each
+    a new unreferenced object (TOPO), its FileName a new STRG entry."""
+    found = [ob for ob in nb.objects if nb.cname(ob.cls) == DICO_RESOURCE]
+    check(len(found) == 1, f"{DICO_KIND}: {len(found)} {DICO_RESOURCE} objects, expected the template's one")
+    check(nb.chnk == [(0, len(nb.objects))], f"{DICO_KIND}: CHNK {nb.chnk}, expected one chunk")
+    template = found[0]
+    for lst, name in resources:
+        ob = ndfbin.Obj(template.cls)
+        for pi, v in template.props:
+            if nb.pname(pi) == "DicoToken":
+                v = ndfbin.loc_value(lst)
+            elif nb.pname(pi) == "FileName":
+                v = Value(v.tag, nb.intern_string(dico_file(scenario, name)))
+            ob.props.append((pi, Value(v.tag, v.v, v.extra)))
+        check({nb.pname(pi) for pi, _ in ob.props} >= {"DicoToken", "FileName"},
+              f"{DICO_KIND}: the template's {DICO_RESOURCE} lacks DicoToken or FileName")
+        nb.objects.append(ob)
+        nb.topo.append(len(nb.objects) - 1)
+    nb.chnk = [(0, len(nb.objects))]
 
 
 def rekey_tag(raw: bytes, kind: str, rk: Rekey, config_hash: int) -> bytes:
@@ -177,11 +226,19 @@ def rekey_dbg(raw: bytes, kind: str, rk: Rekey, objects: int) -> bytes:
     """A stock .dbg re-keyed: the id wherever it stands (a source path ScenariosData:/<source>/..., a name; a map of
     template files only, as Survivors' ScenarioLoader's, names none), every line kept in its place. The re-keyed .txn
     beside it keeps stock's objects in order, so the map still holds one line per object: `objects`
-    (modkit.core.dbg)."""
+    (modkit.core.dbg). A MapConfiguration with appended dictionary resources (Rekey.dico_resources) gains a line for
+    each after stock's, the source and column of stock's last line (its own resource's) on the lines after it."""
     text = dbg.read_text(raw)
     lines = dbg.read(raw)
-    check(len(lines) == objects, f"{kind}.{DBG}: {len(lines)} lines for {objects} objects")
-    return dbg.write_text(text.replace(rk.source, rk.scenario))
+    extra = len(rk.dico_resources) if kind == DICO_KIND else 0
+    check(len(lines) + extra == objects, f"{kind}.{DBG}: {len(lines)} lines for {objects} objects"
+                                         + (f" ({extra} appended)" if extra else ""))
+    text = text.replace(rk.source, rk.scenario)
+    if extra:
+        last = lines[-1]
+        text += "".join(f"{last.name};{last.source.replace(rk.source, rk.scenario)};{last.line + k};{last.column}\n"
+                        for k in range(1, extra + 1))
+    return dbg.write_text(text)
 
 
 def generated_dbg(raw: bytes, scenario: str, source: str) -> bytes:
@@ -213,4 +270,31 @@ def dump_rows(rk: Rekey) -> list[DumpRow]:
              for o, n in rk.map_trans.items()]
     rows += [DumpRow(f"deck {o} -> {n}", ("MapConfiguration",), re.escape(f"'{o}'"), f"'{n}'")
              for o, n in rk.deck_swap.items()]
+    if rk.dico_resources:
+        rows += dico_rows(rk.scenario, rk.dico_resources)
+    return rows
+
+
+# The typed dump's counts line: objects, classes, props, strings, trans, topo and the one chunk.
+COUNTS = re.compile(r"^// objects=(\d+) (classes=\d+ props=\d+) strings=(\d+) (trans=\d+) topo=(\d+) "
+                    r"chnk=\[\(0, (\d+)\)\]$")
+
+
+def dico_rows(scenario: str, resources: tuple[tuple[str, str], ...]) -> list[DumpRow]:
+    """The dump rows of append_dico_resources and rekey_dbg's appended lines: MapConfiguration's counts line gains
+    one object, string and TOPO entry per resource, its dump the resources' objects after stock's last, and its .dbg
+    a source line each."""
+    n = len(resources)
+
+    def counts(m: re.Match) -> str:
+        return (f"// objects={int(m[1]) + n} {m[2]} strings={int(m[3]) + n} {m[4]} topo={int(m[5]) + n} "
+                f"chnk=[(0, {int(m[6]) + n})]")
+
+    rows = [DumpRow(f"{DICO_KIND} +{n} dictionary resources: counts", (DICO_KIND,), COUNTS.pattern, counts)]
+    for lst, name in resources:
+        rows.append(DumpRow(f"dictionary {name} -> {lst}", (DICO_KIND,), r"(?!)", "", append=(
+            rf"obj_\d+ is {DICO_RESOURCE}   // topo #\d+", r"\(", re.escape(f"    DicoToken = <loc> loc'{lst}'"),
+            re.escape(f'    FileName = <path> "{dico_file(scenario, name)}"'), r"\)", "")))
+        rows.append(DumpRow(f"dictionary {name} -> {lst}: its source line", (f"{DICO_KIND}.{DBG}",), r"(?!)", "",
+                            append=(rf";{re.escape(f'ScenariosData:/{scenario}/')}[^;]+;\d+;\d+",)))
     return rows

@@ -1,8 +1,9 @@
 """The op-domain records more than one module or example shares, in one place.
 
-``ForceRow`` is a row of units: a deck card (``shapes.add_card``), a wave's or a company's row
-(``mission.create_rows``), a stock deck's pack (``gates.deck_packs``) or a row of a force table (``forces.rows_of``),
-which also says where and in which group it spawns. ``CampRow`` is one camp of a template's CampList
+``ForceRow`` is a row of units: a deck card (``shapes.add_card``, or a platoon's card of an op's own deck,
+``forces.Platoon``, with its experience), a wave's or a company's row (``mission.create_rows``), a stock deck's pack
+(``gates.deck_packs``) or a row of a force table (``forces.rows_of``), which also says where and in which group it
+spawns. ``CampRow`` is one camp of a template's CampList
 (``shapes.camp_nodes``), ``Ending`` one row of an end funnel (``mission.end_funnel``), ``Knobs`` a difficulty knob's
 three values (``mission.difficulty``) and ``Buttons`` a two-button dialog's buttons (``mission.reask_loop``).
 
@@ -40,7 +41,8 @@ class ForceRow:
     `transport` (the carrier's bare name) or None. A force table's row (``forces.rows_of``) also names its scripted
     `group`, the side it is created in (`camp`, a key of the content's sides), its `spawn` (a point of the content's
     map), its `echelon` (the order-of-battle label for the briefing), and whether it is `fixed` (not multiplied by the
-    scale knob); a bare row leaves them empty."""
+    scale knob); a bare row leaves them empty. A card of an op's own deck (``forces.Platoon``) also has its experience
+    level `xp` (0 to 3; stock packs leave 0 out)."""
     unit: str
     count: int
     transport: str | None = None
@@ -49,6 +51,13 @@ class ForceRow:
     spawn: str = field(default="", kw_only=True)
     echelon: str = field(default="", kw_only=True)
     fixed: bool = field(default=False, kw_only=True)
+    xp: int = field(default=0, kw_only=True)
+
+    @property
+    def key(self) -> tuple[str, str | None, int]:
+        """A deck card's key: the game pools a deck's cards by (unit, transport, experience), so every card of one key
+        is one count in the buy menu, whichever pack or page holds it [[op-exported-deck]]."""
+        return self.unit, self.transport, self.xp
 
 
 @dataclass(frozen=True, config=_ROW)

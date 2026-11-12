@@ -7,12 +7,14 @@ reviewed-pending entry for one:
 1. strings: ``check_strings``;
 2. every generated ndfbin: ``check_canonical``, ``check_shapes`` and the game's load-time property rules
    (``modkit.core.ndfrules.check_file``);
-3. the bindings and the script: ``check_binding``, ``check_tokens`` (the dialog-button INGAME dictionary included),
+3. the bindings and the script: ``check_binding``, ``check_tokens`` (the dialog-button INGAME dictionary and a deck's
+   name lists included),
    ``check_references``, the arrivals and tiers (``check_arrivals``, ``check_tiers``), ``check_objective_pins``,
    ``check_never_finishing``, ``check_end_funnel``, ``check_empty_group_guard``, ``check_dialog_text``,
    ``check_rules``, ``check_zone_tags``, ``check_smart_orders``, ``check_prod_menu_switch``, ``check_script_effects``
    (every effect the script launches is a self-contained GameFx effect), ``check_created_in_zone`` (every unit the
-   script creates stands inside the playable zone);
+   script creates stands inside the playable zone), ``check_decks`` (every SetDeck names a deck the game will have
+   registered; a deck the script exports passes the game's load checks and the op's deck rules);
 4. every re-keyed file differs from stock only by its dump rows: ``check_dump_diff``;
 5. the package is scenario-only and ships no Gameplay file: ``check_package``; the Definition pack is in build
    210942's layout, every .txn with its .txn.tag and a .dbg of one line per object (``check_definition_layout``),
@@ -60,7 +62,7 @@ from modkit.ops.graph import TRUE, Imp, Node, all_values, build_graph, decode, n
 from modkit.ops.items import Item
 from modkit.ops.leveldesign import GD_TAG_CLASS, LD_FILE, TAG_ID, ZONE_FILES, LdItem, read_ld_items
 from modkit.ops.models import ForceRow, MenuEntry, Zone
-from modkit.ops.rekey import DBG, DEF_EXTS, TAG, TAG_CLASS, TXN, DumpRow, def_entry, def_path
+from modkit.ops.rekey import DBG, DEF_EXTS, DICO_RESOURCE, TAG, TAG_CLASS, TXN, DumpRow, def_entry, def_path
 from modkit.ops.script import BRICK_DEFAULT, BRICK_FORCE_HIDE, PROD_MENU_SWITCH
 from modkit.ops.strings import StringError, check_glyphs, check_parity, check_titles, stock_chars
 from modkit.ops.zones import (
@@ -477,7 +479,8 @@ def template_name_gate(name: str, allow: Iterable[str] = ()) -> Callable[[list[I
 
 
 def check_dump_diff(item: Item, rows: list[DumpRow]) -> tuple[list[str], set[str]]:
-    """Every new dump line must equal the stock line with the applicable rows applied.
+    """Every new dump line must equal the stock line with the applicable rows applied; the lines after the last stock
+    line are exactly those the applicable rows append (DumpRow.append), in row order.
 
     `item` is a re-keyed Definition entry (path 'NDF/Scenarios/<scenario>/<Kind>.<ext>', chunks() and stock bytes);
     a .dbg is compared by its text. Returns (changed line pairs for the report, labels of the rows that fired).
@@ -486,8 +489,15 @@ def check_dump_diff(item: Item, rows: list[DumpRow]) -> tuple[list[str], set[str
     applicable = [r for r in rows if r.kinds is None or kind in r.kinds]
     new = typed_dump(b"".join(item.chunks()), item.path)
     old = typed_dump(item.stock, item.path)
-    check(len(old) == len(new), f"{item.path}: dump has {len(new)} lines, stock {len(old)}")
+    appended = [(r.label, pattern) for r in applicable for pattern in r.append]
+    check(len(old) + len(appended) == len(new), f"{item.path}: dump has {len(new)} lines, stock {len(old)}"
+                                                + (f" and {len(appended)} appended" if appended else ""))
     report, fired = [], set()
+    for (label, pattern), b in zip(appended, new[len(old):]):
+        check(re.fullmatch(pattern, b) is not None, f"{item.path}: unexplained appended line ({label})\n"
+                                                    f"  want:  {pattern}\n  got:   {b.strip()}")
+        fired.add(label)
+        report.append(f"    +{b.strip()}")
     for a, b in zip(old, new):
         want = a
         for r in applicable:
@@ -673,16 +683,59 @@ INGAME_PROPS = frozenset({("TGDDescriptorCutsceneDialog", "TokenBoutonChoix0"),
 # The scenario dictionaries each Definition kind's loc tokens resolve in.
 DICTIONARY_USES = {"MapConfiguration": ("SCENARIO_DEFINITION",),
                    "GDScript": ("Scripting/Dialog", "Scripting/Localization")}
+# A deck's names resolve in the game's own dictionary lists, never in the scenario's dictionaries: its DeckName in
+# UNITS, a page's Name in COMPANIES and a platoon's Name in PLATOONS (every token of the game's decks, build 210942,
+# resolves so: 127 deck names, 43 page names, 79 platoon names), when a SetDeck builds the deck in battle, not when the
+# file loads. A token no file of its list holds throws a dictionary error naming the token and the list
+# [[deck-names-from-op-dictionaries]].
+LIST_PROPS = {("TDeckDescriptor", "DeckName"): "UNITS",
+              ("TDeckCombatGroupDescriptor", "Name"): "COMPANIES",
+              ("TDeckSmartGroupDescriptor", "Name"): "PLATOONS"}
+LISTS = tuple(dict.fromkeys(LIST_PROPS.values()))
+# A file a scenario appends to one of the game's dictionary lists is a TLocalisationDicoResource (rekey.DICO_RESOURCE)
+# whose DicoToken names the list and whose FileName names the file (13 stock MapConfigurations append their
+# SCENARIO_DEFINITION.csv to MAPS so), from whatever file it loads in. Each appended file ships as
+# Localisation/<scenario>/<name>-<LANG>.dic.
 
 
 def split_tokens(nb: ndfbin.NdfBin) -> tuple[set[int], set[int]]:
-    """(tokens the scenario's dictionaries must hold, tokens the game looks up in INGAME: INGAME_PROPS)."""
+    """(tokens the scenario's dictionaries must hold, tokens the game looks up in INGAME: INGAME_PROPS). A deck's
+    names are in neither: list_tokens."""
     ours, ingame = set(), set()
     for ob, pi, x in all_values(nb):
         if x.tag == 0x1D and nb.pname(pi) != "DicoToken":  # DicoToken names the dictionary
             key = (nb.cname(ob.cls), nb.pname(pi))
-            (ingame if key in INGAME_PROPS else ours).add(int.from_bytes(x.v, "little"))
+            if key not in LIST_PROPS:
+                (ingame if key in INGAME_PROPS else ours).add(int.from_bytes(x.v, "little"))
     return ours - {0}, ingame - {0}
+
+
+def list_tokens(nb: ndfbin.NdfBin) -> dict[str, set[int]]:
+    """The deck name tokens of `nb` by the game's dictionary list each is looked up in (LIST_PROPS); a zero token (no
+    name) needs none."""
+    out: dict[str, set[int]] = {}
+    for ob, pi, x in all_values(nb):
+        lst = LIST_PROPS.get((nb.cname(ob.cls), nb.pname(pi)))
+        if x.tag == 0x1D and lst is not None and int.from_bytes(x.v, "little"):
+            out.setdefault(lst, set()).add(int.from_bytes(x.v, "little"))
+    return out
+
+
+def appended_dictionaries(nb: ndfbin.NdfBin, scenario: str) -> list[tuple[str, str]]:
+    """(list, dictionary name) of every file `nb` appends to one of the game's dictionary lists (DICO_RESOURCE) from
+    the scenario's own folder: DicoToken loc'<list>', FileName "ScenariosData:/<scenario>/<name>.csv"."""
+    out = []
+    for ob in nb.objects:
+        if nb.cname(ob.cls) != DICO_RESOURCE:
+            continue
+        props = {nb.pname(pi): v for pi, v in ob.props}
+        token, name = props.get("DicoToken"), props.get("FileName")
+        lst = ndfbin.token_unhash(int.from_bytes(token.v, "little")) if token is not None else None
+        text = nb.strings[name.v].decode("latin-1") if name is not None and name.tag in (0x07, 0x1C) else ""
+        m = re.fullmatch(rf"ScenariosData:/{re.escape(scenario)}/(.+)\.csv", text)
+        if lst and m:
+            out.append((lst, m[1]))
+    return out
 
 
 @functools.cache
@@ -700,11 +753,17 @@ def ingame_misses(nb: ndfbin.NdfBin, path: str) -> list[str]:
 
 
 def check_tokens(items: list[Item], scenario: str, langs: Iterable[str], *, global_tokens: Iterable[str],
-                 ingame_dic: str) -> tuple[int, int]:
+                 ingame_dic: str, list_tokens_declared: Mapping[str, Iterable[str]] | None = None
+                 ) -> tuple[int, int, int]:
     """Each loc token a Definition ndfbin uses exists in every language of `langs` of its scenario dictionaries
     (DICTIONARY_USES), or is one of `global_tokens` (stock tokens a mod uses without shipping them). A dialog button's
     token must instead be in the game's INGAME dictionary (INGAME_PROPS; `ingame_dic`: its path with '{lang}'),
-    which the scenario's own dictionaries cannot extend. Returns (tokens, of which button tokens)."""
+    which the scenario's own dictionaries cannot extend.
+
+    A deck's names (LIST_PROPS) must be in the game's dictionary list the game looks each up in: the game's own
+    (`list_tokens_declared`, {list: stock tokens of it the content names}, declared as `global_tokens` are) or a file
+    a shipped MapConfiguration appends to that list (appended_dictionaries), which must ship in every language of
+    `langs` [[deck-names-from-op-dictionaries]]. Returns (tokens, of which button tokens, of which deck names)."""
     by_path = {it.path: it for it in items if it.pack == "Assets" and it.path.endswith(".dic")}
 
     def keys(name: str, lang: str) -> set[int]:
@@ -713,8 +772,21 @@ def check_tokens(items: list[Item], scenario: str, langs: Iterable[str], *, glob
         return {k for k, _ in trad.read_dic(b"".join(it.chunks()))}
 
     global_keys = {ndfbin.token_hash(t) for t in global_tokens}
+    declared = {lst: {ndfbin.token_hash(t) for t in toks} for lst, toks in (list_tokens_declared or {}).items()}
+    unknown = sorted(set(declared) - set(LISTS))
+    check(not unknown, f"declared stock tokens for {unknown}: the gate knows the deck name lists {list(LISTS)}")
     langs = tuple(langs)
-    n = buttons = 0
+    appended: dict[str, list[str]] = {}
+    for it in items:
+        entry = def_entry(it.path) if it.pack == "Definition" else None
+        if entry is not None and entry[1] == "MapConfiguration" and entry[2] == TXN:
+            for lst, name in appended_dictionaries(decode(b"".join(it.chunks()))[0], scenario):
+                for lang in langs:
+                    check(f"Localisation/{scenario}/{name}-{lang}.dic" in by_path,
+                          f"{it.path} appends {name}.csv to the game's {lst} list, but {name}-{lang}.dic is not "
+                          f"shipped: the game reads the file of each language")
+                appended.setdefault(lst, []).append(name)
+    n = buttons = listed = 0
     for it in items:
         entry = def_entry(it.path) if it.pack == "Definition" else None
         if entry is None or entry[1] not in DICTIONARY_USES or entry[2] != TXN:
@@ -722,6 +794,7 @@ def check_tokens(items: list[Item], scenario: str, langs: Iterable[str], *, glob
         kind = entry[1]
         nb, _, _ = decode(b"".join(it.chunks()))
         toks, ingame = split_tokens(nb)
+        names = list_tokens(nb)
         for lang in langs:
             have = set().union(*(keys(name, lang) for name in DICTIONARY_USES[kind])) | global_keys
             missing = sorted(ndfbin.token_unhash(t) or hex(t) for t in toks - have)
@@ -730,8 +803,17 @@ def check_tokens(items: list[Item], scenario: str, langs: Iterable[str], *, glob
             check(not missing, f"{it.path}: dialog button tokens missing from the game's {lang} INGAME dictionary: "
                                f"{missing} (the game looks button labels up there, not in the scenario's "
                                f"dictionaries: INGAME_PROPS)")
-        n, buttons = n + len(toks) + len(ingame), buttons + len(ingame)
-    return n, buttons
+            for lst, used in names.items():
+                have = declared.get(lst, set()).union(*(keys(name, lang) for name in appended.get(lst, ())))
+                missing = sorted(ndfbin.token_unhash(t) or hex(t) for t in used - have)
+                check(not missing, f"{it.path}: deck name tokens missing from the game's {lst} list in {lang}: "
+                                   f"{missing} (the game looks a deck's names up in UNITS, COMPANIES and PLATOONS, not "
+                                   f"in the scenario's dictionaries: declare a stock token of the list "
+                                   f"(Content.list_tokens) or ship it in a dictionary appended to the list "
+                                   f"(OpProfile.dictionary_lists))")
+        size = sum(len(used) for used in names.values())
+        n, buttons, listed = n + len(toks) + len(ingame) + size, buttons + len(ingame), listed + size
+    return n, buttons, listed
 
 
 # --------------------------------------------------------------------------- the 'only stock shapes' gate
@@ -2090,18 +2172,335 @@ def check_definition_layout(entries: Mapping[str, bytes], scenario: str) -> int:
     return len(kinds)
 
 
+# --------------------------------------------------------------------------- decks (gate 3)
+# A script names each camp's deck with SetDeck, by DeckIdentifier. The game registers every TDeckDescriptor a file
+# loads under its identifier: the stock decks (GFX/Deck) at startup, and a deck an op's GDScript exports when that
+# loads, before its script launches [[op-exported-deck]]. At the launch every SetDeck's identifier must be registered,
+# or the mission fails with a GDBrick error naming DeckIdentifier; a second deck with a registered identifier stops the
+# load. Before it registers a deck, the game checks it, each check fatal: every platoon's pack index names one of the
+# deck's packs; and a carried pack's unit can be carried (it has a TTransportableModuleDescriptor), its carrier is a
+# transport (a TTransporterModuleDescriptor), and the two share a tag (the unit's TagSet and the carrier's
+# TransportableTagSet: every carried pack of the game's 2,486 decks shares one, while 2,034 of its 2,873 would fail if
+# the carrier's whole set were required). A pack with a carrier and no unit is not checked: it crashes.
+#
+# check_decks holds a script to these, read where the game reads them (the shipped GDScript, the game's Unit, Deck and
+# Division files), and an op-exported deck to the op's rules besides: a Challenge's group rules (GFX/Deck's
+# TDeckGroupRules: 5 pages, 6 platoons a page, 3 packs a platoon; the game's 17 Operation decks with pages keep them),
+# a division of the game's, an identifier of its own, every pack drawn exactly by its platoons, page locks
+# (LockCombatGroup) in range of the camp's deck, and no card key (unit, carrier, experience) on both a locked page
+# and an open one: the game pools a deck's cards by that key, so an open page would sell what the lock holds back
+# [[deck-page-lock]].
+
+DECK_FILE = "transactions/NDF/GFX/Deck.txn"          # the game's decks and their group rules
+UNIT_FILE = "transactions/NDF/GFX/Unit.txn"          # the game's units: their transport modules and tags
+DIVISION_FILE = "transactions/NDF/GFX/Division.txn"  # the game's divisions: a deck's DeckDivision
+DIVISION_PREFIX = "$/GFX/Division/"
+DECK, PACK, PAGE, PLATOON = ("TDeckDescriptor", "TDeckPackDescriptor", "TDeckCombatGroupDescriptor",
+                             "TDeckSmartGroupDescriptor")
+SET_DECK, LOCK_PAGE = "TGDDescriptorSetDeck", "TGDDescriptorLockCombatGroup"
+GAME_CHALLENGE = 5   # TGameMode GameChallenge (CommonData/Gameplay/Constantes/Enumerations/GameMode.ndf)
+STOCK_DECKS_MINIMUM = 1000   # fewer stock decks means the deck file was not read right (210942 holds 2,486)
+
+
+class Carriage(NamedTuple):
+    """What the game's unit file says of a unit's transport: its tags (TTagsModuleDescriptor.TagSet), whether it can be
+    carried (a TTransportableModuleDescriptor) and, for a transport (a TTransporterModuleDescriptor), the tags it
+    carries (its TransportableTagSet; None: not a transport)."""
+    tags: frozenset[str]
+    transportable: bool
+    carries: frozenset[str] | None
+
+
+class DeckRules(NamedTuple):
+    """The game's group rules for a Challenge's decks (TDeckGroupRules): pages, platoons per page, packs per platoon."""
+    pages: int
+    platoons: int
+    packs: int
+
+
+class StockDecks(NamedTuple):
+    """The game's decks (each identifier's page count), a Challenge's group rules, the game's divisions (export paths)
+    and how many decks were read."""
+    pages: Mapping[str, int]
+    rules: DeckRules
+    divisions: frozenset[str]
+    decks: int
+
+
+class DeckPack(NamedTuple):
+    unit: str | None       # UnitDescriptor's import path
+    carrier: str | None    # TransporterDescriptor's
+    xp: int                # ExperienceLevel (0 when left out)
+    number: int
+
+
+class DeckRead(NamedTuple):
+    """A deck as a file holds it: where it is (its export path, or its object), its identifier and division (None when
+    left out), its packs, and its pages in the game's order (IsHQ pages first: the order LockCombatGroup's indexes
+    count), each a tuple of platoons, each a tuple of (pack index, units) pairs."""
+    where: str
+    identifier: str | None
+    division: str | None
+    packs: tuple[DeckPack, ...]
+    pages: tuple[tuple[tuple[tuple[int, int], ...], ...], ...]
+
+    def keys(self, page: int) -> set[tuple[str | None, str | None, int]]:
+        """The card keys (unit, carrier, experience) page `page` sells: those of the packs its platoons name."""
+        return {self.packs[i][:3] for platoon in self.pages[page] for i, _ in platoon if i < len(self.packs)}
+
+
+def _ref_objects(v: Value | None) -> list[int]:
+    """The object indices a reference or a list of references holds."""
+    if v is None:
+        return []
+    return [x.v.index for x in ndfbin.iter_values(v) if x.tag == 0x09 and x.v.kind == ndfbin.REF_OBJECT]
+
+
+def _import_path(v: Value | None, imports: Mapping[int, str]) -> str | None:
+    return imports[v.v.index] if v is not None and v.tag == 0x09 and v.v.kind == ndfbin.REF_IMPORT else None
+
+
+def read_decks(nb: ndfbin.NdfBin) -> list[DeckRead]:
+    """Every TDeckDescriptor of the decoded file `nb`, in object order."""
+    imports = {i: p for p, i in ndfbin.tree_paths(nb, nb.imports)}
+    exports = {i: p for p, i in ndfbin.tree_paths(nb, nb.exports)}
+    out = []
+    for i, ob in enumerate(nb.objects):
+        if nb.cname(ob.cls) != DECK:
+            continue
+        props = _props(nb, i)
+        packs = []
+        for k in _ref_objects(props.get("DeckPackList")):
+            p = _props(nb, k)
+            packs.append(DeckPack(_import_path(p.get("UnitDescriptor"), imports),
+                                  _import_path(p.get("TransporterDescriptor"), imports),
+                                  p["ExperienceLevel"].v if "ExperienceLevel" in p else 0,
+                                  p["Number"].v if "Number" in p else 0))
+        hq, rest = [], []
+        for g in _ref_objects(props.get("DeckCombatGroupList")):
+            gp = _props(nb, g)
+            platoons = tuple(tuple((x.v[0].v, x.v[1].v) for x in _props(nb, s).get("PackIndexUnitNumberList",
+                                                                                   Value(0x11, [])).v)
+                             for s in _ref_objects(gp.get("SmartGroupList")))
+            (hq if getattr(gp.get("IsHQ"), "v", 0) else rest).append(platoons)
+        identifier = _text(nb, props.get("DeckIdentifier")) or None
+        out.append(DeckRead(exports.get(i, f"#{i}"), identifier, _import_path(props.get("DeckDivision"), imports),
+                            tuple(packs), tuple(hq + rest)))
+    return out
+
+
+def unit_carriage(nb: ndfbin.NdfBin) -> dict[str, Carriage]:
+    """{unit export path: Carriage} of every unit the decoded unit file `nb` exports (`$/GFX/Unit/Descriptor_Unit_*`),
+    from the modules its ModulesDescriptors holds."""
+    out = {}
+    for path, i in ndfbin.tree_paths(nb, nb.exports):
+        if not path.startswith(UNIT_PREFIX + "Descriptor_Unit_"):
+            continue
+        tags, transportable, carries = frozenset(), False, None
+        for m in _ref_objects(_props(nb, i).get("ModulesDescriptors")):
+            cls, mp = nb.cname(nb.objects[m].cls), _props(nb, m)
+            if cls == "TTagsModuleDescriptor":
+                tags = frozenset(_text(nb, x) for x in mp.get("TagSet", Value(0x11, [])).v)
+            elif cls == "TTransportableModuleDescriptor":
+                transportable = True
+            elif cls == "TTransporterModuleDescriptor":
+                carries = frozenset(_text(nb, x) for x in mp.get("TransportableTagSet", Value(0x11, [])).v)
+        out[path] = Carriage(tags, transportable, carries)
+    return out
+
+
+@functools.cache
+def _stock_carriage(root: str) -> Mapping[str, Carriage]:
+    return unit_carriage(decode(read_file(os.path.join(root, *UNIT_FILE.split("/"))))[0])
+
+
+def stock_carriage() -> Mapping[str, Carriage]:
+    """unit_carriage of the game's unit file (UNIT_FILE) in the extraction."""
+    return _stock_carriage(str(paths.extracted_root()))
+
+
+def deck_rules(nb: ndfbin.NdfBin) -> DeckRules:
+    """The Challenge group rules of the decoded deck file `nb` (its one TDeckGroupRules)."""
+    found = [i for i, ob in enumerate(nb.objects) if nb.cname(ob.cls) == "TDeckGroupRules"]
+    check(len(found) == 1, f"the deck file holds {len(found)} TDeckGroupRules, expected 1")
+    props = _props(nb, found[0])
+    pages = {k.v: v.v for k, v in props["MaxNbCombatGroupForGameMode"].v}
+    check(GAME_CHALLENGE in pages, f"the deck file's group rules give no page limit for a Challenge ({GAME_CHALLENGE})")
+    return DeckRules(pages[GAME_CHALLENGE], props["MaxNbSmartGroupByCombatGroup"].v, props["MaxNbPackBySmartGroup"].v)
+
+
+@functools.cache
+def _stock_decks(root: str, minimum: int) -> StockDecks:
+    nb, _, _ = decode(read_file(os.path.join(root, *DECK_FILE.split("/"))))
+    decks = read_decks(nb)
+    check(len(decks) >= minimum, f"{DECK_FILE}: only {len(decks)} decks read, want at least {minimum}")
+    divisions, _, _ = decode(read_file(os.path.join(root, *DIVISION_FILE.split("/"))))
+    return StockDecks({d.identifier: len(d.pages) for d in decks if d.identifier}, deck_rules(nb),
+                      frozenset(p for p, _ in ndfbin.tree_paths(divisions, divisions.exports)
+                                if p.startswith(DIVISION_PREFIX)), len(decks))
+
+
+def stock_decks(minimum: int = STOCK_DECKS_MINIMUM) -> StockDecks:
+    """The game's decks (DECK_FILE) and divisions (DIVISION_FILE) in the extraction, at least `minimum` decks."""
+    return _stock_decks(str(paths.extracted_root()), minimum)
+
+
+def deck_load_violations(deck: DeckRead, carriage: Mapping[str, Carriage]) -> list[str]:
+    """What the game's checks before it registers `deck` refuse (the section above), each a line: a pack index past
+    its packs, a carrier with no unit, and a carried pack whose unit cannot be carried, whose carrier is no transport
+    or whose two share no tag (`carriage`: stock_carriage, the game's units)."""
+    out = []
+    for k, page in enumerate(deck.pages):
+        for j, platoon in enumerate(page):
+            for i, _ in platoon:
+                if i >= len(deck.packs):
+                    out.append(f"{deck.where}: page {k} platoon {j} names pack {i}, but the deck has "
+                               f"{len(deck.packs)} packs (the game refuses the deck at load)")
+    for k, p in enumerate(deck.packs):
+        if p.carrier is None:
+            continue
+        what = f"{deck.where}: pack {k} ({_bare(p.unit or '?')} in {_bare(p.carrier)})"
+        if p.unit is None:
+            out.append(f"{what}: a carrier and no unit (the game crashes on it)")
+            continue
+        unit, carrier = carriage.get(p.unit), carriage.get(p.carrier)
+        if unit is None or carrier is None:
+            out.append(f"{what}: {'the unit' if unit is None else 'the carrier'} is not in the game's unit file")
+        elif not unit.transportable:
+            out.append(f"{what}: the unit cannot be carried (no transportable module; the game refuses the deck)")
+        elif carrier.carries is None:
+            out.append(f"{what}: the carrier is not a transport (no transporter module; the game refuses the deck)")
+        elif not unit.tags & carrier.carries:
+            out.append(f"{what}: the unit has none of the tags the carrier takes ({', '.join(sorted(carrier.carries))};"
+                       f" the game refuses the deck)")
+    return out
+
+
+def deck_rule_violations(deck: DeckRead, stock: StockDecks, scenario: str) -> list[str]:
+    """The op's rules for an op-exported `deck` (the section above), each a line: an identifier, its own (no stock
+    deck's, without the scenario id), a division of the game's, a Challenge's group rules, and every pack drawn by its
+    platoons exactly: no pack left out, none over- or under-drawn."""
+    out, r = [], stock.rules
+    if not deck.identifier:
+        out.append(f"{deck.where}: no DeckIdentifier: a SetDeck cannot name it")
+    elif deck.identifier in stock.pages:
+        out.append(f"{deck.where}: DeckIdentifier {deck.identifier} is a stock deck's: the second registration stops "
+                   f"the load (modkit.ops.leveldesign.derived_deck_identifier)")
+    elif scenario in deck.identifier:
+        out.append(f"{deck.where}: DeckIdentifier {deck.identifier} holds the scenario id")
+    if deck.division not in stock.divisions:
+        out.append(f"{deck.where}: DeckDivision {deck.division} is not a division of the game's ({DIVISION_FILE})")
+    if len(deck.pages) > r.pages:
+        out.append(f"{deck.where}: {len(deck.pages)} pages, a Challenge's group rules allow {r.pages}")
+    for k, page in enumerate(deck.pages):
+        if len(page) > r.platoons:
+            out.append(f"{deck.where}: page {k} has {len(page)} platoons, the group rules allow {r.platoons}")
+        for j, platoon in enumerate(page):
+            if len(platoon) > r.packs:
+                out.append(f"{deck.where}: page {k} platoon {j} names {len(platoon)} packs, the group rules allow "
+                           f"{r.packs}")
+    drawn: Counter = Counter()
+    for page in deck.pages:
+        for platoon in page:
+            for i, units in platoon:
+                drawn[i] += units
+    for k, p in enumerate(deck.packs):
+        if drawn[k] != p.number:
+            out.append(f"{deck.where}: pack {k} ({_bare(p.unit or '?')} x{p.number}) is drawn {drawn[k]} times by its "
+                       f"platoons: every card belongs on a page, once"
+                       + (" (an orphan pack)" if not drawn[k] else ""))
+    return out
+
+
+def _camp_name(nd: object) -> str:
+    return getattr(nd, "export", None) or "?"
+
+
+def deck_violations(nb: ndfbin.NdfBin, scenario: str, stock: StockDecks,
+                    carriage: Callable[[], Mapping[str, Carriage]]) -> tuple[dict[str, int], list[str]]:
+    """Every deck rule a decoded GDScript `nb` breaks (the section above; `carriage` is called for the game's units
+    once a deck carries a pack), and the counts: SetDecks, exported decks, LockCombatGroup page locks."""
+    out: list[str] = []
+    own = read_decks(nb)
+    ids = Counter(d.identifier for d in own if d.identifier)
+    out += [f"two decks of the script are identified {i}" for i, n in ids.items() if n > 1]
+    units = carriage() if any(p.carrier for d in own for p in d.packs) else {}
+    for deck in own:
+        out += deck_load_violations(deck, units) + deck_rule_violations(deck, stock, scenario)
+    by_id = {d.identifier: d for d in own if d.identifier}
+    nodes = nodes_of(nb)
+    camp_decks: dict[int, list[str]] = {}
+    setdecks = locks = 0
+    for nd in nodes:
+        if nd.cls != SET_DECK:
+            continue
+        setdecks += 1
+        props = dict(nd.props)
+        camp, ident = props.get("Camp"), props.get("DeckIdentifier")
+        name = nb.strings[ident.v].decode("latin-1") if isinstance(ident, Value) and ident.tag == 0x07 else ""
+        if name not in stock.pages and name not in by_id:
+            out.append(f"SetDeck of {_camp_name(camp)} names {name or 'no deck'}, which is no stock deck and no deck the "
+                       f"script exports: the mission fails at its launch (a GDBrick error naming DeckIdentifier)")
+        camp_decks.setdefault(id(camp), []).append(name)
+    locked: dict[str, set[int]] = {}
+    for nd in nodes:
+        if nd.cls != LOCK_PAGE:
+            continue
+        locks += 1
+        props = dict(nd.props)
+        camp = props.get("Camp")
+        indexes = [getattr(dict(v.props).get("Value"), "v", 0) for v in props.get("CombatGroupIndexes", [])
+                   if isinstance(v, Node)]
+        decks = camp_decks.get(id(camp))
+        if not decks:
+            out.append(f"LockCombatGroup of {_camp_name(camp)}: no SetDeck gives the camp a deck to lock pages of")
+            continue
+        for name in decks:
+            pages = len(by_id[name].pages) if name in by_id else stock.pages.get(name, 0)
+            bad = [i for i in indexes if not 0 <= i < pages]
+            if bad:
+                out.append(f"LockCombatGroup of {_camp_name(camp)} locks page {bad} of {name}, which has {pages} pages "
+                           f"(0-based): it locks nothing")
+            if name in by_id:
+                locked.setdefault(name, set()).update(i for i in indexes if 0 <= i < pages)
+    for name, pages in locked.items():
+        deck = by_id[name]
+        shut = set().union(*(deck.keys(k) for k in pages))
+        open_ = set().union(*(deck.keys(k) for k in range(len(deck.pages)) if k not in pages))
+        for unit, carrier, xp in sorted(shut & open_, key=str):
+            out.append(f"{deck.where}: {_bare(unit or '?')}" + (f" in {_bare(carrier)}" if carrier else "")
+                       + f" at experience {xp} is on a locked page and an open one: the game pools the key's cards, "
+                         f"so the open page sells what the lock holds back")
+    return {"setdecks": setdecks, "decks": len(own), "locks": locks}, out
+
+
+def check_decks(gd_raw: bytes, scenario: str, stock: StockDecks | None = None,
+                carriage: Callable[[], Mapping[str, Carriage]] = stock_carriage) -> dict[str, int]:
+    """Gate 3's decks: the shipped GDScript `gd_raw` breaks no deck rule (deck_violations; `stock`: stock_decks() by
+    default, read only when the script has a SetDeck or a deck). Returns the counts."""
+    nb, _, _ = decode(gd_raw)
+    if not any(nb.cname(ob.cls) in (SET_DECK, DECK, LOCK_PAGE) for ob in nb.objects):
+        return {"setdecks": 0, "decks": 0, "locks": 0}
+    counts, bad = deck_violations(nb, scenario, stock or stock_decks(), carriage)
+    check(not bad, f"{len(bad)} deck rules broken: {'; '.join(bad[:6])}{'; ...' if len(bad) > 6 else ''}")
+    return counts
+
+
 # --------------------------------------------------------------------------- every class and property in stock (gate 5)
 # The game knows the classes and properties its build was made with, and no others: a build for 201602 ships
 # TScenarioLoadInfo, TClusterAddPythonPath, TGDDescriptorLaunchEffetStandard, GdItems tags with GUID1..GUID4 and
 # TSimultaneousAction._ShortDatabaseName, none of which 210942 has. check_stock_classes holds every CNDF entry a build
 # ships, re-keyed, copied or generated, to the classes and (class, property) pairs of the stock files of its kind: every
-# scenario pack's Definition and Details in the extraction, and the game's GameFx (the effect wrapper's shapes). An
-# admitted shape (Content.extra_shapes: a native property no stock file writes, reviewed) passes too.
+# scenario pack's Definition and Details in the extraction, the game's GameFx (the effect wrapper's shapes) and its
+# decks (an op-exported deck's shapes [[op-exported-deck]]). An admitted shape (Content.extra_shapes: a native property
+# no stock file writes, reviewed) passes too.
 
+# The game's own files among them, each of which the extraction must hold.
+STOCK_GAME_FILES = ("transactions/NDF/GFX/GameFx.txn", DECK_FILE)
 STOCK_CLASS_SOURCES = tuple(f"{folder}/{rel}" for folder in ("scenarios/*", "kreide_op/*", "geisa_op/*",
                                                              "twincities_op/*")
                             for rel in (f"NDF/Scenarios/*/*.{TXN}", f"NDF/Scenarios/*/*.{TAG}", "*.ndfbin",
-                                        "out/*.ndfbin")) + ("transactions/NDF/GFX/GameFx.txn",)
+                                        "out/*.ndfbin")) + STOCK_GAME_FILES
 STOCK_CLASS_MINIMUM = 400   # fewer stock files means the extraction was not read right
 
 
@@ -2117,8 +2516,9 @@ def _stock_classes(root: str, minimum: int) -> StockClasses:
     files = sorted({p for pat in STOCK_CLASS_SOURCES for p in glob.glob(os.path.join(root, *pat.split("/")))})
     check(len(files) >= minimum, f"stock-classes gate: {len(files)} stock files under {root}, expected {minimum}+: "
                                  f"re-run the extraction (the warno-setup skill)")
-    check(os.path.join(root, *STOCK_CLASS_SOURCES[-1].split("/")) in files,
-          f"stock-classes gate: the extraction lacks {STOCK_CLASS_SOURCES[-1]}; {SETUP_FIX}")
+    for game_file in STOCK_GAME_FILES:
+        check(os.path.join(root, *game_file.split("/")) in files,
+              f"stock-classes gate: the extraction lacks {game_file}; {SETUP_FIX}")
     classes: set[str] = set()
     props: set[tuple[str, str]] = set()
     for f in files:
@@ -2132,7 +2532,7 @@ def _stock_classes(root: str, minimum: int) -> StockClasses:
 
 def stock_classes(minimum: int = STOCK_CLASS_MINIMUM) -> StockClasses:
     """The classes and properties of the stock files STOCK_CLASS_SOURCES names in the extraction (at least `minimum`
-    files, GameFx among them). Raises paths.NotConfigured without an extraction."""
+    files, GameFx and the decks among them). Raises paths.NotConfigured without an extraction."""
     return _stock_classes(str(paths.extracted_root()), minimum)
 
 

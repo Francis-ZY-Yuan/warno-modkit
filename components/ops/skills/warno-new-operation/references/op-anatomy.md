@@ -60,6 +60,14 @@ new op on Geisa, change the identity and leave the rest until you know why.
 player's row of `CAMP_ROWS` (the SetDeck at load). Change both together. Cards added during the battle come from the
 script ([[add-unit-to-deck]]).
 
+**An op's own deck** ([[op-exported-deck]]) is exported from the script and named by the player row's SetDeck alone
+(`shapes.with_deck(CAMP_ROWS, camp, identifier)`); `deck_swap` stays on a stock deck, which the out-game screens
+resolve before the script loads. Its pages are data (`modkit.ops.forces.DeckPage` and `Platoon`, whose cards are
+`ForceRow`s with an `xp`), its writer `shapes.player_deck`, its identifier `leveldesign.derived_deck_identifier`, and a page lock `shapes.lock_page`
+([[deck-page-lock]]). The profile adds `shapes.DECK_SHAPE_SOURCES` to `shape_sources["GDScript"]`. Its page and
+platoon names are tokens of the game's COMPANIES and PLATOONS lists: the op's own, in dictionaries named in
+`dictionary_lists`, or stock ones declared in `Content.list_tokens` ([[deck-names-from-op-dictionaries]]).
+
 **The camps** are Survivors' four (its CampList and SetDeck block stay four). The examples use three: the player, an
 AI-controlled ally and the enemy ([[custom-operation-from-stock-parts]]).
 
@@ -78,6 +86,7 @@ AI-controlled ally and the enemy ([[custom-operation-from-stock-parts]]).
 | `tiered_arrivals` | player arrivals that end in a command zone only, opened and closed by the script |
 | `prod_menu_switch` | the buy menu's switch at the HUD restore |
 | `deck_swap`, `scalar_edits` | the profile's, replaced for this content: another player deck, or its own derived menu order when one profile builds several Operations |
+| `list_tokens` | stock tokens of the game's UNITS, COMPANIES and PLATOONS lists the content's own deck names, by list ([[deck-names-from-op-dictionaries]]) |
 
 Two contents with the same scenario id or mod folder replace each other on install.
 
@@ -89,11 +98,12 @@ Each runs through `modkit.core.gates.run_gate` under its name, which is also its
 | --- | --- | --- |
 | 1 | `strings` | every token in both columns, markup and placeholders matched, Chinese within stock's characters, titles short |
 | 2 | `canonical`, `shapes`, `ndfrules` | each generated file in canonical layout, made only of shapes the stock files use, passing the game's load-time property rules ([[load-time-validation-rules]]) |
-| 3 | `binding`, `tokens`, `references` | script tags bind 1:1 to LevelDesign items; every text token resolves in all eight languages, dialog buttons in the game's in-game dictionary; new-id references resolve |
+| 3 | `binding`, `tokens`, `references` | script tags bind 1:1 to LevelDesign items; every text token resolves in all eight languages, dialog buttons in the game's in-game dictionary, a deck's names in the game's lists; new-id references resolve |
 | 3 | `arrivals`, `tiers` | player arrivals end in a player zone, or are tiered ([[arrival-end-in-zone]]) |
 | 3 | `objective-pins`, `never-finishing`, `end-funnel`, `empty-group-guard` | objective labels on a place; nothing after a never-finishing action; every ending through the funnel; no defeat on an empty group before it held a unit |
 | 3 | `zone-tags`, `dialog-text`, `rules`, `smart-orders`, `prod-menu-switch` | zone lookups in exactly one polygon, detectors on circles; no `%1` in dialogs; no CheckEndGame, GameTime or ModeFixedRandomSeed; no order after a smart order; the buy-menu switch as declared |
 | 3 | `script-effects` | every effect the script launches is a stock GameFx effect that takes no parameters ([[script-effects-self-contained]]) |
+| 3 | `decks` | every SetDeck names a deck the game will have registered, a stock one or one the script exports; a deck the script exports passes the game's load checks and the op's deck rules, and its page locks are in range ([[op-exported-deck]]) |
 | 3 | the profile's `extra_gates` | below |
 | 4 | `dump-diff`, `dump-rows` | each re-keyed file differs from stock only by the re-keying rows, and every row changed something |
 | 5 | `package` | every entry lies under the scenario; no Gameplay file ([[gameplay-mod-relaunch]]) |
@@ -115,6 +125,8 @@ All on `OpProfile`, all optional:
 - `extra_packs` (another `<scenario>_<name>.dat`), `extra_items` (more files in the profile's own packs),
   `extra_loose_files` (files beside the packs in the mod folder);
 - `extra_config_rows` (lines under `Config.ini`'s `[Config]`) and `extra_manifest_rows`;
+- `dictionary_lists`: dictionaries of `dictionaries` the game reads as part of one of its own lists (an own deck's
+  names), each appended to its list by a resource the build adds to MapConfiguration;
 - `extra_gates` (`ExtraGate(name, check)`, `check(items, content)` raising `CheckError` or returning a log line) and
   `extra_outputs` (review files such as the overlay);
 - `reviewed_pending`: `{gate name: exact message}` for a failure under review. The build reports it as `REVIEW

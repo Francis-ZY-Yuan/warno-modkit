@@ -10,12 +10,18 @@ Rounding: floor(x + 0.5), never Python's round() (which takes 10.5 to 10).
 
 A force table is content: each op keeps its own. The Soviet groups more than one example op on Geisa creates are kept
 once here (``GEISA_SOVIET_ROWS``).
+
+An op's own deck [[op-exported-deck]] is data of the same kind: ``DeckPage`` rows of ``Platoon`` rows of cards, each a
+bare ``ForceRow`` (unit, count, transport, and its experience ``xp``), the buy menu's GROUPS view as the player sees it.
+``deck_packs`` derives the deck's packs from it: one pack per distinct card key (``ForceRow.key``: unit, transport,
+experience), its count the sum over every platoon that holds it, so the pages are the one source and no pack sits
+outside them (``modkit.ops.shapes.player_deck`` writes the deck).
 """
 from __future__ import annotations
 
 import math
 from dataclasses import replace
-from typing import Iterable
+from typing import Iterable, NamedTuple
 
 from modkit.core.models import Point
 from modkit.ops.models import ForceRow
@@ -88,3 +94,32 @@ GEISA_SOVIET_ROWS: tuple[ForceRow, ...] = tuple(
     + rows_of("probe", "PACT", "TRACK_SE_IN", "recon patrol",
               ForceRow("BRM_1_SOV", 1), ForceRow("BRDM_2_SOV", 2), ForceRow("Scout_SOV", 1))
 )
+
+
+# --------------------------------------------------------------------------- an op's own deck
+
+class Platoon(NamedTuple):
+    """A platoon of a deck page (TDeckSmartGroupDescriptor): its name, a token of the game's PLATOONS dictionary list,
+    and its cards, bare ForceRows (at most three keys: the game's group rules)."""
+    name: str
+    cards: tuple[ForceRow, ...]
+
+
+class DeckPage(NamedTuple):
+    """A page of a deck (TDeckCombatGroupDescriptor), one tab of the buy menu's GROUPS view: its name, a token of the
+    game's COMPANIES dictionary list, and its platoons."""
+    name: str
+    platoons: tuple[Platoon, ...]
+
+
+def deck_packs(pages: Iterable[DeckPage]) -> tuple[ForceRow, ...]:
+    """The packs of a deck of `pages`: one per distinct card key (ForceRow.key), in the order the pages first name each,
+    its count the sum of that key's cards over every platoon."""
+    counts: dict[tuple[str, str | None, int], int] = {}
+    for page in pages:
+        for platoon in page.platoons:
+            for card in platoon.cards:
+                if card.count < 1:
+                    raise ValueError(f"{page.name}/{platoon.name}: {card.unit} x{card.count}: a card counts 1 or more")
+                counts[card.key] = counts.get(card.key, 0) + card.count
+    return tuple(ForceRow(unit, n, transport, xp=xp) for (unit, transport, xp), n in counts.items())

@@ -19,7 +19,7 @@ Two facts shape most of them:
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from modkit.core.gates import check
 from modkit.core.models import Box, Point
@@ -28,7 +28,9 @@ from modkit.ops.bricks import (
     NAME_PROP, fx_wrapper, g_cmp, g_compete, g_create, g_hint, g_if, g_modify, g_seq, g_set, g_simul, g_timer, g_until,
     g_wait, unit_path,
 )
-from modkit.ops.graph import TRUE, Imp, Node, Str, i32, loc, walk
+from modkit.ops.forces import DeckPage, deck_packs
+from modkit.ops.gates import DECK_FILE, DIVISION_PREFIX, LOCK_PAGE
+from modkit.ops.graph import TRUE, Imp, Node, Str, i32, loc, pair, walk
 from modkit.ops.leveldesign import LdItem, gd_tags
 from modkit.ops.maps import StockMap
 from modkit.ops.models import CampRow, ExtraShape
@@ -119,6 +121,53 @@ def nuke_wrapper(export: str, position: tuple[float, float, float], radius_physi
     return fx_wrapper(export, TACTICAL_NUKE_FX, (("parPosition", position), ("parDirection", (0.0, 0.0, 0.0)),
                                                  ("parRadiusPhysical", radius_physical),
                                                  ("parRadiusSuppress", radius_suppress)))
+
+
+def with_deck(rows: Sequence[CampRow], camp: str, deck: str) -> tuple[CampRow, ...]:
+    """`rows` with camp `camp`'s SetDeck id replaced by `deck` (an op-exported deck's identifier: player_deck), every
+    other row as it is. The camp must be one of the rows."""
+    check(camp in [row.name for row in rows], f"with_deck: no camp row {camp}")
+    return tuple(replace(row, deck=deck) if row.name == camp else row for row in rows)
+
+
+# --------------------------------------------------------------------------- an op-exported deck
+
+# An op-exported deck's GDScript shapes are the game's own deck file's: a profile whose content exports one names these
+# beside its stock GDScripts in shape_sources["GDScript"] (gate 2), which admits the deck classes, their properties,
+# their reference targets and their property order as GFX/Deck holds them [[op-exported-deck]].
+DECK_SHAPE_SOURCES = (DECK_FILE,)
+
+
+def player_deck(export: str, identifier: str, name: str, division: str, pages: Sequence[DeckPage]) -> Node:
+    """A deck the op's GDScript exports at `export`, for a SetDeck to name by `identifier` [[op-exported-deck]], in the
+    shape of the game's own decks (GFX/Deck: RedJuggernaut's OP_BASE_RJ_Player): DeckPackList, DeckCombatGroupList,
+    DeckName, DeckIdentifier, DeckDivision.
+
+    The packs are modkit.ops.forces.deck_packs(`pages`), inline, each in stock's property order: ExperienceLevel (left
+    out at 0, as stock leaves it), UnitDescriptor, TransporterDescriptor (a carried card's), Number. Each page is a
+    TDeckCombatGroupDescriptor (Name, SmartGroupList) and each platoon a TDeckSmartGroupDescriptor (Name,
+    PackIndexUnitNumberList: one (pack index, count) pair per card, graph.pair). No page or platoon is IsHQ, so a
+    page's LockCombatGroup index is its place in `pages` (lock_page). Page names are tokens of the game's COMPANIES
+    list, platoon names of its PLATOONS list and `name` (DeckName) of its UNITS list [[deck-names-from-op-dictionaries]];
+    `division` is a division of the game's Division file by its export name (Descriptor_Deck_Division_<...>), and
+    `identifier` a DeckIdentifier no other deck has (modkit.ops.leveldesign.derived_deck_identifier). The decks gate
+    (gates.check_decks) holds the result to the game's load checks and the op's rules."""
+    packs = deck_packs(pages)
+    index = {p.key: k for k, p in enumerate(packs)}
+    pack_nodes = [Node("TDeckPackDescriptor", [*([("ExperienceLevel", i32(p.xp))] if p.xp else []),
+                                               ("UnitDescriptor", Imp(unit_path(p.unit))),
+                                               *([("TransporterDescriptor", Imp(unit_path(p.transport)))]
+                                                 if p.transport else []),
+                                               ("Number", i32(p.count))]) for p in packs]
+    groups = [Node("TDeckCombatGroupDescriptor", [
+        ("Name", loc(page.name)),
+        ("SmartGroupList", [Node("TDeckSmartGroupDescriptor", [
+            ("Name", loc(platoon.name)),
+            ("PackIndexUnitNumberList", [pair(index[c.key], c.count) for c in platoon.cards])])
+            for platoon in page.platoons])]) for page in pages]
+    return Node("TDeckDescriptor", [("DeckPackList", pack_nodes), ("DeckCombatGroupList", groups),
+                                    ("DeckName", loc(name)), ("DeckIdentifier", Str(identifier)),
+                                    ("DeckDivision", Imp(DIVISION_PREFIX + division))], export=export)
 
 
 # --------------------------------------------------------------------------- frame
@@ -357,6 +406,18 @@ def lock_card(ctx: Ctx, unit: str, until: Node) -> Node:
     lock = Node("TGDDescriptorLockDeckUnit", [("Camp", ctx.camp(ctx.player)),
                                               ("Units", [Node("TGDDeckUnit", [("Unit", Imp(unit_path(unit)))])])])
     return g_compete([g_until(until), lock])
+
+
+def lock_page(ctx: Ctx, index: int, until: Node) -> Node:
+    """Page `index` of the player's deck locked until `until` holds [[deck-page-lock]]: Competition[LockCombatGroup,
+    WaitCondition(until)], stock's lock in stock order, one node per page (RunningTheGauntlet #178 = [#192, #193] and
+    #179 for its pages 1 and 2; Marauders #490). LockCombatGroup (Camp, CombatGroupIndexes: one inline
+    TGDVariableInteger holding `index`, the page's 0-based place in the deck's DeckCombatGroupList) never finishes and
+    locks only while it runs, so the race's end unlocks the page. Stock pairs it with the buy menu held in its GROUPS
+    view (script.PRODUCTION_TYPE, the view switch force-hidden): the lock is per page."""
+    lock = Node(LOCK_PAGE, [("Camp", ctx.camp(ctx.player)),
+                            ("CombatGroupIndexes", [Node("TGDVariableInteger", [("Value", i32(index))])])])
+    return g_compete([lock, g_until(until)])
 
 
 def set_end(end: Node, value: int) -> Node:

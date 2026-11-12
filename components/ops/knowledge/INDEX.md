@@ -16,6 +16,7 @@ A mechanism filed under two topics is listed under both.
 - [game-build-classes](mechanisms/game-build-classes.md): A game update removes and renames classes and properties; a mod's files may hold only those the installed build's stock holds (STOCK, verified 210942 2026-11-12)
 - [scenario-definition-layout](mechanisms/scenario-definition-layout.md): Build 210942 reads a scenario's Definition files as NDF/Scenarios/<scenario>/<Kind>.txn, each beside its .txn.tag and .dbg (STOCK, verified 210942 2026-11-12)
 - [scripted-economy](mechanisms/scripted-economy.md): A script sets the player's points, a zero income, one-time grants and a later income in stock's own nodes (STOCK, verified 201602 2026-11-11)
+- [op-exported-deck](mechanisms/op-exported-deck.md): An Operation can export its own deck from its script and give it to a camp with SetDeck (UNTESTED)
 
 ### Script flow
 
@@ -29,6 +30,7 @@ A mechanism filed under two topics is listed under both.
 - [seteffect-never-finishes](mechanisms/seteffect-never-finishes.md): SetEffect and other lasting actions never finish, so nothing after them in a Sequential ever runs (PLAYED, verified 201602 2026-11-06)
 - [objective-waits-until-resolved](mechanisms/objective-waits-until-resolved.md): An objective finishes only after it resolves and its chosen actions finish (PROBED, verified 201602 2026-11-06)
 - [camera-shot-from-current-position](mechanisms/camera-shot-from-current-position.md): Mid-battle, a script flies the camera from wherever it is to a one-key path, in a cutscene that can hold the view (STOCK, verified 201602 2026-11-11)
+- [deck-page-lock](mechanisms/deck-page-lock.md): LockCombatGroup locks a page of a camp's deck while it runs; stock holds the buy menu in its GROUPS view with the view switch hidden (STOCK, verified 210942 2026-11-12)
 - [difficulty-branches](mechanisms/difficulty-branches.md): Difficulty reaches a script as three conditions; give it a Medium baseline (STOCK, verified 201602 2026-11-06)
 - [scripted-economy](mechanisms/scripted-economy.md): A script sets the player's points, a zero income, one-time grants and a later income in stock's own nodes (STOCK, verified 201602 2026-11-11)
 - [wave-ends-with-attack](mechanisms/wave-ends-with-attack.md): An AI-less wave stops at its last waypoint unless its route ends with an Attack on the player's units (STOCK, verified 201602 2026-11-11)
@@ -62,12 +64,15 @@ A mechanism filed under two topics is listed under both.
 - [spawn-and-create-units](mechanisms/spawn-and-create-units.md): SpawnUnits reveals pre-placed units; CreateUnitOnPosition makes new ones at a tag (PLAYED, verified 201602 2026-11-06)
 - [vanished-removal](mechanisms/vanished-removal.md): KillAllUnit with Vanished removes units at once; count them before you remove them (PLAYED, verified 201602 2026-11-06)
 - [arrival-end-in-zone](mechanisms/arrival-end-in-zone.md): Every player arrival entry must end inside a deployment zone of its side or a command zone (STOCK, verified 201602 2026-11-04)
+- [deck-page-lock](mechanisms/deck-page-lock.md): LockCombatGroup locks a page of a camp's deck while it runs; stock holds the buy menu in its GROUPS view with the view switch hidden (STOCK, verified 210942 2026-11-12)
 - [garrison-roe-and-hold](mechanisms/garrison-roe-and-hold.md): A garrison in a camp with no AI holds its ground only with the ROE and smart orders the script gives it (STOCK, verified 201602 2026-11-11)
 - [scripted-air-sweep](mechanisms/scripted-air-sweep.md): Hidden aircraft revealed, sent over a circle and sent home once spent give an AI-less camp air sweeps (STOCK, verified 201602 2026-11-11)
 - [wave-ends-with-attack](mechanisms/wave-ends-with-attack.md): An AI-less wave stops at its last waypoint unless its route ends with an Attack on the player's units (STOCK, verified 201602 2026-11-11)
 - [weapons-jammed-effect](mechanisms/weapons-jammed-effect.md): The "weapons jammed" effect only zeroes weapon ranges; to keep a unit silent, empty its ammunition (STOCK, verified 201602 2026-11-03)
 - [created-units-stand-in-zone](mechanisms/created-units-stand-in-zone.md): A script cannot hide a unit outside the playable zone; a unit created there stands on the zone's edge, where the player's units see and engage it (FAILED, verified 201602 2026-11-11)
 - [helicopter-boarding](mechanisms/helicopter-boarding.md): Scripted infantry boarding of a helicopter does not work (FAILED, verified 201602 2026-11-03)
+- [deck-names-from-op-dictionaries](mechanisms/deck-names-from-op-dictionaries.md): A deck's page and platoon names resolve in the game's COMPANIES and PLATOONS lists, to which an Operation can append its own dictionaries (UNTESTED)
+- [op-exported-deck](mechanisms/op-exported-deck.md): An Operation can export its own deck from its script and give it to a camp with SetDeck (UNTESTED)
 
 ### Objectives and text
 
@@ -78,6 +83,7 @@ A mechanism filed under two topics is listed under both.
 - [objective-waits-until-resolved](mechanisms/objective-waits-until-resolved.md): An objective finishes only after it resolves and its chosen actions finish (PROBED, verified 201602 2026-11-06)
 - [dialog-text-takes-no-variables](mechanisms/dialog-text-takes-no-variables.md): Dialog text cannot show live numbers; counts go in an objective counter or a hint (STOCK, verified 201602 2026-11-04)
 - [objective-label-needs-position](mechanisms/objective-label-needs-position.md): An objective's map label needs a position, or it pins the map corner (STOCK, verified 201602 2026-11-03)
+- [deck-names-from-op-dictionaries](mechanisms/deck-names-from-op-dictionaries.md): A deck's page and platoon names resolve in the game's COMPANIES and PLATOONS lists, to which an Operation can append its own dictionaries (UNTESTED)
 
 ### Files and formats
 
@@ -182,6 +188,8 @@ The game's own words in this component's trials, the mechanism behind them, and 
 - 2026-11-12 [2026-11-12-twin-strike-210942-play1](trials/2026-11-12-twin-strike-210942-play1.md): play, mixed. It is largely working. Only thing is very slow after nuking, and nuking didn't reveal enemy, so the effect was under represented
 - 2026-11-12 [2026-11-12-sc-glyph-every-dictionary](trials/2026-11-12-sc-glyph-every-dictionary.md): survey, pass
 - 2026-11-12 [2026-11-12-port-210942-survey](trials/2026-11-12-port-210942-survey.md): survey, pass
+- 2026-11-12 [2026-11-12-deck-gate-stock-survey](trials/2026-11-12-deck-gate-stock-survey.md): survey, pass
+- 2026-11-12 [2026-11-12-deck-gate-bad-builds](trials/2026-11-12-deck-gate-bad-builds.md): survey, fail
 - 2026-11-12 [2026-11-12-config-hash-stock-survey](trials/2026-11-12-config-hash-stock-survey.md): survey, pass
 - 2026-11-11 [2026-11-11-twin-strike-strike-unseen](trials/2026-11-11-twin-strike-strike-unseen.md): play, mixed. Not seeing the massive nuke effect, just a scripted effect of all units dead, while they were not detected; small explosions seen
 - 2026-11-11 [2026-11-11-twin-strike-play1](trials/2026-11-11-twin-strike-play1.md): play, mixed. The division's guns drove toward the front and died; the release dialog never showed after the fire plan was fired

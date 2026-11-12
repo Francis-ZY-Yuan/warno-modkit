@@ -131,6 +131,12 @@ def loc(token: str) -> Value:
     return ndfbin.loc_value(token)
 
 
+def pair(index: int, units: int) -> Value:
+    """A deck platoon's (pack index, units) entry: an NDF pair (0x22) of a uint32 and an int32, as every
+    TDeckSmartGroupDescriptor.PackIndexUnitNumberList of the game's decks holds it (GFX/Deck)."""
+    return Value(0x22, (u32(index), i32(units)))
+
+
 TRUE = Value(0x00, 1)
 SECTIONS = ("OBJE", "TOPO", "CHNK", "CLAS", "PROP", "STRG", "TRAN", "IMPR", "EXPR")
 

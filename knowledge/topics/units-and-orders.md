@@ -23,6 +23,7 @@ Topic `units-and-orders`, declared by ops. Back to [the map](../README.md).
 ### STOCK
 
 - [arrival-end-in-zone](../../components/ops/knowledge/mechanisms/arrival-end-in-zone.md): Every player arrival entry must end inside a deployment zone of its side or a command zone (ops, verified 201602)
+- [deck-page-lock](../../components/ops/knowledge/mechanisms/deck-page-lock.md): LockCombatGroup locks a page of a camp's deck while it runs; stock holds the buy menu in its GROUPS view with the view switch hidden (ops, verified 210942)
 - [garrison-roe-and-hold](../../components/ops/knowledge/mechanisms/garrison-roe-and-hold.md): A garrison in a camp with no AI holds its ground only with the ROE and smart orders the script gives it (ops, verified 201602)
 - [scripted-air-sweep](../../components/ops/knowledge/mechanisms/scripted-air-sweep.md): Hidden aircraft revealed, sent over a circle and sent home once spent give an AI-less camp air sweeps (ops, verified 201602)
 - [wave-ends-with-attack](../../components/ops/knowledge/mechanisms/wave-ends-with-attack.md): An AI-less wave stops at its last waypoint unless its route ends with an Attack on the player's units (ops, verified 201602)
@@ -32,6 +33,11 @@ Topic `units-and-orders`, declared by ops. Back to [the map](../README.md).
 
 - [created-units-stand-in-zone](../../components/ops/knowledge/mechanisms/created-units-stand-in-zone.md): A script cannot hide a unit outside the playable zone; a unit created there stands on the zone's edge, where the player's units see and engage it (ops, verified 201602)
 - [helicopter-boarding](../../components/ops/knowledge/mechanisms/helicopter-boarding.md): Scripted infantry boarding of a helicopter does not work (ops, verified 201602)
+
+### UNTESTED
+
+- [deck-names-from-op-dictionaries](../../components/ops/knowledge/mechanisms/deck-names-from-op-dictionaries.md): A deck's page and platoon names resolve in the game's COMPANIES and PLATOONS lists, to which an Operation can append its own dictionaries (ops)
+- [op-exported-deck](../../components/ops/knowledge/mechanisms/op-exported-deck.md): An Operation can export its own deck from its script and give it to a camp with SetDeck (ops)
 
 ## Lessons
 
@@ -57,6 +63,8 @@ Taught by the trials of these mechanisms.
 
 - 2026-11-12 [2026-11-12-twin-strike-210942-play1](../../components/ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md) (ops): play, mixed
 - 2026-11-12 [2026-11-12-port-210942-survey](../../components/ops/knowledge/trials/2026-11-12-port-210942-survey.md) (ops): survey, pass
+- 2026-11-12 [2026-11-12-deck-gate-stock-survey](../../components/ops/knowledge/trials/2026-11-12-deck-gate-stock-survey.md) (ops): survey, pass
+- 2026-11-12 [2026-11-12-deck-gate-bad-builds](../../components/ops/knowledge/trials/2026-11-12-deck-gate-bad-builds.md) (ops): survey, fail
 - 2026-11-11 [2026-11-11-twin-strike-strike-unseen](../../components/ops/knowledge/trials/2026-11-11-twin-strike-strike-unseen.md) (ops): play, mixed
 - 2026-11-11 [2026-11-11-twin-strike-play1](../../components/ops/knowledge/trials/2026-11-11-twin-strike-play1.md) (ops): play, mixed
 - 2026-11-11 [2026-11-11-twin-strike-guns-on-the-edge](../../components/ops/knowledge/trials/2026-11-11-twin-strike-guns-on-the-edge.md) (ops): play, mixed

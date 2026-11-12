@@ -100,13 +100,15 @@ def scalar_edits(profile: OpProfile, content: Content) -> tuple[ScalarEdit, ...]
 def rekey_table(profile: OpProfile, content: Content) -> Rekey:
     """The template re-keyed to the content's scenario and its GUID under the profile's namespace, menu tokens by
     the content's menu_renames, the scalar edits and the deck swap (each the content's own, else the profile's; the
-    edits with the derived menu order when they move none: scalar_edits), and the profile's map swaps."""
+    edits with the derived menu order when they move none: scalar_edits), the profile's map swaps, and a dictionary
+    resource in MapConfiguration per entry of the profile's dictionary_lists."""
     t = profile.template
     decks = profile.deck_swap if content.deck_swap is None else content.deck_swap
     edits = scalar_edits(profile, content)
     return Rekey(t.source, content.scenario, t.guid, scenario_guid(content.scenario, profile.guid_namespace),
                  dict(content.menu_renames), t.token_prefix, edits, profile.map_strings,
-                 profile.map_trans, decks, t.kinds)
+                 profile.map_trans, decks, t.kinds,
+                 tuple((lst, name) for name, lst in profile.dictionary_lists.items()))
 
 
 def details_files(profile: OpProfile, items: Sequence[LdItem], scenario: str) -> dict[str, bytes]:
@@ -258,10 +260,11 @@ def check_script(profile: OpProfile, content: Content, p: Plan, run: GateRun | N
     details = {it.path: payload(it) for it in items if it.pack == "Details"}
     deploy = gates.has_deployment_phase(content.items)
     ingame = extracted(INGAME_DIC)
-    tokens = functools.partial(gates.check_tokens, global_tokens=profile.template.global_tokens, ingame_dic=ingame)
+    tokens = functools.partial(gates.check_tokens, global_tokens=profile.template.global_tokens, ingame_dic=ingame,
+                               list_tokens_declared=content.list_tokens)
     bound = (g("binding", gates.check_binding, payload(gd), payload(ld)) if ld is not None
              else "0 (no LevelDesign shipped)")
-    toks, buttons = g("tokens", tokens, items, scenario, LANGS, pending=(PENDING, PENDING))
+    toks, buttons, listed = g("tokens", tokens, items, scenario, LANGS, pending=(PENDING, PENDING, PENDING))
     refs = g("references", gates.check_references, items, scenario, LANGS)
     rl, ac = g("arrivals", gates.check_arrivals, content.items, details, content.tiered_arrivals,
                pending=(PENDING, PENDING))
@@ -275,14 +278,16 @@ def check_script(profile: OpProfile, content: Content, p: Plan, run: GateRun | N
              f"actions, {gates.stalling_containers(roots)} containers that never finish and {objectives} objectives "
              f"({len(content.blocking_objectives)} reviewed to hold their Sequential), none with a node after it in a "
              f"Sequential or beside others in a loop, and no ModifyUnit* in a Sequential; {toks} loc tokens in all "
-             f"{len(LANGS)} languages ({buttons} dialog-button tokens in the game's INGAME dictionary); {refs} new-id "
-             f"references resolve",
+             f"{len(LANGS)} languages ({buttons} dialog-button tokens in the game's INGAME dictionary"
+             + (f", {listed} deck names in the game's UNITS, COMPANIES and PLATOONS lists" if listed else "")
+             + f"); {refs} new-id references resolve",
              f"{tiers} tiered reinforcement locations, each ending in one command zone forced to {profile.player_camp} "
              f"at load and handed to {profile.enemy_camp} later; every other player arrival ends in a player "
              f"deployment zone" if deploy else "no deployment phase (not checked)"]
     ends, funnel = g("end-funnel", gates.check_end_funnel, roots, profile.end_exports, pending=(PENDING, True))
     guarded = g("empty-group-guard", gates.check_empty_group_guard, roots) if deploy else None
     zone = g("zone-tags", gates.check_zone_tags, roots, details, pending=defaultdict(lambda: PENDING))
+    decks = g("decks", gates.check_decks, payload(gd), scenario, pending=defaultdict(lambda: PENDING))
     lines.append(
         f"{ends} TriggerEndGame, "
         + (f"each under {' or '.join(profile.end_exports)}" if funnel else "no end funnel (not checked)") + "; "
@@ -298,7 +303,10 @@ def check_script(profile: OpProfile, content: Content, p: Plan, run: GateRun | N
         f"{'Default' if content.prod_menu_switch == BRICK_DEFAULT else 'ForceHide'} (Content.prod_menu_switch); "
         f"{g('script-effects', gates.check_script_effects, payload(gd))} script effect launches, each a "
         f"self-contained GameFx effect; {g('created-in-zone', gates.check_created_in_zone, roots, details)} "
-        f"CreateUnitOnPosition, each inside the shipped playable zone")
+        f"CreateUnitOnPosition, each inside the shipped playable zone; {decks['setdecks']} SetDecks, each naming a "
+        f"stock deck or one the script exports"
+        + (f"; {decks['decks']} exported decks that pass the game's load checks and the op's deck rules, "
+           f"{decks['locks']} page locks in range" if decks["decks"] else ""))
     lines += run_extra_gates(profile, items, content, g)
     return lines
 

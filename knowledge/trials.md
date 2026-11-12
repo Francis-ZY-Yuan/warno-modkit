@@ -11,6 +11,8 @@ Every attempt, with its kind and outcome. Back to [the map](README.md).
 - 2026-11-12 [2026-11-12-twin-strike-210942-play1](../components/ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md) (ops): play, mixed
 - 2026-11-12 [2026-11-12-sc-glyph-every-dictionary](../components/ops/knowledge/trials/2026-11-12-sc-glyph-every-dictionary.md) (ops): survey, pass
 - 2026-11-12 [2026-11-12-port-210942-survey](../components/ops/knowledge/trials/2026-11-12-port-210942-survey.md) (ops): survey, pass
+- 2026-11-12 [2026-11-12-deck-gate-stock-survey](../components/ops/knowledge/trials/2026-11-12-deck-gate-stock-survey.md) (ops): survey, pass
+- 2026-11-12 [2026-11-12-deck-gate-bad-builds](../components/ops/knowledge/trials/2026-11-12-deck-gate-bad-builds.md) (ops): survey, fail
 - 2026-11-12 [2026-11-12-config-hash-stock-survey](../components/ops/knowledge/trials/2026-11-12-config-hash-stock-survey.md) (ops): survey, pass
 - 2026-11-12 [2026-11-12-build-210942-port](../components/core/knowledge/trials/2026-11-12-build-210942-port.md) (core): survey, pass
 - 2026-11-11 [2026-11-11-twin-strike-strike-unseen](../components/ops/knowledge/trials/2026-11-11-twin-strike-strike-unseen.md) (ops): play, mixed

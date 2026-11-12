@@ -16,5 +16,5 @@ examples' test (`test_example_contents`), which holds every published example to
 
 - Trials: [2026-11-11-twin-strike-launch1-duplicate-menu-order](../../../ops/knowledge/trials/2026-11-11-twin-strike-launch1-duplicate-menu-order.md)
 - Skills: [`components/ops/skills/warno-new-operation/SKILL.md`](../../../ops/skills/warno-new-operation/SKILL.md)
-- Records: [check-against-every-active-mod](check-against-every-active-mod.md), [content-identity-unique](../../../ops/knowledge/mechanisms/content-identity-unique.md)
+- Records: [check-against-every-active-mod](check-against-every-active-mod.md), [content-identity-unique](../../../ops/knowledge/mechanisms/content-identity-unique.md), [op-exported-deck](../../../ops/knowledge/mechanisms/op-exported-deck.md)
 <!-- referenced-by:end -->

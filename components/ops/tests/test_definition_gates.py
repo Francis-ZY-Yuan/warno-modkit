@@ -140,7 +140,7 @@ class TokensTest(unittest.TestCase):
 
     def test_passes(self):
         self.assertEqual(check_tokens(self.items("m_text", "BTN_OK"), S, LANGS, global_tokens=(),
-                                      ingame_dic=self.ingame), (2, 1))
+                                      ingame_dic=self.ingame), (2, 1, 0))
 
     def test_a_button_token_must_be_in_ingame(self):
         items = self.items("m_text", "m_btn", dialog_keys=("m_text", "m_btn"))
@@ -153,7 +153,7 @@ class TokensTest(unittest.TestCase):
         with self.assertRaisesRegex(CheckError, r"missing from US dictionaries: \['m_gone'\]"):
             check_tokens(self.items("m_gone", "BTN_OK"), S, LANGS, global_tokens=(), ingame_dic=self.ingame)
         self.assertEqual(check_tokens(self.items("m_gone", "BTN_OK"), S, LANGS, global_tokens=("m_gone",),
-                                      ingame_dic=self.ingame), (2, 1))
+                                      ingame_dic=self.ingame), (2, 1, 0))
 
     def test_missing_ingame_dictionary(self):
         """The message names the setup commands that fetch it."""
