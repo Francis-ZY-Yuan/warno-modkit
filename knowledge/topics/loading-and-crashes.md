@@ -10,9 +10,9 @@ Topic `loading-and-crashes`, declared by core. Back to [the map](../README.md).
 ### PLAYED
 
 - [ai-grid-tiles-playable-zone](../../components/ops/knowledge/mechanisms/ai-grid-tiles-playable-zone.md): The AI strategic grid must tile the playable zone (ops, verified 201602)
-- [changestress-damagetype-zero](../../components/ops/knowledge/mechanisms/changestress-damagetype-zero.md): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load (ops, verified 201602)
+- [changestress-damagetype-zero](../../components/ops/knowledge/mechanisms/changestress-damagetype-zero.md): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load (ops, verified 210942)
 - [dialog-button-ingame-dictionary](../../components/ops/knowledge/mechanisms/dialog-button-ingame-dictionary.md): Dialog button labels resolve only in the game's in-game interface dictionary (ops, verified 201602)
-- [load-time-validation-rules](../../components/core/knowledge/mechanisms/load-time-validation-rules.md): Every object is validated at load, and the first broken rule stops the load (core, verified 201602)
+- [load-time-validation-rules](../../components/core/knowledge/mechanisms/load-time-validation-rules.md): Every object is validated at load, and the first broken rule stops the load (core, verified 210942)
 
 ### RE
 
@@ -37,6 +37,7 @@ Taught by the trials of these mechanisms.
 ## Trials, newest first
 
 - 2026-11-12 [2026-11-12-twin-strike-launch-config-hash](../../components/ops/knowledge/trials/2026-11-12-twin-strike-launch-config-hash.md) (ops): launch, fail
+- 2026-11-12 [2026-11-12-twin-strike-210942-play1](../../components/ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md) (ops): play, mixed
 - 2026-11-12 [2026-11-12-port-210942-survey](../../components/ops/knowledge/trials/2026-11-12-port-210942-survey.md) (ops): survey, pass
 - 2026-11-12 [2026-11-12-config-hash-stock-survey](../../components/ops/knowledge/trials/2026-11-12-config-hash-stock-survey.md) (ops): survey, pass
 - 2026-11-12 [2026-11-12-build-210942-port](../../components/core/knowledge/trials/2026-11-12-build-210942-port.md) (core): survey, pass

@@ -28,5 +28,5 @@ mid-battle, and 12 NATO vehicles that no unit of the player's could see showed o
 - Trials: [2026-11-11-fxprobe-play1](../trials/2026-11-11-fxprobe-play1.md)
 - Shapes: [`modkit.ops.bricks.g_fow`](../../src/modkit/ops/bricks.py), [`modkit.ops.shapes.FOW_SHAPES`](../../src/modkit/ops/shapes.py)
 - Examples: [`components/ops/examples/twin-strike/README.md`](../../examples/twin-strike/README.md), [`components/ops/examples/twin-strike/docs/design.md`](../../examples/twin-strike/docs/design.md), [`components/ops/examples/twin-strike/twinstrike/op.py`](../../examples/twin-strike/twinstrike/op.py)
-- Records: [2026-11-11-fxprobe-play1](../trials/2026-11-11-fxprobe-play1.md)
+- Records: [2026-11-11-fxprobe-play1](../trials/2026-11-11-fxprobe-play1.md), [2026-11-12-twin-strike-210942-play1](../trials/2026-11-12-twin-strike-210942-play1.md), [scripted-nuke-effect](scripted-nuke-effect.md)
 <!-- referenced-by:end -->

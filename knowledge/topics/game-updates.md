@@ -9,13 +9,13 @@ Topic `game-updates`, declared by core. Back to [the map](../README.md).
 
 ### PLAYED
 
-- [changestress-damagetype-zero](../../components/ops/knowledge/mechanisms/changestress-damagetype-zero.md): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load (ops, verified 201602)
-- [gdscript-is-what-loads](../../components/ops/knowledge/mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (ops, verified 201602)
-- [leveldesign-guid-binding](../../components/ops/knowledge/mechanisms/leveldesign-guid-binding.md): A script names a map item by the item's GUID in LevelDesign (210942 one GUID value, 201602 four words) (ops, verified 201602)
-- [load-time-validation-rules](../../components/core/knowledge/mechanisms/load-time-validation-rules.md): Every object is validated at load, and the first broken rule stops the load (core, verified 201602)
-- [mod-version-and-config-lines](../../components/core/knowledge/mechanisms/mod-version-and-config-lines.md): A mod is active only with Gen/Version.ndf, and its [Config] hashes mark it outdated after an update (core, verified 201602)
-- [operation-menu-registration](../../components/ops/knowledge/mechanisms/operation-menu-registration.md): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden (ops, verified 201602)
-- [script-effects-self-contained](../../components/ops/knowledge/mechanisms/script-effects-self-contained.md): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (ops, verified 201602)
+- [changestress-damagetype-zero](../../components/ops/knowledge/mechanisms/changestress-damagetype-zero.md): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load (ops, verified 210942)
+- [gdscript-is-what-loads](../../components/ops/knowledge/mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (ops, verified 210942)
+- [leveldesign-guid-binding](../../components/ops/knowledge/mechanisms/leveldesign-guid-binding.md): A script names a map item by the item's GUID in LevelDesign (210942 one GUID value, 201602 four words) (ops, verified 210942)
+- [load-time-validation-rules](../../components/core/knowledge/mechanisms/load-time-validation-rules.md): Every object is validated at load, and the first broken rule stops the load (core, verified 210942)
+- [mod-version-and-config-lines](../../components/core/knowledge/mechanisms/mod-version-and-config-lines.md): A mod is active only with Gen/Version.ndf, and its [Config] hashes mark it outdated after an update (core, verified 210942)
+- [operation-menu-registration](../../components/ops/knowledge/mechanisms/operation-menu-registration.md): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden (ops, verified 210942)
+- [script-effects-self-contained](../../components/ops/knowledge/mechanisms/script-effects-self-contained.md): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (ops, verified 210942)
 
 ### RE
 
@@ -47,6 +47,7 @@ Taught by the trials of these mechanisms.
 ## Trials, newest first
 
 - 2026-11-12 [2026-11-12-twin-strike-launch-config-hash](../../components/ops/knowledge/trials/2026-11-12-twin-strike-launch-config-hash.md) (ops): launch, fail
+- 2026-11-12 [2026-11-12-twin-strike-210942-play1](../../components/ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md) (ops): play, mixed
 - 2026-11-12 [2026-11-12-port-210942-survey](../../components/ops/knowledge/trials/2026-11-12-port-210942-survey.md) (ops): survey, pass
 - 2026-11-12 [2026-11-12-config-hash-stock-survey](../../components/ops/knowledge/trials/2026-11-12-config-hash-stock-survey.md) (ops): survey, pass
 - 2026-11-12 [2026-11-12-build-210942-port](../../components/core/knowledge/trials/2026-11-12-build-210942-port.md) (core): survey, pass

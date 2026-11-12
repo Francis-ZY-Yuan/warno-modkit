@@ -2,10 +2,10 @@
 id: gdscript-is-what-loads
 title: An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python
 status: PLAYED
-last_verified: 201602 2026-11-06
+last_verified: 210942 2026-11-12
 source: stock-data
 topics: [script-flow, files-and-formats, game-updates]
-trials: [2026-11-02-gdscript-format-survey, 2026-11-02-leveldesign-api-survey, 2026-11-02-kreide-op-playtest-1, 2026-11-06-probe2-play-run-a, 2026-11-12-port-210942-survey]
+trials: [2026-11-02-gdscript-format-survey, 2026-11-02-leveldesign-api-survey, 2026-11-02-kreide-op-playtest-1, 2026-11-06-probe2-play-run-a, 2026-11-12-port-210942-survey, 2026-11-12-twin-strike-210942-play1]
 stock_precedent: 27,151 of 27,151 Python constructor calls in 29 scenarios map to exactly one GDScript object
 ---
 **What the game does.** For Operations and campaigns, build 201602 loads `NDF/Scenarios/GDScript/<scenario>.ndfbin`
@@ -25,14 +25,15 @@ arguments at their default are left out. So the shipped Python form of a stock s
 **On build 210942.** The GDScript is `NDF/Scenarios/<scenario>/GDScript.txn`, the file the scenario's
 ScenarioLoader names in its GDScript transaction (`BaseName`), beside a `.txn.tag` and a `.dbg` source map
 ([[scenario-definition-layout]]). Its root is `$/GDScript/RootDescriptor`, a `TGDDescriptorLaunchEffetMap` in all 30
-stock scripts that have one (`TGDDescriptorLaunchEffetStandard` on 201602, gone from 210942). The load is unverified
-in play on 210942 ([[2026-11-12-port-210942-survey]]).
+stock scripts that have one (`TGDDescriptorLaunchEffetStandard` on 201602, gone from 210942)
+([[2026-11-12-port-210942-survey]]). Seen in play: Twin Strike's generated GDScript loaded and ran its phases on 210942
+([[2026-11-12-twin-strike-210942-play1]]).
 
 <!-- referenced-by:start -->
 ## Referenced by
 
-- Trials: [2026-11-02-gdscript-format-survey](../trials/2026-11-02-gdscript-format-survey.md), [2026-11-02-kreide-op-playtest-1](../trials/2026-11-02-kreide-op-playtest-1.md), [2026-11-02-leveldesign-api-survey](../trials/2026-11-02-leveldesign-api-survey.md), [2026-11-06-probe2-play-run-a](../trials/2026-11-06-probe2-play-run-a.md), [2026-11-12-port-210942-survey](../trials/2026-11-12-port-210942-survey.md)
+- Trials: [2026-11-02-gdscript-format-survey](../trials/2026-11-02-gdscript-format-survey.md), [2026-11-02-kreide-op-playtest-1](../trials/2026-11-02-kreide-op-playtest-1.md), [2026-11-02-leveldesign-api-survey](../trials/2026-11-02-leveldesign-api-survey.md), [2026-11-06-probe2-play-run-a](../trials/2026-11-06-probe2-play-run-a.md), [2026-11-12-port-210942-survey](../trials/2026-11-12-port-210942-survey.md), [2026-11-12-twin-strike-210942-play1](../trials/2026-11-12-twin-strike-210942-play1.md)
 - Skills: [`components/core/skills/warno-setup/references/scenario-python-and-prior-art.md`](../../../core/skills/warno-setup/references/scenario-python-and-prior-art.md), [`components/core/skills/warno-setup/references/stock-corpus.md`](../../../core/skills/warno-setup/references/stock-corpus.md), [`components/ops/skills/warno-new-operation/references/script-recipes.md`](../../skills/warno-new-operation/references/script-recipes.md)
 - Examples: [`components/ops/examples/open-door/docs/design.md`](../../examples/open-door/docs/design.md), [`components/ops/examples/probes/README.md`](../../examples/probes/README.md)
-- Records: [edat-revision-chain](../../../core/knowledge/mechanisms/edat-revision-chain.md)
+- Records: [2026-11-12-twin-strike-210942-play1](../trials/2026-11-12-twin-strike-210942-play1.md), [edat-revision-chain](../../../core/knowledge/mechanisms/edat-revision-chain.md)
 <!-- referenced-by:end -->

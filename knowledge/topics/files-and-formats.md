@@ -9,7 +9,7 @@ Topic `files-and-formats`, declared by core. Back to [the map](../README.md).
 
 ### PLAYED
 
-- [gdscript-is-what-loads](../../components/ops/knowledge/mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (ops, verified 201602)
+- [gdscript-is-what-loads](../../components/ops/knowledge/mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (ops, verified 210942)
 - [localisation-tokens-packed](../../components/core/knowledge/mechanisms/localisation-tokens-packed.md): Localisation keys are tokens of up to 10 characters, packed 6 bits each (core, verified 201602)
 - [ndfbin-round-trip](../../components/core/knowledge/mechanisms/ndfbin-round-trip.md): Compiled NDF (CNDF ndfbin) decodes and re-encodes byte for byte (core, verified 201602)
 
@@ -29,6 +29,7 @@ Taught by the trials of these mechanisms.
 ## Trials, newest first
 
 - 2026-11-12 [2026-11-12-twin-strike-launch-config-hash](../../components/ops/knowledge/trials/2026-11-12-twin-strike-launch-config-hash.md) (ops): launch, fail
+- 2026-11-12 [2026-11-12-twin-strike-210942-play1](../../components/ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md) (ops): play, mixed
 - 2026-11-12 [2026-11-12-port-210942-survey](../../components/ops/knowledge/trials/2026-11-12-port-210942-survey.md) (ops): survey, pass
 - 2026-11-12 [2026-11-12-config-hash-stock-survey](../../components/ops/knowledge/trials/2026-11-12-config-hash-stock-survey.md) (ops): survey, pass
 - 2026-11-12 [2026-11-12-build-210942-port](../../components/core/knowledge/trials/2026-11-12-build-210942-port.md) (core): survey, pass

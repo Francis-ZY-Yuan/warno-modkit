@@ -10,10 +10,10 @@ Topic `operation-setup`, declared by ops. Back to [the map](../README.md).
 ### PLAYED
 
 - [content-identity-unique](../../components/ops/knowledge/mechanisms/content-identity-unique.md): Two mods cloned from one template must not share an identity (ops, verified 201602)
-- [custom-operation-from-stock-parts](../../components/ops/knowledge/mechanisms/custom-operation-from-stock-parts.md): A custom Operation can be built entirely from cloned stock files plus a generated LevelDesign and GDScript (ops, verified 201602)
+- [custom-operation-from-stock-parts](../../components/ops/knowledge/mechanisms/custom-operation-from-stock-parts.md): A custom Operation can be built entirely from cloned stock files plus a generated LevelDesign and GDScript (ops, verified 210942)
 - [deployment-phase-recipe](../../components/ops/knowledge/mechanisms/deployment-phase-recipe.md): A deployment phase needs six parts, and buying after the launch needs player arrival entries (ops, verified 201602)
 - [gameplay-mod-relaunch](../../components/ops/knowledge/mechanisms/gameplay-mod-relaunch.md): Operations and Gameplay mods don't mix; an Operation mod must ship none of the 16 Gameplay files (ops, verified 201602)
-- [operation-menu-registration](../../components/ops/knowledge/mechanisms/operation-menu-registration.md): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden (ops, verified 201602)
+- [operation-menu-registration](../../components/ops/knowledge/mechanisms/operation-menu-registration.md): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden (ops, verified 210942)
 
 ### PROBED
 
@@ -44,6 +44,7 @@ Taught by the trials of these mechanisms.
 ## Trials, newest first
 
 - 2026-11-12 [2026-11-12-twin-strike-launch-config-hash](../../components/ops/knowledge/trials/2026-11-12-twin-strike-launch-config-hash.md) (ops): launch, fail
+- 2026-11-12 [2026-11-12-twin-strike-210942-play1](../../components/ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md) (ops): play, mixed
 - 2026-11-12 [2026-11-12-port-210942-survey](../../components/ops/knowledge/trials/2026-11-12-port-210942-survey.md) (ops): survey, pass
 - 2026-11-11 [2026-11-11-twin-strike-play1](../../components/ops/knowledge/trials/2026-11-11-twin-strike-play1.md) (ops): play, mixed
 - 2026-11-11 [2026-11-11-twin-strike-launch1-duplicate-menu-order](../../components/ops/knowledge/trials/2026-11-11-twin-strike-launch1-duplicate-menu-order.md) (ops): play, fail

@@ -27,4 +27,5 @@ Medium.
 - Shapes: [`modkit.ops.bricks.g_difficulty`](../../src/modkit/ops/bricks.py), [`modkit.ops.mission.difficulty`](../../src/modkit/ops/mission.py)
 - Skills: [`components/ops/skills/warno-new-operation/references/script-recipes.md`](../../skills/warno-new-operation/references/script-recipes.md)
 - Examples: [`components/ops/examples/open-door/README.md`](../../examples/open-door/README.md), [`components/ops/examples/open-door/docs/design.md`](../../examples/open-door/docs/design.md), [`components/ops/examples/open-door/opendoor/op.py`](../../examples/open-door/opendoor/op.py), [`components/ops/examples/probes/README.md`](../../examples/probes/README.md), [`components/ops/examples/twin-strike/README.md`](../../examples/twin-strike/README.md), [`components/ops/examples/twin-strike/docs/design.md`](../../examples/twin-strike/docs/design.md), [`components/ops/examples/twin-strike/twinstrike/op.py`](../../examples/twin-strike/twinstrike/op.py)
+- Records: [2026-11-12-twin-strike-210942-play1](../trials/2026-11-12-twin-strike-210942-play1.md)
 <!-- referenced-by:end -->

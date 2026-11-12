@@ -8,10 +8,10 @@ A mechanism filed under two topics is listed under both.
 ### Operation setup
 
 - [content-identity-unique](mechanisms/content-identity-unique.md): Two mods cloned from one template must not share an identity (PLAYED, verified 201602 2026-11-11)
-- [custom-operation-from-stock-parts](mechanisms/custom-operation-from-stock-parts.md): A custom Operation can be built entirely from cloned stock files plus a generated LevelDesign and GDScript (PLAYED, verified 201602 2026-11-06)
+- [custom-operation-from-stock-parts](mechanisms/custom-operation-from-stock-parts.md): A custom Operation can be built entirely from cloned stock files plus a generated LevelDesign and GDScript (PLAYED, verified 210942 2026-11-12)
 - [deployment-phase-recipe](mechanisms/deployment-phase-recipe.md): A deployment phase needs six parts, and buying after the launch needs player arrival entries (PLAYED, verified 201602 2026-11-03)
 - [gameplay-mod-relaunch](mechanisms/gameplay-mod-relaunch.md): Operations and Gameplay mods don't mix; an Operation mod must ship none of the 16 Gameplay files (PLAYED, verified 201602 2026-11-06)
-- [operation-menu-registration](mechanisms/operation-menu-registration.md): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden (PLAYED, verified 201602 2026-11-11)
+- [operation-menu-registration](mechanisms/operation-menu-registration.md): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden (PLAYED, verified 210942 2026-11-12)
 - [soviet-player-camp](mechanisms/soviet-player-camp.md): A clone of Survivors loads and plays with a Soviet player in the stock PACT-player camp shape (PROBED, verified 201602 2026-11-11)
 - [game-build-classes](mechanisms/game-build-classes.md): A game update removes and renames classes and properties; a mod's files may hold only those the installed build's stock holds (STOCK, verified 210942 2026-11-12)
 - [scenario-definition-layout](mechanisms/scenario-definition-layout.md): Build 210942 reads a scenario's Definition files as NDF/Scenarios/<scenario>/<Kind>.txn, each beside its .txn.tag and .dbg (STOCK, verified 210942 2026-11-12)
@@ -21,11 +21,11 @@ A mechanism filed under two topics is listed under both.
 
 - [dialog-reask-loop](mechanisms/dialog-reask-loop.md): A multiple-choice dialog can be asked again in a loop if the choice is reset before each ask (PLAYED, verified 201602 2026-11-11)
 - [fog-switch](mechanisms/fog-switch.md): A script can switch the fog of war off with TGDDescriptorFow; whether it is map-wide and comes back on is unseen (PLAYED, verified 201602 2026-11-11)
-- [gdscript-is-what-loads](mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (PLAYED, verified 201602 2026-11-06)
+- [gdscript-is-what-loads](mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (PLAYED, verified 210942 2026-11-12)
 - [mission-ends-only-by-script](mechanisms/mission-ends-only-by-script.md): With CheckEndGame off, only the script's TriggerEndGame ends the battle, and the first one wins (PLAYED, verified 201602 2026-11-06)
 - [script-container-semantics](mechanisms/script-container-semantics.md): How script containers run their children, and when each action finishes (PLAYED, verified 201602 2026-11-06)
-- [script-effects-self-contained](mechanisms/script-effects-self-contained.md): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (PLAYED, verified 201602 2026-11-11)
-- [scripted-nuke-effect](mechanisms/scripted-nuke-effect.md): A script plays the tactical-nuke impact effect only through a wrapper of its own that binds its parameters; a direct launch crashes the game (PLAYED, verified 201602 2026-11-11)
+- [script-effects-self-contained](mechanisms/script-effects-self-contained.md): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (PLAYED, verified 210942 2026-11-12)
+- [scripted-nuke-effect](mechanisms/scripted-nuke-effect.md): A script plays the tactical-nuke impact effect only through a wrapper of its own that binds its parameters; a direct launch crashes the game (PLAYED, verified 210942 2026-11-12)
 - [seteffect-never-finishes](mechanisms/seteffect-never-finishes.md): SetEffect and other lasting actions never finish, so nothing after them in a Sequential ever runs (PLAYED, verified 201602 2026-11-06)
 - [objective-waits-until-resolved](mechanisms/objective-waits-until-resolved.md): An objective finishes only after it resolves and its chosen actions finish (PROBED, verified 201602 2026-11-06)
 - [camera-shot-from-current-position](mechanisms/camera-shot-from-current-position.md): Mid-battle, a script flies the camera from wherever it is to a one-key path, in a cutscene that can hold the view (STOCK, verified 201602 2026-11-11)
@@ -41,7 +41,7 @@ A mechanism filed under two topics is listed under both.
 - [deployment-phase-recipe](mechanisms/deployment-phase-recipe.md): A deployment phase needs six parts, and buying after the launch needs player arrival entries (PLAYED, verified 201602 2026-11-03)
 - [detector-circles-only](mechanisms/detector-circles-only.md): DetectUnitDansDetecteur works only on circular zones (PLAYED, verified 201602 2026-11-06)
 - [fog-switch](mechanisms/fog-switch.md): A script can switch the fog of war off with TGDDescriptorFow; whether it is map-wide and comes back on is unseen (PLAYED, verified 201602 2026-11-11)
-- [leveldesign-guid-binding](mechanisms/leveldesign-guid-binding.md): A script names a map item by the item's GUID in LevelDesign (210942 one GUID value, 201602 four words) (PLAYED, verified 201602 2026-11-06)
+- [leveldesign-guid-binding](mechanisms/leveldesign-guid-binding.md): A script names a map item by the item's GUID in LevelDesign (210942 one GUID value, 201602 four words) (PLAYED, verified 210942 2026-11-12)
 - [zone-capture-command-units](mechanisms/zone-capture-command-units.md): Only command units capture a zone, and an enemy command unit inside makes it neutral at once (PLAYED, verified 201602 2026-11-06)
 - [zone-lookup-by-point](mechanisms/zone-lookup-by-point.md): Zone conditions find their zone by a tag's point, and a point in no zone fails silently (PLAYED, verified 201602 2026-11-06)
 - [arrival-end-in-zone](mechanisms/arrival-end-in-zone.md): Every player arrival entry must end inside a deployment zone of its side or a command zone (STOCK, verified 201602 2026-11-04)
@@ -52,12 +52,12 @@ A mechanism filed under two topics is listed under both.
 ### Units and orders
 
 - [add-unit-to-deck](mechanisms/add-unit-to-deck.md): AddUnitToDeck adds a card at load or mid-battle, a transport card included; added cards show in the battlegroup view (PLAYED, verified 201602 2026-11-11)
-- [changestress-damagetype-zero](mechanisms/changestress-damagetype-zero.md): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load (PLAYED, verified 201602 2026-11-11)
+- [changestress-damagetype-zero](mechanisms/changestress-damagetype-zero.md): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load (PLAYED, verified 210942 2026-11-12)
 - [fast-move-and-attack-keeps-roads](mechanisms/fast-move-and-attack-keeps-roads.md): MoveAndAttack goes cross-country; FastMoveAndAttack and ForceRoad moves keep to roads (PLAYED, verified 201602 2026-11-06)
 - [kill-counts-by-type](mechanisms/kill-counts-by-type.md): Kill counts are by unit type, not by group; count a group's survivors instead (PLAYED, verified 201602 2026-11-06)
-- [script-effects-self-contained](mechanisms/script-effects-self-contained.md): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (PLAYED, verified 201602 2026-11-11)
+- [script-effects-self-contained](mechanisms/script-effects-self-contained.md): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (PLAYED, verified 210942 2026-11-12)
 - [scripted-fires](mechanisms/scripted-fires.md): A battery created just before its ShootOnPosition fires; created where the player's units can reach, it must be in their alliance (PLAYED, verified 201602 2026-11-11)
-- [scripted-nuke-effect](mechanisms/scripted-nuke-effect.md): A script plays the tactical-nuke impact effect only through a wrapper of its own that binds its parameters; a direct launch crashes the game (PLAYED, verified 201602 2026-11-11)
+- [scripted-nuke-effect](mechanisms/scripted-nuke-effect.md): A script plays the tactical-nuke impact effect only through a wrapper of its own that binds its parameters; a direct launch crashes the game (PLAYED, verified 210942 2026-11-12)
 - [seteffect-never-finishes](mechanisms/seteffect-never-finishes.md): SetEffect and other lasting actions never finish, so nothing after them in a Sequential ever runs (PLAYED, verified 201602 2026-11-06)
 - [spawn-and-create-units](mechanisms/spawn-and-create-units.md): SpawnUnits reveals pre-placed units; CreateUnitOnPosition makes new ones at a tag (PLAYED, verified 201602 2026-11-06)
 - [vanished-removal](mechanisms/vanished-removal.md): KillAllUnit with Vanished removes units at once; count them before you remove them (PLAYED, verified 201602 2026-11-06)
@@ -81,13 +81,13 @@ A mechanism filed under two topics is listed under both.
 
 ### Files and formats
 
-- [gdscript-is-what-loads](mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (PLAYED, verified 201602 2026-11-06)
+- [gdscript-is-what-loads](mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (PLAYED, verified 210942 2026-11-12)
 - [txn-tag-config-hash](mechanisms/txn-tag-config-hash.md): Build 210942 loads a compiled .txn only when its .txn.tag holds the ConfigHash the game computes for the transaction; any other makes it compile the sources (RE, verified 210942 2026-11-12)
 
 ### Loading and crashes
 
 - [ai-grid-tiles-playable-zone](mechanisms/ai-grid-tiles-playable-zone.md): The AI strategic grid must tile the playable zone (PLAYED, verified 201602 2026-11-03)
-- [changestress-damagetype-zero](mechanisms/changestress-damagetype-zero.md): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load (PLAYED, verified 201602 2026-11-11)
+- [changestress-damagetype-zero](mechanisms/changestress-damagetype-zero.md): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load (PLAYED, verified 210942 2026-11-12)
 - [dialog-button-ingame-dictionary](mechanisms/dialog-button-ingame-dictionary.md): Dialog button labels resolve only in the game's in-game interface dictionary (PLAYED, verified 201602 2026-11-03)
 - [txn-tag-config-hash](mechanisms/txn-tag-config-hash.md): Build 210942 loads a compiled .txn only when its .txn.tag holds the ConfigHash the game computes for the transaction; any other makes it compile the sources (RE, verified 210942 2026-11-12)
 
@@ -98,11 +98,11 @@ A mechanism filed under two topics is listed under both.
 
 ### Game updates
 
-- [changestress-damagetype-zero](mechanisms/changestress-damagetype-zero.md): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load (PLAYED, verified 201602 2026-11-11)
-- [gdscript-is-what-loads](mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (PLAYED, verified 201602 2026-11-06)
-- [leveldesign-guid-binding](mechanisms/leveldesign-guid-binding.md): A script names a map item by the item's GUID in LevelDesign (210942 one GUID value, 201602 four words) (PLAYED, verified 201602 2026-11-06)
-- [operation-menu-registration](mechanisms/operation-menu-registration.md): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden (PLAYED, verified 201602 2026-11-11)
-- [script-effects-self-contained](mechanisms/script-effects-self-contained.md): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (PLAYED, verified 201602 2026-11-11)
+- [changestress-damagetype-zero](mechanisms/changestress-damagetype-zero.md): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load (PLAYED, verified 210942 2026-11-12)
+- [gdscript-is-what-loads](mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (PLAYED, verified 210942 2026-11-12)
+- [leveldesign-guid-binding](mechanisms/leveldesign-guid-binding.md): A script names a map item by the item's GUID in LevelDesign (210942 one GUID value, 201602 four words) (PLAYED, verified 210942 2026-11-12)
+- [operation-menu-registration](mechanisms/operation-menu-registration.md): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden (PLAYED, verified 210942 2026-11-12)
+- [script-effects-self-contained](mechanisms/script-effects-self-contained.md): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (PLAYED, verified 210942 2026-11-12)
 - [txn-tag-config-hash](mechanisms/txn-tag-config-hash.md): Build 210942 loads a compiled .txn only when its .txn.tag holds the ConfigHash the game computes for the transaction; any other makes it compile the sources (RE, verified 210942 2026-11-12)
 - [game-build-classes](mechanisms/game-build-classes.md): A game update removes and renames classes and properties; a mod's files may hold only those the installed build's stock holds (STOCK, verified 210942 2026-11-12)
 - [scenario-definition-layout](mechanisms/scenario-definition-layout.md): Build 210942 reads a scenario's Definition files as NDF/Scenarios/<scenario>/<Kind>.txn, each beside its .txn.tag and .dbg (STOCK, verified 210942 2026-11-12)
@@ -118,6 +118,17 @@ The game's own words in this component's trials, the mechanism behind them, and 
 | Aircraft bought in battle arrived; land units never found a destination and never arrived | [deployment-phase-recipe](mechanisms/deployment-phase-recipe.md) | `modkit.ops.gates.check_arrivals` |
 | Enemy tanks and mechanised infantry drove through the woods | [fast-move-and-attack-keeps-roads](mechanisms/fast-move-and-attack-keeps-roads.md) | none yet |
 | Every objective counter showed as a pin at the map corner or edge | [objective-label-needs-position](mechanisms/objective-label-needs-position.md) | `modkit.ops.gates.check_objective_pins` |
+| It is largely working. Only thing is very slow after nuking, and nuking didn't reveal enemy, so the effect was under represented | [changestress-damagetype-zero](mechanisms/changestress-damagetype-zero.md) | `modkit.core.ndfrules.check_file` |
+| It is largely working. Only thing is very slow after nuking, and nuking didn't reveal enemy, so the effect was under represented | [custom-operation-from-stock-parts](mechanisms/custom-operation-from-stock-parts.md) | none yet |
+| It is largely working. Only thing is very slow after nuking, and nuking didn't reveal enemy, so the effect was under represented | [gdscript-is-what-loads](mechanisms/gdscript-is-what-loads.md) | none yet |
+| It is largely working. Only thing is very slow after nuking, and nuking didn't reveal enemy, so the effect was under represented | [leveldesign-guid-binding](mechanisms/leveldesign-guid-binding.md) | `modkit.ops.gates.check_binding` |
+| It is largely working. Only thing is very slow after nuking, and nuking didn't reveal enemy, so the effect was under represented | [operation-menu-registration](mechanisms/operation-menu-registration.md) | none yet |
+| It is largely working. Only thing is very slow after nuking, and nuking didn't reveal enemy, so the effect was under represented | [scenario-definition-layout](mechanisms/scenario-definition-layout.md) | `modkit.ops.gates.check_definition_layout`, `modkit.ops.gates.check_config_hashes`, `modkit.ops.gates.check_references` |
+| It is largely working. Only thing is very slow after nuking, and nuking didn't reveal enemy, so the effect was under represented | [script-effects-self-contained](mechanisms/script-effects-self-contained.md) | `modkit.ops.gates.check_script_effects` |
+| It is largely working. Only thing is very slow after nuking, and nuking didn't reveal enemy, so the effect was under represented | [scripted-nuke-effect](mechanisms/scripted-nuke-effect.md) | `modkit.ops.gates.check_script_effects` |
+| It is largely working. Only thing is very slow after nuking, and nuking didn't reveal enemy, so the effect was under represented | [txn-tag-config-hash](mechanisms/txn-tag-config-hash.md) | `modkit.ops.gates.check_config_hashes` |
+| It is largely working. Only thing is very slow after nuking, and nuking didn't reveal enemy, so the effect was under represented | `load-time-validation-rules` (core) | `modkit.core.ndfrules.check_file` |
+| It is largely working. Only thing is very slow after nuking, and nuking didn't reveal enemy, so the effect was under represented | `mod-version-and-config-lines` (core) | none yet |
 | Map pack configuration error : Duplicate OrderToChainMission 1001 in map pack '{the Operations pack's GUID}'. | [content-identity-unique](mechanisms/content-identity-unique.md) | `modkit.ops.gates.check_menu_order`, `modkit.ops.gates.menu_order_gate` |
 | Map pack configuration error : Duplicate OrderToChainMission 1001 in map pack '{the Operations pack's GUID}'. | [operation-menu-registration](mechanisms/operation-menu-registration.md) | none yet |
 | NDF parsing error. Retry? @file:ScenariosData:/challenge_OperationTwinStrike/Scenario.ndf@(0:0): File not found : 'ScenariosData:/challenge_OperationTwinStrike/Scenario.ndf' | [scenario-definition-layout](mechanisms/scenario-definition-layout.md) | `modkit.ops.gates.check_definition_layout`, `modkit.ops.gates.check_config_hashes`, `modkit.ops.gates.check_references` |
@@ -167,6 +178,7 @@ The game's own words in this component's trials, the mechanism behind them, and 
 ## Trials, newest first
 
 - 2026-11-12 [2026-11-12-twin-strike-launch-config-hash](trials/2026-11-12-twin-strike-launch-config-hash.md): launch, fail. NDF parsing error. Retry? @file:ScenariosData:/challenge_OperationTwinStrike/Scenario.ndf@(0:0): File not found : 'ScenariosData:/challenge_OperationTwinStrike/Scenario.ndf'
+- 2026-11-12 [2026-11-12-twin-strike-210942-play1](trials/2026-11-12-twin-strike-210942-play1.md): play, mixed. It is largely working. Only thing is very slow after nuking, and nuking didn't reveal enemy, so the effect was under represented
 - 2026-11-12 [2026-11-12-port-210942-survey](trials/2026-11-12-port-210942-survey.md): survey, pass
 - 2026-11-12 [2026-11-12-config-hash-stock-survey](trials/2026-11-12-config-hash-stock-survey.md): survey, pass
 - 2026-11-11 [2026-11-11-twin-strike-strike-unseen](trials/2026-11-11-twin-strike-strike-unseen.md): play, mixed. Not seeing the massive nuke effect, just a scripted effect of all units dead, while they were not detected; small explosions seen

@@ -33,7 +33,7 @@ What the game does (mechanisms), what was tried and how it came out (trials), an
 | Component | Knows | Mechanisms | Trials | Lessons |
 | --- | --- | --- | --- | --- |
 | [core](../components/core/knowledge/INDEX.md) | WARNO modding foundations: setup from your own install, file formats, load-time gates, crash triage, packaging and the knowledge base. | 7 | 7 | 12 |
-| [ops](../components/ops/knowledge/INDEX.md) | Build, gate and playtest custom scripted Operations (scenario mods) for WARNO, with worked examples. | 48 | 42 | 9 |
+| [ops](../components/ops/knowledge/INDEX.md) | Build, gate and playtest custom scripted Operations (scenario mods) for WARNO, with worked examples. | 48 | 43 | 9 |
 
 ## Writing records
 

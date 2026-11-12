@@ -10,12 +10,12 @@ Topic `units-and-orders`, declared by ops. Back to [the map](../README.md).
 ### PLAYED
 
 - [add-unit-to-deck](../../components/ops/knowledge/mechanisms/add-unit-to-deck.md): AddUnitToDeck adds a card at load or mid-battle, a transport card included; added cards show in the battlegroup view (ops, verified 201602)
-- [changestress-damagetype-zero](../../components/ops/knowledge/mechanisms/changestress-damagetype-zero.md): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load (ops, verified 201602)
+- [changestress-damagetype-zero](../../components/ops/knowledge/mechanisms/changestress-damagetype-zero.md): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load (ops, verified 210942)
 - [fast-move-and-attack-keeps-roads](../../components/ops/knowledge/mechanisms/fast-move-and-attack-keeps-roads.md): MoveAndAttack goes cross-country; FastMoveAndAttack and ForceRoad moves keep to roads (ops, verified 201602)
 - [kill-counts-by-type](../../components/ops/knowledge/mechanisms/kill-counts-by-type.md): Kill counts are by unit type, not by group; count a group's survivors instead (ops, verified 201602)
-- [script-effects-self-contained](../../components/ops/knowledge/mechanisms/script-effects-self-contained.md): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (ops, verified 201602)
+- [script-effects-self-contained](../../components/ops/knowledge/mechanisms/script-effects-self-contained.md): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (ops, verified 210942)
 - [scripted-fires](../../components/ops/knowledge/mechanisms/scripted-fires.md): A battery created just before its ShootOnPosition fires; created where the player's units can reach, it must be in their alliance (ops, verified 201602)
-- [scripted-nuke-effect](../../components/ops/knowledge/mechanisms/scripted-nuke-effect.md): A script plays the tactical-nuke impact effect only through a wrapper of its own that binds its parameters; a direct launch crashes the game (ops, verified 201602)
+- [scripted-nuke-effect](../../components/ops/knowledge/mechanisms/scripted-nuke-effect.md): A script plays the tactical-nuke impact effect only through a wrapper of its own that binds its parameters; a direct launch crashes the game (ops, verified 210942)
 - [seteffect-never-finishes](../../components/ops/knowledge/mechanisms/seteffect-never-finishes.md): SetEffect and other lasting actions never finish, so nothing after them in a Sequential ever runs (ops, verified 201602)
 - [spawn-and-create-units](../../components/ops/knowledge/mechanisms/spawn-and-create-units.md): SpawnUnits reveals pre-placed units; CreateUnitOnPosition makes new ones at a tag (ops, verified 201602)
 - [vanished-removal](../../components/ops/knowledge/mechanisms/vanished-removal.md): KillAllUnit with Vanished removes units at once; count them before you remove them (ops, verified 201602)
@@ -55,6 +55,7 @@ Taught by the trials of these mechanisms.
 
 ## Trials, newest first
 
+- 2026-11-12 [2026-11-12-twin-strike-210942-play1](../../components/ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md) (ops): play, mixed
 - 2026-11-12 [2026-11-12-port-210942-survey](../../components/ops/knowledge/trials/2026-11-12-port-210942-survey.md) (ops): survey, pass
 - 2026-11-11 [2026-11-11-twin-strike-strike-unseen](../../components/ops/knowledge/trials/2026-11-11-twin-strike-strike-unseen.md) (ops): play, mixed
 - 2026-11-11 [2026-11-11-twin-strike-play1](../../components/ops/knowledge/trials/2026-11-11-twin-strike-play1.md) (ops): play, mixed

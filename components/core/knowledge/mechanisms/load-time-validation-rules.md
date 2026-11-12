@@ -2,12 +2,12 @@
 id: load-time-validation-rules
 title: Every object is validated at load, and the first broken rule stops the load
 status: PLAYED
-last_verified: 201602 2026-11-06
+last_verified: 210942 2026-11-12
 source: exe-analysis
 topics: [loading-and-crashes, game-updates]
 gates: [modkit.core.ndfrules.check_file]
-trials: [2026-11-03-probe1-launch1-damagetype, 2026-11-03-ndfrules-stock-sweep, 2026-11-06-probe2-play-run-a, 2026-11-12-build-210942-port]
-stock_precedent: 3,870 rules on 1,565 classes; 888 of 888 current stock files pass
+trials: [2026-11-03-probe1-launch1-damagetype, 2026-11-03-ndfrules-stock-sweep, 2026-11-06-probe2-play-run-a, 2026-11-12-build-210942-port, 2026-11-12-twin-strike-210942-play1]
+stock_precedent: 3,663 rules on 1,415 classes and 663 of 663 stock files pass on 210942 (3,870 on 1,565 and 888 of 888 on 201602)
 ---
 **What the game does.** When a pack loads, each object is checked against its class's load-time rules: a property
 that must be defined, a lower or upper bound, a key that must be valid. The first broken rule is a fatal error at
@@ -30,12 +30,14 @@ and passes every stock file of the current build.
 - The table covers what validation checks at load. Anything the game checks later, at run time, is not covered.
 - The rules change with the game. On build 210942 the table holds 3,663 rules on 1,415 classes, and all 663 stock
   files pass. `TGDDescriptorChangeStress` no longer tests `DamageType` there, only `Group`. What else changed is in
-  [[2026-11-12-build-210942-port]]; none of it has been played yet.
+  [[2026-11-12-build-210942-port]]. Twin Strike, held to the 210942 table by the gate, loaded and played on 210942 with
+  no error at load ([[2026-11-12-twin-strike-210942-play1]]).
 
 <!-- referenced-by:start -->
 ## Referenced by
 
-- Trials: [2026-11-03-ndfrules-stock-sweep](../trials/2026-11-03-ndfrules-stock-sweep.md), [2026-11-03-probe1-launch1-damagetype](../trials/2026-11-03-probe1-launch1-damagetype.md), [2026-11-06-probe2-play-run-a](../../../ops/knowledge/trials/2026-11-06-probe2-play-run-a.md), [2026-11-12-build-210942-port](../trials/2026-11-12-build-210942-port.md)
+- Trials: [2026-11-03-ndfrules-stock-sweep](../trials/2026-11-03-ndfrules-stock-sweep.md), [2026-11-03-probe1-launch1-damagetype](../trials/2026-11-03-probe1-launch1-damagetype.md), [2026-11-06-probe2-play-run-a](../../../ops/knowledge/trials/2026-11-06-probe2-play-run-a.md), [2026-11-12-build-210942-port](../trials/2026-11-12-build-210942-port.md), [2026-11-12-twin-strike-210942-play1](../../../ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md)
 - Gates: [`modkit.core.ndfrules.check_file`](../../src/modkit/core/ndfrules.py)
 - Skills: [`components/core/skills/warno-gates/SKILL.md`](../../skills/warno-gates/SKILL.md), [`components/core/skills/warno-gates/references/load-time-rules.md`](../../skills/warno-gates/references/load-time-rules.md), [`components/core/skills/warno-launch-triage/SKILL.md`](../../skills/warno-launch-triage/SKILL.md), [`components/ops/skills/warno-new-operation/references/op-anatomy.md`](../../../ops/skills/warno-new-operation/references/op-anatomy.md)
+- Records: [2026-11-12-twin-strike-210942-play1](../../../ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md)
 <!-- referenced-by:end -->

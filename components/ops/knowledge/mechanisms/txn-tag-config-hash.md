@@ -7,7 +7,7 @@ source: exe-analysis
 topics: [files-and-formats, loading-and-crashes, game-updates]
 gates: [modkit.ops.gates.check_config_hashes]
 shapes: [modkit.core.txntag.config_hash]
-trials: [2026-11-12-twin-strike-launch-config-hash, 2026-11-12-config-hash-stock-survey]
+trials: [2026-11-12-twin-strike-launch-config-hash, 2026-11-12-config-hash-stock-survey, 2026-11-12-twin-strike-210942-play1]
 stock_precedent: every one of the 331 stock .txn.tag of a 210942 extraction whose transaction the data names (by a TNDFTransaction, or by a folder scan) holds exactly the computed ConfigHash, all 167 of the scenario packs' among them
 ---
 **What the game does.** Before it loads a compiled transaction, `<BaseName>.txn`, the game computes a ConfigHash from
@@ -29,14 +29,14 @@ So a clone that renames its scenario changes every one of its tags' ConfigHash, 
 
 **How it was found.** The first 210942 build of Twin Strike kept Survivors' ConfigHashes and stopped at load
 ([[2026-11-12-twin-strike-launch-config-hash]]). The rule was read in the game's executable and is held by a gate proven
-both ways: it fails that build on all four of its tags and passes every stock tag. Unverified in play until a build
-that holds the computed hashes loads.
+both ways: it fails that build on all four of its tags and passes every stock tag. Seen in play: the next build,
+which holds the computed hashes, loaded with no error and played ([[2026-11-12-twin-strike-210942-play1]]).
 
 <!-- referenced-by:start -->
 ## Referenced by
 
-- Trials: [2026-11-12-config-hash-stock-survey](../trials/2026-11-12-config-hash-stock-survey.md), [2026-11-12-twin-strike-launch-config-hash](../trials/2026-11-12-twin-strike-launch-config-hash.md)
+- Trials: [2026-11-12-config-hash-stock-survey](../trials/2026-11-12-config-hash-stock-survey.md), [2026-11-12-twin-strike-210942-play1](../trials/2026-11-12-twin-strike-210942-play1.md), [2026-11-12-twin-strike-launch-config-hash](../trials/2026-11-12-twin-strike-launch-config-hash.md)
 - Gates: [`modkit.ops.gates.check_config_hashes`](../../src/modkit/ops/gates.py)
 - Shapes: [`modkit.core.txntag.config_hash`](../../../core/src/modkit/core/txntag.py)
-- Records: [2026-11-12-config-hash-stock-survey](../trials/2026-11-12-config-hash-stock-survey.md), [2026-11-12-twin-strike-launch-config-hash](../trials/2026-11-12-twin-strike-launch-config-hash.md), [scenario-definition-layout](scenario-definition-layout.md)
+- Records: [2026-11-12-config-hash-stock-survey](../trials/2026-11-12-config-hash-stock-survey.md), [2026-11-12-twin-strike-210942-play1](../trials/2026-11-12-twin-strike-210942-play1.md), [2026-11-12-twin-strike-launch-config-hash](../trials/2026-11-12-twin-strike-launch-config-hash.md), [scenario-definition-layout](scenario-definition-layout.md)
 <!-- referenced-by:end -->

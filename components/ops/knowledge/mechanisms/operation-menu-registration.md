@@ -2,10 +2,10 @@
 id: operation-menu-registration
 title: A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden
 status: PLAYED
-last_verified: 201602 2026-11-11
+last_verified: 210942 2026-11-12
 source: play
 topics: [operation-setup, game-updates]
-trials: [2026-11-02-same-name-pack-override, 2026-11-02-new-scenario-id-loads, 2026-11-02-gdscript-format-survey, 2026-11-06-probe2-play-run-a, 2026-11-11-twin-strike-launch1-duplicate-menu-order, 2026-11-12-port-210942-survey]
+trials: [2026-11-02-same-name-pack-override, 2026-11-02-new-scenario-id-loads, 2026-11-02-gdscript-format-survey, 2026-11-06-probe2-play-run-a, 2026-11-11-twin-strike-launch1-duplicate-menu-order, 2026-11-12-port-210942-survey, 2026-11-12-twin-strike-210942-play1]
 ---
 **What the game does.** No central list of Operations exists. The menu is built from every mounted
 `NDF/Scenarios/<scenario>/MapConfiguration.txn` (build 201602: `NDF/Scenarios/MapConfiguration/<scenario>.ndfbin`;
@@ -27,14 +27,15 @@ launches.
   its derived order (`modkit.ops.leveldesign.derived_menu_order`, a hash of its scenario GUID), never a hand pick
   ([[content-identity-unique]]).
 
-**On build 210942: unverified in play.** The plays above were on 201602. Build 210942 reads the menu entry and the
-scenario list from the new Definition layout, each kind by a name its own data gives ([[scenario-definition-layout]]).
+**On build 210942.** Build 210942 reads the menu entry and the scenario list from the new Definition layout, each kind
+by a name its own data gives ([[scenario-definition-layout]]). Seen in play: Twin Strike, under its own scenario id,
+was listed and launched ([[2026-11-12-twin-strike-210942-play1]]); the other plays above were on 201602.
 
 <!-- referenced-by:start -->
 ## Referenced by
 
-- Trials: [2026-11-02-gdscript-format-survey](../trials/2026-11-02-gdscript-format-survey.md), [2026-11-02-new-scenario-id-loads](../trials/2026-11-02-new-scenario-id-loads.md), [2026-11-02-same-name-pack-override](../../../core/knowledge/trials/2026-11-02-same-name-pack-override.md), [2026-11-06-probe2-play-run-a](../trials/2026-11-06-probe2-play-run-a.md), [2026-11-11-twin-strike-launch1-duplicate-menu-order](../trials/2026-11-11-twin-strike-launch1-duplicate-menu-order.md), [2026-11-12-port-210942-survey](../trials/2026-11-12-port-210942-survey.md)
+- Trials: [2026-11-02-gdscript-format-survey](../trials/2026-11-02-gdscript-format-survey.md), [2026-11-02-new-scenario-id-loads](../trials/2026-11-02-new-scenario-id-loads.md), [2026-11-02-same-name-pack-override](../../../core/knowledge/trials/2026-11-02-same-name-pack-override.md), [2026-11-06-probe2-play-run-a](../trials/2026-11-06-probe2-play-run-a.md), [2026-11-11-twin-strike-launch1-duplicate-menu-order](../trials/2026-11-11-twin-strike-launch1-duplicate-menu-order.md), [2026-11-12-port-210942-survey](../trials/2026-11-12-port-210942-survey.md), [2026-11-12-twin-strike-210942-play1](../trials/2026-11-12-twin-strike-210942-play1.md)
 - Skills: [`components/core/skills/warno-launch-triage/SKILL.md`](../../../core/skills/warno-launch-triage/SKILL.md), [`components/core/skills/warno-setup/references/scenario-python-and-prior-art.md`](../../../core/skills/warno-setup/references/scenario-python-and-prior-art.md), [`components/ops/skills/warno-new-operation/SKILL.md`](../../skills/warno-new-operation/SKILL.md)
 - Examples: [`components/ops/examples/probes/README.md`](../../examples/probes/README.md)
-- Records: [2026-11-11-twin-strike-launch1-duplicate-menu-order](../trials/2026-11-11-twin-strike-launch1-duplicate-menu-order.md)
+- Records: [2026-11-11-twin-strike-launch1-duplicate-menu-order](../trials/2026-11-11-twin-strike-launch1-duplicate-menu-order.md), [2026-11-12-twin-strike-210942-play1](../trials/2026-11-12-twin-strike-210942-play1.md)
 <!-- referenced-by:end -->
