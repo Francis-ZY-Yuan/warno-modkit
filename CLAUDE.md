@@ -36,9 +36,10 @@ WARNO.
   so before trusting a gate or a record. Add a build there only after the probes play clean on it, and only once
   packaging and the stock declarations have moved to it.
 - **Before every commit**, with that interpreter: `-m modkit.core.knowledge render`, `-m modkit.core.knowledge
-  check .`, `-m modkit.core.repocheck --history .` and both test suites; `claude plugin validate .` after a manifest
-  change. Commit the generated pages (the `knowledge/` folder, each `INDEX.md`, the "referenced by" footers) with
-  the change that caused them; never edit them by hand.
+  check .`, `-m modkit.core.repocheck --history .`, `-m ruff check .` (the version CI pins in
+  `.github/workflows/ci.yml`) and both test suites; `claude plugin validate .` after a manifest change. CI runs the
+  same on every pull request (README, Develop). Commit the generated pages (the `knowledge/` folder, each
+  `INDEX.md`, the "referenced by" footers) with the change that caused them; never edit them by hand.
 - **Commits:** one task per commit, the message starting with the component (`core: ...`, `ops: ...`, `docs: ...`).
   Stage files by explicit path. Commit with `TZ=UTC` set and the neutral identity (`modkit.repo.toml`, `[identity]`;
   the history scan fails any other); don't sign commits with a personal key.

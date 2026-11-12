@@ -1,0 +1,125 @@
+# Lint, the repository checks and both test suites, on Windows (the toolkit's platform; checkouts there are CRLF).
+# CI has no game data: the tests that need it skip, and the tests step prints how many did.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  checks:
+    name: Lint, repository checks and tests
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    env:
+      RUFF_VERSION: "0.17.4"
+      CLAUDE_CODE_VERSION: "2.1.322"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The pull request's own head, not GitHub's test merge of it: the history scan requires every commit to
+          # carry the identity in modkit.repo.toml, and GitHub's merge commit does not.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0  # repocheck --history scans every commit
+          persist-credentials: false
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+
+      - name: Install both components and ruff
+        id: install
+        run: |
+          python -m pip install --disable-pip-version-check -e components/core -e components/ops "ruff==$RUFF_VERSION"
+          python -c "import sys, compression.zstd; print(sys.version)"
+
+      - name: Lint (ruff check)
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: python -m ruff check --output-format github .
+
+      - name: Knowledge check
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: python -m modkit.core.knowledge check .
+
+      - name: The generated pages are up to date (knowledge render leaves no diff)
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: |
+          python -m modkit.core.knowledge render .
+          if [ -n "$(git status --porcelain)" ]; then
+            git status --short
+            git diff
+            echo "::error::knowledge render changed the tree: run it and commit the generated pages with the change"
+            exit 1
+          fi
+
+      - name: Repository check, with history
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: python -m modkit.core.repocheck --history .
+
+      - name: Plugin manifests (claude plugin validate)
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        env:
+          DISABLE_AUTOUPDATER: "1"
+          CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
+        run: |
+          for target in . components/core components/ops; do
+            npx --yes "@anthropic-ai/claude-code@$CLAUDE_CODE_VERSION" plugin validate "$target"
+          done
+
+      - name: Tests (core in one process, ops one module per process)
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        shell: python
+        run: |
+          # A one-process ops run hits a CPython 3.14 crash ("Executing a cache"), so each ops module runs alone.
+          import os, re, subprocess, sys
+          from pathlib import Path
+
+          sys.stdout.reconfigure(errors="replace")
+
+          def run(suite, pattern):
+              tests = f"components/{suite}/tests"
+              proc = subprocess.run([sys.executable, "-m", "unittest", "discover", "-s", tests, "-t", tests,
+                                     "-p", pattern], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                                    errors="replace")
+              print(f"::group::{suite} {pattern}: exit {proc.returncode}", flush=True)
+              print(proc.stdout, flush=True)
+              print("::endgroup::", flush=True)
+              ran = re.findall(r"^Ran (\d+) tests? in", proc.stdout, re.M)
+              skipped = re.findall(r"^(?:OK|FAILED) \(.*?\bskipped=(\d+)", proc.stdout, re.M)
+              return proc.returncode, int(ran[-1]) if ran else 0, int(skipped[-1]) if skipped else 0
+
+          rows, failed = [], []
+          for suite, patterns in (("core", ["test*.py"]),
+                                  ("ops", sorted(p.name for p in Path("components/ops/tests").glob("test*.py")))):
+              ran = skipped = 0
+              for pattern in patterns:
+                  code, n, s = run(suite, pattern)
+                  ran, skipped = ran + n, skipped + s
+                  if code != 0:
+                      failed.append(f"{suite} {pattern} (exit {code})")
+              rows.append((suite, len(patterns), ran, skipped))
+
+          lines = ["| Suite | Processes | Tests run | Skipped |", "| --- | --- | --- | --- |"]
+          lines += [f"| {suite} | {procs} | {ran} | {skipped} |" for suite, procs, ran, skipped in rows]
+          lines += ["", "Skipped tests need the game's data, which CI does not have: a green run is not a full run."]
+          if failed:
+              lines += ["", "Failed: " + ", ".join(failed)]
+          print("\n".join(lines))
+          if os.environ.get("GITHUB_STEP_SUMMARY"):
+              with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as fh:
+                  fh.write("## Tests\n\n" + "\n".join(lines) + "\n")
+          print("::notice title=Tests skipped without game data::"
+                + "; ".join(f"{suite}: {skipped} of {ran} skipped" for suite, _, ran, skipped in rows))
+          sys.exit(1 if failed else 0)

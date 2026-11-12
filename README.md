@@ -221,11 +221,19 @@ mechanism and lesson pages, and deletes a generated page it no longer writes: co
 every commit: no game data, no local paths or personal data, no references to components this repository does not
 hold. After changing a manifest, also run `claude plugin validate .` and `claude plugin validate components/<name>`.
 
+**CI** (`.github/workflows/ci.yml`) runs on every pull request to `main` and every push to it, on Windows with
+Python 3.14: `ruff check .` (bug rules only, set in `ruff.toml`; the version is pinned in the workflow), the knowledge
+check, `knowledge render` (which must leave no diff), `repocheck --history`, `claude plugin validate` on the
+marketplace and both plugins, the core suite, and the ops suite one module per process. CI has no game data, so the
+tests that need it skip and the run's summary says how many: a green run is not a full run.
+
 ## Layout
 
 ```
 .claude-plugin/marketplace.json   the marketplace: one plugin per component
 .claude/settings.json             registers this clone's marketplace and enables its plugins
+.github/workflows/ci.yml          CI: lint, the repository checks and both test suites
+ruff.toml                         the lint rules
 components/<name>/                one component: .claude-plugin/plugin.json, pyproject.toml, src/modkit/<name>/,
                                   skills/, examples/, knowledge/, tests/
 components/<name>/knowledge/      its records, one per file: mechanisms/, trials/, lessons/; its topics.md;
