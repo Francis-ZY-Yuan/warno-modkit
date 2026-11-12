@@ -1,0 +1,21 @@
+# Twin Strike's Steam Workshop item: everything its page shows, kept here as the source of truth.
+# Check the live page against it: python -m modkit.core.workshop check <this file>
+# How each part reaches Steam: the warno-ship skill, references/workshop-page.md.
+
+id = 3838528915                 # twinstrike.profile.WORKSHOP_ID
+mod_name = "TwinStrike"         # twinstrike.profile.MOD_NAME: Config.ini's Name; every upload resets the title to it
+title = "Operation Twin Strike | The first custom scripted Operation on the Workshop (WIP)"
+description = "description.bbcode"
+# The images are in docs/screenshots/, the one folder where the hygiene gate admits pictures. A path that starts
+# with / is from the repository root, as in the README's links.
+preview = "/docs/screenshots/twin-strike-workshop-preview.jpg"  # the main image: set by the upload, from Config.ini's PreviewImagePath
+gallery = [                     # added on the item's "Add/edit images & videos" page, in this order
+  "/docs/screenshots/twin-strike-workshop-01-briefing.jpg",
+  "/docs/screenshots/twin-strike-workshop-02-village.jpg",
+  "/docs/screenshots/twin-strike-workshop-03-fire-boxes.jpg",
+  "/docs/screenshots/twin-strike-workshop-04-nuclear-release.jpg",
+  "/docs/screenshots/twin-strike-workshop-05-after-the-strike.jpg",
+]
+# {{repo}} in the description is filled from modkit.local.toml, [workshop.vars]: it names the GitHub owner, which
+# the public tree never does.
+vars = ["repo"]

@@ -27,3 +27,9 @@ illustration; not affiliated with or endorsed by Eugen Systems.
 - `twin-strike-nuclear-release.jpg`: Operation Twin Strike in play (v0 demo): Front offers one tactical nuclear strike on the second NATO battalion's assembly area, and the objectives track the scripted phases.
 - `twin-strike-prep-fire.jpg`: Operation Twin Strike in play (v0 demo): during the assault, the division's guns offer one salvo on the village: fire now, or hold.
 - `twin-strike-box-w.jpg`: Operation Twin Strike in play (v0 demo): the first NATO battalion's column comes under fire on the west lane.
+- `twin-strike-workshop-preview.jpg`: Operation Twin Strike's Steam Workshop main image: the West German battalion after the strike, with the title and "The first custom Operation on the WARNO Workshop" (`components/ops/examples/twin-strike/workshop/`).
+- `twin-strike-workshop-01-briefing.jpg`: Twin Strike's Workshop gallery, 1: the Operations menu with its briefing and map card (build 210942).
+- `twin-strike-workshop-02-village.jpg`: Twin Strike's Workshop gallery, 2: holding the road-junction village (build 210942).
+- `twin-strike-workshop-03-fire-boxes.jpg`: Twin Strike's Workshop gallery, 3: the US task force counter-attacks into the fire boxes (build 210942).
+- `twin-strike-workshop-04-nuclear-release.jpg`: Twin Strike's Workshop gallery, 4: Front's nuclear release dialog (build 210942).
+- `twin-strike-workshop-05-after-the-strike.jpg`: Twin Strike's Workshop gallery, 5: the second battalion after the strike, stunned under the smoke (build 210942).

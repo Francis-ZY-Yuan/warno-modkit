@@ -110,7 +110,9 @@ a trial (the `warno-record-finding` skill).
 installed `Config.ini` only: a build that wrote `ID = 0` would reset it on the next reinstall, and the next upload would
 create a second Workshop item instead of updating this one. (The share installer also keeps an installed non-zero ID
 over a build's 0, and refuses a build with a different non-zero one.) What the first upload did to the installed files
-is in [[workshop-upload-folder]].
+is in [[workshop-upload-folder]]. The item's page, its title, description, main image and gallery, is kept in
+[`workshop/`](workshop/) and checked against the live item with `python -m modkit.core.workshop check
+workshop/item.toml` (the `warno-ship` skill).
 
 ## Play sheet
 
