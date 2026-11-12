@@ -27,9 +27,10 @@ WARNO.
 
 - **Python:** always `.venv/Scripts/python` (3.14 or newer, with editable installs of both components). A bare
   `python` may be older and fails on the game's zstd archives.
-- **Tests run per component from the repository root:**
-  `.venv/Scripts/python -m unittest discover -s components/<name>/tests -t components/<name>/tests`. Tests that need
-  stock data skip when no extraction is configured; a skip proves nothing.
+- **Tests:** `.venv/Scripts/python tools/run_tests.py` runs both suites as CI does (core in one process, ops one
+  module per process) and prints the tests run and skipped per suite; name a suite (`core`, `ops`) to run only that.
+  One module: `-m unittest discover -s components/<name>/tests -t components/<name>/tests -p test_<x>.py` from the
+  repository root. Tests that need stock data skip when no extraction is configured; a skip proves nothing.
 - **Local data** comes from the git-ignored `modkit.local.toml` or `MODKIT_GAME_DIR`, `MODKIT_EXTRACTED`,
   `MODKIT_DATA`, `MODKIT_BUILD` (`warno-setup`). `modkit.core.paths` is the only code that knows where it is.
 - **Game build:** `python -m modkit.core.gamebuild` shows the installed build. When it is not in `VERIFIED_BUILDS`, say
@@ -37,7 +38,8 @@ WARNO.
   packaging and the stock declarations have moved to it.
 - **Before every commit**, with that interpreter: `-m modkit.core.knowledge render`, `-m modkit.core.knowledge
   check .`, `-m modkit.core.repocheck --history .`, `-m ruff check .` (the version CI pins in
-  `.github/workflows/ci.yml`) and both test suites; `claude plugin validate .` after a manifest change. CI runs the
+  `.github/workflows/ci.yml`) and both test suites (`tools/run_tests.py`); `claude plugin validate .` after a
+  manifest change. CI runs the
   same on every pull request (README, Develop). Commit the generated pages (the `knowledge/` folder, each
   `INDEX.md`, the "referenced by" footers) with the change that caused them; never edit them by hand.
 - **Commits:** one task per commit, the message starting with the component (`core: ...`, `ops: ...`, `docs: ...`).

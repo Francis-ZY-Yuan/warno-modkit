@@ -199,6 +199,9 @@ The same commands work in a terminal:
 .venv/Scripts/python -m unittest discover -s components/ops/tests -t components/ops/tests
 ```
 
+or both as CI runs them (ops one module per process), with the tests run and skipped per suite:
+`.venv/Scripts/python tools/run_tests.py`.
+
 **Your game and corpus:** run `warno-setup` once. It writes `modkit.local.toml` at the repository root (git-ignored)
 with `game_dir` (your WARNO folder), `extracted` (the stock corpus, outside the repository and the game folder) and,
 optionally, `data_dir`, `build_dir` (where builds write by default; `build/` beside the toml, or in the working
@@ -224,8 +227,8 @@ hold. After changing a manifest, also run `claude plugin validate .` and `claude
 **CI** (`.github/workflows/ci.yml`) runs on every pull request to `main` and every push to it, on Windows with
 Python 3.14: `ruff check .` (bug rules only, set in `ruff.toml`; the version is pinned in the workflow), the knowledge
 check, `knowledge render` (which must leave no diff), `repocheck --history`, `claude plugin validate` on the
-marketplace and both plugins, the core suite, and the ops suite one module per process. CI has no game data, so the
-tests that need it skip and the run's summary says how many: a green run is not a full run.
+marketplace and both plugins, and `tools/run_tests.py` (the core suite, the ops suite one module per process). CI has
+no game data, so the tests that need it skip and the run's summary says how many: a green run is not a full run.
 
 ## Layout
 
@@ -234,6 +237,7 @@ tests that need it skip and the run's summary says how many: a green run is not 
 .claude/settings.json             registers this clone's marketplace and enables its plugins
 .github/workflows/ci.yml          CI: lint, the repository checks and both test suites
 ruff.toml                         the lint rules
+tools/run_tests.py                runs both test suites as CI does (dev tooling, in no plugin)
 components/<name>/                one component: .claude-plugin/plugin.json, pyproject.toml, src/modkit/<name>/,
                                   skills/, examples/, knowledge/, tests/
 components/<name>/knowledge/      its records, one per file: mechanisms/, trials/, lessons/; its topics.md;
