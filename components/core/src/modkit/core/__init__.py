@@ -12,17 +12,22 @@ from modkit.core.stock import Stock
 STOCK_PATHS = (
     Stock("index_all.tsv", index=True,
           why="every archive of the install and the inner paths it holds: the lookup the other entries use"),
-    Stock("glad_201602", packs=("Glad",), latest=True,
-          why="the game's own NDF (ModManager's tag lists, the stock corpus ndfrules checks its table against)"),
+    Stock("glad_201602", packs=("Glad",), latest=True, corpus=False,
+          why="Glad.dat: the game's own NDF up to build 201602. Build 210942 loads it from Transactions.dat instead "
+              "(below); kept for the readers that still name it"),
+    Stock("transactions", packs=("Transactions",),
+          why="the game's own NDF from build 210942 on (Transactions.dat: Glad's files re-shipped as .txn, some "
+              "renamed; ModManager's tag lists): the stock corpus ndfrules checks its table against"),
 
-    # The rest of the stock corpus of ndfrules: it reads every ndfbin of the extraction (the table's stock counts and
-    # the "reviewed" evidence are taken over them), so these are the scenario and map ndfbin files of the install.
+    # The rest of the stock corpus of ndfrules: it reads every compiled NDF file of the extraction (`.ndfbin`, and
+    # `.txn` from build 210942 on; the table's stock counts and the "reviewed" evidence are taken over them), so these
+    # are the scenario and map NDF files of the install.
     *(Stock(f"scenarios/{family}_*", packs=(pack,), latest=pack.endswith("_Definition"),
             why="every stock scenario's NDF and zone files: ndfrules' corpus")
       for family in ("challenge", "CampagneStrat") for pack in ("{}_Definition", "{}_Details")),
     *(Stock(f"skirmish/{name}", packs=(f"{name}_Details",), include=("out/*.ndfbin",),
             why="three skirmish scenarios' zone files: ndfrules' corpus")
       for name in ("_2x2_Hesse_2vs2_CONQ", "_3x3_Kreide_10vs10_CONQ", "_3x3_UrbanFrontlines_10vs10_CONQ")),
-    Stock("basemaps/_4x2_Isura/data", packs=("_4x2_Isura",), include=("Output/*.ndfbin",),
-          why="one stock map's own ndfbin files: ndfrules' corpus"),
+    Stock("basemaps/_4x2_Isura/data", packs=("_4x2_Isura_Definition",), latest=True, include=("NDF/Maps/*.txn",),
+          why="one stock map's own NDF files (MapConstante, MapDefinition, MapLoader): ndfrules' corpus"),
 )

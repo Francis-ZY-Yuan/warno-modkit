@@ -536,14 +536,38 @@ def check_file(raw: bytes, what: str, table: str | os.PathLike | None = None) ->
 
 # --------------------------------------------------------------------------- CLI
 
-def stock_files(files: list[str] | None = None, skipped: list[str] | None = None):
-    """Each readable stock ndfbin of the current build, parsed (with its path as `nb.path`). By default every
-    ndfbin of the extraction except those under its optional `older/` folder (earlier game builds, which this exe
-    never loads). A file that does not parse is left out, and its path appended to `skipped` when given."""
+STOCK_SUFFIXES = (".ndfbin", ".txn")  # compiled NDF (CNDF); build 210942 ships the game's and the scenarios' as .txn
+
+
+def not_loaded() -> list[str]:
+    """The folders of the extraction whose files this exe never loads, so they are not stock: the optional `older/`
+    (earlier game builds), and every declared entry marked `corpus=False` (an earlier build's copy that a reader still
+    names; see modkit.core.stock)."""
+    from modkit.core import setup  # setup imports this module
     root = str(paths.extracted_root())
     older = os.path.join(root, "older")  # not stock
-    for p in files if files is not None else sorted(glob.glob(os.path.join(root, "**", "*.ndfbin"), recursive=True)):
-        if os.path.commonpath([p, older]) == older:
+    copies = [s.dest for s in setup.declared() if not s.corpus and "*" not in s.dest]
+    return [older] + [os.path.join(root, *dest.split("/")) for dest in copies]
+
+
+def _below(p: str, folder: str) -> bool:
+    try:
+        return os.path.commonpath([os.path.abspath(p), os.path.abspath(folder)]) == os.path.abspath(folder)
+    except ValueError:  # another drive
+        return False
+
+
+def stock_files(files: list[str] | None = None, skipped: list[str] | None = None):
+    """Each readable stock NDF file of the current build, parsed (with its path as `nb.path`). By default every
+    `.ndfbin` and `.txn` of the extraction except those under a `not_loaded` folder. A file that does not parse is
+    left out, and its path appended to `skipped` when given."""
+    root = str(paths.extracted_root())
+    skip = not_loaded()
+    if files is None:
+        files = sorted(p for suffix in STOCK_SUFFIXES
+                       for p in glob.glob(os.path.join(root, "**", "*" + suffix), recursive=True))
+    for p in files:
+        if any(_below(p, d) for d in skip):
             continue
         try:
             with open(p, "rb") as fh:
@@ -567,7 +591,7 @@ def verify() -> int:
         for v in found:
             print(f"{paths.rel_source(nb.path)}: {v}")
         bad += len(found)
-    check(files > 0, f"no stock ndfbin was read ({len(skipped)} skipped as unparseable) under "
+    check(files > 0, f"no stock NDF file was read ({len(skipped)} skipped as unparseable) under "
                      f"{paths.extracted_root()}: `python -m modkit.core.setup check` says what is missing, and "
                      f"`python -m modkit.core.setup extract` builds it (warno-setup)")
     print(f"{files} stock files ({objects} objects), {len(skipped)} skipped as unparseable, {bad} violations")

@@ -300,7 +300,7 @@ class Verify(Local):
     def test_no_stock_file_read_fails(self):
         code, out = self.run_main("verify")
         self.assertEqual(code, 1, out)
-        self.assertIn("no stock ndfbin was read", out)
+        self.assertIn("no stock NDF file was read", out)
         self.assertIn("setup extract", out)
         self.assertNotIn("Traceback", out)
 
@@ -308,7 +308,7 @@ class Verify(Local):
         (self.extracted / "junk.ndfbin").write_bytes(b"not an ndfbin")
         code, out = self.run_main("verify")
         self.assertEqual(code, 1, out)
-        self.assertIn("no stock ndfbin was read (1 skipped as unparseable)", out)
+        self.assertIn("no stock NDF file was read (1 skipped as unparseable)", out)
 
     def test_counts_the_files_it_skipped(self):
         (self.extracted / "a").mkdir()
@@ -319,6 +319,22 @@ class Verify(Local):
         code, out = self.run_main("verify")
         self.assertEqual(code, 0, out)
         self.assertEqual(out.splitlines()[-1], "1 stock files (1 objects), 1 skipped as unparseable, 0 violations")
+
+    def test_reads_txn_and_leaves_out_what_the_game_no_longer_loads(self):
+        """Build 210942 ships compiled NDF as .txn; an entry declared corpus=False (an earlier build's copy kept for
+        a reader) is neither read nor counted as skipped."""
+        from modkit.core import setup
+        from modkit.core.stock import Stock
+        (self.extracted / "new").mkdir()
+        (self.extracted / "new" / "Thing.txn").write_bytes(small_file())
+        (self.extracted / "new" / "Thing.txn.tag").write_bytes(b"not an ndfbin")  # not compiled NDF: not read
+        (self.extracted / "copy" / "NDF").mkdir(parents=True)
+        (self.extracted / "copy" / "NDF" / "Thing.ndfbin").write_bytes(b"not an ndfbin")
+        declared = [Stock("copy", packs=("Old",), corpus=False), Stock("new", packs=("New",))]
+        with mock.patch.object(setup, "declared", return_value=declared):
+            code, out = self.run_main("verify")
+        self.assertEqual(code, 0, out)
+        self.assertEqual(out.splitlines()[-1], "1 stock files (1 objects), 0 skipped as unparseable, 0 violations")
 
     def test_violations_still_fail(self):
         (self.extracted / "bad.ndfbin").write_bytes(

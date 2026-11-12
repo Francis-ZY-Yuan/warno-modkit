@@ -19,6 +19,8 @@ How an entry is produced (``Stock.dest`` is the folder, or for ``index`` the fil
 * ``archive``: a ``.zip`` below the game folder, extracted whole (or by ``include``).
 * ``index``: the index of every archive of the install, as a TSV (``revision, archive, inner path, size``).
 * ``provenance``: also write ``_provenance.tsv`` in ``dest`` (inner path, revision, archive, size, checksum ok).
+* ``corpus``: False for files the installed game no longer loads (an earlier build's copy, kept for a reader that
+  still names it): ``modkit.core.ndfrules`` leaves them out of the stock corpus it checks its table against.
 """
 from __future__ import annotations
 
@@ -35,6 +37,7 @@ class Stock:
     archive: str = ""
     index: bool = False
     provenance: bool = False
+    corpus: bool = True
     why: str = field(default="", compare=False)  # for the reader of the declaration; two components declaring the same path agree
 
     def __post_init__(self):
