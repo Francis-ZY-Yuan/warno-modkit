@@ -5,7 +5,11 @@ A scenario cloned from a stock Operation copies a few objects of the template's 
 and the two HUD nodes around LoadingDone. ``Templates`` names them by object index (``graph.template_scalars``
 specs). Comments name the stock object a shape comes from: S = Survivors, D = TheDieburgSalient,
 B = BlackHorsesLastStand, R or DR = DelayedRetribution, HUR = HoldUntilRelieved (``S#296`` is object 296 of
-Survivors' GDScript).
+Survivors' GDScript). Those numbers are build 201602's: build 210942 put a SplashSoundDescriptor and its stream ahead
+of each script's root (Survivors' at #108), so from there on an object sits two places later (S#296 is #298).
+
+The script's root is ``ROOT_CLASS`` at ``ROOT_EXPORT``: the class every stock root has on 210942 (30 of 30), which
+replaced TGDDescriptorLaunchEffetStandard with the same three properties (CampList, EffetMap, GameRules).
 """
 from __future__ import annotations
 
@@ -22,6 +26,12 @@ from modkit.ops.bricks import (
 from modkit.ops.graph import TRUE, Imp, Node, Str, i32, loc, template_scalars, with_scalars
 
 TemplateObject = tuple[int, str, tuple[str, ...]]  # (object index, class, props to drop): a template_scalars spec
+
+# The script's root, the one object the game looks a scenario's script up by: every stock GDScript with a root holds
+# this class at this export (30 of 30 on build 210942), with CampList, EffetMap and, in 24 of them, GameRules. Build
+# 201602's root class, TGDDescriptorLaunchEffetStandard, is gone from the game.
+ROOT_CLASS = "TGDDescriptorLaunchEffetMap"
+ROOT_EXPORT = "$/GDScript/RootDescriptor"
 
 
 @dataclass(frozen=True)
@@ -146,10 +156,9 @@ def hold_script(tpl: ndfbin.NdfBin, templates: Templates, *, folder: str, camps:
     success = end_game(f"{folder}/Mission_Success", None)                      # S#781 minus achievement
     fail = end_game(f"{folder}/Mission_Fail", 1)                               # S#778 minus obj_886
     text, etiquette = objective
-    hold = Node("TGDDescriptorGereObjectif", [                                  # D#171 + S#295
+    hold = Node("TGDDescriptorGereObjectif", [                                  # D#171 + S#295, no BonusScoreMission
         ("ActionsEchec", fail),
         ("ActionsReussi", success),
-        ("BonusScoreMission", i32(50)),
         ("Condition", g_cmp(hold_timer, op=3)),                                 # D#208: timer <= 0
         ("ConditionEchec", g_cmp(groupe_joueur)),                               # S#728: count == 0
         ("LabelComponent", Str("Primary")),
@@ -172,11 +181,11 @@ def hold_script(tpl: ndfbin.NdfBin, templates: Templates, *, folder: str, camps:
         g_start_timer(hold_timer),                                                                      # D#271
         g_simul([hold, *parallel]),
     ], export=f"{folder}/Main")
-    root = Node("TGDDescriptorLaunchEffetStandard", [                                                   # S#108
+    root = Node(ROOT_CLASS, [                                                                           # S#108
         ("CampList", list(camps)),
         ("EffetMap", g_seq([g_wait(start_delay_s), main])),                                             # S#113
         ("GameRules", Node("TGDSpecificTacticalGameRules", template_scalars(tpl, templates.game_rules))),  # S#114
-    ], export="$/GDScript/RootDescriptor")
+    ], export=ROOT_EXPORT)
     exports = [root, *camps, *tags.values(), main, hold, *(nd for nd in parallel if nd.export), success, fail,
                groupe_joueur, *variables, hold_timer]
     return [silent_cutscenes([intro]), root], exports

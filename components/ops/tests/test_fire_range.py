@@ -21,6 +21,7 @@ from modkit.ops.bricks import g_create, g_seq, unit_path
 from modkit.ops.build import details_files
 from modkit.ops.graph import Node, build_graph, decode, encode, nodes_of, u32
 from modkit.ops.leveldesign import LD_FILE, LdItem, gd_tags
+from modkit.ops.rekey import TXN, def_path
 from modkit.ops.shapes import GRU_WORLD, SHOOT_ON_POSITION, order
 from modkit.ops.zones import playable_zone_graph, rect_polygon
 from test_build import profile
@@ -274,16 +275,17 @@ class CreatedInZone(unittest.TestCase):
 
 @paths.skip_unless_extracted("scenarios")
 class StockCreates(unittest.TestCase):
-    """Stock creates every unit inside the playable zone: the in-zone gate passes all 300 CreateUnitOnPosition of the
-    21 stock scenarios that create units, each read with its own LevelDesign and PlayableZone (four ship a zone file
-    with no area: the whole map)."""
+    """Stock creates every unit inside the playable zone: the in-zone gate passes all 313 CreateUnitOnPosition of the
+    22 stock scenarios that create units, each read with its own LevelDesign and PlayableZone (four ship a zone file
+    with no area: the whole map). Build 201602 had 300 in 21: 210942 adds the scenario CampagneStrat_Invasion_of_Cuba
+    (13), the others unchanged."""
 
     def test_every_stock_create_stands_inside(self):
         root = str(paths.extracted_root())
         creates, scenarios, whole = 0, 0, 0
         for name in sorted(os.listdir(os.path.join(root, "scenarios"))):
             folder = os.path.join(root, "scenarios", name)
-            gd = os.path.join(folder, "NDF", "Scenarios", "GDScript", f"{name}.ndfbin")
+            gd = os.path.join(folder, *def_path("GDScript", TXN, name).split("/"))
             if not os.path.isfile(gd):
                 continue
             details = {}
@@ -294,7 +296,7 @@ class StockCreates(unittest.TestCase):
                 n = gates.check_created_in_zone(nodes_of(decode(fh.read())[0]), details)
             creates, scenarios = creates + n, scenarios + (n > 0)
             whole += gates.playable_ring(details[gates.PLAYABLE_FILE]) is None
-        self.assertEqual((creates, scenarios, whole), (300, 21, 4))
+        self.assertEqual((creates, scenarios, whole), (313, 22, 4))
 
 
 @paths.skip_unless_game_dir("Mods", "ModData", "base.zip")

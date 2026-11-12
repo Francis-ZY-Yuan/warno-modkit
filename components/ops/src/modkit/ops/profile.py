@@ -30,7 +30,7 @@ from modkit.core.packaging import check_mod_id
 from modkit.ops.graph import Node
 from modkit.ops.items import Item
 from modkit.ops.leveldesign import LdItem
-from modkit.ops.rekey import ScalarEdit, def_path
+from modkit.ops.rekey import TXN, ScalarEdit, def_path
 from modkit.ops.script import BRICK_FORCE_HIDE, Templates
 from modkit.ops.strings import Table
 
@@ -53,9 +53,7 @@ class Template:
     details: str                       # its Details pack folder
     assets: str                        # its Assets pack folder
     kinds: tuple[str, ...]             # the Definition kinds shipped (re-keyed, or the generated GDScript)
-    dropped: tuple[tuple[str, str], ...]  # the Definition kinds dropped (.ndfbin and .tag), with the manifest's why
-    tag_sources: tuple[str, ...]       # the source files the .tag sidecars name
-    tag_dropped: tuple[str, ...]       # tag_sources named only by a dropped kind's .tag
+    dropped: tuple[tuple[str, str], ...]  # the Definition kinds dropped (.txn, .txn.tag, .dbg), with the manifest's why
     global_tokens: tuple[str, ...]     # stock loc tokens its files use that a mod uses without shipping them
     objects: Templates                 # the script objects a generated script copies scalars from
     asset_subtrees: tuple[str, ...]    # the Assets folder's top-level folders
@@ -69,12 +67,14 @@ class Template:
 
     def gdscript(self) -> str:
         """The template's GDScript, the input of a content's script."""
-        return os.path.join(self.path("definition"), *def_path("GDScript", "ndfbin", self.source).split("/"))
+        return os.path.join(self.path("definition"), *def_path("GDScript", TXN, self.source).split("/"))
 
 
 # Survivors, the stock challenge both example ops start from: a four-camp scenario whose Definition, Details and
-# Assets the extraction holds whole (modkit.ops.STOCK_PATHS). Object indices: #114 the game rules, #121 the HUD hide
-# before LoadingDone, #296 the HUD restore (minus ShowMinimap: the minimap stays visible).
+# Assets the extraction holds whole (modkit.ops.STOCK_PATHS). Object indices of its 210942 GDScript: #116 the game
+# rules, #123 the HUD hide before LoadingDone, #298 the HUD restore (minus ShowMinimap: the minimap stays visible);
+# 201602's S#114, S#121 and S#296, two places on since 210942 put a SplashSoundDescriptor and its stream at #108.
+# Its Trophy (TrophyDef) is dropped: a clone earns no stock trophy.
 SURVIVORS = Template(
     source="challenge_Survivors",
     guid=bytes.fromhex("24e6ba7d1b026372ad74e66f87ba611d"),
@@ -83,13 +83,10 @@ SURVIVORS = Template(
     details="kreide_op/challenge_Survivors_Details",
     assets="scenarios/challenge_Survivors",
     kinds=("GDScript", "MapConfiguration", "ScenarioInfo", "ScenarioLoader"),
-    dropped=(("Trophy", "Trophy is dropped (C.1)"),),
-    tag_sources=("Scenario.ndf", "MapPack.ndf", "Trophy.ndf", "Scripting/EffetMap.ndf", "Scripting/GdItems.ndf",
-                 "Scripting/Dialog.ndf", "Scripting/Resources.ndf"),
-    tag_dropped=("Trophy.ndf",),
+    dropped=(("TrophyDef", "Trophy is dropped (C.1)"),),
     global_tokens=("SI_NEXT", "GRL_ATTP", "GRL_ATTPB", "GRL_ATTPE"),
-    objects=Templates((114, "TGDSpecificTacticalGameRules", ()), (121, "TGDDescriptorForceDisplayUIElement", ()),
-                      (296, "TGDDescriptorForceDisplayUIElement", ("ShowMinimap",))),
+    objects=Templates((116, "TGDSpecificTacticalGameRules", ()), (123, "TGDDescriptorForceDisplayUIElement", ()),
+                      (298, "TGDDescriptorForceDisplayUIElement", ("ShowMinimap",))),
     asset_subtrees=("AllPlatforms", "Localisation", "Map", "PC"),
     menu_order=130,
 )

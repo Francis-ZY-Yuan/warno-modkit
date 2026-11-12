@@ -18,16 +18,16 @@ import unittest
 import uuid
 
 from probe_support import OUT_ROOT, details_files, ld_guid, quiet_build, scenario_guid, template_gdscript
-from modkit.core import edat, paths, trad
+from modkit.core import dbg, edat, paths, trad
 from modkit.core.gates import CheckError
 from modkit.ops import gates
 from modkit.ops.files import read_file
 from modkit.ops.graph import decode, walk
 from modkit.ops.items import mem_item
-from modkit.ops.leveldesign import read_ld_items
+from modkit.ops.leveldesign import TAG_ID, read_ld_items
 from modkit.ops.maps import GEISA
 from modkit.ops.profile import SURVIVORS, Content
-from modkit.ops.rekey import def_path
+from modkit.ops.rekey import DBG, DEF_EXTS, TXN, def_path
 from modkit.ops.script import BRICK_DEFAULT, PROD_MENU_SWITCH
 from modkit.ops.strings import LANGS, StringError
 from probes import CONTENTS, empty, profile, spike, spike2
@@ -113,7 +113,7 @@ class Build(unittest.TestCase):
         definition = self.packs["Definition"]
 
         def strings(kind: str) -> list[str]:
-            nb, _, _ = decode(definition[f"NDF/Scenarios/{kind}/{profile.SCENARIO}.ndfbin"])
+            nb, _, _ = decode(definition[def_path(kind, TXN, profile.SCENARIO)])
             return [s.decode("latin-1") for s in nb.strings]
 
         info = strings("ScenarioInfo")
@@ -122,7 +122,7 @@ class Build(unittest.TestCase):
         config = strings("MapConfiguration")
         self.assertIn("OP_BASE_BB_Player", config)
         self.assertNotIn("OP_NORTH_SURV_PLAYER", config)
-        nb, _, _ = decode(definition[f"NDF/Scenarios/MapConfiguration/{profile.SCENARIO}.ndfbin"])
+        nb, _, _ = decode(definition[def_path("MapConfiguration", TXN, profile.SCENARIO)])
         chain = [v for ob in nb.objects for pi, v in ob.props if nb.pname(pi) == "OrderToChainMission"]
         self.assertEqual([v.v for v in chain], [1001])
 
@@ -160,24 +160,27 @@ class Identity(unittest.TestCase):
         self.assertEqual(sorted(os.listdir(os.path.join(root, "Scenarios"))),
                          [f"{scenario}_{p}.dat" for p in ("Assets", "Definition", "Details")])
         packs = pack_files(root, scenario)
-        self.assertEqual(sorted(packs["Definition"]), sorted(f"NDF/Scenarios/{k}/{scenario}.{ext}"
-                                                             for k in SURVIVORS.kinds for ext in ("ndfbin", "tag")))
+        self.assertEqual(sorted(packs["Definition"]), sorted(def_path(k, ext, scenario)
+                                                             for k in SURVIVORS.kinds for ext in DEF_EXTS))
         self.assertTrue(all(p.startswith(f"Localisation/{scenario}/") or f"/{scenario}/" in p for p in packs["Assets"]),
                         sorted(packs["Assets"]))
         new_guid = scenario_guid(scenario)
         self.assertNotEqual(new_guid, scenario_guid(profile.SCENARIO))
         from modkit.ops.graph import all_values
         for kind in ("MapConfiguration", "ScenarioInfo"):
-            nb, _, _ = decode(packs["Definition"][f"NDF/Scenarios/{kind}/{scenario}.ndfbin"])
+            nb, _, _ = decode(packs["Definition"][def_path(kind, TXN, scenario)])
             guids = {x.v for _, _, x in all_values(nb) if x.tag == 0x1A}
             with self.subTest(kind=kind):
                 self.assertIn(new_guid, guids)
                 self.assertFalse(guids & {scenario_guid(profile.SCENARIO), SURVIVORS.guid})
-        stale = []  # every Definition string naming a probe id names the new one
+        stale = []  # every Definition string (and .dbg source-map line) naming a probe id names the new one
         for inner, raw in packs["Definition"].items():
-            nb, _, _ = decode(raw)
-            stale += [f"{inner}: {t}" for t in (s.decode("latin-1") for s in nb.strings + nb.trans)
-                      if "challenge_OpenDoor" in t and scenario not in t]
+            if inner.endswith(f".{DBG}"):
+                texts = dbg.read_text(raw).splitlines()
+            else:
+                nb, _, _ = decode(raw)
+                texts = [s.decode("latin-1") for s in nb.strings + nb.trans]
+            stale += [f"{inner}: {t}" for t in texts if "challenge_OpenDoor" in t and scenario not in t]
         self.assertEqual(stale, [])
         ld = read_ld_items(packs["Details"]["out/LevelDesign.ndfbin"])
         content = empty.content()
@@ -192,7 +195,7 @@ class Identity(unittest.TestCase):
         before anything is written."""
         stale = dataclasses.replace(empty.content(), scenario=TEST_ID[0], mod_name=TEST_ID[1])
         out = os.path.join(OUT_ROOT, "stale")
-        with self.assertRaisesRegex(CheckError, "GUID words match no LevelDesign item"):
+        with self.assertRaisesRegex(CheckError, f"its {TAG_ID} matches no LevelDesign item"):
             quiet_build(stale, out)
         self.assertFalse(os.path.exists(out))
 

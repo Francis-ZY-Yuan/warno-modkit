@@ -106,7 +106,7 @@ ASSET_RULES = (
     (f"PC/Video/{SOURCE}/*", "drop", "Survivors videos; not referenced"),
 )
 SHAPE_SOURCES = {  # generated file -> stock files whose shapes it may use, relative to the extraction
-    "GDScript": ("scenarios/challenge_*/NDF/Scenarios/GDScript/challenge_*.ndfbin",),
+    "GDScript": ("scenarios/challenge_*/NDF/Scenarios/challenge_*/GDScript.txn",),
     LD_FILE: ("scenarios/challenge_*/out/LevelDesign.ndfbin", "kreide_op/*/out/LevelDesign.ndfbin"),
     **{inner: (f"scenarios/*/{inner}", f"kreide_op/*/{inner}") for inner in ZONE_FILES.values()},
 }

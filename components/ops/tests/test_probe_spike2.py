@@ -15,7 +15,6 @@ import io
 import math
 import os
 import re
-import struct
 import unittest
 
 from probe_support import (
@@ -30,6 +29,7 @@ from modkit.ops.graph import Node, all_values, decode
 from modkit.ops.leveldesign import LdItem
 from modkit.ops.maps import GEISA
 from modkit.ops.profile import extracted
+from modkit.ops.rekey import TXN, def_path
 from modkit.ops.shapes import camp_nodes
 from modkit.ops.strings import LANGS
 from modkit.ops.testing import (  # noqa: F401
@@ -931,7 +931,7 @@ class Stock(unittest.TestCase):
     def test_objective_numbers(self):
         """OBJECTIVE_VARIABLES_MAX is stock's: no objective of the stock GDScripts (challenges and strategic campaigns)
         fills ListVariables or ListVariablesForEtiquetteText with more than 2 variables, and some fill 2."""
-        paths = sorted(glob.glob(os.path.join(extracted("scenarios"), "*", "NDF", "Scenarios", "GDScript", "*.ndfbin")))
+        paths = sorted(glob.glob(os.path.join(extracted("scenarios"), "*", "NDF", "Scenarios", "*", "GDScript.txn")))
         self.assertGreaterEqual(len(paths), 16)
         most = 0
         for path in paths:
@@ -1010,8 +1010,7 @@ class Identity(unittest.TestCase):
         self.assertEqual(spike2.STRINGS["SCENARIO_DEFINITION"]["o2_name"][0], "Open Door test 2")
         ctx = spike2.Ctx()
         it = spike2.item("OD_CZ_CapA")
-        words = [prop(ctx.tag("OD_CZ_CapA"), f"GUID{k}").v for k in range(1, 5)]
-        self.assertEqual(struct.pack(">4i", *words), ld_guid(it, "challenge_OpenDoorTest"))
+        self.assertEqual(prop(ctx.tag("OD_CZ_CapA"), leveldesign.TAG_ID).v, ld_guid(it, "challenge_OpenDoorTest"))
         self.assertEqual(spike.content().menu_renames, tuple(profile.LOC_RENAMES.items()))  # spike 1 unchanged
 
 
@@ -1040,7 +1039,7 @@ class Build(unittest.TestCase):
                 self.assertIn("OpenDoorTest", fh.read())
             dat = os.path.join(OUT, "OpenDoorTest", "Scenarios", "challenge_OpenDoorTest_Definition.dat")
             (entry,) = [e for e in edat.read_index(dat)
-                        if e.path == "NDF/Scenarios/MapConfiguration/challenge_OpenDoorTest.ndfbin"]
+                        if e.path == def_path("MapConfiguration", TXN, "challenge_OpenDoorTest")]
             nb, _, _ = decode(edat.read_entry(dat, entry))
             tokens = {ndfbin.token_unhash(int.from_bytes(x.v, "little")) for _, _, x in all_values(nb)
                       if x.tag == 0x1D}

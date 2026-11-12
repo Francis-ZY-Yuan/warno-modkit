@@ -12,7 +12,7 @@ import tempfile
 import unittest
 from unittest import mock
 
-from modkit.core import edat, paths, trad
+from modkit.core import edat, gamebuild, paths, trad
 from modkit.core.gates import CheckError
 from modkit.core.ndfbin import Value
 from modkit.ops import build as ops_build
@@ -21,7 +21,7 @@ from modkit.ops.items import mem_item
 from modkit.ops.leveldesign import LdItem, derived_menu_order, gd_tags, scenario_guid
 from modkit.ops.items import read_provenance
 from modkit.ops.profile import PACKS, SURVIVORS, Content, ExtraGate, ExtraPack, OpProfile, Sources
-from modkit.ops.rekey import def_path, dump_rows
+from modkit.ops.rekey import DBG, TXN, def_path, dump_rows
 from modkit.ops.rekey import ScalarEdit
 from modkit.ops.script import BRICK_FORCE_HIDE, hold_script
 from modkit.ops.zones import playable_zone_graph, rect_polygon
@@ -46,7 +46,7 @@ def profile(namespace: str = "test-a", **kw) -> OpProfile:
         asset_rules=((f"PC/Texture/{src}/MapPackAssets/Textures/*.tgv", "copy", "menu pictures"),
                      ("*", "drop", "not shipped")),
         import_rule="trie",
-        shape_sources={"GDScript": ("scenarios/challenge_*/NDF/Scenarios/GDScript/challenge_*.ndfbin",),
+        shape_sources={"GDScript": ("scenarios/challenge_*/NDF/Scenarios/challenge_*/GDScript.txn",),
                        "out/LevelDesign.ndfbin": ("scenarios/challenge_*/out/LevelDesign.ndfbin",
                                                   "kreide_op/*/out/LevelDesign.ndfbin"),
                        **{inner: (f"scenarios/*/{inner}", f"kreide_op/*/{inner}") for inner in ZONE_INNER}},
@@ -120,11 +120,10 @@ def tree(root: str) -> dict[str, bytes]:
 
 def synthetic(profile_: OpProfile, content_: Content) -> ops_build.Plan:
     """A plan of synthetic items in the core packs plus the profile's extra items."""
-    items = [mem_item("Definition", f"NDF/Scenarios/MapConfiguration/{content_.scenario}.ndfbin", b"def", "generate",
-                      "test"),
+    items = [mem_item("Definition", def_path("MapConfiguration", TXN, content_.scenario), b"def", "generate", "test"),
              mem_item("Details", "out/LevelDesign.ndfbin", b"ld", "generate", "test"),
              mem_item("Assets", f"Localisation/{content_.scenario}/X-US.dic", b"dic", "generate", "test")]
-    return ops_build.Plan(items + ops_build.extra_items(profile_, content_), [("Trophy.ndfbin", "dropped")], [])
+    return ops_build.Plan(items + ops_build.extra_items(profile_, content_), [("TrophyDef.txn", "dropped")], [])
 
 
 class ExtensionPointsTest(unittest.TestCase):
@@ -175,7 +174,7 @@ class ExtensionPointsTest(unittest.TestCase):
         self.assertIn("\nExtra = 1\n", config)
         manifest = files["MANIFEST.tsv"].decode().splitlines()
         self.assertIn("-\tOtherMod\t\trequires\ttest", manifest)
-        self.assertEqual(manifest[-1], "-\tTrophy.ndfbin\t\tdrop\tdropped")
+        self.assertEqual(manifest[-1], "-\tTrophyDef.txn\t\tdrop\tdropped")
 
     def test_the_profile_refuses_a_bad_workshop_id(self):
         for bad in (-1, 2 ** 64, "7"):
@@ -273,6 +272,10 @@ class WholeBuildTest(unittest.TestCase):
         self.assertFalse(os.path.exists(self.out("bad")))
         _, report = quiet(ops_build.build, profile(build_root=self.tmp.name), content(), self.out("ok"))
         self.assertRegex(report, r"gate 5 package: all \d+ entries lie under challenge_ModkitTest; no Gameplay file")
+        # 4 kinds: GDScript (generated), MapConfiguration, ScenarioInfo and ScenarioLoader (re-keyed); TrophyDef dropped
+        self.assertRegex(report, r"gate 5 definition: 4 kinds in NDF/Scenarios/challenge_ModkitTest/, each \.txn with "
+                                 r"its \.txn\.tag and a \.dbg of one line per object; every class and property of \d+ "
+                                 r"files \(\d+ objects\) is in the \d+ stock files'\n")
 
     def test_a_pending_gate_5_does_not_claim_a_pass(self):
         """With the Gameplay failure reviewed-pending, the build goes on, but its gate 5 line says the gate is pending,
@@ -312,7 +315,8 @@ class WholeBuildTest(unittest.TestCase):
     def map_configuration(out: str) -> bytes:
         """The decoded MapConfiguration of a build, which holds the scenario GUID."""
         pack = os.path.join(out, "ModkitTest", "Scenarios", "challenge_ModkitTest_Definition.dat")
-        entry = next(e for e in edat.read_index(pack) if e.path.startswith("NDF/Scenarios/MapConfiguration/"))
+        entry = next(e for e in edat.read_index(pack)
+                     if e.path == def_path("MapConfiguration", TXN, "challenge_ModkitTest"))
         return decode(edat.read_entry(pack, entry))[2]
 
 
@@ -329,9 +333,10 @@ class SourcesAndTemplateTest(unittest.TestCase):
                           fixtures={"GDScript": "Script_test.txt"}, dictionary="TABLE[{name!r}] {lang}")
         out = os.path.join(self.tmp.name, "a")
         quiet(ops_build.build, profile(build_root=self.tmp.name), content(sources=sources), out)
-        rows = {tuple(line.split("\t")[1:2] + line.split("\t")[4:5])
-                for line in open(os.path.join(out, "MANIFEST.tsv"), encoding="utf-8").read().splitlines()[1:]}
-        for row in (("NDF/Scenarios/GDScript/challenge_ModkitTest.ndfbin", "generated (test script)"),
+        with open(os.path.join(out, "MANIFEST.tsv"), encoding="utf-8") as fh:
+            rows = {tuple(line.split("\t")[1:2] + line.split("\t")[4:5]) for line in fh.read().splitlines()[1:]}
+        for row in ((def_path("GDScript", TXN, "challenge_ModkitTest"), "generated (test script)"),
+                    (def_path("GDScript", DBG, "challenge_ModkitTest"), "generated (test script): its source map"),
                     ("out/LevelDesign.ndfbin", "generated (test)"),
                     ("Localisation/challenge_ModkitTest/Scripting/Dialog-SC.dic", "TABLE['Scripting/Dialog'] SC")):
             self.assertIn(row, rows)
@@ -351,7 +356,7 @@ class SourcesAndTemplateTest(unittest.TestCase):
                        tiny.menu_tokens, scenario=tiny.scenario, mod_name=tiny.mod_name, menu_renames=tiny.menu_renames)
         p = ops_build.plan(prof, bare)
         self.assertEqual([it for it in p.items if it.fixture is not None], [])
-        gd = next(it for it in p.items if it.path == def_path("GDScript", "ndfbin", tiny.scenario))
+        gd = next(it for it in p.items if it.path == def_path("GDScript", TXN, tiny.scenario))
         self.assertEqual((gd.action, gd.stock is not None), ("rekey", True))
         self.assertEqual(sorted(it.path for it in p.items if it.pack == "Details"),
                          sorted(dict(read_provenance(SURVIVORS.path("details")))))
@@ -405,8 +410,10 @@ class CliTest(unittest.TestCase):
 
     def test_a_missing_stock_file_exits_1_naming_setup(self):
         """An extraction without a declared stock file (made before a component declared it, say): one FAILED line
-        naming the file and the setup commands that fetch it, never a raw OS error."""
-        with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(os.environ, {"MODKIT_EXTRACTED": tmp}):
+        naming the file and the setup commands that fetch it, never a raw OS error. (The game-build warning an
+        unverified install adds is test_build_warning's: held off here, whatever build is installed.)"""
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(os.environ, {"MODKIT_EXTRACTED": tmp}), \
+                mock.patch.object(gamebuild, "build_warning", return_value=None):
             os.makedirs(os.path.join(tmp, "scenarios"))   # gate 1 finds a Chinese dictionary; the template is gone
             with open(os.path.join(tmp, "scenarios", "X-SC.dic"), "wb") as fh:
                 fh.write(trad.build_dic({"t_x": "x"}))

@@ -144,7 +144,7 @@ class Blocks(unittest.TestCase):
         n, cond, at = c.int_var("n"), g_cmp(c.int_var("x"), 1), c.tag("T_Hill")
         tail = ["ObjectiveEtiquetteText", "ObjectiveText", "Position", "ShowAddAnimation", "ShowBaseAnimation",
                 "ShowEtiquette"]
-        head = ["BonusScoreMission", "Condition", "LabelComponent"]
+        head = ["Condition", "LabelComponent"]  # no BonusScoreMission: 210942's TGDDescriptorGereObjectif lacks it
         both = objective("o", "l", cond, at, [n])
         self.assertEqual([p for p, _ in both.props], [*head, "ListVariables", "ListVariablesForEtiquetteText", *tail])
         self.assertEqual((prop(both, "ListVariables"), prop(both, "ListVariablesForEtiquetteText")), ([n], [n]))
@@ -162,7 +162,7 @@ class Blocks(unittest.TestCase):
         clock, cond = c.timer("clock", 180), g_cmp(c.int_var("x"), 1)
         held = objective("o", "l", cond, timers=[clock])
         self.assertEqual([p for p, _ in held.props],
-                         ["BonusScoreMission", "Condition", "LabelComponent", "ListTimersForEtiquetteText",
+                         ["Condition", "LabelComponent", "ListTimersForEtiquetteText",
                           "ObjectiveEtiquetteText", "ObjectiveText", "ShowAddAnimation", "ShowBaseAnimation"])
         self.assertEqual(prop(held, "ListTimersForEtiquetteText"), [clock])
         with self.assertRaisesRegex(CheckError, "timers or counters, not both"):

@@ -24,6 +24,7 @@ from modkit.ops.gates import (
 )
 from modkit.ops.graph import Node, build_graph, decode, encode, nodes_of
 from modkit.ops.leveldesign import LD_FILE, ZONE_FILES, read_ld_items
+from modkit.ops.rekey import TXN, def_path
 from modkit.ops.script import BRICK_DEFAULT, BRICK_FORCE_HIDE, BRICK_FORCE_SHOW
 from modkit.ops.zones import area_bbox, heading, point_in_polygon, polygon_centroid, read_ia_grid, read_zone_areas
 
@@ -32,21 +33,36 @@ def root() -> str:
     return str(paths.extracted_root())
 
 
-def stock_gdscripts() -> str:
-    return os.path.join(root(), "**", "GDScript", "*.ndfbin")
+def stock_gdscripts() -> list[str]:
+    """Every stock GDScript build 210942 reads: each scenario's NDF/Scenarios/<scenario>/GDScript.txn (def_path) and
+    the Transactions pack's NDF/Scenario/GDScript/*.txn (Skirmish's); none under older/. (Build 201602's were
+    NDF/Scenarios/GDScript/<scenario>.ndfbin and the Glad pack's Skirmish.ndfbin.)"""
+    files = [*glob.glob(os.path.join(root(), "**", f"GDScript.{TXN}"), recursive=True),
+             *glob.glob(os.path.join(root(), "transactions", "**", "GDScript", f"*.{TXN}"), recursive=True)]
+    return sorted(p for p in files if os.sep + "older" + os.sep not in p)
+
+
+def script_name(path: str) -> str:
+    """A stock GDScript's name: its scenario (the folder of a GDScript.txn), or its file stem (Skirmish)."""
+    name = os.path.basename(path)
+    return os.path.basename(os.path.dirname(path)) if name == f"GDScript.{TXN}" else name.removesuffix(f".{TXN}")
 
 
 def stock_challenges() -> str:
     return os.path.join(root(), "scenarios", "challenge_*")
 
 
+def stock_gdscript(scenario_folder: str) -> str:
+    """The GDScript of the stock scenario in `scenario_folder` (scenarios/<scenario>)."""
+    return os.path.join(scenario_folder, *def_path("GDScript", TXN, os.path.basename(scenario_folder)).split("/"))
+
+
 @functools.cache
 def stock_scripts() -> tuple[tuple[str, tuple[Node, ...]], ...]:
-    """(file stem, nodes) of each stock GDScript, parsed once; Survivors' two copies count once."""
-    files = [p for p in glob.glob(stock_gdscripts(), recursive=True) if os.sep + "older" + os.sep not in p]
+    """(script name, nodes) of each stock GDScript, parsed once; Survivors' two copies count once."""
     out = {}
-    for nb in ndfrules.stock_files(files):
-        out.setdefault(os.path.basename(nb.path).removesuffix(".ndfbin"), tuple(nodes_of(nb)))
+    for nb in ndfrules.stock_files(stock_gdscripts()):
+        out.setdefault(script_name(nb.path), tuple(nodes_of(nb)))
     return tuple(sorted(out.items()))
 
 
@@ -129,8 +145,10 @@ class ObjectivePins(unittest.TestCase):
     @paths.skip_unless_extracted("scenarios")
     def test_stock_fails_on_exactly_five(self):
         """Of the 45 stock GereObjectifs that show their map label, exactly 5 have no Position or
-        UnitGroupPositionList and fail the gate: 3 in DelayedRetribution and 2 in HoldUntilRelieved. The other 47
-        positionless ones (52 in all) leave ShowEtiquette out. Every other stock GDScript passes."""
+        UnitGroupPositionList and fail the gate: 3 in DelayedRetribution and 2 in HoldUntilRelieved. The other 56
+        positionless ones (61 in all) leave ShowEtiquette out. Every other stock GDScript passes. (Build 201602 had 52
+        positionless: 210942 adds CampagneStrat_Invasion_of_Cuba's 8, and RunningTheGauntlet's v7pLcQv55Z lost its
+        Position and UnitGroupPositionList.)"""
         pinned, failing, positionless = 0, [], 0
         for stem, nodes in stock_scripts():
             n, bad = objective_pin_violations(nodes)
@@ -143,7 +161,7 @@ class ObjectivePins(unittest.TestCase):
                     check_objective_pins(nodes)
             else:
                 self.assertEqual(check_objective_pins(nodes), n, stem)
-        self.assertEqual((pinned, positionless), (45, 52))
+        self.assertEqual((pinned, positionless), (45, 61))
         self.assertEqual(sorted(failing), [
             ("challenge_DelayedRetribution", "2oSwkfWrfy"), ("challenge_DelayedRetribution", "BWHMCt8Mnd"),
             ("challenge_DelayedRetribution", "C8BC3MDv5y"),
@@ -177,8 +195,7 @@ class MenuTexts(unittest.TestCase):
         spans: dict[str, list[tuple[int, int]]] = {}
         for folder, scenario, dics in challenges:
             en, zh = (dict(trad.read_dic(read_file(d))) for d in dics)
-            nb, _, _ = decode(read_file(os.path.join(folder, "NDF", "Scenarios", "MapConfiguration",
-                                                     f"{scenario}.ndfbin")))
+            nb, _, _ = decode(read_file(os.path.join(folder, *def_path("MapConfiguration", TXN, scenario).split("/"))))
             (info,) = [nd for nd in nodes_of(nb) if nd.cls == "TChallengeMapInfo"]
             for key, token in dict(info.props)["DescriptionTextElements"].v:
                 h = int.from_bytes(token.v, "little")
@@ -208,19 +225,37 @@ MENU_SPANS = {
 }
 
 
+# Stock scripts the never-finishing gate fails, reviewed: the gate's verdict holds and stock ships the script anyway, so
+# the case is listed word for word here, never exempted in the gate. CampagneStrat_Invasion_of_Cuba (new in build
+# 210942): its root's EffetMap is a Sequential of the whole campaign body, which holds SetEffects and so never finishes
+# [[seteffect-never-finishes]], then a Sequential that adds a group to a group: by the gate's rule that last node never
+# runs. A toolkit script may not do this; the stock one only loses that unit-group union.
+STOCK_NEVER_FINISHING = {
+    "CampagneStrat_Invasion_of_Cuba": [
+        "Sequential > Simultaneous > Sequential > Simultaneous > Sequential > Simultaneous > IfThenElse > Simultaneous "
+        "> Simultaneous > Sequential > SetEffect(UnitEffect_ArmyGen_No_regen_PA) (never finishes): what follows it in "
+        "its Sequential never runs (1: Sequential)"],
+}
+
+
 class NeverFinishing(unittest.TestCase):
     """Gate 3, never-finishing actions, against stock."""
 
 
     @paths.skip_unless_extracted("scenarios")
     def test_stock_passes(self):
-        """Every stock GDScript passes, and each exemption is one stock needs: a TriggerEndGame with a node after it,
-        and a never-finishing action alone in a loop (the objectives' table: ObjectivesWait)."""
-        paths = [p for p in glob.glob(stock_gdscripts(), recursive=True) if os.sep + "older" + os.sep not in p]
+        """Every stock GDScript passes but the reviewed STOCK_NEVER_FINISHING, which fails exactly as listed, and each
+        exemption is one stock needs: a TriggerEndGame with a node after it, and a never-finishing action alone in a
+        loop (the objectives' table: ObjectivesWait)."""
         files, found, bad, after_end, alone, stalling = 0, 0, [], 0, 0, 0
-        for nb in ndfrules.stock_files(paths):
+        reviewed: dict[str, list[str]] = {}
+        for nb in ndfrules.stock_files(stock_gdscripts()):
             nodes = nodes_of(nb)
             n, why = never_finishing_violations(nodes)
+            name = script_name(nb.path)
+            if name in STOCK_NEVER_FINISHING:
+                reviewed[name] = why
+                why = [w for w in why if w not in STOCK_NEVER_FINISHING[name]]
             files, found, bad = files + 1, found + n, bad + [f"{nb.path}: {w}" for w in why]
             stalling += stalling_containers(nodes)  # the containers rule runs on real cases: 124
             for nd in nodes:
@@ -231,6 +266,7 @@ class NeverFinishing(unittest.TestCase):
                 after_end += sum(1 for k in kids[:-1] if k.cls == END_GAME) if nd.cls == SEQ else 0
                 alone += len(kids) == 1 and kids[0].cls in NEVER_FINISH and runs is not None and runs.v != 1
         self.assertEqual(bad, [])
+        self.assertEqual(reviewed, STOCK_NEVER_FINISHING)  # each reviewed case still fails, word for word
         self.assertGreaterEqual(files, 29)
         self.assertGreater(found, 200)
         self.assertGreater(stalling, 100)
@@ -242,7 +278,7 @@ class ObjectivesWait(unittest.TestCase):
 
     @paths.skip_unless_extracted("scenarios")
     def test_stock_cases_are_the_table(self):
-        """Without STOCK_BLOCKING_OBJECTIVES exactly two of the 168
+        """Without STOCK_BLOCKING_OBJECTIVES exactly two of the 186
         stock objectives hold up a Sequential, each named in the table; with it, all stock passes. Sledgehammer's waits
         until it resolves; TheKitzingenRuse's never finishes once it succeeds, because its success action (Partie3's
         sequence) holds a LockIncome, which never finishes either."""
@@ -251,8 +287,8 @@ class ObjectivesWait(unittest.TestCase):
             objectives += sum(nd.cls in OBJECTIVES for nd in nodes)
             found += [f"{stem}: {re.search(r'GereObjectif\(\w+\)', line).group(0)}" for line in
                       never_finishing_violations(nodes, frozenset())[1] if "GereObjectif(" in line]
-            self.assertEqual(never_finishing_violations(nodes)[1], [], stem)
-        self.assertEqual(objectives, 162)  # 168 with Survivors' second copy
+            self.assertEqual(never_finishing_violations(nodes)[1], STOCK_NEVER_FINISHING.get(stem, []), stem)
+        self.assertEqual(objectives, 180)  # 186 with Survivors' second copy; 201602's 162 + Invasion_of_Cuba's 18
         self.assertEqual(found, ["challenge_Sledgehammer: GereObjectif(odvaMtR9hm)",
                                  "challenge_TheKitzingenRuse: GereObjectif(CVcFybf9To)"])
         self.assertEqual(len(STOCK_BLOCKING_OBJECTIVES), len(found))
@@ -291,8 +327,9 @@ class DialogText(unittest.TestCase):
 
     @paths.skip_unless_extracted("scenarios")
     def test_stock_dialogs_have_none(self):
-        """All 29 stock scenarios with dictionaries: 1,010 dialog text tokens, none holds a placeholder in any of
-        its scenario's dictionaries (every language)."""
+        """All 30 stock scenarios with dictionaries: 1,075 dialog text tokens, none holds a placeholder in any of
+        its scenario's dictionaries (every language). (Build 201602: 29 and 1,010; 210942 adds
+        CampagneStrat_Invasion_of_Cuba's 65.)"""
         total, bad = 0, []
         for scen in sorted(glob.glob(os.path.join(root(), "scenarios", "*"))):
             name = os.path.basename(scen)
@@ -301,10 +338,9 @@ class DialogText(unittest.TestCase):
                 with open(p, "rb") as fh:
                     for key, text in trad.read_dic(fh.read()):
                         texts.setdefault(key, []).append(text)
-            gd = os.path.join(scen, "NDF", "Scenarios", "GDScript", f"{name}.ndfbin")
-            n, why = dialog_text_violations(nodes_of(next(ndfrules.stock_files([gd]))), texts)
+            n, why = dialog_text_violations(nodes_of(next(ndfrules.stock_files([stock_gdscript(scen)]))), texts)
             total, bad = total + n, bad + [f"{name}: {w}" for w in why]
-        self.assertEqual((total, bad), (1010, []))
+        self.assertEqual((total, bad), (1075, []))
 
 
 class Rules(unittest.TestCase):
@@ -339,8 +375,7 @@ class ZoneTags(unittest.TestCase):
         total, bad = {}, []
         for scen in sorted(glob.glob(stock_challenges())):
             name = os.path.basename(scen)
-            gd = os.path.join(scen, "NDF", "Scenarios", "GDScript", f"{name}.ndfbin")
-            counts, why = zone_tag_violations(nodes_of(next(ndfrules.stock_files([gd]))),
+            counts, why = zone_tag_violations(nodes_of(next(ndfrules.stock_files([stock_gdscript(scen)]))),
                                                    stock_details(os.path.join(scen, "out")))
             total, bad = {k: total.get(k, 0) + v for k, v in counts.items()}, bad + [f"{name}: {w}" for w in why]
         self.assertEqual((total, bad), ({"zone lookups": 169, "detectors": 72, "zone items": 94, "command zones": 51},
@@ -354,8 +389,7 @@ class ZoneTags(unittest.TestCase):
                           [b for _, why in layouts for b in why]), ([166, 111], []))
         campaigns = []
         for scen in sorted(glob.glob(os.path.join(root(), "scenarios", "CampagneStrat_*"))):
-            name = os.path.basename(scen)
-            gd = os.path.join(scen, "NDF", "Scenarios", "GDScript", f"{name}.ndfbin")
+            name, gd = os.path.basename(scen), stock_gdscript(scen)
             campaigns += [f"{name}: {w.split(' at ')[0]}" for w in zone_tag_violations(
                 nodes_of(next(ndfrules.stock_files([gd]))), stock_details(os.path.join(scen, "out")))[1]]
         self.assertEqual(campaigns, ["CampagneStrat_Airborne: TeamControleZone.Position Tags/tagzonepara"])
@@ -366,9 +400,10 @@ class SmartOrders(unittest.TestCase):
 
     @paths.skip_unless_extracted("scenarios")
     def test_stock_passes(self):
-        """The 31 stock GDScripts: 44 smart orders on 44 groups (all in 9 challenges), none ordered again after its
-        smart order in a Sequential, through 2,776 union edges. One stock group gets an order elsewhere: Marauders'
-        artillery Event_Art_POL (Seize in Simultaneous #515; ShootOnPosition fire orders in another branch)."""
+        """The 36 stock GDScripts (35 distinct): 44 smart orders on 44 groups (all in 9 challenges), none ordered again
+        after its smart order in a Sequential, through 2,839 union edges (201602's 2,776 and the 63 of
+        CampagneStrat_Invasion_of_Cuba). One stock group gets an order elsewhere: Marauders' artillery Event_Art_POL
+        (Seize in Simultaneous #517, 201602's #515; ShootOnPosition fire orders in another branch)."""
         smart, bad, unions, elsewhere = 0, [], 0, []
         for stem, nodes in stock_scripts():
             n, why = smart_order_violations(nodes)
@@ -380,21 +415,20 @@ class SmartOrders(unittest.TestCase):
                            getattr(dict(nd.props).get("OrderType"), "v", None))
                           for nd in nodes if nd.cls in ("TGDDescriptorGiveOrderStandard", "TGDDescriptorMoveUnitGroup")
                           and id(dict(nd.props).get("Group")) in ordered]
-        self.assertEqual((smart, bad, unions), (44, [], 2776))
+        self.assertEqual((smart, bad, unions), (44, [], 2839))
         self.assertEqual(elsewhere, [("challenge_Marauders", "Event_Art_POL", 31)] * 3)
 
 
 @functools.cache
 def stock_script_files() -> tuple[tuple[str, bytes], ...]:
-    """(file stem, bytes) of each stock GDScript, as the game reads it; Survivors' two copies count once."""
+    """(script name, bytes) of each stock GDScript, as the game reads it; Survivors' two copies count once."""
     out: dict[str, bytes] = {}
-    for p in sorted(glob.glob(stock_gdscripts(), recursive=True)):
-        if os.sep + "older" + os.sep not in p:
-            out.setdefault(os.path.basename(p).removesuffix(".ndfbin"), read_file(p))
+    for p in stock_gdscripts():
+        out.setdefault(script_name(p), read_file(p))
     return tuple(sorted(out.items()))
 
 
-GAMEFX = paths.skip_unless_extracted("glad_201602", "NDF", "GFX", "GameFx.ndfbin")
+GAMEFX = paths.skip_unless_extracted("transactions", "NDF", "GFX", "GameFx.txn")   # gamefx_file()
 NUKE_SOL, NUKE_PLAIN = "$/GFX/GameFx/fx_impact_sol_Tactical_Nuke", "$/GFX/GameFx/fx_impact_Tactical_Nuke"
 
 
@@ -405,15 +439,17 @@ class ScriptEffects(unittest.TestCase):
 
     @paths.skip_unless_extracted("scenarios")
     def test_every_stock_launch_passes(self):
-        """The 31 stock GDScripts (30 distinct): 75 launches in 7 of them, naming only STOCK_SCRIPT_EFFECTS, all
-        from FX_script.ndf (the decompiled scenarios hold the same 75). Each script passes the gate."""
+        """The 36 stock GDScripts (35 distinct): 75 launches in 7 of them, naming only STOCK_SCRIPT_EFFECTS, all
+        from FX_script.ndf (201602's decompiled scenarios hold the same 75). Each script passes the gate. (Build
+        201602 had 31 (30): 210942 adds CampagneStrat_Invasion_of_Cuba and a GDScript in four multiplayer Definitions,
+        Geisa 10vs10, Kreide 1vs1 and 3vs3 and SM_SU_3x3_TwinCities_03, none of which launches an effect.)"""
         names, per = Counter(), {}
         for stem, raw in stock_script_files():
             launched = effect_launches(ndfbin.decode(raw)[0])
             names.update(launched)
             per[stem] = len(launched)
             self.assertEqual(check_script_effects(raw), len(launched), stem)
-        self.assertEqual(len(per), 30)
+        self.assertEqual(len(per), 35)
         self.assertEqual(dict(names), dict(zip(STOCK_SCRIPT_EFFECTS, (45, 27, 3))))
         self.assertEqual({k: v for k, v in per.items() if v},
                          {"challenge_BackhandBlow": 28, "challenge_RedJuggernaut": 16, "challenge_Gotterdammerung": 8,
@@ -438,15 +474,16 @@ class ScriptEffects(unittest.TestCase):
 
     def test_the_script_only_effects_are_self_contained(self):
         """Every GameFx export named for scripts (14 named *ForScript*: smokes, barrages, bombs, mortars) takes no
-        parameters (the mega bomb among them, though no stock script launches it); 1,437 of the 1,656 exports take
-        some."""
+        parameters (the mega bomb among them, though no stock script launches it); 1,437 of the 1,660 exports take
+        some (201602's 1,656 and 210942's four new self-contained ones: FX_Balise_Danger_Rouge, its _Destructible,
+        Static_Light_Destructible and Static_Light_Orange_Destructible)."""
         declared = gamefx_declarations(gamefx_file())
         script_only = {name: params for name, params in declared.items() if "ForScript" in name}
         self.assertEqual(len(script_only), 14)
         self.assertEqual({name: p for name, p in script_only.items() if p}, {})
         self.assertIn("$/GFX/GameFx/fx_HE_Mega_Bomb_ForScript", script_only)
         self.assertLessEqual(set(STOCK_SCRIPT_EFFECTS), set(script_only))
-        self.assertEqual((sum(bool(p) for p in declared.values()), len(declared)), (1437, 1656))
+        self.assertEqual((sum(bool(p) for p in declared.values()), len(declared)), (1437, 1660))
 
 
 class BrickStatus(unittest.TestCase):
@@ -615,7 +652,8 @@ class MenuOrders(unittest.TestCase):
     """The menu-order gate against stock: the game's lookup (every MapConfiguration whose ChapterPack is the Operations
     menu's), the 16 stock Operations' orders, and each stock Operation passing beside the others."""
 
-    # Each stock Operation's OrderToChainMission at 201602, read off the extraction (not a list the gate uses).
+    # Each stock Operation's OrderToChainMission at 210942 (unchanged from 201602), read off the extraction (not a list
+    # the gate uses).
     STOCK = {10: "BlackHorsesLastStand", 11: "Sledgehammer", 20: "RedJuggernaut", 30: "BackhandBlow",
              40: "TheKitzingenRuse", 50: "Gotterdammerung", 70: "TheDieburgSalient", 90: "HoldUntilRelieved",
              100: "RunningTheGauntlet", 110: "TheWingedHussars", 120: "Marauders", 130: "Survivors",
@@ -645,19 +683,21 @@ class MenuOrders(unittest.TestCase):
         stock, seen = stock_menu_orders(), set()
         order_of = {f"challenge_{name}": order for order, name in self.STOCK.items()}
         for rel, raw in self.operations():
-            scenario = os.path.basename(rel).removesuffix(".ndfbin")
+            scenario = os.path.basename(os.path.dirname(rel))
             others = {order: tuple(n for n in names if n != scenario) for order, names in stock.items()}
             with self.subTest(file=rel):
                 self.assertEqual(check_menu_order(raw, rel, others), order_of[scenario])
             seen.add(scenario)
         self.assertEqual(len(seen), 16)
-        campaigns = [p for p in stock_menu_files(root()) if os.path.basename(p).startswith("CampagneStrat_")]
+        campaigns = [p for p in stock_menu_files(root())
+                     if os.path.basename(os.path.dirname(p)).startswith("CampagneStrat_")]
         self.assertGreater(len(campaigns), 0)
         self.assertTrue(all(menu_orders(ndfbin.decode(read_file(p))[0]) == [] for p in campaigns))
 
     def test_the_template_order_fails(self):
         """A clone that keeps Survivors' order (no OrderToChainMission edit) fails, naming Survivors."""
-        rel, raw = next((rel, raw) for rel, raw in self.operations() if rel.endswith("challenge_Survivors.ndfbin"))
+        rel, raw = next((rel, raw) for rel, raw in self.operations()
+                        if os.path.basename(os.path.dirname(rel)) == "challenge_Survivors")
         with self.assertRaisesRegex(CheckError, r"OrderToChainMission 130 is the menu order of the stock Operation "
                                                 r'challenge_Survivors\. .*"Duplicate OrderToChainMission 130"'):
             check_menu_order(raw, rel, stock_menu_orders())

@@ -19,6 +19,7 @@ import uuid
 from modkit.core import edat, ndfbin
 from modkit.ops import build as ops_build
 from modkit.ops.graph import all_values, decode
+from modkit.ops.rekey import TXN, def_path
 from modkit.ops.testing import remove_out
 from open_door_support import GAME, OPEN_DOOR, OUT_ROOT, SCRIPT_DATA, build_main, scenario_guid
 from opendoor import CONTENTS, profile
@@ -126,15 +127,18 @@ class Build(unittest.TestCase):
             self.assertIn("3 dialog-button tokens in the game's INGAME dictionary", log)   # SI_NEXT and the spring's
             self.assertIn("+ 1 admitted", log)                                      # the Rifles card's Transporter
             self.assertIn("gate 3 units: 45 unit descriptors exist", log)
-            self.assertIn("gate 5 package: all 43 entries lie under challenge_OperationOpenDoor; no Gameplay file", log)
-            self.assertIn("gate 3 no-template-name: 11 re-keyed or generated dumps without Survivors", log)
+            # 47: the Definition pack's 12 (4 kinds, each a .txn, .txn.tag and .dbg), Details' 7, Assets' 28. 14 read:
+            # the 11 Definition entries with a fixture or stock bytes (the generated GDScript .dbg has neither) and the
+            # 3 generated Details files.
+            self.assertIn("gate 5 package: all 47 entries lie under challenge_OperationOpenDoor; no Gameplay file", log)
+            self.assertIn("gate 3 no-template-name: 14 re-keyed or generated dumps without Survivors", log)
             self.assertIn("gate 3 grid: 294 AI tiles and 86,142 path costs under the shipped playable zone", log)
             self.assertIn("gate 3 zone-layout: 13 zones and 9 arrivals laid out by stock's rules", log)
             packs = sorted(os.listdir(os.path.join(OUT, "OpenDoor", "Scenarios")))
             self.assertEqual(packs, [f"{profile.SCENARIO}_{p}.dat" for p in ("Assets", "Definition", "Details")])
             dat = os.path.join(OUT, "OpenDoor", "Scenarios", "challenge_OperationOpenDoor_Definition.dat")
             (entry,) = [e for e in edat.read_index(dat)
-                        if e.path == "NDF/Scenarios/MapConfiguration/challenge_OperationOpenDoor.ndfbin"]
+                        if e.path == def_path("MapConfiguration", TXN, "challenge_OperationOpenDoor")]
             nb, _, _ = decode(edat.read_entry(dat, entry))
             tokens = {ndfbin.token_unhash(int.from_bytes(x.v, "little")) for _, _, x in all_values(nb)
                       if x.tag == 0x1D}

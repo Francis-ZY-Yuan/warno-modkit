@@ -735,7 +735,7 @@ def script(tpl: ndfbin.NdfBin) -> tuple[list[Node], list[Node]]:
              ops_script.hud_restore(tpl, profile.TEMPLATES, True, BRICK_FORCE_HIDE)),
         g_simul([*load, deploy.refresh, funnel, g_seq([deploy.launched, battle])]),
     ], export=f"{profile.FOLDER}/Main")
-    root = Node("TGDDescriptorLaunchEffetStandard", [                                         # S#108
+    root = Node(ops_script.ROOT_CLASS, [                                                      # S#108
         ("CampList", list(ctx.camps.values())),
         ("EffetMap", g_seq([g_wait(profile.START_DELAY_S), main])),                           # S#113
         ("GameRules", deploy.game_rules),

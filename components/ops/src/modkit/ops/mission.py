@@ -344,7 +344,7 @@ def script_frame(tpl: ndfbin.NdfBin, templates: ops_script.Templates, ctx: Ctx, 
              ops_script.hud_restore(tpl, templates, True, prod_menu_switch)),
         g_simul([*load, deploy.refresh, battle]),
     ], export=f"{folder}/Main")
-    root = Node("TGDDescriptorLaunchEffetStandard", [                                           # S#108
+    root = Node(ops_script.ROOT_CLASS, [                                                        # S#108
         ("CampList", list(ctx.camps.values())),
         ("EffetMap", g_seq([g_wait(start_delay_s), main])),                                     # S#113
         ("GameRules", deploy.game_rules),

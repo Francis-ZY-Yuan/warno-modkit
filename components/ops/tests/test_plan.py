@@ -4,20 +4,21 @@ import os
 import tempfile
 import unittest
 
+from modkit.core import dbg
 from modkit.core.gates import CheckError
 from modkit.core.ndfbin import Value
-from modkit.ops.graph import Node, Str, build_graph, decode, encode
+from modkit.ops.graph import Map, Node, Str, build_graph, decode, encode
 from modkit.ops.items import (
-    MENU_ART, AssetRule, asset_rule, menu_art, payload, plan_assets, plan_definition, plan_details,
+    GENERATED_SOURCE, MENU_ART, AssetRule, asset_rule, menu_art, payload, plan_assets, plan_definition, plan_details,
 )
-from modkit.ops.rekey import Rekey, def_path, tag_name_hashes
+from modkit.ops.rekey import DBG, TAG, TAG_CLASS, TXN, Rekey, def_path
 
 SOURCE, NEW = "challenge_A", "challenge_B"
 G_OLD, G_NEW = bytes(range(16)), bytes(range(16, 32))
 
 
 def table(kinds=("GDScript", "ScenarioInfo")) -> Rekey:
-    return Rekey(SOURCE, NEW, G_OLD, G_NEW, {}, "ta_", (), {}, {}, {}, kinds, ("Scenario.ndf",), ())
+    return Rekey(SOURCE, NEW, G_OLD, G_NEW, {}, "ta_", (), {}, {}, {}, kinds)
 
 
 def write(root: str, inner: str, raw: bytes) -> None:
@@ -33,10 +34,13 @@ def ndfbin_file(kind: str) -> bytes:
 
 
 def tag_file(kind: str) -> bytes:
-    hashes = tag_name_hashes(SOURCE, ("Scenario.ndf",)).values()
-    pairs = [Value(0x22, (Value(0x25, h), Value(0x25, bytes(16)))) for h in hashes]
-    return encode(build_graph([Node("TTagFile", [("BaseName", Str(f"Scenarios/{kind}/{SOURCE}")),
-                                                 ("Hashes", pairs)])], []), f"{kind}.tag")
+    pairs = ((Str(f"ScenariosData:/{SOURCE}/Scenario.ndf", 0x1C), Value(0x13, 3)),)
+    return encode(build_graph([Node(TAG_CLASS, [("ConfigHash", Value(0x13, 1)), ("SourceFileHashes", Map(pairs))])],
+                              []), f"{kind}.{TAG}")
+
+
+def dbg_file(kind: str) -> bytes:
+    return dbg.write([dbg.Line("", f"ScenariosData:/{SOURCE}/Scenario.ndf", 1, 1)])
 
 
 class TempDirTest(unittest.TestCase):
@@ -52,27 +56,34 @@ class PlanDefinitionTest(TempDirTest):
     def setUp(self):
         super().setUp()
         for kind in ("GDScript", "ScenarioInfo"):
-            write(self.root, def_path(kind, "ndfbin", SOURCE), ndfbin_file(kind))
-            write(self.root, def_path(kind, "tag", SOURCE), tag_file(kind))
+            write(self.root, def_path(kind, TXN, SOURCE), ndfbin_file(kind))
+            write(self.root, def_path(kind, TAG, SOURCE), tag_file(kind))
+            write(self.root, def_path(kind, DBG, SOURCE), dbg_file(kind))
 
     def test_rekeys_every_kind_or_ships_the_generated_one(self):
-        gd = b"generated script"
+        root = Node("TScript", [("Name", Str(NEW))], export="$/GDScript/RootDescriptor")
+        gd = encode(build_graph([root], [root]), "GDScript")
         items = plan_definition(table(), self.root, {"GDScript": (gd, "generated (test)", "GDScript.txt")})
         self.assertEqual([(it.path, it.action) for it in items],
-                         [(def_path("GDScript", "ndfbin", NEW), "generate"), (def_path("GDScript", "tag", NEW), "tag"),
-                          (def_path("ScenarioInfo", "ndfbin", NEW), "rekey"),
-                          (def_path("ScenarioInfo", "tag", NEW), "tag")])
+                         [(def_path("GDScript", TXN, NEW), "generate"), (def_path("GDScript", TAG, NEW), "tag"),
+                          (def_path("GDScript", DBG, NEW), "generate"),
+                          (def_path("ScenarioInfo", TXN, NEW), "rekey"), (def_path("ScenarioInfo", TAG, NEW), "tag"),
+                          (def_path("ScenarioInfo", DBG, NEW), "rekey")])
         self.assertEqual((payload(items[0]), items[0].source, items[0].fixture, items[0].stock),
                          (gd, "generated (test)", "GDScript.txt", None))
-        info = items[2]
+        source = GENERATED_SOURCE.format(scenario=NEW, kind="GDScript")
+        self.assertEqual(dbg.read(payload(items[2])), [dbg.Line("RootDescriptor", source, 1, 1)])
+        self.assertEqual((items[2].fixture, items[2].stock), (None, None))  # no typed dump: not a CNDF file
+        info = items[3]
         self.assertEqual(info.stock, ndfbin_file("ScenarioInfo"))
-        self.assertTrue(info.source.endswith(def_path("ScenarioInfo", "ndfbin", SOURCE)), info.source)
+        self.assertTrue(info.source.endswith(def_path("ScenarioInfo", TXN, SOURCE)), info.source)
         nb, _, _ = decode(payload(info))
         self.assertEqual(nb.strings, [NEW.encode()])
+        self.assertEqual(dbg.read(payload(items[5])), [dbg.Line("", f"ScenariosData:/{NEW}/Scenario.ndf", 1, 1)])
 
     def test_without_generated_kinds_every_file_is_rekeyed(self):
         items = plan_definition(table(), self.root, {})
-        self.assertEqual([it.action for it in items], ["rekey", "tag", "rekey", "tag"])
+        self.assertEqual([it.action for it in items], ["rekey", "tag", "rekey", "rekey", "tag", "rekey"])
 
     def test_missing_template_file(self):
         with self.assertRaises(OSError):

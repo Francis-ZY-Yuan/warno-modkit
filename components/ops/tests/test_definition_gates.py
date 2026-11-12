@@ -1,5 +1,6 @@
 """Tests for the gates on a cloned scenario's files in modkit.ops.gates: canonical layout, references, loc tokens,
-leftover template names, the unit database, the Operations menu order."""
+leftover template names, the unit database, the Operations menu order, the Definition layout and the stock classes
+(gate 5)."""
 import glob
 import os
 import tempfile
@@ -8,16 +9,19 @@ import unittest
 import zipfile
 from unittest import mock
 
-from modkit.core import ndfbin, ndfrules, paths, trad
+from modkit.core import dbg, ndfbin, ndfrules, paths, trad
+from modkit.core.ndfbin import Value
 from modkit.ops import INGAME_DIC, STOCK_PATHS
 from modkit.core.gates import CheckError
-from modkit.ops.graph import Imp, Node, Str, all_values, build_graph, decode, encode, loc, u32
+from modkit.ops.graph import Imp, Map, Node, Str, all_values, build_graph, decode, encode, loc, u32
 from modkit.ops.gates import (
-    INGAME_PROPS, MENU_PACK, UNIT_ARCHIVE, UNIT_DATABASE, check_canonical, check_menu_order, check_no_template_name,
-    check_references, check_tokens, check_units, ingame_keys, ingame_misses, menu_order_gate, menu_orders, ref_targets,
-    split_tokens, stock_menu_orders, template_name_gate, unit_database,
+    INGAME_PROPS, MENU_PACK, SCAN_FILES, SCANNED_KINDS, UNIT_ARCHIVE, UNIT_DATABASE, StockClasses, check_canonical,
+    check_definition_layout, check_menu_order, check_no_template_name, check_references, check_stock_classes,
+    check_tokens, check_units, ingame_keys, ingame_misses, menu_order_gate, menu_orders, ref_targets, scanned_kinds,
+    split_tokens, stock_classes, stock_menu_orders, template_name_gate, unit_database,
 )
 from modkit.ops.items import mem_item
+from modkit.ops.rekey import DBG, TAG, TXN, def_path
 
 S = "challenge_B"
 LANGS = ("US", "SC")
@@ -71,25 +75,32 @@ class ReferencesTest(unittest.TestCase):
     def test_ref_targets(self):
         self.assertEqual(ref_targets(f"ScenariosData:/{S}/Dico.csv", S, LANGS),
                          [f"Assets:Localisation/{S}/Dico-US.dic", f"Assets:Localisation/{S}/Dico-SC.dic"])
-        self.assertEqual(ref_targets(f"Scenarios/ScenarioInfo/{S}", S, LANGS),
-                         [f"Definition:NDF/Scenarios/ScenarioInfo/{S}.ndfbin"])
+        self.assertEqual(ref_targets(f"Scenarios/{S}/ScenarioLoader.txn", S, LANGS),
+                         [f"Definition:NDF/Scenarios/{S}/ScenarioLoader.txn"])
+        self.assertEqual(ref_targets(f"ScenariosData:/{S}/Scripting", S, LANGS), [])
         self.assertEqual(ref_targets(S, S, LANGS), [])
         self.assertIsNone(ref_targets(f"Elsewhere/{S}/x", S, LANGS))
+        # build 201602's names: a BaseName Scenarios/<Kind>/<scenario>, the Python path; 210942 holds neither
+        self.assertIsNone(ref_targets(f"Scenarios/ScenarioInfo/{S}", S, LANGS))
+        self.assertIsNone(ref_targets(f"GameData:/Map/Scenario/{S}/Scripting", S, LANGS))
 
     def info(self, *strings: str) -> bytes:
         return encode(build_graph([Node("TInfo", [(f"S{k}", Str(s)) for k, s in enumerate(strings)])], []), "info")
 
     def test_every_reference_resolves(self):
-        items = [mem_item("Definition", f"NDF/Scenarios/ScenarioInfo/{S}.ndfbin",
-                          self.info(f"Scenarios/ScenarioInfo/{S}", f"ScenariosData:/{S}/Menu.png"), "rekey", "t"),
+        items = [mem_item("Definition", def_path("ScenarioInfo", TXN, S),
+                          self.info(f"Scenarios/{S}/ScenarioLoader.txn", f"ScenariosData:/{S}/Menu.png"), "rekey", "t"),
+                 mem_item("Definition", def_path("ScenarioLoader", TXN, S), self.info(), "rekey", "t"),
                  mem_item("Assets", f"PC/Texture/{S}/Menu.tgv", b"", "copy", "t")]
         self.assertEqual(check_references(items, S, LANGS), 2)
         with self.assertRaisesRegex(CheckError, "which is not shipped"):
-            check_references(items[:1], S, LANGS)
+            check_references(items[:2], S, LANGS)
+        with self.assertRaisesRegex(CheckError, rf"needs Definition:NDF/Scenarios/{S}/ScenarioLoader\.txn, which is "
+                                                rf"not shipped"):
+            check_references([items[0], items[2]], S, LANGS)
 
     def test_unknown_pattern(self):
-        items = [mem_item("Definition", f"NDF/Scenarios/ScenarioInfo/{S}.ndfbin", self.info(f"Odd/{S}/x"), "rekey",
-                          "t")]
+        items = [mem_item("Definition", def_path("ScenarioInfo", TXN, S), self.info(f"Odd/{S}/x"), "rekey", "t")]
         with self.assertRaisesRegex(CheckError, "no resolution rule"):
             check_references(items, S, LANGS)
 
@@ -113,7 +124,7 @@ class TokensTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def items(self, text: str, button: str, dialog_keys=("m_text",)) -> list:
-        out = [mem_item("Definition", f"NDF/Scenarios/GDScript/{S}.ndfbin", dialog(text, button), "generate", "t")]
+        out = [mem_item("Definition", def_path("GDScript", TXN, S), dialog(text, button), "generate", "t")]
         for lang in LANGS:
             out.append(mem_item("Assets", f"Localisation/{S}/Scripting/Dialog-{lang}.dic",
                                 trad.build_dic({k: k for k in dialog_keys}), "generate", "t"))
@@ -159,10 +170,11 @@ class TokensTest(unittest.TestCase):
 class IngamePropsStockTest(unittest.TestCase):
     def test_ingame_props_match_stock(self):
         """INGAME_PROPS is exactly the stock script properties whose tokens all resolve in the game's INGAME
-        dictionary, some of them in no scenario dictionary: the dialog button labels (974 stock uses)."""
+        dictionary, some of them in no scenario dictionary: the dialog button labels (1,027 uses in build 210942's 35
+        stock GDScript.txn; 974 on 201602)."""
         root = str(paths.extracted_root())
         older = os.sep + "older" + os.sep
-        scripts = [p for p in glob.glob(os.path.join(root, "**", "GDScript", "*.ndfbin"), recursive=True)
+        scripts = [p for p in glob.glob(os.path.join(root, "**", f"GDScript.{TXN}"), recursive=True)
                    if older not in p]
         self.assertTrue(scripts)
         scenario: set[int] = set()
@@ -186,7 +198,7 @@ class TemplateNameTest(unittest.TestCase):
     @staticmethod
     def named(*names: str, stock: bytes | None = b"", fixture: str | None = None) -> object:
         raw = encode(build_graph([Node("TResourceVideo", [("VideoFile", Str(n))]) for n in names], []), "GDScript")
-        return mem_item("Definition", f"NDF/Scenarios/GDScript/{S}.ndfbin", raw, "rekey", "t",
+        return mem_item("Definition", def_path("GDScript", TXN, S), raw, "rekey", "t",
                         stock=stock or None, fixture=fixture)
 
     def test_a_clean_clone_passes(self):
@@ -195,9 +207,21 @@ class TemplateNameTest(unittest.TestCase):
 
     def test_a_leftover_name_fails_in_any_case(self):
         for text in ("ScenariosData:/challenge_Survivors/x.webm", "SURVIVORS"):
-            with self.subTest(text=text), self.assertRaisesRegex(CheckError, rf"GDScript/{S}.ndfbin: leftover "
+            with self.subTest(text=text), self.assertRaisesRegex(CheckError, rf"{S}/GDScript.txn: leftover "
                                                                              rf"Survivors: .*{text}"):
                 check_no_template_name([self.named(text, stock=b"stock")], "Survivors")
+
+    def test_a_source_map_is_read_by_its_text(self):
+        """A re-keyed .dbg (build 210942's source map) is read by its lines: one still naming the template fails."""
+        def source_map(source: str) -> object:
+            raw = dbg.write([dbg.Line("Intro", source, 1, 1)])
+            return mem_item("Definition", def_path("GDScript", DBG, S), raw, "rekey", "t", stock=b"stock")
+
+        self.assertEqual(check_no_template_name([source_map(f"ScenariosData:/{S}/Scripting/A.ndf")], "Survivors"),
+                         (1, 0))
+        with self.assertRaisesRegex(CheckError, rf"{S}/GDScript.dbg: leftover Survivors: "
+                                                rf"Intro;ScenariosData:/challenge_Survivors/"):
+            check_no_template_name([source_map("ScenariosData:/challenge_Survivors/Scripting/A.ndf")], "Survivors")
 
     def test_kept_names_are_counted_not_failed(self):
         item = self.named("Survivors_Intro", "Survivors_Title", stock=b"stock")
@@ -240,7 +264,7 @@ class UnitsTest(unittest.TestCase):
         """A generated file naming `units`: the first as a script's import, the rest as LevelDesign-like strings."""
         props = [("TypeUnit", Imp(units[0]))] + [("ClassName", Str(u)) for u in units[1:]]
         raw = encode(build_graph([Node("TGDDescriptorCreateUnitOnPosition", props)], []), "GDScript")
-        return mem_item("Definition", f"NDF/Scenarios/GDScript/{S}.ndfbin", raw, "generate", "t", fixture=fixture)
+        return mem_item("Definition", def_path("GDScript", TXN, S), raw, "generate", "t", fixture=fixture)
 
     def test_the_database_holds_units_and_buildings(self):
         self.assertEqual(unit_database(self.archive, minimum=3),
@@ -305,7 +329,7 @@ class MenuOrderTest(unittest.TestCase):
 
     @staticmethod
     def stock_file(folder: str, scenario: str) -> str:
-        return f"{folder}/NDF/Scenarios/MapConfiguration/{scenario}.ndfbin"
+        return f"{folder}/{def_path('MapConfiguration', TXN, scenario)}"
 
     def test_menu_orders_read_only_the_operations_menu(self):
         self.assertEqual(menu_orders(decode(map_config(1002))[0]), [1002])
@@ -334,7 +358,8 @@ class MenuOrderTest(unittest.TestCase):
 
     def test_stock_is_every_operations_menu_entry_of_the_extraction(self):
         """Every MapConfiguration of the extraction counts, wherever it lies; a scenario's copies count once; a
-        campaign (another ChapterPack) and the older/ builds do not."""
+        campaign (another ChapterPack), the older/ builds and a file in build 201602's layout
+        (NDF/Scenarios/MapConfiguration/<scenario>.ndfbin, which 210942 never reads) do not."""
         self.extraction({
             self.stock_file("scenarios/challenge_A", "challenge_A"): map_config(130),
             self.stock_file("kreide_op/challenge_A_Definition", "challenge_A"): map_config(130),
@@ -342,6 +367,7 @@ class MenuOrderTest(unittest.TestCase):
             self.stock_file("scenarios/CampagneStrat_C", "CampagneStrat_C"):
                 map_config(10, pack="$/MapPacks/Strategics"),
             self.stock_file("older/1/challenge_D", "challenge_D"): map_config(1002),
+            "scenarios/challenge_E/NDF/Scenarios/MapConfiguration/challenge_E.ndfbin": map_config(1003),
         })
         self.assertEqual(dict(stock_menu_orders(minimum=2)), self.STOCK)
 
@@ -359,7 +385,8 @@ class MenuOrderTest(unittest.TestCase):
     def test_an_unreadable_stock_file_fails(self):
         self.extraction({self.stock_file("scenarios/challenge_A", "challenge_A"): map_config(130),
                          self.stock_file("scenarios/challenge_B", "challenge_B"): b"not an ndfbin"})
-        with self.assertRaisesRegex(CheckError, r"stock MapConfigurations that do not read: .*challenge_B\.ndfbin"):
+        with self.assertRaisesRegex(CheckError, r"stock MapConfigurations that do not read: "
+                                                r".*challenge_B\W+MapConfiguration\.txn"):
             stock_menu_orders(minimum=1)
 
     def test_without_an_extraction_it_fails_naming_setup(self):
@@ -375,7 +402,7 @@ class MenuOrderTest(unittest.TestCase):
         self.extraction({self.stock_file(f"scenarios/challenge_{c}", f"challenge_{c}"): map_config(order)
                          for c, order in zip("ABCDEFGHIJKLMNOP", (130, 997, *range(1, 15)))})
         content = types.SimpleNamespace(scenario=S)
-        inner = f"NDF/Scenarios/MapConfiguration/{S}.ndfbin"
+        inner = def_path("MapConfiguration", TXN, S)
 
         def shipped(order: int) -> list:
             return [mem_item("Definition", inner, map_config(order), "rekey", "t", stock=b"stock")]
@@ -387,6 +414,165 @@ class MenuOrderTest(unittest.TestCase):
             menu_order_gate(shipped(997), content)
         with self.assertRaisesRegex(CheckError, rf"the mod ships 0 {inner}, expected 1"):
             menu_order_gate([], content)
+        old = mem_item("Definition", f"NDF/Scenarios/MapConfiguration/{S}.ndfbin", map_config(1002), "rekey", "t",
+                       stock=b"stock")   # build 201602's layout: not the file 210942 reads
+        with self.assertRaisesRegex(CheckError, rf"the mod ships 0 {inner}, expected 1"):
+            menu_order_gate([old], content)
+
+
+def definition_txn(kind: str) -> bytes:
+    """A small .txn of `kind`: an exported root holding an unexported child (two objects)."""
+    root = Node("TRoot", [("Child", Node("TChild", [("N", u32(1))]))], export=f"$/{kind}/Root")
+    return encode(build_graph([root], [root]), kind)
+
+
+def source_map(raw: bytes, extra: int = 0, rename: str | None = None) -> bytes:
+    """The .dbg of the .txn `raw` as stock writes it: one line per object in object order (`extra` more or fewer), an
+    exported object named by its export path's last component (`rename`: by that name instead)."""
+    nb, _, _ = decode(raw)
+    names = {i: rename or p.rsplit("/", 1)[-1] for p, i in ndfbin.tree_paths(nb, nb.exports)}
+    return dbg.write([dbg.Line(names.get(i, ""), f"ScenariosData:/{S}/Scenario.ndf", i + 1, 1)
+                      for i in range(len(nb.objects) + extra)])
+
+
+def tag_file(*classes: str) -> bytes:
+    """A .txn.tag holding one object of each of `classes`, in the TNDFTagFile shape (ConfigHash, SourceFileHashes)."""
+    hashes = Map(((Str(f"ScenariosData:/{S}/Scenario.ndf", 0x1C), Value(0x13, 1)),))
+    return encode(build_graph([Node(cls, [("ConfigHash", Value(0x13, 7)), ("SourceFileHashes", hashes)])
+                               for cls in classes], []), "tag")
+
+
+def definition(kinds=("GDScript", "MapConfiguration", "ScenarioInfo")) -> dict[str, bytes]:
+    """A Definition pack's entries in build 210942's layout: each kind's .txn, .txn.tag and .dbg in NDF/Scenarios/S/."""
+    out = {}
+    for kind in kinds:
+        raw = definition_txn(kind)
+        out |= {def_path(kind, TXN, S): raw, def_path(kind, TAG, S): tag_file("TNDFTagFile"),
+                def_path(kind, DBG, S): source_map(raw)}
+    return out
+
+
+class DefinitionLayoutTest(unittest.TestCase):
+    """Gate 5's check_definition_layout: the Definition pack is NDF/Scenarios/<scenario>/<Kind>.txn, .txn.tag and
+    .dbg, the menu entry and the load among its kinds, every tag one TNDFTagFile, every .dbg a line per object."""
+
+    def test_a_210942_definition_passes(self):
+        self.assertEqual(check_definition_layout(definition(), S), 3)
+
+    def test_another_layout_or_scenario_fails(self):
+        for inner in (f"NDF/Scenarios/MapConfiguration/{S}.ndfbin", f"NDF/Scenarios/MapConfiguration/{S}.tag",
+                      def_path("GDScript", TXN, "challenge_Other"), f"NDF/Scenarios/{S}/GDScript.ndfbin"):
+            with self.subTest(inner=inner), self.assertRaisesRegex(
+                    CheckError, rf"^Definition:{inner}: not NDF/Scenarios/{S}/<Kind>\.txn, \.txn\.tag or \.dbg, the "
+                                rf"only place build 210942 reads"):
+                check_definition_layout(definition() | {inner: b""}, S)
+
+    def test_the_menu_entry_and_the_load_ship(self):
+        for kind in ("MapConfiguration", "ScenarioInfo"):
+            kinds = tuple(k for k in ("GDScript", "MapConfiguration", "ScenarioInfo") if k != kind)
+            with self.subTest(kind=kind), self.assertRaisesRegex(CheckError, rf"no NDF/Scenarios/{S}/{kind}\.txn"):
+                check_definition_layout(definition(kinds), S)
+
+    def test_a_kind_ships_its_tag_and_its_source_map(self):
+        for ext in (TAG, DBG):
+            entries = definition()
+            del entries[def_path("GDScript", ext, S)]
+            with self.subTest(ext=ext), self.assertRaisesRegex(CheckError, rf"^Definition: GDScript ships without "
+                                                                           rf"its \.{ext}: "):
+                check_definition_layout(entries, S)
+
+    def test_a_tag_is_one_tndftagfile(self):
+        for classes in (("TNDFTagFile", "TNDFTagFile"), ("TOther",), ()):
+            entries = definition() | {def_path("ScenarioInfo", TAG, S): tag_file(*classes)}
+            with self.subTest(classes=classes), self.assertRaisesRegex(
+                    CheckError, rf"ScenarioInfo\.txn\.tag holds \[.*\], not one TNDFTagFile"):
+                check_definition_layout(entries, S)
+
+    def test_a_source_map_holds_a_line_per_object(self):
+        raw = definition_txn("GDScript")
+        for extra in (1, -1):
+            entries = definition() | {def_path("GDScript", DBG, S): source_map(raw, extra)}
+            with self.subTest(extra=extra), self.assertRaisesRegex(
+                    CheckError, rf"GDScript\.dbg holds {2 + extra} lines for the 2 objects of its \.txn"):
+                check_definition_layout(entries, S)
+        with self.assertRaisesRegex(CheckError, r"GDScript\.dbg does not read"):
+            check_definition_layout(definition() | {def_path("GDScript", DBG, S): b"not a dbg"}, S)
+
+    def test_a_source_map_names_each_export_as_stock(self):
+        entries = definition() | {def_path("GDScript", DBG, S): source_map(definition_txn("GDScript"), rename="X")}
+        with self.assertRaisesRegex(CheckError, r"GDScript\.dbg names exported objects otherwise than their exports: "
+                                                r"#\d+ Root as X"):
+            check_definition_layout(entries, S)
+
+
+class StockClassesTest(unittest.TestCase):
+    """Gate 5's check_stock_classes: every class and (class, property) a build ships is stock's, or admitted."""
+
+    STOCK = StockClasses(frozenset({"TRoot", "TChild"}), frozenset({("TRoot", "Child"), ("TChild", "N")}), 2)
+
+    @staticmethod
+    def entry(*props: tuple[str, object], cls: str = "TChild") -> tuple[str, bytes]:
+        return "Definition:x.txn", encode(build_graph([Node(cls, list(props))], []), "x")
+
+    def test_stock_shapes_pass_and_other_formats_are_left_out(self):
+        entries = [("Definition:g.txn", definition_txn("GDScript")), ("Definition:g.dbg", b"\x00\x01"),
+                   ("Assets:m.tgv", b"not a CNDF file")]
+        self.assertEqual(check_stock_classes(entries, self.STOCK), (1, 2))
+
+    def test_a_class_not_in_stock_fails(self):
+        with self.assertRaisesRegex(CheckError, r"^1 classes or properties no stock file of this game build holds: "
+                                                r"class TGDDescriptorLaunchEffetStandard \(Definition:x\.txn\)\."):
+            check_stock_classes([self.entry(cls="TGDDescriptorLaunchEffetStandard")], self.STOCK)
+
+    def test_a_property_not_in_stock_fails_unless_admitted(self):
+        entry = self.entry(("N", u32(1)), ("_ShortDatabaseName", Str("x")))
+        with self.assertRaisesRegex(CheckError, r"^1 classes or properties .*: TChild\._ShortDatabaseName "
+                                                r"\(Definition:x\.txn\)\."):
+            check_stock_classes([entry], self.STOCK)
+        self.assertEqual(check_stock_classes([entry], self.STOCK, {("TChild", "_ShortDatabaseName")}), (1, 1))
+
+    def test_an_admitted_pair_admits_its_class(self):
+        entry = self.entry(("P", u32(1)), cls="TNative")
+        with self.assertRaisesRegex(CheckError, r"^2 classes or properties .*: class TNative \(Definition:x\.txn\); "
+                                                r"TNative\.P \(Definition:x\.txn\)\."):
+            check_stock_classes([entry], self.STOCK)
+        self.assertEqual(check_stock_classes([entry], self.STOCK, {("TNative", "P")}), (1, 1))
+
+
+# The stock Definition folders: each scenario pack's, and the map packs' (Survivors' copy in Kreide's among them).
+STOCK_DEFINITIONS = ("scenarios/*", "kreide_op/*_Definition", "geisa_op/*_Definition", "twincities_op/*_Definition")
+
+
+class DefinitionStockTest(unittest.TestCase):
+    """Gate 5 passes stock: every stock Definition folder of the extraction, and the kinds the game scans for."""
+
+    @paths.skip_unless_extracted("scenarios")
+    def test_every_stock_definition_passes(self):
+        """Each stock NDF/Scenarios/<scenario>/ passes check_definition_layout and check_stock_classes; 35 folders
+        (16 challenges and 14 campaigns in scenarios/, Survivors' copy and 4 map packs' Definitions), 27 with a
+        TrophyDef (5 kinds) and 8 without (the 4 tutorials, the 4 map packs)."""
+        root = str(paths.extracted_root())
+        stock = stock_classes()
+        folders = sorted(folder for pat in STOCK_DEFINITIONS
+                         for folder in glob.glob(os.path.join(root, *pat.split("/"), "NDF", "Scenarios", "*")))
+        kinds = []
+        for folder in folders:
+            scenario = os.path.basename(folder)
+            entries = {}
+            for name in sorted(os.listdir(folder)):
+                with open(os.path.join(folder, name), "rb") as fh:
+                    entries[f"NDF/Scenarios/{scenario}/{name}"] = fh.read()
+            with self.subTest(folder=os.path.relpath(folder, root)):
+                kinds.append(check_definition_layout(entries, scenario))
+                self.assertEqual(check_stock_classes(entries.items(), stock)[0], 2 * kinds[-1])  # each .txn and tag
+        self.assertEqual(sorted(kinds), [4] * 8 + [5] * 27)
+
+    @paths.skip_unless_extracted("transactions", *SCAN_FILES[0].split("/"))
+    def test_scanned_kinds_are_the_games(self):
+        """The kinds the game's own transactions scan every scenario folder for are SCANNED_KINDS."""
+        root = str(paths.extracted_root())
+        self.assertEqual(scanned_kinds([os.path.join(root, "transactions", *f.split("/")) for f in SCAN_FILES]),
+                         SCANNED_KINDS)
 
 
 if __name__ == "__main__":

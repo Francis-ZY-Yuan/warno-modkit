@@ -1,28 +1,47 @@
 """Re-keying a stock scenario's files to a new id: the paths, the table edits, and the rows the dump gate checks them by.
 
+Since build 210942 a scenario's Definition pack holds, for each kind of file (``GDScript``, ``MapConfiguration``,
+``ScenarioInfo``, ``ScenarioLoader``, ``TrophyDef``), three entries under ``NDF/Scenarios/<scenario>/`` (``def_path``):
+``<Kind>.txn`` (the CNDF file itself), ``<Kind>.txn.tag`` (a ``TNDFTagFile``: a ConfigHash and a map of the source
+files it was cooked from, by game path, to their hashes) and ``<Kind>.dbg`` (its source map, one line per object:
+``modkit.core.dbg``). Build 201602 had ``NDF/Scenarios/<Kind>/<scenario>.ndfbin`` and ``.tag`` instead.
+
 A clone of a stock Operation rewrites its Definition files: the scenario id in STRG/TRAN entries (``replace_text``),
-whole entries such as the map name (``swap_exact``), the scenario GUID, the menu tokens, a few plain properties
-(``ScalarEdit``) and, in each ``.tag`` sidecar, the MD5 hashes of the source file names (``tag_name_hashes``). A
-``Rekey`` holds every value of one such clone; ``rekey_definition`` and ``rekey_tag`` apply it and ``dump_rows``
-lists the changes it may make. ``modkit.ops.gates.check_dump_diff`` then compares typed dumps line by line: every new
-line must equal the stock line with the applicable ``DumpRow`` patterns applied.
+whole entries such as the map name (``swap_exact``), the scenario GUID, the menu tokens and a few plain properties
+(``ScalarEdit``); in each ``.txn.tag`` and ``.dbg``, the scenario id of the source file paths (``rekey_tag``,
+``rekey_dbg``). The tag's hashes stay stock's: they are the cook's own, and nothing here can recompute them. A
+``Rekey`` holds every value of one such clone; ``rekey_definition``, ``rekey_tag`` and ``rekey_dbg`` apply it, and
+``dump_rows`` lists the changes it may make. ``modkit.ops.gates.check_dump_diff`` then compares typed dumps (a .dbg's
+text) line by line: every new line must equal the stock line with the applicable ``DumpRow`` patterns applied.
 """
 from __future__ import annotations
 
-import hashlib
 import re
 from dataclasses import dataclass
-from typing import Iterable, Mapping
+from typing import Mapping
 
-from modkit.core import ndfbin
+from modkit.core import dbg, ndfbin
 from modkit.core.gates import check
 from modkit.core.ndfbin import Value
 from modkit.ops.graph import all_values, decode, encode
 
 
+TXN, TAG, DBG = "txn", "txn.tag", "dbg"   # a Definition kind's three entries: the file, its tag and its source map
+DEF_EXTS = (TXN, TAG, DBG)
+TAG_CLASS = "TNDFTagFile"                  # a .txn.tag's one object (all 167 stock tags of a 210942 extraction)
+DEF_PATH = re.compile(r"NDF/Scenarios/([^/]+)/([^/.]+)\.(txn|txn\.tag|dbg)")
+
+
 def def_path(kind: str, ext: str, scenario: str) -> str:
-    """A Definition entry's inner path: NDF/Scenarios/<kind>/<scenario>.<ext>."""
-    return f"NDF/Scenarios/{kind}/{scenario}.{ext}"
+    """A Definition entry's inner path: NDF/Scenarios/<scenario>/<kind>.<ext>, `ext` one of DEF_EXTS (build 210942)."""
+    check(ext in DEF_EXTS, f"{kind}.{ext}: a Definition entry is a .{TXN}, .{TAG} or .{DBG}")
+    return f"NDF/Scenarios/{scenario}/{kind}.{ext}"
+
+
+def def_entry(inner: str) -> tuple[str, str, str] | None:
+    """(scenario, kind, ext) of a Definition entry's inner path (def_path), or None for any other path."""
+    m = DEF_PATH.fullmatch(inner)
+    return (m[1], m[2], m[3]) if m else None
 
 
 def repath(inner: str, source: str, scenario: str) -> str:
@@ -51,12 +70,6 @@ def swap_exact(table: list[bytes], swaps: Mapping[str, str]) -> int:
             table[k] = new.encode("latin-1")
             hits += 1
     return hits
-
-
-def tag_name_hashes(scenario: str, sources: Iterable[str]) -> dict[str, bytes]:
-    """{source file: MD5 of 'ScenariosData:/<scenario>/<source file>'}: the first hash of each pair a scenario's .tag
-    sidecars hold, for each of its `sources` (paths below the scenario's ScenariosData folder)."""
-    return {f: hashlib.md5(f"ScenariosData:/{scenario}/{f}".encode("latin-1")).digest() for f in sources}
 
 
 @dataclass(frozen=True)
@@ -92,11 +105,9 @@ class Rekey:
     map_trans: Mapping[str, str]    # whole TRAN entries (e.g. the EnvironmentSettings import's map name)
     deck_swap: Mapping[str, str]    # whole MapConfiguration STRG entries (LocalPlayerDeck), each hit exactly once
     kinds: tuple[str, ...]          # the Definition kinds shipped (re-keyed or generated)
-    tag_sources: tuple[str, ...]    # the source files the .tag sidecars name (tag_name_hashes)
-    tag_dropped: tuple[str, ...]    # tag_sources named only by a dropped kind's .tag (no dump row)
 
 
-# The Definition kinds holding the scenario GUID once each (TChallengeMapInfo.GUID, TScenarioLoadInfo.GUID).
+# The Definition kinds holding the scenario GUID once each (TChallengeMapInfo.GUID, TScenarioDefinition.GUID).
 GUID_KINDS = ("MapConfiguration", "ScenarioInfo")
 
 
@@ -142,27 +153,44 @@ def rekey_definition(raw: bytes, kind: str, rk: Rekey) -> bytes:
 
 
 def rekey_tag(raw: bytes, kind: str, rk: Rekey) -> bytes:
-    """A stock .tag sidecar re-keyed: its one BaseName -> Scenarios/<kind>/<scenario>, and the source-name hash of
-    each of rk.tag_sources from the template's to the new id's; the rest kept."""
+    """A stock .txn.tag re-keyed: the source paths of its one TNDFTagFile (ScenariosData:/<source>/...) to the new id,
+    at least one; its ConfigHash and source hashes kept as stock's."""
     nb, _, image = decode(raw)
-    check(ndfbin.encode_image(nb) == image, f"{kind}.tag: stock image does not round-trip")
-    check(replace_text(nb.strings, rk.source, rk.scenario) == 1, f"{kind}.tag: expected one BaseName to re-key")
-    old, new = tag_name_hashes(rk.source, rk.tag_sources), tag_name_hashes(rk.scenario, rk.tag_sources)
-    swap = {old[f]: new[f] for f in rk.tag_sources}
-    hits = 0
-    for _, _, x in all_values(nb):
-        if x.tag == 0x22 and x.v[0].tag == 0x25 and x.v[0].v in swap:
-            x.v[0].v = swap[x.v[0].v]
-            hits += 1
-    check(hits >= 1, f"{kind}.tag: no scenario source-name hash found")
-    left = [x for _, _, x in all_values(nb) if x.tag == 0x25 and x.v in old.values()]
-    check(not left, f"{kind}.tag: {len(left)} {rk.source} source-name hashes left")
-    return encode(nb, f"{kind}.tag")
+    what = f"{kind}.{TAG}"
+    check(ndfbin.encode_image(nb) == image, f"{what}: stock image does not round-trip")
+    classes = [nb.cname(ob.cls) for ob in nb.objects]
+    check(classes == [TAG_CLASS], f"{what}: holds {classes}, not one {TAG_CLASS}")
+    check(replace_text(nb.strings, rk.source, rk.scenario) >= 1, f"{what}: names no {rk.source} source file")
+    left = [t.decode("latin-1") for t in nb.strings + nb.trans if rk.source.encode("latin-1") in t]
+    check(not left, f"{what}: {rk.source} left in {left}")
+    return encode(nb, what)
+
+
+def rekey_dbg(raw: bytes, kind: str, rk: Rekey, objects: int) -> bytes:
+    """A stock .dbg re-keyed: the id wherever it stands (a source path ScenariosData:/<source>/..., a name; a map of
+    template files only, as Survivors' ScenarioLoader's, names none), every line kept in its place. The re-keyed .txn
+    beside it keeps stock's objects in order, so the map still holds one line per object: `objects`
+    (modkit.core.dbg)."""
+    text = dbg.read_text(raw)
+    lines = dbg.read(raw)
+    check(len(lines) == objects, f"{kind}.{DBG}: {len(lines)} lines for {objects} objects")
+    return dbg.write_text(text.replace(rk.source, rk.scenario))
+
+
+def generated_dbg(raw: bytes, scenario: str, source: str) -> bytes:
+    """The source map of a generated .txn `raw`: one line per object in object order, each named as stock names it
+    (an exported object by its export path's last component, any other unnamed), at `source` (a game path under the
+    scenario's ScenariosData folder), line n for object #n-1 of the typed dump, column 1."""
+    nb, _, _ = decode(raw)
+    names = {i: path.rsplit("/", 1)[-1] for path, i in ndfbin.tree_paths(nb, nb.exports)}
+    check(source.startswith(f"ScenariosData:/{scenario}/"), f"{source}: not under ScenariosData:/{scenario}/")
+    return dbg.write([dbg.Line(names.get(i, ""), source, i + 1, 1) for i in range(len(nb.objects))])
 
 
 def dump_rows(rk: Rekey) -> list[DumpRow]:
-    """Every typed-dump change rekey_definition and rekey_tag may make with `rk`, as (label, entries it may touch,
-    pattern, replacement)."""
+    """Every typed-dump (or .dbg text) change rekey_definition, rekey_tag and rekey_dbg may make with `rk`, as (label,
+    entries it may touch, pattern, replacement). An entry is named by its kind: '<Kind>' for the .txn,
+    '<Kind>.txn.tag' and '<Kind>.dbg' (gates.dump_kind); the id row covers the tags' and source maps' paths."""
     typed = ndfbin.Dumper(ndfbin.NdfBin(), typed=True)
     rows = [DumpRow(f"id {rk.source} -> S", None, re.escape(rk.source), rk.scenario),
             DumpRow("GUID -> G", GUID_KINDS, re.escape(ndfbin.fmt_guid(rk.guid_source)), ndfbin.fmt_guid(rk.guid))]
@@ -178,8 +206,4 @@ def dump_rows(rk: Rekey) -> list[DumpRow]:
              for o, n in rk.map_trans.items()]
     rows += [DumpRow(f"deck {o} -> {n}", ("MapConfiguration",), re.escape(f"'{o}'"), f"'{n}'")
              for o, n in rk.deck_swap.items()]
-    old, new = tag_name_hashes(rk.source, rk.tag_sources), tag_name_hashes(rk.scenario, rk.tag_sources)
-    rows += [DumpRow(f"tag name hash {f}", tuple(f"{k}.tag" for k in rk.kinds),
-                     re.escape(f"hash16:{old[f].hex()},"), f"hash16:{new[f].hex()},")
-             for f in rk.tag_sources if f not in rk.tag_dropped]
     return rows

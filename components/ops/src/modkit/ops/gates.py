@@ -14,7 +14,9 @@ reviewed-pending entry for one:
    (every effect the script launches is a self-contained GameFx effect), ``check_created_in_zone`` (every unit the
    script creates stands inside the playable zone);
 4. every re-keyed file differs from stock only by its dump rows: ``check_dump_diff``;
-5. the package is scenario-only and ships no Gameplay file: ``check_package``;
+5. the package is scenario-only and ships no Gameplay file: ``check_package``; the Definition pack is in build
+   210942's layout, every .txn with its .txn.tag and a .dbg of one line per object (``check_definition_layout``); and
+   every class and property the build ships is one the stock files of its kind hold (``check_stock_classes``);
 6. every written pack reads back (``modkit.ops.packs.verify_packs``).
 
 A profile's extra gates (``modkit.ops.profile.ExtraGate``) hold what only some ops generate; the driver runs none of
@@ -27,6 +29,10 @@ unit database (``check_units`` over ``unit_database``), the Operation's menu ord
 (``check_fire_range``: in the player's alliance, every target in range from where they stand). ``grid_gate``,
 ``zone_layout_gate``, ``template_name_gate``, ``unit_gate``, ``menu_order_gate`` and ``fire_range_gate`` are
 ready-made extra gates: they read the Details and other files the build plans to ship.
+
+Stock counts and object numbers in this module's comments are build 201602's unless they name 210942 (build 210942
+added one stock scenario, CampagneStrat_Invasion_of_Cuba, and two objects ahead of each stock script's root: see
+modkit.ops.script); the stock tests hold every gate to the extraction's own stock.
 """
 from __future__ import annotations
 
@@ -36,22 +42,22 @@ import hashlib
 import math
 import os
 import re
-import struct
 import zipfile
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Callable, Iterable, Mapping, NamedTuple, Sequence
 
-from modkit.core import ndfbin, ndfrules, paths, trad
-from modkit.core.gates import check, check_fixture_text
+from modkit.core import dbg, ndfbin, ndfrules, paths, trad
+from modkit.core.gates import CheckError, check, check_fixture_text
 from modkit.core.names import unit_path
 from modkit.core.ndfbin import Value
 from modkit.core.packaging import is_gameplay_file
 from modkit.ops.files import SETUP_FIX, read_file
+from modkit.ops.bricks import NAME_PROP
 from modkit.ops.graph import TRUE, Imp, Node, all_values, build_graph, decode, nodes_of, prop_nodes, walk
 from modkit.ops.items import Item
-from modkit.ops.leveldesign import GD_TAG_CLASS, LD_FILE, ZONE_FILES, LdItem, read_ld_items
-from modkit.ops.rekey import DumpRow, def_path
+from modkit.ops.leveldesign import GD_TAG_CLASS, LD_FILE, TAG_ID, ZONE_FILES, LdItem, read_ld_items
+from modkit.ops.rekey import DBG, DEF_EXTS, TAG, TAG_CLASS, TXN, DumpRow, def_entry, def_path
 from modkit.ops.script import BRICK_DEFAULT, BRICK_FORCE_HIDE, PROD_MENU_SWITCH
 from modkit.ops.strings import StringError, Table, check_glyphs, check_parity, check_titles, stock_sc_chars
 from modkit.ops.zones import (
@@ -91,8 +97,8 @@ def check_strings(name: str, table: Table, dictionaries: Sequence[str], menu_tok
 
 
 def check_binding(gd_raw: bytes, ld_raw: bytes) -> int:
-    """Every GdItems tag's GUID words name exactly one LevelDesign item with the same
-    Ranking/Name and a matching add-on type; every item has exactly one tag."""
+    """Every GdItems tag's TAG_ID (its GUID) names exactly one LevelDesign item with the same Ranking/Name and a
+    matching add-on type; every item has exactly one tag."""
     ld, _, _ = decode(ld_raw)
     items: dict[bytes, tuple[str, str, str]] = {}
     for ob in ld.objects:
@@ -113,8 +119,10 @@ def check_binding(gd_raw: bytes, ld_raw: bytes) -> int:
             continue
         path = exported.get(i, f"#{i}")
         p = {gd.pname(pi): v for pi, v in ob.props}
-        guid = struct.pack(">4i", *(p[f"GUID{k}"].v for k in range(1, 5)))
-        check(guid in items, f"{path}: GUID words match no LevelDesign item")
+        tag = p.get(TAG_ID)
+        check(tag is not None and tag.tag == 0x1A, f"{path}: no {TAG_ID} GUID (build 210942's tag shape)")
+        guid = tag.v
+        check(guid in items, f"{path}: its {TAG_ID} matches no LevelDesign item")
         ranking, name, addon = items[guid]
         check(path == f"$/GDScript/GdItems/{ranking}/{name}", f"{path}: binds {ranking}/{name}")
         check(GD_TAG_CLASS[addon] == cls, f"{path}: {cls} bound to a {addon} add-on")
@@ -405,8 +413,21 @@ def zone_layout_gate(items: list[Item], content: object) -> str:
 # --------------------------------------------------------------------------- typed dumps: the re-keying and fixture gates
 
 def typed_dump(raw: bytes, title: str) -> list[str]:
+    """The typed dump of a CNDF file, or, for a .dbg source map (`title` ends in .dbg), its title then its text, one
+    line per object (modkit.core.dbg)."""
+    if title.endswith(f".{DBG}"):
+        return [f"// {title}", *dbg.read_text(raw).splitlines()]
     nb, _, _ = decode(raw)
     return ndfbin.Dumper(nb, typed=True).dump(title, None).splitlines()
+
+
+def dump_kind(inner: str) -> str:
+    """The name a DumpRow's kinds give a Definition entry: '<Kind>' for its .txn, '<Kind>.txn.tag' and '<Kind>.dbg'
+    (modkit.ops.rekey.dump_rows)."""
+    entry = def_entry(inner)
+    check(entry is not None, f"{inner}: not a Definition entry (NDF/Scenarios/<scenario>/<Kind>.<ext>)")
+    _, kind, ext = entry
+    return kind if ext == TXN else f"{kind}.{ext}"
 
 
 def check_no_template_name(items: Iterable[Item], name: str, allow: Iterable[str] = ()) -> tuple[int, int]:
@@ -444,10 +465,10 @@ def template_name_gate(name: str, allow: Iterable[str] = ()) -> Callable[[list[I
 def check_dump_diff(item: Item, rows: list[DumpRow]) -> tuple[list[str], set[str]]:
     """Every new dump line must equal the stock line with the applicable rows applied.
 
-    `item` is a re-keyed Definition entry (path 'NDF/Scenarios/<kind>/...', chunks() and stock bytes).
-    Returns (changed line pairs for the report, labels of the rows that fired).
+    `item` is a re-keyed Definition entry (path 'NDF/Scenarios/<scenario>/<Kind>.<ext>', chunks() and stock bytes);
+    a .dbg is compared by its text. Returns (changed line pairs for the report, labels of the rows that fired).
     """
-    kind = item.path.split("/")[2] + (".tag" if item.path.endswith(".tag") else "")
+    kind = dump_kind(item.path)
     applicable = [r for r in rows if r.kinds is None or kind in r.kinds]
     new = typed_dump(b"".join(item.chunks()), item.path)
     old = typed_dump(item.stock, item.path)
@@ -589,10 +610,11 @@ def ref_targets(text: str, scenario: str, langs: Iterable[str]) -> list[str] | N
         (rf"ScenariosData:/{s}/(.+)\.csv",
          lambda m: [f"Assets:Localisation/{scenario}/{m[1]}-{lang}.dic" for lang in langs]),
         (rf"Scenarios/{s}_Details\.dat", lambda m: ["Details:*"]),
-        (rf"Scenarios/(\w+)/{s}", lambda m: [f"Definition:{def_path(m[1], 'ndfbin', scenario)}"]),
+        # a transaction's BaseName: ScenarioInfo names its ScenarioLoader, the ScenarioLoader its GDScript
+        (rf"Scenarios/{s}/(\w+)\.txn", lambda m: [f"Definition:{def_path(m[1], TXN, scenario)}"]),
         (rf"ScenariosData:/{s}/(Scenario|MapPack|Trophy)\.ndf", lambda m: []),  # cook-source names only
         (rf"ScenariosData:/{s}", lambda m: []),               # Details mount directory
-        (rf"GameData:/Map/Scenario/{s}/Scripting", lambda m: []),  # Python path; no Python shipped
+        (rf"ScenariosData:/{s}/Scripting", lambda m: []),     # the GDScript transaction's source directory
         (rf"\$/ClusterMap/{s}/Load", lambda m: []),           # export inside the ScenarioLoader itself
         (s, lambda m: []),                                     # ScenarioInfo Name/Path, export names
     ]
@@ -613,7 +635,7 @@ def check_references(items: list[Item], scenario: str, langs: Iterable[str]) -> 
     langs = tuple(langs)
     n = 0
     for it in items:
-        if it.pack != "Definition" or not it.path.endswith(".ndfbin"):
+        if it.pack != "Definition" or not it.path.endswith(f".{TXN}"):
             continue
         nb, _, _ = decode(b"".join(it.chunks()))
         for text in (s.decode("latin-1") for s in nb.strings + nb.trans):
@@ -629,7 +651,7 @@ def check_references(items: list[Item], scenario: str, langs: Iterable[str]) -> 
 
 
 # Dialog button labels resolve in the game's dictionary list INGAME (stock INTERFACE_INGAME), never in the scenario's
-# dictionaries: all 974 stock uses hold INTERFACE_INGAME tokens. A scenario token there throws a dictionary error
+# dictionaries: all 1,027 stock uses hold INTERFACE_INGAME tokens (build 210942; 974 on 201602). A scenario token there throws a dictionary error
 # naming the token and the in-game list when the dialog opens.
 INGAME_PROPS = frozenset({("TGDDescriptorCutsceneDialog", "TokenBoutonChoix0"),
                           ("TGDDescriptorCutsceneDialogWithMultipleChoice", "TokenBoutonChoix0"),
@@ -680,9 +702,10 @@ def check_tokens(items: list[Item], scenario: str, langs: Iterable[str], *, glob
     langs = tuple(langs)
     n = buttons = 0
     for it in items:
-        kind = it.path.split("/")[2] if it.pack == "Definition" else ""
-        if kind not in DICTIONARY_USES or not it.path.endswith(".ndfbin"):
+        entry = def_entry(it.path) if it.pack == "Definition" else None
+        if entry is None or entry[1] not in DICTIONARY_USES or entry[2] != TXN:
             continue
+        kind = entry[1]
         nb, _, _ = decode(b"".join(it.chunks()))
         toks, ingame = split_tokens(nb)
         for lang in langs:
@@ -1070,10 +1093,10 @@ ZONE_ADDONS = {"DeploymentZone": ZONE_FILES["DeploymentZone"], "CommandPoints": 
 
 
 def tag_guid(tag: object) -> bytes | None:
-    """The LevelDesign GUID a GdItems tag names (its GUID1..GUID4 words, big-endian, as check_binding reads them)."""
+    """The LevelDesign GUID a GdItems tag names (its TAG_ID, as check_binding reads it)."""
     props = dict(tag.props) if isinstance(tag, Node) else {}
-    words = [props.get(f"GUID{k}") for k in range(1, 5)]
-    return struct.pack(">4i", *(w.v for w in words)) if all(isinstance(w, Value) for w in words) else None
+    guid = props.get(TAG_ID)
+    return guid.v if isinstance(guid, Value) and guid.tag == 0x1A else None
 
 
 def zone_tag_violations(roots: Iterable[Node], details: Mapping[str, bytes]) -> tuple[dict[str, int], list[str]]:
@@ -1598,7 +1621,7 @@ def check_dialog_text(roots: Iterable[Node], strings: Table) -> int:
 # Game-rules fields the generated rules must leave out (their zero/false), so that only the script ends the battle:
 # the engine's end check does nothing while CheckEndGame is false, and ends the game on time once GameTime is
 # set. ModeFixedRandomSeed would make every play's random rolls the same. None is
-# emitted today (Survivors #114 omits all three). Stock: HoldUntilRelieved #93 sets CheckEndGame (with MaxScore
+# emitted today (Survivors #116 omits all three). Stock: HoldUntilRelieved #93 sets CheckEndGame (with MaxScore
 # 999999), 7 challenges set ModeFixedRandomSeed, none sets GameTime.
 RULES_OMITTED = ("CheckEndGame", "GameTime", "ModeFixedRandomSeed")
 
@@ -1609,7 +1632,7 @@ def check_rules(roots: Iterable[Node]) -> int:
     bad = [f"{node_label(nd)} sets {', '.join(k for k, _ in nd.props if k in RULES_OMITTED)}" for nd in rules
            if any(k in RULES_OMITTED for k, _ in nd.props)]
     check(not bad, f"game rules let the engine end or fix the battle: {bad}. Leave {', '.join(RULES_OMITTED)} out "
-                   f"(Survivors #114, the template, omits all three).")
+                   f"(Survivors #116, the template, omits all three).")
     return len(rules)
 
 
@@ -1740,16 +1763,19 @@ def check_prod_menu_switch(content: Content, roots: Iterable[Node]) -> int:
 
 LAUNCH_FX = "TGDDescriptorLaunchFXFireAndForgetOnPosition"
 FX_PARAMS = "InputParameters"
-# The only effects stock scripts launch, all self-contained: 75 launches in 7 of the 31 stock GDScripts (45, 27, 3).
+# The only effects stock scripts launch, all self-contained: 75 launches in 7 of the stock GDScripts (45, 27, 3), the
+# same on build 210942 as on 201602.
 STOCK_SCRIPT_EFFECTS = ("$/GFX/GameFx/fx_FumeeBlanche_ForScript_RandomPosition",
                         "$/GFX/GameFx/fx_HE_Artillery_203mm_ForScript_RandomPosition",
                         "$/GFX/GameFx/fx_FumeeNoire_ForScript_RandomPosition")
 
 
 def gamefx_file() -> str:
-    """The game's GameFx namespace file in the stock extraction (core's STOCK_PATHS entry glad_201602, the Glad pack):
-    where the game looks up the effect a script launches. Raises paths.NotConfigured without an extraction."""
-    return str(paths.extracted_root() / "glad_201602" / "NDF" / "GFX" / "GameFx.ndfbin")
+    """The game's GameFx namespace file in the stock extraction (ops' STOCK_PATHS entry transactions, the
+    Transactions pack): where the game looks up the effect a script launches. Build 210942 ships the game's own NDF
+    there as .txn; the Glad pack's GameFx.ndfbin is 201602's, which 210942 no longer reads. Raises
+    paths.NotConfigured without an extraction."""
+    return str(paths.extracted_root() / "transactions" / "NDF" / "GFX" / "GameFx.txn")
 
 
 def _props(nb: ndfbin.NdfBin, i: int) -> dict[str, Value]:
@@ -1771,13 +1797,13 @@ def effect_launches(nb: ndfbin.NdfBin) -> list[str]:
 @functools.cache
 def gamefx_declarations(path: str) -> dict[str, tuple[str, ...]]:
     """Each export of the GameFx file at `path`, by its path ('$/GFX/GameFx/...'), with the parameters its
-    declaration takes: the names of its FX_PARAMS, () for a self-contained effect."""
+    declaration takes: the names (NAME_PROP) of its FX_PARAMS, () for a self-contained effect."""
     nb, _, _ = decode(read_file(path))
     out = {}
     for name, i in ndfbin.tree_paths(nb, nb.exports):
         params = _props(nb, i).get(FX_PARAMS)
         refs = params.v if params is not None and params.tag == 0x11 else []
-        out[name] = tuple((_text(nb, _props(nb, p.v.index).get("_ShortDatabaseName")) or "?")
+        out[name] = tuple((_text(nb, _props(nb, p.v.index).get(NAME_PROP)) or "?")
                           if p.tag == 0x09 and p.v.kind == ndfbin.REF_OBJECT else "?" for p in refs)
     return out
 
@@ -1791,7 +1817,7 @@ def gamefx_required(path: str) -> dict[str, tuple[str, ...]]:
     for name, i in ndfbin.tree_paths(nb, nb.exports):
         params = _props(nb, i).get(FX_PARAMS)
         refs = params.v if params is not None and params.tag == 0x11 else []
-        out[name] = tuple(_text(nb, _props(nb, p.v.index).get("_ShortDatabaseName")) or "?" for p in refs
+        out[name] = tuple(_text(nb, _props(nb, p.v.index).get(NAME_PROP)) or "?" for p in refs
                           if p.tag == 0x09 and p.v.kind == ndfbin.REF_OBJECT
                           and "DefaultValue" not in _props(nb, p.v.index))
     return out
@@ -1899,7 +1925,7 @@ def check_script_effects(raw: bytes, gamefx: str | None = None) -> int:
 def check_package(items: list[Item], scenario: str) -> int:
     """Gate 5, scenario-only: every entry lies under the scenario, and none is a Gameplay file. A path lies under the
     scenario when one of its '/' components is the scenario id, alone or with a file extension (the Definition files
-    are NDF/Scenarios/<kind>/<scenario>.ndfbin). A Details entry is checked at the path the game mounts it on,
+    are NDF/Scenarios/<scenario>/<Kind>.<ext>). A Details entry is checked at the path the game mounts it on,
     ScenariosData:/<scenario>/<inner path> (the ScenarioLoader's TClusterMountAdditionalDatapack), since Details inner
     paths (out/LevelDesign.ndfbin, ...) carry no id. A Gameplay file (modkit.core.packaging.is_gameplay_file: under
     Gen/, ending with one of the 16 GAMEPLAY_FILES, the game's own lookup) fails even under the scenario
@@ -1916,12 +1942,163 @@ def check_package(items: list[Item], scenario: str) -> int:
     return len(items)
 
 
+# --------------------------------------------------------------------------- the Definition layout (gate 5)
+# Build 210942 reads a scenario's Definition files by name in NDF/Scenarios/<scenario>/ (modkit.ops.rekey.def_path),
+# and the kind names are the game's data, not its exe's. Its own transactions hold a SCAN_CLASS with DirName
+# 'Scenarios' for each kind it looks for in every scenario folder (SCANNED_KINDS, in SCAN_FILES: the Operations menu's
+# MapConfiguration, the trophies' TrophyDef and the scenario list's ScenarioInfo); the others are named by a
+# transaction's BaseName: the ScenarioInfo names its ScenarioLoader.txn, and the ScenarioLoader its GDScript.txn
+# (check_references resolves both). Every stock .txn of a scenario, map or decor-set pack ships beside its .txn.tag and
+# its .dbg (all of them in a 210942 install's index), and every stock .dbg holds one line per object of its .txn.
+
+SCAN_CLASS = "TClusterMultipleNdfTransactions"
+SCAN_FILES = ("NDF/ClusterInitialisationData.txn", "NDF/ClusterMainScenario.txn")  # in the Transactions pack
+SCANNED_KINDS = ("MapConfiguration", "ScenarioInfo", "TrophyDef")
+REQUIRED_KINDS = ("MapConfiguration", "ScenarioInfo")   # an Operation's menu entry, and its load
+
+
+def scanned_kinds(files: Iterable[str]) -> tuple[str, ...]:
+    """The kinds the game's own transactions `files` look for in every scenario folder: the BaseName, minus .txn, of
+    each SCAN_CLASS whose DirName is 'Scenarios', sorted."""
+    out: set[str] = set()
+    for f in files:
+        nb, _, _ = decode(read_file(f))
+        for i, ob in enumerate(nb.objects):
+            props = _props(nb, i)
+            if nb.cname(ob.cls) == SCAN_CLASS and _text(nb, props.get("DirName")) == "Scenarios":
+                out.add(_text(nb, props.get("BaseName")).removesuffix(f".{TXN}"))
+    return tuple(sorted(out))
+
+
+def check_definition_layout(entries: Mapping[str, bytes], scenario: str) -> int:
+    """Gate 5, the Definition pack's entries (`entries`: inner path -> bytes) in build 210942's layout: each is
+    NDF/Scenarios/`scenario`/<Kind>.txn, .txn.tag or .dbg; REQUIRED_KINDS ship; every kind ships all three; each
+    .txn.tag holds one TNDFTagFile; each .dbg reads, holds one line per object of its .txn, and names each exported
+    object as stock does (its export path's last component). Returns the number of kinds."""
+    kinds: dict[str, set[str]] = {}
+    for inner in entries:
+        entry = def_entry(inner)
+        check(entry is not None and entry[0] == scenario,
+              f"Definition:{inner}: not NDF/Scenarios/{scenario}/<Kind>.txn, .txn.tag or .dbg, the only place build "
+              f"210942 reads a scenario's Definition files (a build for 201602 had NDF/Scenarios/<Kind>/"
+              f"<scenario>.ndfbin): rebuild it with this toolkit")
+        kinds.setdefault(entry[1], set()).add(entry[2])
+    for kind in REQUIRED_KINDS:
+        check(kind in kinds, f"Definition: no {def_path(kind, TXN, scenario)}: the game looks for it in every "
+                             f"scenario folder ({', '.join(SCANNED_KINDS)})")
+    for kind, exts in sorted(kinds.items()):
+        missing = [ext for ext in DEF_EXTS if ext not in exts]
+        check(not missing, f"Definition: {kind} ships without its .{', .'.join(missing)}: every stock .txn of a "
+                           f"scenario pack ships beside its .{TAG} and its .{DBG}")
+        nb, _, _ = decode(entries[def_path(kind, TXN, scenario)])
+        tag, _, _ = decode(entries[def_path(kind, TAG, scenario)])
+        classes = [tag.cname(ob.cls) for ob in tag.objects]
+        check(classes == [TAG_CLASS], f"Definition: {kind}.{TAG} holds {classes}, not one {TAG_CLASS}")
+        try:
+            lines = dbg.read(entries[def_path(kind, DBG, scenario)])
+        except dbg.DbgError as exc:
+            raise CheckError(f"Definition: {kind}.{DBG} does not read: {exc}") from None
+        check(len(lines) == len(nb.objects), f"Definition: {kind}.{DBG} holds {len(lines)} lines for the "
+                                             f"{len(nb.objects)} objects of its .{TXN}: a source map holds one line "
+                                             f"per object, in object order")
+        named = {i: p.rsplit("/", 1)[-1] for p, i in ndfbin.tree_paths(nb, nb.exports)}
+        wrong = [f"#{i} {name} as {lines[i].name or '(unnamed)'}" for i, name in sorted(named.items())
+                 if lines[i].name != name]
+        check(not wrong, f"Definition: {kind}.{DBG} names exported objects otherwise than their exports: "
+                         f"{', '.join(wrong[:5])}")
+    return len(kinds)
+
+
+# --------------------------------------------------------------------------- every class and property in stock (gate 5)
+# The game knows the classes and properties its build was made with, and no others: a build for 201602 ships
+# TScenarioLoadInfo, TClusterAddPythonPath, TGDDescriptorLaunchEffetStandard, GdItems tags with GUID1..GUID4 and
+# TSimultaneousAction._ShortDatabaseName, none of which 210942 has. check_stock_classes holds every CNDF entry a build
+# ships, re-keyed, copied or generated, to the classes and (class, property) pairs of the stock files of its kind: every
+# scenario pack's Definition and Details in the extraction, and the game's GameFx (the effect wrapper's shapes). An
+# admitted shape (Content.extra_shapes: a native property no stock file writes, reviewed) passes too.
+
+STOCK_CLASS_SOURCES = tuple(f"{folder}/{rel}" for folder in ("scenarios/*", "kreide_op/*", "geisa_op/*",
+                                                             "twincities_op/*")
+                            for rel in (f"NDF/Scenarios/*/*.{TXN}", f"NDF/Scenarios/*/*.{TAG}", "*.ndfbin",
+                                        "out/*.ndfbin")) + ("transactions/NDF/GFX/GameFx.txn",)
+STOCK_CLASS_MINIMUM = 400   # fewer stock files means the extraction was not read right
+
+
+class StockClasses(NamedTuple):
+    """The classes and (class, property) pairs of the stock files read, and how many files that was."""
+    classes: frozenset[str]
+    props: frozenset[tuple[str, str]]
+    files: int
+
+
+@functools.cache
+def _stock_classes(root: str, minimum: int) -> StockClasses:
+    files = sorted({p for pat in STOCK_CLASS_SOURCES for p in glob.glob(os.path.join(root, *pat.split("/")))})
+    check(len(files) >= minimum, f"stock-classes gate: {len(files)} stock files under {root}, expected {minimum}+: "
+                                 f"re-run the extraction (the warno-setup skill)")
+    check(os.path.join(root, *STOCK_CLASS_SOURCES[-1].split("/")) in files,
+          f"stock-classes gate: the extraction lacks {STOCK_CLASS_SOURCES[-1]}; {SETUP_FIX}")
+    classes: set[str] = set()
+    props: set[tuple[str, str]] = set()
+    for f in files:
+        nb, _, _ = decode(read_file(f))
+        for ob in nb.objects:
+            cls = nb.cname(ob.cls)
+            classes.add(cls)
+            props.update((cls, nb.pname(pi)) for pi, _ in ob.props)
+    return StockClasses(frozenset(classes), frozenset(props), len(files))
+
+
+def stock_classes(minimum: int = STOCK_CLASS_MINIMUM) -> StockClasses:
+    """The classes and properties of the stock files STOCK_CLASS_SOURCES names in the extraction (at least `minimum`
+    files, GameFx among them). Raises paths.NotConfigured without an extraction."""
+    return _stock_classes(str(paths.extracted_root()), minimum)
+
+
+def is_cndf(raw: bytes) -> bool:
+    """Whether `raw` is a CNDF file (an .ndfbin, .txn or .txn.tag)."""
+    return raw[:4] == b"EUG0" and raw[8:12] == b"CNDF"
+
+
+def check_stock_classes(entries: Iterable[tuple[str, bytes]], stock: StockClasses,
+                        admitted: Iterable[tuple[str, str]] = ()) -> tuple[int, int]:
+    """Gate 5: every class and every (class, property) of each CNDF entry of `entries` ((name, bytes): every entry a
+    build ships; other formats are left out) is in `stock` (stock_classes()) or `admitted` ((class, property) pairs;
+    an admitted pair's class passes too). Returns (CNDF files, objects) read."""
+    admitted = set(admitted)
+    admitted_classes = {cls for cls, _ in admitted}
+    unknown: dict[str, str] = {}
+    files = objects = 0
+    for name, raw in entries:
+        if not is_cndf(raw):
+            continue
+        nb, _, _ = decode(raw)
+        files, objects = files + 1, objects + len(nb.objects)
+        for ob in nb.objects:
+            cls = nb.cname(ob.cls)
+            if cls not in stock.classes and cls not in admitted_classes:
+                unknown.setdefault(f"class {cls}", name)
+            for pi, _ in ob.props:
+                pair = (cls, nb.pname(pi))
+                if pair not in stock.props and pair not in admitted:
+                    unknown.setdefault(f"{cls}.{pair[1]}", name)
+    shown = [f"{what} ({where})" for what, where in list(unknown.items())[:12]]
+    check(not unknown, f"{len(unknown)} classes or properties no stock file of this game build holds: "
+                       f"{'; '.join(shown)}{'; ...' if len(unknown) > len(shown) else ''}. The game knows only its "
+                       f"own build's classes and properties, and one gone from it fails the load: rebuild the mod with "
+                       f"this toolkit for the installed build, or admit a native shape no stock file writes once it is "
+                       f"reviewed (Content.extra_shapes)")
+    return files, objects
+
+
 # --------------------------------------------------------------------------- the unit database
 
 UNIT_PREFIX = "$/GFX/Unit/"
 # The mod SDK's unit database, in the game install: its unit and its building descriptors (FOBs share the namespace).
+# Build 210942's SDK renamed the units' file to TacticalUnits.ndf (3,341 units; 201602's Gfx/UniteDescriptor.ndf held
+# 1,052), the file the modding manual names for unit descriptors.
 UNIT_ARCHIVE = "Mods/ModData/base.zip"
-UNIT_DATABASE = ("GameData/Generated/Gameplay/Gfx/UniteDescriptor.ndf",
+UNIT_DATABASE = ("GameData/Generated/Gameplay/TacticalUnits.ndf",
                  "GameData/Generated/Gameplay/Gfx/BuildingDescriptors.ndf")
 
 
@@ -2102,7 +2279,7 @@ def check_created_in_zone(roots: Iterable[Node], details: Mapping[str, bytes]) -
     """Gate 3: every CreateUnitOnPosition of the script (reachable from `roots`) names an item of the shipped
     out/LevelDesign whose point lies inside the shipped playable zone (out/PlayableZone; a file with no area makes the
     whole map playable). A unit created outside stands on the zone's edge, seen and engaged by the player's units
-    [[created-units-stand-in-zone]]; stock's 300 CreateUnitOnPosition all stand inside. `details`: inner path -> the
+    [[created-units-stand-in-zone]]; stock's 313 CreateUnitOnPosition (build 210942) all stand inside. `details`: inner path -> the
     Details bytes the build ships. Returns the number of CreateUnitOnPosition."""
     roots = list(roots)
     if not any(nd.cls == CREATE for nd in walk(roots)):
@@ -2206,7 +2383,7 @@ def fire_range_gate(spawn: str, player_camp: str) -> Callable[[list[Item], Conte
     [[scripted-fires]]: check_fire_range over the script, LevelDesign and playable zone the build plans to ship, with
     the unit database's ShootOnPosition bands; `player_camp` is the player's camp (its export name)."""
     def gate(items: list[Item], content: Content) -> str:
-        inner = def_path("GDScript", "ndfbin", content.scenario)
+        inner = def_path("GDScript", TXN, content.scenario)
         gd = [it for it in items if it.pack == "Definition" and it.path == inner]
         check(len(gd) == 1, f"the mod ships {len(gd)} {inner}, expected 1")
         ld, playable = shipped_details(items, LD_FILE), shipped_details(items, PLAYABLE_FILE)
@@ -2267,9 +2444,9 @@ def menu_orders(nb: ndfbin.NdfBin) -> list[int | None]:
 
 
 def stock_menu_files(root: str) -> list[str]:
-    """Every MapConfiguration of the extraction at `root`: the files a scenario's Definition pack mounts, where the
-    game reads ChapterPack and MENU_ORDER."""
-    return sorted(glob.glob(os.path.join(root, "**", "NDF", "Scenarios", "MapConfiguration", "*.ndfbin"),
+    """Every MapConfiguration of the extraction at `root` (NDF/Scenarios/<scenario>/MapConfiguration.txn): the files
+    the game scans every Definition pack for (SCANNED_KINDS), where it reads ChapterPack and MENU_ORDER."""
+    return sorted(glob.glob(os.path.join(root, "**", "NDF", "Scenarios", "*", f"MapConfiguration.{TXN}"),
                             recursive=True))
 
 
@@ -2285,7 +2462,7 @@ def _stock_operations(root: str, minimum: int) -> tuple[StockOperation, ...]:
     found: set[StockOperation] = set()
     unread: list[str] = []
     for nb in ndfrules.stock_files(stock_menu_files(root), unread):
-        scenario = os.path.basename(nb.path).removesuffix(".ndfbin")
+        scenario = os.path.basename(os.path.dirname(nb.path))
         for entry in menu_entries(nb):
             check(entry.order is not None, f"{os.path.relpath(nb.path, root)}: a stock Operation without {MENU_ORDER}")
             found.add(StockOperation(scenario, entry.order, entry.guid))
@@ -2332,7 +2509,7 @@ def check_menu_order(raw: bytes, what: str, stock: Mapping[int, Sequence[str]]) 
 def menu_order_gate(items: list[Item], content: Content) -> str:
     """An extra gate (profile.ExtraGate) for an Operation: the MapConfiguration the build plans to ship holds a menu
     order no stock Operation holds (check_menu_order over stock_menu_orders)."""
-    inner = def_path("MapConfiguration", "ndfbin", content.scenario)
+    inner = def_path("MapConfiguration", TXN, content.scenario)
     hits = [it for it in items if it.pack == "Definition" and it.path == inner]
     check(len(hits) == 1, f"the mod ships {len(hits)} {inner}, expected 1")
     stock = stock_menu_orders()

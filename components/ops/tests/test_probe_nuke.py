@@ -18,11 +18,12 @@ from modkit.ops.files import read_file
 from modkit.ops.gates import check_script_effects, effect_violations, gamefx_declarations, gamefx_file
 from modkit.ops import profile as ops_profile
 from modkit.ops.graph import Imp, Node, build_graph, decode, encode, walk
+from modkit.ops.rekey import TXN, def_path
 from probes import CONTENTS, nuke, profile
 from probes.nuke import NUKE, SOV
 
 SCRIPT_DATA = paths.skip_unless_extracted("kreide_op", "challenge_Survivors_Definition")
-GAMEFX = paths.skip_unless_extracted("glad_201602", "NDF", "GFX", "GameFx.ndfbin")
+GAMEFX = paths.skip_unless_extracted("transactions", "NDF", "GFX", "GameFx.txn")   # gates.gamefx_file()
 GAME = paths.skip_unless_game_dir("Mods", "ModData", "base.zip")
 WAIT, SEQ = "TGDDescriptorWaitDuration", "TGDDescriptorSequential"
 FX = "TGDDescriptorLaunchFXFireAndForgetOnPosition"
@@ -269,7 +270,7 @@ class Build(unittest.TestCase):
                 c = CONTENTS[name]()
                 path = os.path.join(out, c.mod_name, "Scenarios", f"{c.scenario}_Definition.dat")
                 entries = {e.path: edat.read_entry(path, e) for e in edat.read_index(path)}
-                nb, _, _ = decode(entries[f"NDF/Scenarios/MapConfiguration/{c.scenario}.ndfbin"])
+                nb, _, _ = decode(entries[def_path("MapConfiguration", TXN, c.scenario)])
                 strings = [s.decode("latin-1") for s in nb.strings]
                 self.assertIn(deck, strings)
                 self.assertNotIn(profile.SURVIVORS_PLAYER_DECK, strings)

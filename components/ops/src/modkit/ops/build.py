@@ -42,7 +42,7 @@ from modkit.ops.leveldesign import (
 )
 from modkit.ops.packs import verify_packs, write_loose, write_packs
 from modkit.ops.profile import STOCK_ASSETS, Content, OpProfile, extracted
-from modkit.ops.rekey import Rekey, ScalarEdit, def_path, dump_rows
+from modkit.ops.rekey import DEF_EXTS, TXN, Rekey, ScalarEdit, def_path, dump_rows
 from modkit.ops.script import BRICK_DEFAULT
 from modkit.ops.strings import LANGS, StringError, payloads
 from modkit.ops.zones import zone_areas_graph
@@ -104,7 +104,7 @@ def rekey_table(profile: OpProfile, content: Content) -> Rekey:
     edits = scalar_edits(profile, content)
     return Rekey(t.source, content.scenario, t.guid, scenario_guid(content.scenario, profile.guid_namespace),
                  dict(content.menu_renames), t.token_prefix, edits, profile.map_strings,
-                 profile.map_trans, decks, t.kinds, t.tag_sources, t.tag_dropped)
+                 profile.map_trans, decks, t.kinds)
 
 
 def details_files(profile: OpProfile, items: Sequence[LdItem], scenario: str) -> dict[str, bytes]:
@@ -208,10 +208,10 @@ def plan(profile: OpProfile, content: Content) -> Plan:
         check((it.pack, it.path) not in seen, f"{it.pack}:{it.path} is planned twice")
         seen.add((it.pack, it.path))
     if roots is None:  # the template's script, re-keyed: the script gates read it decoded
-        gd = next(it for it in items if it.path == def_path("GDScript", "ndfbin", content.scenario))
+        gd = next(it for it in items if it.path == def_path("GDScript", TXN, content.scenario))
         roots = nodes_of(decode(payload(gd))[0])
     dropped = [(rel_source(t.path("definition"), def_path(kind, ext, t.source)), why)
-               for kind, why in t.dropped for ext in ("ndfbin", "tag")] \
+               for kind, why in t.dropped for ext in DEF_EXTS] \
         + [(rel_source(t.path("assets"), p), why) for p, why in dropped]
     return Plan(items, dropped, list(roots))
 
@@ -227,7 +227,7 @@ def check_generated(profile: OpProfile, content: Content, items: list[Item], run
     """Gate 2 on every generated ndfbin: canonical layout, only stock shapes (plus the content's admitted ones on
     its script), and the game's load-time property rules."""
     g = run or GateRun(profile)
-    gd_path = def_path("GDScript", "ndfbin", content.scenario)
+    gd_path = def_path("GDScript", TXN, content.scenario)
     generated = [it for it in items if it.fixture is not None]
     canonical = functools.partial(gates.check_canonical, import_rule=profile.import_rule)
     shapes, game_checked = [], 0
@@ -254,7 +254,7 @@ def check_script(profile: OpProfile, content: Content, p: Plan, run: GateRun | N
     gates. Returns the log lines: bindings, tiers, mission, then one per extra gate."""
     g = run or GateRun(profile)
     items, roots, scenario = p.items, p.roots, content.scenario
-    gd = next(it for it in items if it.path == def_path("GDScript", "ndfbin", scenario))
+    gd = next(it for it in items if it.path == def_path("GDScript", TXN, scenario))
     ld = next((it for it in items if it.path == LD_FILE), None)
     details = {it.path: payload(it) for it in items if it.pack == "Details"}
     deploy = gates.has_deployment_phase(content.items)
@@ -329,6 +329,23 @@ def check_dump_rows(profile: OpProfile, content: Content, items: list[Item], run
     return f"{rekeyed} re-keyed files differ from stock only by the {len(rows)} dump rows ({changed} lines changed)"
 
 
+def check_definition(profile: OpProfile, content: Content, items: list[Item], run: GateRun | None = None) -> str:
+    """Gate 5's game-build checks: the Definition pack in build 210942's layout (gates.check_definition_layout), and
+    every class and property of every CNDF entry the build ships in stock's (gates.check_stock_classes; the content's
+    admitted shapes pass too)."""
+    g = run or GateRun(profile)
+    definition = {it.path: payload(it) for it in items if it.pack == "Definition"}
+    kinds = g("definition-layout", gates.check_definition_layout, definition, content.scenario)
+    stock = gates.stock_classes()
+    admitted = {(cls, prop) for cls, prop, _, _ in content.extra_shapes}
+    shipped = [(f"{it.pack}:{it.path}", payload(it)) for it in items]
+    read = g("stock-classes", gates.check_stock_classes, shipped, stock, admitted, pending=(PENDING, PENDING))
+    files, objects = read
+    return (f"{kinds} kinds in NDF/Scenarios/{content.scenario}/, each .txn with its .txn.tag and a .dbg of one line "
+            f"per object; every class and property of {files} files ({objects} objects) is in the {stock.files} stock "
+            f"files'" + (f" or among {len(admitted)} admitted" if admitted else ""))
+
+
 # --------------------------------------------------------------------------- writing
 
 def write_dumps(items: list[Item], out_dir: str) -> list[str]:
@@ -396,6 +413,7 @@ def build(profile: OpProfile, content: Content, out_dir: str) -> list[Item]:
     package = g("package", gates.check_package, p.items, scenario)
     print("gate 5 package: " + (PENDING if package == PENDING else
                                 f"all {package} entries lie under {scenario}; no Gameplay file"))
+    print(f"gate 5 definition: {check_definition(profile, content, p.items, g)}")
     for line in write(profile, content, p, out_dir, g):
         print(line)
     for name, message in g.unfired():

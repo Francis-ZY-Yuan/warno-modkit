@@ -128,7 +128,7 @@ class Unit(NamedTuple):
 
 
 def unit_facts() -> dict[str, Unit]:
-    """Every unit of the game's unit database by bare name (UniteDescriptor.ndf, WeaponDescriptor.ndf and the
+    """Every unit of the game's unit database by bare name (TacticalUnits.ndf, WeaponDescriptor.ndf and the
     ammunition, read as gates' readers read them): a missile is an ammunition of the unit's weapons that is a guided
     missile (EProjectileType/GuidedMissile) of the AP missile damage family, its AP that family's index."""
     archive = gates.unit_archive()
@@ -156,7 +156,7 @@ def unit_facts() -> dict[str, Unit]:
 
 def supply_units() -> dict[str, bool]:
     """Every supply unit of the game's unit database (a unit with a TSupplyModuleDescriptor), by bare stock name ->
-    whether it is a helicopter (THelicopterMovementModuleDescriptor): the mod SDK's UniteDescriptor.ndf in the game's
+    whether it is a helicopter (THelicopterMovementModuleDescriptor): the mod SDK's TacticalUnits.ndf in the game's
     base.zip, where gates.unit_database reads the units."""
     archive = os.path.join(str(paths.game_dir()), *gates.UNIT_ARCHIVE.split("/"))
     with zipfile.ZipFile(archive) as z:

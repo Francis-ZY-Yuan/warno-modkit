@@ -169,7 +169,7 @@ class DialogTest(unittest.TestCase):
         the order the probe played them (parPosition, parDirection 0, parRadiusPhysical, parRadiusSuppress)."""
         wrap = shapes.nuke_wrapper("$/GDScript/X/FxNuke", (1.0, 2.0, 3.0), 60000.0)
         (call,) = dict(wrap.props)["Actions"]
-        self.assertEqual((wrap.cls, wrap.export, dict(wrap.props)["_ShortDatabaseName"], call.cls),
+        self.assertEqual((wrap.cls, wrap.export, dict(wrap.props)["_NdfIdentifierName"], call.cls),
                          ("TSimultaneousAction", "$/GDScript/X/FxNuke", Str("FxNuke"), "TActionCall"))
         self.assertEqual(dict(call.props)["Action"], Imp("$/GFX/GameFx/fx_impact_sol_Tactical_Nuke"))
         bound = [(k.text, v.cls, dict(v.props)["Value"].v) for k, v in dict(call.props)["NamedParams"].pairs]
@@ -281,7 +281,8 @@ class EncodeTest(unittest.TestCase):
     def test_no_brick_reads_a_module_setting(self):
         """Bricks take every mod-specific value as an argument: the module holds functions only."""
         settings = [k for k, v in vars(bricks).items() if k.isupper() and not k.startswith("_")]
-        self.assertEqual(settings, ["TRUE"])  # the imported bool constant, not a setting
+        # the imported bool constant and the game's GameFx name property (a format fact), not settings
+        self.assertEqual(settings, ["TRUE", "NAME_PROP"])
 
 
 if __name__ == "__main__":

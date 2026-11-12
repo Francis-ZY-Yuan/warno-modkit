@@ -5,12 +5,14 @@ import unittest
 
 from modkit.core import ndfbin, paths
 from modkit.core.gates import CheckError
+from modkit.core.ndfbin import Value
 from modkit.ops.bricks import (
     c_team, c_type, g_cmp, g_compete, g_count, g_create, g_detect, g_dialog, g_end_sequence, g_hint, g_seq, g_set,
     g_simul, g_until, g_wait, unit_path,
 )
 from modkit.ops.gates import check_shapes, object_shapes, survey_shapes
 from modkit.ops.graph import Imp, Node, Str, build_graph, decode, encode, f32, i32
+from modkit.ops.leveldesign import TAG_ID
 
 
 def graph(*roots: Node) -> bytes:
@@ -68,15 +70,16 @@ class ShapesTest(unittest.TestCase):
 class StockBricksTest(unittest.TestCase):
     @paths.skip_unless_extracted("scenarios")
     def test_bricks_use_stock_shapes(self):
-        """A script built from the bricks passes the shape gate against the 16 stock Operation GDScripts."""
+        """A script built from the bricks passes the shape gate against the 16 stock Operation GDScripts (build
+        210942: NDF/Scenarios/<scenario>/GDScript.txn; a GdItems tag holds one GUID, TAG_ID)."""
         stock, n = survey_shapes((os.path.join(paths.extracted_root(), "scenarios", "challenge_*", "NDF", "Scenarios",
-                                               "GDScript", "challenge_*.ndfbin"),), 16)
+                                               "challenge_*", "GDScript.txn"),), 16)
         camp = Node("TGDVariableCamp", [("AllianceStyle", i32(3))], export="$/GDScript/RootDescriptor/joueur")
         group = Node("TGDVariableUnitGroup", export="$/GDScript/Op/Variables/Group")
         count = Node("TGDVariableInteger", export="$/GDScript/Op/Variables/Count")
-        zone = Node("TGDTagDetecteur", [("GUID1", i32(1)), ("GUID2", i32(2)), ("GUID3", i32(3)), ("GUID4", i32(4))],
+        zone = Node("TGDTagDetecteur", [(TAG_ID, Value(0x1A, bytes(range(16))))],
                     export="$/GDScript/GdItems/CircularZones/Ring")
-        pos = Node("TGDTagPosition", [("GUID1", i32(5)), ("GUID2", i32(6)), ("GUID3", i32(7)), ("GUID4", i32(8))],
+        pos = Node("TGDTagPosition", [(TAG_ID, Value(0x1A, bytes(range(16, 32))))],
                    export="$/GDScript/GdItems/Tags/Point")
         main = g_seq([
             g_create(camp, group, 2, pos, unit_path("MotRifles_SOV")),

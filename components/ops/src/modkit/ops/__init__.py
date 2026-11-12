@@ -42,6 +42,11 @@ STOCK_PATHS = (
          why="Geisa's scenario packs: the map data of Open Door and the probes"),
     Stock(f"basemaps/{_GEISA}", packs=(f"{_GEISA}_Assets",), include=(f"PC/Texture/{_GEISA}/Preview.tgv", f"PC/Texture/{_GEISA}/Minimap.tgv"),
           why="Geisa's Preview (the review overlay) and Minimap (the road pixels the lane and traffic tests read)"),
+    # Build 210942 ships the game's own NDF as .txn in the Transactions pack (the Glad pack's .ndfbin are 201602's).
+    Stock("transactions", packs=("Transactions",),
+          why="the game's own NDF from build 210942 on: its GameFx effects (the script-effects gate's lookup, the "
+              "stock-classes gate's wrapper shapes) and the transactions that scan every scenario folder for its "
+              "Definition kinds (gates.SCANNED_KINDS)"),
     Stock("glad_201602/Localisation/Core", packs=("ZZ_1",),
           rename=(r"Localisation/Localisation/Core/(INTERFACE_INGAME-[A-Za-z]+\.dic)", r"\1"),
           why="the game's INTERFACE_INGAME dictionaries (the glyph gate and the in-game key check)"),

@@ -12,8 +12,8 @@ from unittest import mock
 from modkit.core import paths
 from modkit.core.gates import CheckError
 from modkit.ops.bricks import (
-    c_type, fx_wrapper, g_and, g_cmp, g_compete, g_detect, g_dialog, g_fx, g_hint, g_if, g_or, g_seq, g_simul, g_until,
-    g_vanish, g_wait,
+    NAME_PROP, c_type, fx_wrapper, g_and, g_cmp, g_compete, g_detect, g_dialog, g_fx, g_hint, g_if, g_or, g_seq,
+    g_simul, g_until, g_vanish, g_wait,
 )
 from modkit.ops.build import details_files
 from modkit.ops.gates import (
@@ -444,22 +444,23 @@ class ScriptEffects(unittest.TestCase):
     """Gate 3, script effects: every effect a script launches is a self-contained export of the game's GameFx file.
     The fixture is a small synthetic GameFx file: one effect that takes no parameters, and one whose declaration takes
     two (an NDF Params block, which compiles to InputParameters of TActionAlias), as the tactical-nuke impact effects
-    do. Seen in play: a script launch of such an effect crashed the game."""
+    do. Seen in play: a script launch of such an effect crashed the game. Names stand in NAME_PROP, as in build
+    210942's GameFx (_NdfIdentifierName; 201602's was _ShortDatabaseName)."""
 
     FX = "$/GFX/GameFx/"
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        self.gamefx = os.path.join(self.tmp.name, "GameFx.ndfbin")
+        self.gamefx = os.path.join(self.tmp.name, "GameFx.txn")
 
         def alias(name: str) -> Node:
-            return Node("TActionAlias", [("_ShortDatabaseName", Str(name)), ("ExpectedType", Str("float3"))])
+            return Node("TActionAlias", [(NAME_PROP, Str(name)), ("ExpectedType", Str("float3"))])
 
-        plain = Node("TSimultaneousAction", [("_ShortDatabaseName", Str("fx_Plain")), ("Actions", [])],
+        plain = Node("TSimultaneousAction", [(NAME_PROP, Str("fx_Plain")), ("Actions", [])],
                      export=self.FX + "fx_Plain")
         param = Node("TSimultaneousActionForActionCallTemplate", [
-            ("InputParameters", [alias("parPosition"), alias("parRadius")]), ("_ShortDatabaseName", Str("fx_Param")),
+            ("InputParameters", [alias("parPosition"), alias("parRadius")]), (NAME_PROP, Str("fx_Param")),
             ("Actions", [])], export=self.FX + "fx_Param")
         with open(self.gamefx, "wb") as fh:
             fh.write(encode(build_graph([plain, param], [plain, param]), "GameFx"))
@@ -486,7 +487,7 @@ class ScriptEffects(unittest.TestCase):
 
     def test_an_own_group_listing_a_parameterised_effect_fails(self):
         """The game's load check on TSimultaneousAction: a group may not list a parameterised effect directly."""
-        bad = Node("TSimultaneousAction", [("_ShortDatabaseName", Str("FxWrap")),
+        bad = Node("TSimultaneousAction", [(NAME_PROP, Str("FxWrap")),
                                            ("Actions", [Imp(self.FX + "fx_Param")])], export=self.WRAP)
         with self.assertRaisesRegex(CheckError, r"lists \$/GFX/GameFx/fx_Param, which declares 2 parameters"):
             check_script_effects(self.script(self.WRAP, extra=(bad,)), self.gamefx)
@@ -542,8 +543,8 @@ class ScriptEffects(unittest.TestCase):
             with self.assertRaisesRegex(paths.NotConfigured, "warno-setup"):
                 check_script_effects(launch)
         with tempfile.TemporaryDirectory() as empty, mock.patch.dict(os.environ, {"MODKIT_EXTRACTED": empty}):
-            with self.assertRaisesRegex(FileNotFoundError, r"^missing stock file extracted/glad_201602/NDF/GFX/"
-                                                           r"GameFx\.ndfbin: .*\(the warno-setup skill\)$"):
+            with self.assertRaisesRegex(FileNotFoundError, r"^missing stock file extracted/transactions/NDF/GFX/"
+                                                           r"GameFx\.txn: .*\(the warno-setup skill\)$"):
                 check_script_effects(launch)
 
 

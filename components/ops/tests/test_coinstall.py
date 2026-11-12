@@ -25,6 +25,7 @@ from modkit.ops import coinstall
 from modkit.ops.gates import MENU_PACK, StockOperation, stock_operations
 from modkit.ops.graph import Imp, Node, build_graph, encode, u32
 from modkit.ops.leveldesign import derived_menu_order
+from modkit.ops.rekey import TXN, def_path
 from probes import empty
 from probes import profile as probe_profile
 
@@ -43,15 +44,18 @@ def map_config(order: int | None, guid: bytes, pack: str = MENU_PACK) -> bytes:
 
 
 def write_mod(folder: Path, scenario: str, order: int | None, guid: bytes, tokens: tuple[str, ...] = (),
-              name: str | None = None, mod_id: int = 0, clusters: bool = False) -> Path:
+              name: str | None = None, mod_id: int = 0, clusters: bool = False, old_layout: bool = False) -> Path:
     """A mod folder: its Config.ini (Name, ID, and a cluster line under [Config] when `clusters`), a Definition pack
-    holding the scenario's MapConfiguration and an Assets pack holding one dictionary of `tokens`."""
+    holding the scenario's MapConfiguration (NDF/Scenarios/<scenario>/MapConfiguration.txn, build 210942's layout;
+    `old_layout`: NDF/Scenarios/MapConfiguration/<scenario>.ndfbin, build 201602's) and an Assets pack holding one
+    dictionary of `tokens`."""
     (folder / "Scenarios").mkdir(parents=True)
     (folder / "Config.ini").write_text(f"[Properties]\nName = {name or folder.name}\nID = {mod_id}\n\n[Config]\n"
                                        + ("GFX/Unit=0123456789abcdef0123456789abcdef\n" if clusters else ""),
                                        encoding="utf-8")
-    edat.write_edat(str(folder / "Scenarios" / f"{scenario}_Definition.dat"),
-                    [(f"NDF/Scenarios/MapConfiguration/{scenario}.ndfbin", map_config(order, guid))])
+    inner = (f"NDF/Scenarios/MapConfiguration/{scenario}.ndfbin" if old_layout
+             else def_path("MapConfiguration", TXN, scenario))
+    edat.write_edat(str(folder / "Scenarios" / f"{scenario}_Definition.dat"), [(inner, map_config(order, guid))])
     edat.write_edat(str(folder / "Scenarios" / f"{scenario}_Assets.dat"),
                     [(f"Localisation/{scenario}/Scripting/Localization-US.dic",
                       trad.build_dic({t: t.upper() for t in tokens} or {"x_none": "x"}))])
@@ -90,6 +94,20 @@ class Clashes(Base):
         self.assertEqual(a.menus, [coinstall.Menu("challenge_A", 1001, GUID_A)])
         self.assertEqual(set(a.keys) - coinstall.IGNORED_KEYS, {trad.token_key("aa_name")})
         self.assertIn(trad.CHARSET_KEY, a.keys)
+        self.assertEqual(a.warnings, [])
+
+    def test_a_build_201602_map_configuration_warns_and_lists_no_menu(self):
+        """A MapConfiguration in build 201602's layout is one build 210942 never reads: a warning, and no menu entry
+        (so it holds no menu order or GUID against the others)."""
+        old = self.mod(self.root / "Old", "challenge_O", 1001, GUID_A, old_layout=True)
+        self.assertEqual(old.menus, [])
+        self.assertEqual(old.scenarios, {"challenge_O"})
+        self.assertEqual(old.warnings, [
+            "Old (local): challenge_O_Definition.dat:NDF/Scenarios/MapConfiguration/challenge_O.ndfbin is a build "
+            "201602 MapConfiguration, which this game build never reads: its Operation is not listed until the mod "
+            "is rebuilt"])
+        a = self.mod(self.root / "A", "challenge_A", 1001, GUID_A)
+        self.assertEqual(coinstall.clashes([old, a], STOCK), [])
 
     def test_one_menu_order_fails_naming_both_and_the_value(self):
         a = self.mod(self.root / "A", "challenge_A", 1001, GUID_A)

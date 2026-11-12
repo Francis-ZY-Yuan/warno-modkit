@@ -281,6 +281,11 @@ def g_fow(on: bool) -> Node:
     return Node("TGDDescriptorFow", [("Fow", Value(0x00, 1 if on else 0))])
 
 
+# The name GameFx gives each of its objects (an effect, a parameter): _NdfIdentifierName on build 210942, 2,275 uses in
+# its GameFx and none of _ShortDatabaseName, build 201602's (2,289 uses then).
+NAME_PROP = "_NdfIdentifierName"
+
+
 def fx_wrapper(export: str, target: str, bindings: Sequence[tuple[str, float | tuple[float, float, float]]]) -> Node:
     """A script-launchable wrapper of the parameterised GameFx effect `target` ('$/GFX/GameFx/...'), exported at
     `export` in the op's own script: TSimultaneousAction[TActionCall(NamedParams, Action `target`)], the shape of
@@ -296,7 +301,7 @@ def fx_wrapper(export: str, target: str, bindings: Sequence[tuple[str, float | t
 
     call = Node("TActionCall", [("NamedParams", Map(tuple((Str(name), constant(v)) for name, v in bindings))),
                                 ("Action", Imp(target))])
-    return Node("TSimultaneousAction", [("_ShortDatabaseName", Str(export.rsplit("/", 1)[-1])), ("Actions", [call])],
+    return Node("TSimultaneousAction", [(NAME_PROP, Str(export.rsplit("/", 1)[-1])), ("Actions", [call])],
                 export=export)
 
 

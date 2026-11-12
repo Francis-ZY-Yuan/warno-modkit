@@ -17,6 +17,7 @@ from modkit.ops.graph import decode
 from modkit.ops.leveldesign import LdItem
 from modkit.ops.maps import GEISA, GEISA_BOXES, GEISA_POINTS
 from modkit.ops.profile import Content, extracted
+from modkit.ops.rekey import TXN, def_path
 from modkit.ops.zones import point_in_polygon
 
 
@@ -64,11 +65,12 @@ class Geisa(unittest.TestCase):
     def test_names_the_definition_holds(self):
         """GEISA.name is the map scenario's ScenarioInfo.RootDatapackName, and env_settings the EnvironmentSettings
         name its MapConfiguration imports: the two names a profile swaps in for its template's map."""
-        folder = extracted("geisa_op/_4x3_geisa_10vs10_CONQ_Definition/NDF/Scenarios")
-        nb, _, _ = decode(read_file(os.path.join(folder, "ScenarioInfo", "_4x3_geisa_10vs10_CONQ.ndfbin")))
+        folder = extracted("geisa_op/_4x3_geisa_10vs10_CONQ_Definition")
+        nb, _, _ = decode(read_file(os.path.join(folder, def_path("ScenarioInfo", TXN, "_4x3_geisa_10vs10_CONQ"))))
         self.assertEqual([nb.strings[v.v].decode("latin-1") for ob in nb.objects for pi, v in ob.props
                           if nb.pname(pi) == "RootDatapackName"], [GEISA.name])
-        nb, _, _ = decode(read_file(os.path.join(folder, "MapConfiguration", "_4x3_geisa_10vs10_CONQ.ndfbin")))
+        nb, _, _ = decode(read_file(os.path.join(folder, def_path("MapConfiguration", TXN,
+                                                                  "_4x3_geisa_10vs10_CONQ"))))
         names = [s.decode("latin-1") for s in nb.trans]
         self.assertIn(GEISA.env_settings, names)
 

@@ -39,7 +39,7 @@ from modkit.ops.maps import CAMPATHS_FILE, START_CAMERA_MIN_HEIGHT, TWIN_CITIES,
 from modkit.ops.profile import (
     SOVIET_PLAYER_CAMP_ROWS, SOVIET_PLAYER_DECK_SWAP, SOVIET_PLAYER_SIDES, STOCK_ASSETS, SURVIVORS, extracted,
 )
-from modkit.ops.rekey import def_path
+from modkit.ops.rekey import TXN, def_path
 from modkit.ops.script import BRICK_DEFAULT, PRODUCTION_DECK
 from modkit.ops.shapes import GRU_WORLD, TRANSPORTER_SHAPE
 from modkit.ops.strings import LANGS
@@ -572,15 +572,20 @@ class Build(unittest.TestCase):
                      "19 script effect launches, each a self-contained GameFx effect",   # the flash's 19
                      "1 smart-ordered groups, none ordered again after its smart order",
                      "gate 3 units: 57 unit descriptors exist",
-                     "gate 3 no-template-name: 15 re-keyed or generated dumps without Survivors",
+                     # 18 read: the 11 Definition entries with a fixture or stock bytes (the generated GDScript .dbg
+                     # has neither) and the 7 generated Details files
+                     "gate 3 no-template-name: 18 re-keyed or generated dumps without Survivors",
                      "gate 3 grid: 40 AI tiles and 1,560 path costs of twincities_op/SM_SU_3x3_TwinCities_03_Details",
                      "gate 3 zone-layout: 3 zones and 2 arrivals laid out by stock's rules",
                      "CreateUnitOnPosition, each inside the shipped playable zone",
                      "gate 3 fire-range: TS_GunSpawn's batteries in Allie, the player's alliance (0), standing inside "
                      "the playable zone; 9 battery-target pairs on 3 targets, each inside its band (closest: "
                      "TS_Village from 2S7M_Malka_SOV, 846 GRU inside)",
-                     "gate 5 package: all 43 entries lie under challenge_OperationTwinStrike; no Gameplay file",
-                     "CamPaths_LevelDesign 13 objects vs 35 stock files"):   # gate 2: canonical, stock shapes
+                     # the Definition pack's 12 (4 kinds, each a .txn, .txn.tag and .dbg), Details' 7, Assets' 28
+                     "gate 5 package: all 47 entries lie under challenge_OperationTwinStrike; no Gameplay file",
+                     # gate 2: canonical, stock shapes; 36 stock files: the 30 stock scenarios' (build 210942 added
+                     # CampagneStrat_Invasion_of_Cuba) and Kreide's 6
+                     "CamPaths_LevelDesign 13 objects vs 36 stock files"):
             self.assertIn(line, self.log)
 
     def test_the_shipped_camera_passes_the_camera_gate(self):
@@ -598,7 +603,7 @@ class Build(unittest.TestCase):
         out = os.path.join(OUT_ROOT, "fog-lift")
         with mock.patch.object(op, "STRIKE_FOG_LIFT", True):
             items = quiet_build(op.content(), out)
-        (gd,) = [it for it in items if it.path.endswith(f"GDScript/{profile.SCENARIO}.ndfbin")]
+        (gd,) = [it for it in items if it.path == def_path("GDScript", TXN, profile.SCENARIO)]
         nb, _, _ = decode(b"".join(gd.chunks()))
         fows = [{nb.pname(pi): v for pi, v in ob.props}["Fow"].v for ob in nb.objects
                 if nb.cname(ob.cls) == "TGDDescriptorFow"]
@@ -688,7 +693,7 @@ class Build(unittest.TestCase):
         """MapConfiguration's LocalPlayerDeck is OP_BASE_RJ_Player (SOVIET_PLAYER_DECK_SWAP), Survivors' is gone."""
         path = os.path.join(OUT, "TwinStrike", "Scenarios", f"{profile.SCENARIO}_Definition.dat")
         entries = {e.path: edat.read_entry(path, e) for e in edat.read_index(path)}
-        nb, _, _ = decode(entries[f"NDF/Scenarios/MapConfiguration/{profile.SCENARIO}.ndfbin"])
+        nb, _, _ = decode(entries[def_path("MapConfiguration", TXN, profile.SCENARIO)])
         strings_ = [s.decode("latin-1") for s in nb.strings]
         self.assertIn("OP_BASE_RJ_Player", strings_)
         self.assertNotIn("OP_NORTH_SURV_PLAYER", strings_)
@@ -698,7 +703,7 @@ class Build(unittest.TestCase):
         return {e.path: edat.read_entry(path, e) for e in edat.read_index(path)}
 
     def map_configuration(self):
-        return decode(self.pack("Definition")[def_path("MapConfiguration", "ndfbin", profile.SCENARIO)])[0]
+        return decode(self.pack("Definition")[def_path("MapConfiguration", TXN, profile.SCENARIO)])[0]
 
     def test_menu_texts_land_on_their_elements(self):
         """MapConfiguration's DescriptionTextElements name each ts_* menu token at its element (MENU_ELEMENTS; the
@@ -720,7 +725,7 @@ class Build(unittest.TestCase):
             return {nb.strings[dict(nd.props)["FileName"].v].decode() for nd in nodes_of(nb)
                     if nd.cls == "TUIAutoRegisteredResourceTexture"}
 
-        stock_mc = def_path("MapConfiguration", "ndfbin", SURVIVORS.source)
+        stock_mc = def_path("MapConfiguration", TXN, SURVIVORS.source)
         survivors = decode(read_file(os.path.join(SURVIVORS.path("definition"), *stock_mc.split("/"))))[0]
         mine = file_names(self.map_configuration())
         self.assertEqual(mine, {name.replace(SURVIVORS.source, profile.SCENARIO) for name in file_names(survivors)})

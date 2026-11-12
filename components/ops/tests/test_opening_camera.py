@@ -23,6 +23,7 @@ from modkit.ops.maps import (
     read_camera_paths, view_centre,
 )
 from modkit.ops.profile import extracted
+from modkit.ops.script import ROOT_CLASS
 from modkit.ops.testing import prop, subs
 from modkit.ops.zones import camera_paths_graph
 
@@ -267,14 +268,15 @@ class Canonical(unittest.TestCase):
 DEPLOYMENT_PHASE = 1   # GameRules InitialGamePhase of an Operation that opens in the deployment phase
 # The camera paths stock starts right before LoadingDone (scenario, the CutsceneStartCameraPath's object number, its
 # path): the five start cameras of deployment-phase Operations, and Sledgehammer's ground-level shot behind its video,
-# which its intro climbs from (a Command-phase Operation).
+# which its intro climbs from (a Command-phase Operation). Build 210942's numbers: each is 201602's + 2, the two objects
+# (SplashSoundDescriptor and its TSoundStream) every stock challenge's GDScript gained before them.
 PRE_LOADING_DONE = [
-    ("challenge_BackhandBlow", 197, "camera_start"),
-    ("challenge_BlackHorsesLastStand", 145, "camera_start"),
-    ("challenge_Gotterdammerung", 148, "CamStart"),
-    ("challenge_RedJuggernaut", 127, "CamStart"),
-    ("challenge_Sledgehammer", 304, "camera_01"),
-    ("challenge_TheKitzingenRuse", 143, "CamStart"),
+    ("challenge_BackhandBlow", 199, "camera_start"),
+    ("challenge_BlackHorsesLastStand", 147, "camera_start"),
+    ("challenge_Gotterdammerung", 150, "CamStart"),
+    ("challenge_RedJuggernaut", 129, "CamStart"),
+    ("challenge_Sledgehammer", 306, "camera_01"),
+    ("challenge_TheKitzingenRuse", 145, "CamStart"),
 ]
 # The twelve Operations that open in the deployment phase.
 DEPLOYMENT_OPS = ["challenge_BackhandBlow", "challenge_BlackHorsesLastStand", "challenge_DelayedRetribution",
@@ -288,11 +290,12 @@ MOVE_THEN_END = [("challenge_DelayedRetribution", "camera_intro", "camera_intro_
 
 
 def scripts() -> dict[str, tuple[ndfbin.NdfBin, list[Node]]]:
-    """Each stock challenge's GDScript, decoded and as Nodes (graph.nodes_of), by scenario."""
+    """Each stock challenge's GDScript (NDF/Scenarios/<scenario>/GDScript.txn), decoded and as Nodes
+    (graph.nodes_of), by scenario."""
     out = {}
-    for path in sorted(glob.glob(extracted("scenarios/challenge_*/NDF/Scenarios/GDScript/challenge_*.ndfbin"))):
+    for path in sorted(glob.glob(extracted("scenarios/challenge_*/NDF/Scenarios/challenge_*/GDScript.txn"))):
         nb, _, _ = decode(read_file(path))
-        out[os.path.basename(path).removesuffix(".ndfbin")] = nb, nodes_of(nb)
+        out[os.path.basename(os.path.dirname(path))] = nb, nodes_of(nb)
     return out
 
 
@@ -324,9 +327,10 @@ class Stock(unittest.TestCase):
 
     def test_every_stock_camera_paths_file_keeps_the_key_shape_and_is_canonical(self):
         """read_camera_paths (the gate's key shape) and gates.check_canonical pass every stock camera paths file the
-        shape gate reads (CAMERA_SHAPE_SOURCES): 35 files, each of two paths or more."""
+        shape gate reads (CAMERA_SHAPE_SOURCES): 36 files, each of two paths or more (201602's 35 and the new
+        scenario CampagneStrat_Invasion_of_Cuba's)."""
         files = sorted({p for pat in CAMERA_SHAPE_SOURCES[CAMPATHS_FILE] for p in glob.glob(extracted(pat))})
-        self.assertEqual(len(files), 35)
+        self.assertEqual(len(files), 36)
         for path in files:
             with self.subTest(file=path):
                 raw = read_file(path)
@@ -367,7 +371,7 @@ class Stock(unittest.TestCase):
             if self.rules(scenario) != DEPLOYMENT_PHASE:
                 continue
             deployment.append(scenario)
-            (root,) = [nd for nd in nodes if nd.cls == "TGDDescriptorLaunchEffetStandard"]
+            (root,) = [nd for nd in nodes if nd.cls == ROOT_CLASS]
             order = [nd.cls for nd in walk([prop(root, "EffetMap")])]
             done = order.index("TGDDescriptorLoadingDone")
             with self.subTest(scenario=scenario):

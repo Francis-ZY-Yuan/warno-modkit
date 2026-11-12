@@ -31,6 +31,7 @@ from modkit.ops.maps import (
     CUT_SHAPE_SOURCES, SNAP_PX, TWIN_CITIES, WORLD_PER_MINIMAP_PX, Cut, StockMap,
 )
 from modkit.ops.profile import extracted
+from modkit.ops.rekey import TXN, def_path
 from modkit.ops.shapes import GRU_WORLD, Minimap
 from modkit.ops.zones import (
     area_name, heading, ia_grid, ia_zone_graph, path_cache_graph, playable_zone_graph, point_in_polygon,
@@ -425,11 +426,12 @@ class TwinCitiesRecordTest(unittest.TestCase):
     def test_names_the_definition_holds(self):
         """name is the layout's ScenarioInfo.RootDatapackName; env_settings the base EnvironmentSettings its
         MapConfiguration imports (its 'evening' entry; the Night, Morning, Noon and Afternoon ones are variants)."""
-        folder = extracted("twincities_op/SM_SU_3x3_TwinCities_03_Definition/NDF/Scenarios")
-        nb, _, _ = decode(read_file(os.path.join(folder, "ScenarioInfo", "SM_SU_3x3_TwinCities_03.ndfbin")))
+        folder = extracted("twincities_op/SM_SU_3x3_TwinCities_03_Definition")
+        nb, _, _ = decode(read_file(os.path.join(folder, def_path("ScenarioInfo", TXN, "SM_SU_3x3_TwinCities_03"))))
         self.assertEqual([nb.strings[v.v].decode("latin-1") for ob in nb.objects for pi, v in ob.props
                           if nb.pname(pi) == "RootDatapackName"], [TWIN_CITIES.name])
-        nb, _, _ = decode(read_file(os.path.join(folder, "MapConfiguration", "SM_SU_3x3_TwinCities_03.ndfbin")))
+        nb, _, _ = decode(read_file(os.path.join(folder, def_path("MapConfiguration", TXN,
+                                                                  "SM_SU_3x3_TwinCities_03"))))
         names = [s.decode("latin-1") for s in nb.trans]
         self.assertIn(TWIN_CITIES.env_settings, names)
         self.assertEqual(sorted(n for n in names if n.startswith(TWIN_CITIES.env_settings)),

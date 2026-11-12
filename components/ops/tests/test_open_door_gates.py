@@ -19,10 +19,12 @@ from modkit.ops.bricks import (
 from modkit.ops.files import read_file
 from modkit.ops.gates import check_canonical, check_shapes, survey_shapes
 from modkit.ops.graph import TRUE, Node, Str, build_graph, decode, encode, i32, loc, walk
-from modkit.ops.leveldesign import LD_FILE, LdItem, leveldesign_graph
+from modkit.ops.leveldesign import LD_FILE, TAG_ID, LdItem, leveldesign_graph
 from modkit.ops.maps import GEISA
 from modkit.ops.profile import SURVIVORS, Content, extracted
-from modkit.ops.script import BRICK_DEFAULT, BRICK_FORCE_HIDE, BRICK_FORCE_SHOW, PROD_MENU_SWITCH, silent_cutscenes
+from modkit.ops.script import (
+    BRICK_DEFAULT, BRICK_FORCE_HIDE, BRICK_FORCE_SHOW, PROD_MENU_SWITCH, ROOT_CLASS, ROOT_EXPORT, silent_cutscenes,
+)
 from modkit.ops.strings import LANGS
 from modkit.ops.shapes import camp_nodes, setdeck_block
 from modkit.ops.zones import rect_polygon
@@ -430,7 +432,7 @@ class Rules(unittest.TestCase):
     def test_engine_ending_fields_fail(self):
         for name in gates.RULES_OMITTED:
             rules = Node("TGDSpecificTacticalGameRules", [("Fow", TRUE), (name, TRUE)])
-            with self.subTest(name=name), self.assertRaisesRegex(CheckError, rf"sets {name}.*Survivors #114"):
+            with self.subTest(name=name), self.assertRaisesRegex(CheckError, rf"sets {name}.*Survivors #116"):
                 gates.check_rules([g_seq([]), rules])
 
 
@@ -448,7 +450,7 @@ class Script(unittest.TestCase):
         camps = camp_nodes(profile.CAMP_ROWS, profile.CAMP_TOKENS)
         joueur = camps[profile.CAMPS["NATO"]]
         group = Node("TGDVariableUnitGroup", export="$/GDScript/OD/Variables/Groupe_Joueur")
-        zone = Node("TGDTagPosition", [(f"GUID{k}", i32(k)) for k in range(1, 5)],
+        zone = Node("TGDTagPosition", [(TAG_ID, ndfbin.Value(0x1A, bytes(range(16))))],
                          export="$/GDScript/GdItems/CommandPoints/OD_CZ")
         dp = profile.deploy_phase(tpl, joueur, group, [zone], 3000, hint="od_h2")
         rules = dict(dp.game_rules.props)
@@ -462,9 +464,9 @@ class Script(unittest.TestCase):
         main = g_seq([*setdeck_block(camps, profile.CAMP_ROWS), *dp.setup, Node("TGDDescriptorLoadingDone"),
                            Node("TGDDescriptorForceDisplayUIElement", profile.hud_restore(tpl, deploy=True)),
                            dp.launched, g_simul([dp.refresh])], export="$/GDScript/OD/Main")
-        root = Node("TGDDescriptorLaunchEffetStandard", [
+        root = Node(ROOT_CLASS, [
             ("CampList", list(camps.values())), ("EffetMap", g_seq([g_wait(1.0), main])),
-            ("GameRules", dp.game_rules)], export="$/GDScript/RootDescriptor")
+            ("GameRules", dp.game_rules)], export=ROOT_EXPORT)
         roots = [silent_cutscenes(["od_h2"]), root]  # #0 is the one unexported root, as in stock
         raw = encode(build_graph(roots, [root, *camps.values(), zone, main, dp.refresh, group]), "GD")
         check_canonical(raw, frozenset(), "GD", import_rule="preorder")

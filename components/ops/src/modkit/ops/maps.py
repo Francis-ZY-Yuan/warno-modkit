@@ -63,7 +63,7 @@ from modkit.ops.graph import Node, build_graph, decode, encode
 from modkit.ops.items import Item, mem_item
 from modkit.ops.leveldesign import LdItem
 from modkit.ops.profile import Content, ExtraGate, extracted
-from modkit.ops.rekey import def_path
+from modkit.ops.rekey import TXN, def_path
 from modkit.ops.zones import (
     area_bbox, camera_paths_graph, ia_grid_subset, ia_zone_graph, path_cache_graph, playable_zone_graph,
     read_ia_grid, read_playable_polygon, rect_polygon,
@@ -511,7 +511,7 @@ def camera_look_gate(on: StockMap) -> Callable[[list[Item], Content], str]:
     """An extra gate (profile.ExtraGate) holding the content's camera looks (check_camera_looks) to the shipped
     script and camera paths file, on the map `on`."""
     def gate(items: list[Item], content: Content) -> str:
-        gd_path = def_path("GDScript", "ndfbin", content.scenario)
+        gd_path = def_path("GDScript", TXN, content.scenario)
         gd = b"".join(next(it for it in items if it.path == gd_path).chunks())
         cam = shipped_details(items, CAMPATHS_FILE)
         n = check_camera_looks(gd, cam, on)

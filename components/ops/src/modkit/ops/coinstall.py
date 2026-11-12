@@ -46,8 +46,10 @@ from typing import Iterable, Sequence
 from modkit.core import edat, install, mods, ndfbin, paths, trad
 from modkit.core.gates import CheckError
 from modkit.ops.gates import StockOperation, menu_entries, stock_operations
+from modkit.ops.rekey import TXN, def_entry
 
-MAP_CONFIG = "NDF/Scenarios/MapConfiguration/"   # a Definition pack's MapConfiguration entries
+MAP_CONFIG = "MapConfiguration"                   # the Definition kind the Operations menu is read from
+OLD_MAP_CONFIG = "NDF/Scenarios/MapConfiguration/"  # where a build for 201602 put it, which 210942 never reads
 IGNORED_KEYS = frozenset({trad.CHARSET_KEY, 0})   # the charset row every dictionary holds, and the empty token
 EXAMPLES = 5                                      # shared token keys named per pair of mods
 
@@ -74,8 +76,9 @@ class Mod:
 
 def read_mod(folder: Path, kind: str) -> Mod:
     """Read the mod at `folder`: its scenarios (from its pack names), the Operations menu entries of its
-    MapConfigurations and the keys of its dictionaries. A pack that does not read, a Workshop item whose Config.ini ID
-    is not its folder's, and a Gameplay mod become warnings."""
+    MapConfigurations (NDF/Scenarios/<scenario>/MapConfiguration.txn, where build 210942 looks for them) and the keys
+    of its dictionaries. A pack that does not read, a Workshop item whose Config.ini ID is not its folder's, a Gameplay
+    mod, and a MapConfiguration in build 201602's layout (one the game no longer lists) become warnings."""
     folder = Path(folder)
     name = mods.mod_name(folder)
     mod = Mod(f"{name} ({kind}{'' if name == folder.name else ' ' + folder.name})", folder, kind)
@@ -89,7 +92,8 @@ def read_mod(folder: Path, kind: str) -> Mod:
     for pack in mods.scenario_packs(folder):
         mod.scenarios.add(pack.stem.rsplit("_", 1)[0])
         try:
-            entries = mods.read_pack(pack, lambda p: p.startswith(MAP_CONFIG) or p.endswith(".dic"))
+            entries = mods.read_pack(pack, lambda p: is_menu_file(p) or p.startswith(OLD_MAP_CONFIG)
+                                     or p.endswith(".dic"))
         except (edat.EdatError, OSError) as exc:
             mod.warnings.append(f"{mod.label}: {pack.name} does not read ({exc})")
             continue
@@ -98,13 +102,24 @@ def read_mod(folder: Path, kind: str) -> Mod:
                 if inner.endswith(".dic"):
                     for key, _ in trad.read_dic(raw):
                         mod.keys.setdefault(key, set()).add(inner)
-                elif inner.endswith(".ndfbin"):
-                    scenario = inner.rsplit("/", 1)[-1].removesuffix(".ndfbin")
+                elif inner.startswith(OLD_MAP_CONFIG):
+                    mod.warnings.append(f"{mod.label}: {pack.name}:{inner} is a build 201602 MapConfiguration, which "
+                                        f"this game build never reads: its Operation is not listed until the mod is "
+                                        f"rebuilt")
+                else:
+                    scenario = def_entry(inner)[0]
                     for entry in menu_entries(ndfbin.decode(raw)[0]):
                         mod.menus.append(Menu(scenario, entry.order, entry.guid))
             except (trad.TradError, ValueError, KeyError, IndexError, struct.error) as exc:
                 mod.warnings.append(f"{mod.label}: {pack.name}:{inner} does not read ({exc})")
     return mod
+
+
+def is_menu_file(inner: str) -> bool:
+    """Whether a Definition pack's entry `inner` is a scenario's MapConfiguration.txn, the file the Operations menu is
+    built from (modkit.ops.gates.SCANNED_KINDS)."""
+    entry = def_entry(inner)
+    return entry is not None and entry[1:] == (MAP_CONFIG, TXN)
 
 
 def clashes(checked: Sequence[Mod], stock: Iterable[StockOperation]) -> list[str]:

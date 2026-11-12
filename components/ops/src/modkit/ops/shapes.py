@@ -7,7 +7,8 @@ the battle's Simultaneous, so nothing waits on a beat. A timed beat opens with a
 ``Ctx`` is one build's script state: the camps, the GdItems tag of every LevelDesign item, and the script variables,
 each made once per name. ``Minimap`` places LevelDesign items by minimap pixels on a stock map (``modkit.ops.maps``).
 The blocks below copy stock objects' property order and value forms, cited by scenario and object id (the scenarios'
-decoded scripts; ``S#296`` is object 296 of Survivors' GDScript). Two facts shape most of them:
+decoded scripts; ``S#296`` is object 296 of Survivors' GDScript, build 201602's numbering: modkit.ops.script).
+Two facts shape most of them:
 
 * SetEffect and LockDeckUnit never finish, and hold their effect only while they run. A beat that applies one runs it
   beside the rest of the beat (``reveal``, ``lock_card``), and nothing may follow such a container in a Sequential
@@ -23,8 +24,8 @@ from dataclasses import dataclass
 from modkit.core.gates import check
 from modkit.core.ndfbin import Value, token_unhash
 from modkit.ops.bricks import (
-    fx_wrapper, g_cmp, g_compete, g_create, g_hint, g_if, g_modify, g_seq, g_set, g_simul, g_timer, g_until, g_wait,
-    unit_path,
+    NAME_PROP, fx_wrapper, g_cmp, g_compete, g_create, g_hint, g_if, g_modify, g_seq, g_set, g_simul, g_timer, g_until,
+    g_wait, unit_path,
 )
 from modkit.ops.graph import TRUE, Imp, Node, Str, i32, loc, walk
 from modkit.ops.leveldesign import LdItem, gd_tags
@@ -95,7 +96,7 @@ FOW_SHAPES = (("TGDDescriptorFow", "Fow", 0x00, None),
 # bricks.fx_wrapper: an effect wrapper exported by the op's own script, in GameFx's own class and value shapes
 # (fx_FumeeNoire_ForScript_RandomPosition, FX_Vehicule_Dest_Fire_FireAndForget, TConstantFloat/TConstantFloat3), which
 # no stock script holds.
-FX_WRAPPER_SHAPES = (("TSimultaneousAction", "_ShortDatabaseName", 0x07, None),
+FX_WRAPPER_SHAPES = (("TSimultaneousAction", NAME_PROP, 0x07, None),
                      ("TSimultaneousAction", "Actions", 0x11, "TActionCall"),
                      ("TActionCall", "NamedParams", 0x12, "TConstantFloat3"),
                      ("TActionCall", "NamedParams", 0x12, "TConstantFloat"),
@@ -283,7 +284,6 @@ def objective(text: str, label: str, condition: Node | None, position: Node | No
                                                          "stock objective lists both)")
     props: list[tuple[str, object]] = [*([("ActionsEchec", echec)] if echec is not None else []),
                                        *([("ActionsReussi", reussi)] if reussi is not None else []),
-                                       ("BonusScoreMission", i32(50)),
                                        *([("Condition", condition)] if condition is not None else []),
                                        *([("ConditionEchec", fail)] if fail is not None else []),
                                        ("LabelComponent", Str(kind)),

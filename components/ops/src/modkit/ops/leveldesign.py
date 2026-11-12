@@ -2,7 +2,9 @@
 
 A LevelDesign (``out/LevelDesign.ndfbin`` in the Details pack) is a ``TGameDesignDatabase`` of ``TGameDesignItem``
 objects, each with a Position, an optional Rotation and one ``TGameDesignAddOn_<kind>`` (Name, Ranking, GUID and the
-kind's fields). A GDScript names an item through a ``GdItems`` tag whose four GUID words equal the item's GUID.
+kind's fields). A GDScript names an item through a ``GdItems`` tag whose ``GameDesignAddonId`` (``TAG_ID``) is the
+item's GUID: since build 210942 one GUID value (2,133 of 2,133 tags of the 16 stock challenges bind so); build 201602
+wrote it as four int32 words, GUID1..GUID4, big-endian.
 
 Item GUIDs are uuid5 names under a namespace string the mod chooses (``ld_guid``), so two mods cloning one stock
 template never share a GUID. The scenario's GUID (``scenario_guid``) is hashed the same way, and a published
@@ -10,7 +12,6 @@ Operation's menu order (``derived_menu_order``) is derived from it.
 """
 from __future__ import annotations
 
-import struct
 from dataclasses import dataclass
 from typing import Iterable
 
@@ -27,6 +28,8 @@ LD_SHARED = frozenset({"Name", "Ranking", "GUID"})
 # The zone file of each zone add-on: the polygons the game's zone managers load and test.
 ZONE_FILES = {"DeploymentZone": "out/DeploymentZone.ndfbin", "CommandPoints": "out/CommandZone.ndfbin"}
 
+# A GdItems tag's property holding its LevelDesign item's GUID (a GUID value, 0x1A).
+TAG_ID = "GameDesignAddonId"
 # The GDScript tag class for each LevelDesign add-on kind (stock GdItems exports, HoldUntilRelieved's included).
 GD_TAG_CLASS = {"Name": "TGDTagPosition", "CircularZone": "TGDTagDetecteur", "Spawn": "TGDTagUnitGroup",
                 "DeploymentZone": "TGDTagPosition", "CommandPoints": "TGDTagPosition",   # HUR GdItems exports
@@ -147,12 +150,11 @@ def zone_area(it: LdItem, scenario: str, namespace: str, ground_z: float) -> Zon
 
 
 def gd_tags(items: Iterable[LdItem], scenario: str, namespace: str) -> dict[str, Node]:
-    """The GdItems tag of each item, keyed 'Ranking/Name' in ld_key order: GD_TAG_CLASS of its add-on, the four
-    GUID words of ld_guid(item, `scenario`, `namespace`), exported as $/GDScript/GdItems/<Ranking>/<Name> (S#157,
-    #1019, #730). Tags made for another scenario or namespace bind nothing (gates.check_binding)."""
+    """The GdItems tag of each item, keyed 'Ranking/Name' in ld_key order: GD_TAG_CLASS of its add-on, its TAG_ID
+    the GUID ld_guid(item, `scenario`, `namespace`), exported as $/GDScript/GdItems/<Ranking>/<Name> (S#157, #1019,
+    #730). Tags made for another scenario or namespace bind nothing (gates.check_binding)."""
     return {f"{it.ranking}/{it.name}": Node(
-        GD_TAG_CLASS[it.addon],
-        [(f"GUID{k + 1}", i32(w)) for k, w in enumerate(struct.unpack(">4i", ld_guid(it, scenario, namespace)))],
+        GD_TAG_CLASS[it.addon], [(TAG_ID, Value(0x1A, ld_guid(it, scenario, namespace)))],
         export=f"$/GDScript/GdItems/{it.ranking}/{it.name}") for it in sorted(items, key=ld_key)}
 
 

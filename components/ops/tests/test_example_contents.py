@@ -25,7 +25,7 @@ from modkit.ops import build as ops_build
 from modkit.ops.gates import stock_menu_orders
 from modkit.ops.graph import decode
 from modkit.ops.leveldesign import derived_menu_order, scenario_guid
-from modkit.ops.rekey import def_path
+from modkit.ops.rekey import TXN, def_path
 from modkit.ops.profile import Content
 from opendoor import CONTENTS as OPEN_DOOR
 from opendoor import profile as open_door_profile
@@ -175,7 +175,7 @@ class OrderBuild(unittest.TestCase):
         duration = tuple(e for e in probe_profile.SCALAR_EDITS if e.prop != "OrderToChainMission")
         out = os.path.join(OUT_ROOT, "derived-order")
         items = quiet_build(dataclasses.replace(base, scalar_edits=duration), out)
-        inner = def_path("MapConfiguration", "ndfbin", base.scenario)
+        inner = def_path("MapConfiguration", TXN, base.scenario)
         (mc,) = [it for it in items if it.pack == "Definition" and it.path == inner]
         nb = decode(b"".join(mc.chunks()))[0]
         orders = [v.v for ob in nb.objects for pi, v in ob.props if nb.pname(pi) == "OrderToChainMission"]

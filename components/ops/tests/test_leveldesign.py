@@ -12,9 +12,10 @@ from modkit.core.ndfbin import Value
 from modkit.ops.gates import check_binding
 from modkit.ops.graph import Node, Str, build_graph, decode, encode, f32, i32
 from modkit.ops.leveldesign import (
-    GD_TAG_CLASS, MENU_ORDER_BASE, MENU_ORDER_SPAN, LdItem, derived_menu_order, gd_tags, ld_guid, ld_key, ld_position,
-    leveldesign_graph, read_ld_items, scenario_guid, zone_addon_extra, zone_area,
+    GD_TAG_CLASS, MENU_ORDER_BASE, MENU_ORDER_SPAN, TAG_ID, LdItem, derived_menu_order, gd_tags, ld_guid, ld_key,
+    ld_position, leveldesign_graph, read_ld_items, scenario_guid, zone_addon_extra, zone_area,
 )
+from modkit.ops.script import ROOT_CLASS
 from modkit.ops.zones import polygon_centroid, read_zone_areas, rect_polygon, zone_areas_graph
 
 Item = namedtuple("Item", "ranking name x y addon")
@@ -38,11 +39,16 @@ def leveldesign(items=ITEMS) -> bytes:
                               frozenset({"Name", "Ranking", "GUID"})), "LevelDesign")
 
 
-def gdscript(items=ITEMS, cls=None, path=None) -> bytes:
-    tags = [Node(cls or GD_TAG_CLASS[it.addon],
-                 [(f"GUID{k + 1}", i32(w)) for k, w in enumerate(struct.unpack(">4i", guid(it)))],
+def gdscript(items=ITEMS, cls=None, path=None, old_shape=False) -> bytes:
+    """Each item's GdItems tag in build 210942's shape (one TAG_ID GUID), or `old_shape` build 201602's (four int32
+    words GUID1..GUID4, big-endian)."""
+    def guid_props(it: Item) -> list:
+        if old_shape:
+            return [(f"GUID{k + 1}", i32(w)) for k, w in enumerate(struct.unpack(">4i", guid(it)))]
+        return [(TAG_ID, Value(0x1A, guid(it)))]
+    tags = [Node(cls or GD_TAG_CLASS[it.addon], guid_props(it),
                  export=path or f"$/GDScript/GdItems/{it.ranking}/{it.name}") for it in items]
-    return encode(build_graph([Node("TGDDescriptorLaunchEffetStandard")], tags), "GDScript")
+    return encode(build_graph([Node(ROOT_CLASS)], tags), "GDScript")
 
 
 class ReadTest(unittest.TestCase):
@@ -70,8 +76,13 @@ class BindingTest(unittest.TestCase):
             check_binding(gdscript(ITEMS[:2]), leveldesign())
 
     def test_tag_without_an_item(self):
-        with self.assertRaisesRegex(CheckError, "match no LevelDesign item"):
+        with self.assertRaisesRegex(CheckError, "matches no LevelDesign item"):
             check_binding(gdscript(), leveldesign(ITEMS[:2]))
+
+    def test_build_201602_tag_shape_is_refused(self):
+        """A tag naming its item by GUID1..GUID4 (build 201602's shape) binds nothing on build 210942."""
+        with self.assertRaisesRegex(CheckError, f"Tags/Centre: no {TAG_ID} GUID"):
+            check_binding(gdscript(old_shape=True), leveldesign())
 
     def test_tag_path_must_name_its_item(self):
         with self.assertRaisesRegex(CheckError, "binds Tags/Centre"):
@@ -227,11 +238,11 @@ class GdTagsTest(unittest.TestCase):
 
         def script(scenario: str, namespace: str) -> bytes:
             tags = list(gd_tags(self.ITEMS, scenario, namespace).values())
-            return encode(build_graph([Node("TGDDescriptorLaunchEffetStandard")], tags), "GDScript")
+            return encode(build_graph([Node(ROOT_CLASS)], tags), "GDScript")
 
         self.assertEqual(check_binding(script("s", NS), ld), 3)
         for scenario, namespace in (("other", NS), ("s", "other")):
-            with self.subTest(scenario=scenario, namespace=namespace), self.assertRaisesRegex(CheckError, "match no"):
+            with self.subTest(scenario=scenario, namespace=namespace), self.assertRaisesRegex(CheckError, "matches no"):
                 check_binding(script(scenario, namespace), ld)
 
 
@@ -242,7 +253,7 @@ class StockTest(unittest.TestCase):
         checked = 0
         for folder in sorted(glob.glob(os.path.join(paths.extracted_root(), "scenarios", "challenge_*"))):
             name = os.path.basename(folder)
-            gd_path = os.path.join(folder, "NDF", "Scenarios", "GDScript", f"{name}.ndfbin")
+            gd_path = os.path.join(folder, "NDF", "Scenarios", name, "GDScript.txn")
             ld_path = os.path.join(folder, "out", "LevelDesign.ndfbin")
             if not (os.path.isfile(gd_path) and os.path.isfile(ld_path)):
                 continue
@@ -253,9 +264,9 @@ class StockTest(unittest.TestCase):
             for path, i in ndfbin.tree_paths(gd, gd.exports):
                 ob = gd.objects[i]
                 p = {gd.pname(pi): v for pi, v in ob.props}
-                if not path.startswith("$/GDScript/GdItems/") or "GUID1" not in p:
+                if not path.startswith("$/GDScript/GdItems/") or TAG_ID not in p:
                     continue
-                kind = kinds.get(struct.pack(">4i", *(p[f"GUID{k}"].v for k in range(1, 5))))
+                kind = kinds.get(p[TAG_ID].v)
                 if kind in GD_TAG_CLASS:
                     self.assertEqual(gd.cname(ob.cls), GD_TAG_CLASS[kind], f"{name}: {path}")
                     checked += 1

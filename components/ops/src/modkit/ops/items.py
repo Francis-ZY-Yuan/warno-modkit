@@ -11,7 +11,10 @@ from typing import Callable, Iterable, Mapping, NamedTuple
 
 from modkit.core.gates import CheckError, check
 from modkit.ops.files import read_file, rel_source, walk_files
-from modkit.ops.rekey import Rekey, def_path, rekey_definition, rekey_tag, repath
+from modkit.ops.graph import decode
+from modkit.ops.rekey import (
+    DBG, TAG, TXN, Rekey, def_path, generated_dbg, rekey_dbg, rekey_definition, rekey_tag, repath,
+)
 
 ChunkSource = Callable[[], Iterable[bytes]]
 
@@ -57,26 +60,34 @@ def details_copy(src_dir: str, inner: str, sizes: dict[str, int]) -> Item:
 
 Generated = tuple[bytes, str, str]  # (payload, provenance for MANIFEST.tsv, expected-dump fixture name)
 
+# Where a generated .txn's source map (modkit.ops.rekey.generated_dbg) says its objects come from: the kind's own
+# name under the scenario's Scripting folder, the folder stock's GDScript sources sit in.
+GENERATED_SOURCE = "ScenariosData:/{scenario}/Scripting/{kind}.ndf"
+
 
 def plan_definition(rk: Rekey, src_dir: str, generated: Mapping[str, Generated]) -> list[Item]:
-    """The Definition pack: for each of rk.kinds, the template's ndfbin and .tag from `src_dir` re-keyed to
-    rk.scenario (rekey_definition, rekey_tag); a kind in `generated` ships that ndfbin instead."""
+    """The Definition pack: for each of rk.kinds, the template's .txn, .txn.tag and .dbg from `src_dir` re-keyed to
+    rk.scenario (rekey_definition, rekey_tag, rekey_dbg); a kind in `generated` ships that .txn instead, with the
+    template's tag re-keyed and its own source map (generated_dbg at GENERATED_SOURCE)."""
     items = []
     for kind in rk.kinds:
-        for ext in ("ndfbin", "tag"):
-            inner = def_path(kind, ext, rk.source)
-            stock = read_file(os.path.join(src_dir, *inner.split("/")))
-            if ext == "ndfbin" and kind in generated:
-                raw, source, fixture = generated[kind]
-                items.append(mem_item("Definition", def_path(kind, ext, rk.scenario), raw, "generate", source,
-                                      fixture=fixture))
-                continue
-            if ext == "ndfbin":
-                raw, action = rekey_definition(stock, kind, rk), "rekey"
-            else:
-                raw, action = rekey_tag(stock, kind, rk), "tag"
-            items.append(mem_item("Definition", def_path(kind, ext, rk.scenario), raw, action,
-                                  rel_source(src_dir, inner), stock))
+        stock = {ext: read_file(os.path.join(src_dir, *def_path(kind, ext, rk.source).split("/")))
+                 for ext in (TXN, TAG, DBG)}
+        source = {ext: rel_source(src_dir, def_path(kind, ext, rk.source)) for ext in (TXN, TAG, DBG)}
+        new = {ext: def_path(kind, ext, rk.scenario) for ext in (TXN, TAG, DBG)}
+        if kind in generated:
+            raw, label, fixture = generated[kind]
+            items.append(mem_item("Definition", new[TXN], raw, "generate", label, fixture=fixture))
+            dbg_raw = generated_dbg(raw, rk.scenario, GENERATED_SOURCE.format(scenario=rk.scenario, kind=kind))
+            dbg_item = mem_item("Definition", new[DBG], dbg_raw, "generate", f"{label}: its source map")
+        else:
+            raw = rekey_definition(stock[TXN], kind, rk)
+            items.append(mem_item("Definition", new[TXN], raw, "rekey", source[TXN], stock[TXN]))
+            objects = len(decode(raw)[0].objects)
+            dbg_item = mem_item("Definition", new[DBG], rekey_dbg(stock[DBG], kind, rk, objects), "rekey",
+                                source[DBG], stock[DBG])
+        items.append(mem_item("Definition", new[TAG], rekey_tag(stock[TAG], kind, rk), "tag", source[TAG], stock[TAG]))
+        items.append(dbg_item)
     return items
 
 

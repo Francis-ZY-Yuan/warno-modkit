@@ -125,7 +125,7 @@ MENU_ART = {"CornerLogo": "challenge_RedJuggernaut", "MissionCountry": "challeng
             "EndgameBlazon": "challenge_RedJuggernaut",
             "MapTexture": menuart.card_picture(CARD_TITLE, CUT, CARD_ZONES, CARD_STICKERS)}
 SHAPE_SOURCES = {  # generated file -> stock files whose shapes it may use, relative to the extraction
-    "GDScript": ("scenarios/challenge_*/NDF/Scenarios/GDScript/challenge_*.ndfbin",),
+    "GDScript": ("scenarios/challenge_*/NDF/Scenarios/challenge_*/GDScript.txn",),
     LD_FILE: ("scenarios/challenge_*/out/LevelDesign.ndfbin", "kreide_op/*/out/LevelDesign.ndfbin"),
     **{inner: (f"scenarios/*/{inner}", f"kreide_op/*/{inner}") for inner in ZONE_FILES.values()},
     **CUT_SHAPE_SOURCES,     # the cut's playable zone and AI grid
