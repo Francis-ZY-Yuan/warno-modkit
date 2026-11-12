@@ -88,6 +88,20 @@ class Violations(unittest.TestCase):
         zero_key = nb_of("TCutsceneDescriptor", {"Key": Value(0x1D, bytes(8))})
         self.assertIn("fails 'FKey.IsValid()'", ndfrules.violations(zero_key, cut)[0])
 
+    def test_one_of_review_fails_an_object_that_sets_both(self):
+        """Build 210942's custom check on an objective: Position or UnitGroupPositionList, never both. REVIEWED
+        evaluates it as 'oneof': one set passes, both set fails."""
+        msg = "Only one field can be filled between 'Position' and 'UnitGroupPositionList'"
+        for cls in ("TGDDescriptorGereObjectif", "TGDDescriptorGereObjectifWithVariableOwner"):
+            with self.subTest(cls=cls):
+                gere = rules(Rule(cls, "custom", "", "", msg, CUT_V, 9, 0))
+                self.assertIn("unreviewed game check", ndfrules.violations(
+                    nb_of(cls, {"Position": GROUP}), gere, reviewed={})[0])
+                self.assertEqual(ndfrules.violations(nb_of(cls, {"Position": GROUP}), gere), [])
+                self.assertEqual(ndfrules.violations(nb_of(cls, {"UnitGroupPositionList": GROUP}), gere), [])
+                both = nb_of(cls, {"Position": GROUP, "UnitGroupPositionList": GROUP})
+                self.assertEqual(ndfrules.violations(both, gere), [f"#0 {cls}: {msg}: both are set"])
+
     def test_unknown_property_fails_until_reviewed(self):
         """A ProductionUnites with Group and Transporter, which no rule names and no stock object sets. Each fails
         until ndfrules.PROPERTIES reviews it; reviewed, they pass, and an unreviewed one still fails."""

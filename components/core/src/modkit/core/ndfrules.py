@@ -71,9 +71,16 @@ SLOT_MARGIN = 4   # the validate slot must hold at least this many times more ch
 CHAIN_SHARE = 0.9  # of the checking routines at that slot, at least this share must chain to the root validation
 
 # Checks the gate cannot read on its own, on classes a generator emits: (class, kind, property or message) ->
-# (how to evaluate it, what the game's check does). "nonzero" evaluates it as a `defined` check; "holds" trusts the
-# reason.
+# (how to evaluate it, what the game's check does). "nonzero" evaluates it as a `defined` check; "oneof" fails an object
+# that sets both fields the message names (ONE_OF); "holds" trusts the reason.
+ONE_OF = re.compile(r"Only one field can be filled between '(\w+)' and '(\w+)'")
+_GERE_ONE_OF = ("oneof", "an objective is placed by Position or by UnitGroupPositionList, never both (build 210942); "
+                         "no stock object sets both, and the ops generators never write UnitGroupPositionList")
 REVIEWED: dict[tuple[str, str, str], tuple[str, str]] = {
+    ("TGDDescriptorGereObjectif", "custom",
+     "Only one field can be filled between 'Position' and 'UnitGroupPositionList'"): _GERE_ONE_OF,
+    ("TGDDescriptorGereObjectifWithVariableOwner", "custom",
+     "Only one field can be filled between 'Position' and 'UnitGroupPositionList'"): _GERE_ONE_OF,
     ("TCutsceneDescriptor", "cond", "Key"): (
         "nonzero", "the condition is the Key's localisation token being valid, which fails only for a zero token; "
                    "every stock object of the class sets Key (none leaves it out)"),
@@ -541,6 +548,13 @@ def violations(nb: ndfbin.NdfBin, rules: dict[str, list[Rule]], reviewed: dict |
                                f"{REVIEW_REMEDY}")
                 elif how[0] == "nonzero" and (why := _zero(r, v, nb)):
                     out.append(f"{where}: Property '{r.prop}' fails '{r.detail}': {why}")
+                elif how[0] == "oneof":
+                    m = ONE_OF.fullmatch(r.detail)
+                    if not m:
+                        out.append(f"{where}: reviewed as 'oneof', but {r.detail!r} names no two fields: "
+                                   f"{REVIEW_REMEDY}")
+                    elif all(p in props for p in m.groups()):
+                        out.append(f"{where}: {r.detail}: both are set")
     return out
 
 

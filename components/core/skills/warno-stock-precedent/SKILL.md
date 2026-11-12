@@ -45,13 +45,13 @@ from pathlib import Path
 from modkit.core import ndfbin, paths
 
 out = Path("build/stock-dumps"); out.mkdir(parents=True, exist_ok=True)
-for f in sorted(paths.extracted_root().rglob("*.ndfbin")):
-    if "GDScript" in f.parts:
-        ndfbin.main(["dump", str(f), "-o", str(out / f"{f.stem}.txt")])
+for f in sorted(paths.extracted_root().rglob("GDScript.txn")):  # NDF/Scenarios/<scenario>/GDScript.txn
+    ndfbin.main(["dump", str(f), "-o", str(out / f"{f.parent.name}.txt")])
 ```
 
 Search the dumps with your usual tools, and read each hit in its container before you count it. For names rather
-than numbers, decompile the scenario Python (`warno-setup`, scenario Python reference). Component-specific recipes
+than numbers, read the `.dbg` source map beside each `.txn` (build 210942 ships no scenario Python; on 201602 and
+earlier, decompile it: `warno-setup`, scenario Python reference). Component-specific recipes
 (which files hold which kind of data, and how to read them) live in that component's skill references: for
 Operations, `warno-new-operation`.
 
