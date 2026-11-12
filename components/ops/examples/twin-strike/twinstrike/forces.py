@@ -24,9 +24,9 @@ garrison and both NATO battalions (6.3). `scaled()` turns it into the forces for
 not NATO's strength) are fixed. Thresholds are shares of a base count, turned into counts with `share_count()`
 (design 6.4), so a resize can never push one past its base or down to 0. Rounding: floor(x + 0.5).
 
-A ForceRow's camp is a side of modkit.ops.profile.SOVIET_PLAYER_SIDES: "Soviet" (the player), "NATO" or "NATO2" (the
-unused Alliance 1 camp, fogged for the player: each fire's battery is created there, at GUN_SPAWN north of the cut,
-and removed after; design 5.4).
+A ForceRow's camp is a side of modkit.ops.profile.SOVIET_PLAYER_SIDES: "Soviet" (the player), "NATO", or "SovietAlly"
+(the player's allied camp: each fire's battery is created there, at GUN_SPAWN in the cut's north-west corner, so the
+player's units never engage it, and removed after; design 5.4).
 """
 from __future__ import annotations
 
