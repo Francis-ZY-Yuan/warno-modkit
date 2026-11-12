@@ -268,5 +268,5 @@ The full text is in [NOTICE](NOTICE).
 ## Licence
 
 The repository's own code and text are under the MIT licence: see [LICENSE](LICENSE). That licence grants nothing over
-WARNO, its executable or its data (see [NOTICE](NOTICE)). How requests and takedown notices are handled is in
-[MAINTAINERS.md](MAINTAINERS.md).
+WARNO, its executable or its data (see [NOTICE](NOTICE)). Where to send requests, corrections and removal requests
+is in [MAINTAINERS.md](MAINTAINERS.md).
