@@ -17,7 +17,7 @@ Before you launch, the toolkit also:
 - runs the game's own load-time checks, derived from your WARNO.exe, as a gate.
 
 **Status: v0.1, an early demo.** It works end to end: the showcase Operation, [Twin Strike](components/ops/examples/twin-strike/README.md),
-builds, loads and plays. But it has been played only once, so expect rough edges. Play reports and issues are welcome:
+builds, loads and plays. But it has been played only a handful of times, so expect rough edges. Play reports and issues are welcome:
 every play becomes a record in the knowledge base, and the next version gets better.
 
 Unofficial, and not affiliated with Eugen Systems; see [Notice](#notice).
@@ -77,8 +77,9 @@ In a session, Claude picks a skill by what you ask; you can also call one by nam
 
 ## Game version
 
-This toolkit was verified on WARNO build **201602**. Its core (stock paths, the load-time rules reader, packaging) has
-moved to build **210942**, which joins the verified builds once the probes play clean on it. To see your own, run
+This toolkit was verified on WARNO builds **201602** and **210942**. Its core (stock paths, the load-time rules reader,
+packaging) has moved to 210942, and Twin Strike played on it
+([2026-11-12-twin-strike-210942-play1](components/ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md)). To see your own, run
 `python -m modkit.core.gamebuild`: it prints the installed build and the verified ones, and a `GAME BUILD:` warning
 when yours is another. The build driver prints the same warning when it starts. It is a warning only: nothing fails
 and no output changes.
