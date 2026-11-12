@@ -7,7 +7,7 @@ source: play
 topics: [script-flow, units-and-orders]
 gates: [modkit.ops.gates.check_script_effects]
 shapes: [modkit.ops.bricks.fx_wrapper, modkit.ops.shapes.nuke_wrapper]
-trials: [2026-11-10-probe3-play1-effect-crash, 2026-11-11-twin-strike-strike-unseen, 2026-11-11-fxprobe-play1]
+trials: [2026-11-10-probe3-play1-effect-crash, 2026-11-11-twin-strike-strike-unseen, 2026-11-11-fxprobe-play1, 2026-11-12-port-210942-survey]
 stock_precedent: no stock script launches an impact effect; stock's script-launched fx_FumeeNoire_ForScript_RandomPosition reaches a parameterised effect through a TActionCall that binds its parameter, the wrapper's shape
 ---
 **What the data says.** The game has the tactical-nuke impact effect under two names: `$/GFX/GameFx/fx_impact_sol_Tactical_Nuke`
@@ -49,12 +49,17 @@ killed and the rest damaged and stunned ([[changestress-damagetype-zero]]).
 where Vanished removes the units ([[vanished-removal]]); the nuke's sound and shake, and its cost to the frame rate on
 its own.
 
+**On build 210942: unverified in play.** The plays above were on 201602. On 210942 `fx_impact_sol_Tactical_Nuke` still
+declares the same four parameters with no defaults, the wrapper binds them as before, and it now names itself with
+`_NdfIdentifierName` (GameFx's own name property since 210942, [[script-effects-self-contained]]). Whether the wrapped
+nuke still plays, and plays the same, is for the next play to show ([[2026-11-12-port-210942-survey]]).
+
 <!-- referenced-by:start -->
 ## Referenced by
 
-- Trials: [2026-11-10-probe3-play1-effect-crash](../trials/2026-11-10-probe3-play1-effect-crash.md), [2026-11-11-fxprobe-play1](../trials/2026-11-11-fxprobe-play1.md), [2026-11-11-twin-strike-strike-unseen](../trials/2026-11-11-twin-strike-strike-unseen.md)
+- Trials: [2026-11-10-probe3-play1-effect-crash](../trials/2026-11-10-probe3-play1-effect-crash.md), [2026-11-11-fxprobe-play1](../trials/2026-11-11-fxprobe-play1.md), [2026-11-11-twin-strike-strike-unseen](../trials/2026-11-11-twin-strike-strike-unseen.md), [2026-11-12-port-210942-survey](../trials/2026-11-12-port-210942-survey.md)
 - Gates: [`modkit.ops.gates.check_script_effects`](../../src/modkit/ops/gates.py)
 - Shapes: [`modkit.ops.bricks.fx_wrapper`](../../src/modkit/ops/bricks.py), [`modkit.ops.shapes.nuke_wrapper`](../../src/modkit/ops/shapes.py)
 - Examples: [`components/ops/examples/probes/README.md`](../../examples/probes/README.md), [`components/ops/examples/probes/probes/fxprobe.py`](../../examples/probes/probes/fxprobe.py), [`components/ops/examples/probes/probes/nuke.py`](../../examples/probes/probes/nuke.py), [`components/ops/examples/twin-strike/README.md`](../../examples/twin-strike/README.md), [`components/ops/examples/twin-strike/docs/design.md`](../../examples/twin-strike/docs/design.md), [`components/ops/examples/twin-strike/twinstrike/op.py`](../../examples/twin-strike/twinstrike/op.py)
-- Records: [2026-11-10-probe3-play1-effect-crash](../trials/2026-11-10-probe3-play1-effect-crash.md), [2026-11-11-fxprobe-play1](../trials/2026-11-11-fxprobe-play1.md), [2026-11-11-twin-strike-strike-unseen](../trials/2026-11-11-twin-strike-strike-unseen.md), [script-effects-self-contained](script-effects-self-contained.md)
+- Records: [2026-11-10-probe3-play1-effect-crash](../trials/2026-11-10-probe3-play1-effect-crash.md), [2026-11-11-fxprobe-play1](../trials/2026-11-11-fxprobe-play1.md), [2026-11-11-twin-strike-strike-unseen](../trials/2026-11-11-twin-strike-strike-unseen.md), [2026-11-12-port-210942-survey](../trials/2026-11-12-port-210942-survey.md), [script-effects-self-contained](script-effects-self-contained.md)
 <!-- referenced-by:end -->

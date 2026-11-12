@@ -18,9 +18,9 @@ How far each mechanism is proven: `PLAYED` worked in a real play; `PROBED` loade
 - [fast-move-and-attack-keeps-roads](../components/ops/knowledge/mechanisms/fast-move-and-attack-keeps-roads.md) (ops): MoveAndAttack goes cross-country; FastMoveAndAttack and ForceRoad moves keep to roads
 - [fog-switch](../components/ops/knowledge/mechanisms/fog-switch.md) (ops): A script can switch the fog of war off with TGDDescriptorFow; whether it is map-wide and comes back on is unseen
 - [gameplay-mod-relaunch](../components/ops/knowledge/mechanisms/gameplay-mod-relaunch.md) (ops): Operations and Gameplay mods don't mix; an Operation mod must ship none of the 16 Gameplay files
-- [gdscript-is-what-loads](../components/ops/knowledge/mechanisms/gdscript-is-what-loads.md) (ops): Build 201602 runs an Operation from its GDScript ndfbin, a compiled form of the stock Python
+- [gdscript-is-what-loads](../components/ops/knowledge/mechanisms/gdscript-is-what-loads.md) (ops): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python
 - [kill-counts-by-type](../components/ops/knowledge/mechanisms/kill-counts-by-type.md) (ops): Kill counts are by unit type, not by group; count a group's survivors instead
-- [leveldesign-guid-binding](../components/ops/knowledge/mechanisms/leveldesign-guid-binding.md) (ops): A script names a map item by the four words of the item's GUID in LevelDesign
+- [leveldesign-guid-binding](../components/ops/knowledge/mechanisms/leveldesign-guid-binding.md) (ops): A script names a map item by the item's GUID in LevelDesign (210942 one GUID value, 201602 four words)
 - [load-time-validation-rules](../components/core/knowledge/mechanisms/load-time-validation-rules.md) (core): Every object is validated at load, and the first broken rule stops the load
 - [localisation-tokens-packed](../components/core/knowledge/mechanisms/localisation-tokens-packed.md) (core): Localisation keys are tokens of up to 10 characters, packed 6 bits each
 - [mission-ends-only-by-script](../components/ops/knowledge/mechanisms/mission-ends-only-by-script.md) (ops): With CheckEndGame off, only the script's TriggerEndGame ends the battle, and the first one wins
@@ -55,8 +55,10 @@ How far each mechanism is proven: `PLAYED` worked in a real play; `PROBED` loade
 - [camera-shot-from-current-position](../components/ops/knowledge/mechanisms/camera-shot-from-current-position.md) (ops): Mid-battle, a script flies the camera from wherever it is to a one-key path, in a cutscene that can hold the view
 - [dialog-text-takes-no-variables](../components/ops/knowledge/mechanisms/dialog-text-takes-no-variables.md) (ops): Dialog text cannot show live numbers; counts go in an objective counter or a hint
 - [difficulty-branches](../components/ops/knowledge/mechanisms/difficulty-branches.md) (ops): Difficulty reaches a script as three conditions; give it a Medium baseline
+- [game-build-classes](../components/ops/knowledge/mechanisms/game-build-classes.md) (ops): A game update removes and renames classes and properties; a mod's files may hold only those the installed build's stock holds
 - [garrison-roe-and-hold](../components/ops/knowledge/mechanisms/garrison-roe-and-hold.md) (ops): A garrison in a camp with no AI holds its ground only with the ROE and smart orders the script gives it
 - [objective-label-needs-position](../components/ops/knowledge/mechanisms/objective-label-needs-position.md) (ops): An objective's map label needs a position, or it pins the map corner
+- [scenario-definition-layout](../components/ops/knowledge/mechanisms/scenario-definition-layout.md) (ops): Build 210942 reads a scenario's Definition files as NDF/Scenarios/<scenario>/<Kind>.txn, each beside its .txn.tag and .dbg
 - [scripted-air-sweep](../components/ops/knowledge/mechanisms/scripted-air-sweep.md) (ops): Hidden aircraft revealed, sent over a circle and sent home once spent give an AI-less camp air sweeps
 - [scripted-economy](../components/ops/knowledge/mechanisms/scripted-economy.md) (ops): A script sets the player's points, a zero income, one-time grants and a later income in stock's own nodes
 - [start-camera-before-loading-done](../components/ops/knowledge/mechanisms/start-camera-before-loading-done.md) (ops): An Operation that opens in the deployment phase sets its opening camera after LoadingDone, a move then a snap to its last key

@@ -14,7 +14,7 @@ Topic `zones-and-map`, declared by ops. Back to [the map](../README.md).
 - [deployment-phase-recipe](../../components/ops/knowledge/mechanisms/deployment-phase-recipe.md): A deployment phase needs six parts, and buying after the launch needs player arrival entries (ops, verified 201602)
 - [detector-circles-only](../../components/ops/knowledge/mechanisms/detector-circles-only.md): DetectUnitDansDetecteur works only on circular zones (ops, verified 201602)
 - [fog-switch](../../components/ops/knowledge/mechanisms/fog-switch.md): A script can switch the fog of war off with TGDDescriptorFow; whether it is map-wide and comes back on is unseen (ops, verified 201602)
-- [leveldesign-guid-binding](../../components/ops/knowledge/mechanisms/leveldesign-guid-binding.md): A script names a map item by the four words of the item's GUID in LevelDesign (ops, verified 201602)
+- [leveldesign-guid-binding](../../components/ops/knowledge/mechanisms/leveldesign-guid-binding.md): A script names a map item by the item's GUID in LevelDesign (210942 one GUID value, 201602 four words) (ops, verified 201602)
 - [zone-capture-command-units](../../components/ops/knowledge/mechanisms/zone-capture-command-units.md): Only command units capture a zone, and an enemy command unit inside makes it neutral at once (ops, verified 201602)
 - [zone-lookup-by-point](../../components/ops/knowledge/mechanisms/zone-lookup-by-point.md): Zone conditions find their zone by a tag's point, and a point in no zone fails silently (ops, verified 201602)
 
@@ -44,6 +44,7 @@ Taught by the trials of these mechanisms.
 
 ## Trials, newest first
 
+- 2026-11-12 [2026-11-12-port-210942-survey](../../components/ops/knowledge/trials/2026-11-12-port-210942-survey.md) (ops): survey, pass
 - 2026-11-11 [2026-11-11-twin-strike-play1](../../components/ops/knowledge/trials/2026-11-11-twin-strike-play1.md) (ops): play, mixed
 - 2026-11-11 [2026-11-11-twin-strike-opening-camera](../../components/ops/knowledge/trials/2026-11-11-twin-strike-opening-camera.md) (ops): play, fail
 - 2026-11-11 [2026-11-11-twin-strike-guns-on-the-edge](../../components/ops/knowledge/trials/2026-11-11-twin-strike-guns-on-the-edge.md) (ops): play, mixed

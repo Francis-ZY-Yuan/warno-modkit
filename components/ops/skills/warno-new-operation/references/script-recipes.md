@@ -61,14 +61,16 @@ Use this with `warno-stock-precedent` for anything the table doesn't cover.
 
 | What | Where in the extraction | Read it with |
 | --- | --- | --- |
-| A stock Operation's script | `scenarios/challenge_*/NDF/Scenarios/GDScript/challenge_*.ndfbin` | `python -m modkit.core.ndfbin dump FILE -o OUT` |
+| A stock Operation's script | `scenarios/challenge_*/NDF/Scenarios/challenge_*/GDScript.txn` | `python -m modkit.core.ndfbin dump FILE -o OUT` |
 | Its map items | `scenarios/challenge_*/out/LevelDesign.ndfbin` | the same |
 | Its zones | `scenarios/challenge_*/out/DeploymentZone.ndfbin`, `CommandZone.ndfbin` | the same |
 | Its texts | `scenarios/challenge_*/Localisation/challenge_*/` (the Chinese `-SC.dic` files; every language for Survivors) | `python -m modkit.core.trad dump FILE` |
 | The template's Definition and Details | `kreide_op/challenge_Survivors_Definition`, `kreide_op/challenge_Survivors_Details` | `ndfbin dump` |
 
 - A dump numbers every object (`// #296`). The code cites stock shapes that way: `S#296` is object 296 of Survivors'
-  GDScript dump; the other letters are named at the top of `modkit.ops.bricks`.
+  GDScript dump; the other letters are named at the top of `modkit.ops.bricks`. The numbers are build 201602's: build
+  210942 put two objects ahead of each script's root, so from there on a stock object sits two places later
+  (`S#296` is `#298` in a 210942 dump; `modkit.ops.script`).
 - Dump every stock challenge script once and search the text (`warno-stock-precedent`'s recipe). Read each hit in its
   container: what follows it, and in which Sequential, Simultaneous or Competition
   ([[precedent-includes-the-position]]).

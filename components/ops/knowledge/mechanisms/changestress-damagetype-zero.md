@@ -4,9 +4,9 @@ title: A script's ChangeStress damages with Physical and cannot suppress; Damage
 status: PLAYED
 last_verified: 201602 2026-11-11
 source: exe-analysis
-topics: [units-and-orders, loading-and-crashes]
+topics: [units-and-orders, loading-and-crashes, game-updates]
 gates: [modkit.core.ndfrules.check_file]
-trials: [2026-11-03-probe1-launch1-damagetype, 2026-11-03-ndfrules-stock-sweep, 2026-11-11-fxprobe-play1]
+trials: [2026-11-03-probe1-launch1-damagetype, 2026-11-03-ndfrules-stock-sweep, 2026-11-11-fxprobe-play1, 2026-11-12-port-210942-survey]
 ---
 **What the game does.** `TGDDescriptorChangeStress` must have a non-zero `DamageType`, and 0 is Suppress. So only
 Physical (1) and Stun (2) load; a script cannot apply suppression.
@@ -19,12 +19,17 @@ Physical (1) and Stun (2) load; a script cannot apply suppression.
 
 **Gotchas.** No stock script uses ChangeStress at all. Whether Stun does anything a player can see is still open.
 
+**On build 210942.** The load rule above is 201602's: the 210942 rules table's `TGDDescriptorChangeStress` validation
+tests `Group` alone, no longer `DamageType`. What a DamageType of 0 does on 210942 is unknown, so the toolkit keeps
+writing only Physical or Stun. Whether ChangeStress still damages and stuns is unverified in play
+([[2026-11-12-port-210942-survey]]).
+
 <!-- referenced-by:start -->
 ## Referenced by
 
-- Trials: [2026-11-03-ndfrules-stock-sweep](../../../core/knowledge/trials/2026-11-03-ndfrules-stock-sweep.md), [2026-11-03-probe1-launch1-damagetype](../../../core/knowledge/trials/2026-11-03-probe1-launch1-damagetype.md), [2026-11-11-fxprobe-play1](../trials/2026-11-11-fxprobe-play1.md)
+- Trials: [2026-11-03-ndfrules-stock-sweep](../../../core/knowledge/trials/2026-11-03-ndfrules-stock-sweep.md), [2026-11-03-probe1-launch1-damagetype](../../../core/knowledge/trials/2026-11-03-probe1-launch1-damagetype.md), [2026-11-11-fxprobe-play1](../trials/2026-11-11-fxprobe-play1.md), [2026-11-12-port-210942-survey](../trials/2026-11-12-port-210942-survey.md)
 - Gates: [`modkit.core.ndfrules.check_file`](../../../core/src/modkit/core/ndfrules.py)
 - Skills: [`components/core/skills/warno-gates/references/load-time-rules.md`](../../../core/skills/warno-gates/references/load-time-rules.md), [`components/ops/skills/warno-new-operation/references/script-recipes.md`](../../skills/warno-new-operation/references/script-recipes.md)
 - Examples: [`components/ops/examples/open-door/docs/design.md`](../../examples/open-door/docs/design.md), [`components/ops/examples/open-door/opendoor/op.py`](../../examples/open-door/opendoor/op.py), [`components/ops/examples/probes/README.md`](../../examples/probes/README.md), [`components/ops/examples/probes/probes/fxprobe.py`](../../examples/probes/probes/fxprobe.py), [`components/ops/examples/probes/probes/spike.py`](../../examples/probes/probes/spike.py), [`components/ops/examples/twin-strike/README.md`](../../examples/twin-strike/README.md), [`components/ops/examples/twin-strike/docs/design.md`](../../examples/twin-strike/docs/design.md), [`components/ops/examples/twin-strike/twinstrike/op.py`](../../examples/twin-strike/twinstrike/op.py)
-- Records: [2026-11-11-fxprobe-play1](../trials/2026-11-11-fxprobe-play1.md), [load-time-validation-rules](../../../core/knowledge/mechanisms/load-time-validation-rules.md), [scripted-fires](scripted-fires.md), [scripted-nuke-effect](scripted-nuke-effect.md)
+- Records: [2026-11-11-fxprobe-play1](../trials/2026-11-11-fxprobe-play1.md), [2026-11-12-port-210942-survey](../trials/2026-11-12-port-210942-survey.md), [load-time-validation-rules](../../../core/knowledge/mechanisms/load-time-validation-rules.md), [scripted-fires](scripted-fires.md), [scripted-nuke-effect](scripted-nuke-effect.md)
 <!-- referenced-by:end -->

@@ -9,23 +9,35 @@ Topic `game-updates`, declared by core. Back to [the map](../README.md).
 
 ### PLAYED
 
-- [gdscript-is-what-loads](../../components/ops/knowledge/mechanisms/gdscript-is-what-loads.md): Build 201602 runs an Operation from its GDScript ndfbin, a compiled form of the stock Python (ops, verified 201602)
+- [changestress-damagetype-zero](../../components/ops/knowledge/mechanisms/changestress-damagetype-zero.md): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load (ops, verified 201602)
+- [gdscript-is-what-loads](../../components/ops/knowledge/mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (ops, verified 201602)
+- [leveldesign-guid-binding](../../components/ops/knowledge/mechanisms/leveldesign-guid-binding.md): A script names a map item by the item's GUID in LevelDesign (210942 one GUID value, 201602 four words) (ops, verified 201602)
 - [load-time-validation-rules](../../components/core/knowledge/mechanisms/load-time-validation-rules.md): Every object is validated at load, and the first broken rule stops the load (core, verified 201602)
 - [mod-version-and-config-lines](../../components/core/knowledge/mechanisms/mod-version-and-config-lines.md): A mod is active only with Gen/Version.ndf, and its [Config] hashes mark it outdated after an update (core, verified 201602)
+- [operation-menu-registration](../../components/ops/knowledge/mechanisms/operation-menu-registration.md): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden (ops, verified 201602)
+- [script-effects-self-contained](../../components/ops/knowledge/mechanisms/script-effects-self-contained.md): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (ops, verified 201602)
 
 ### RE
 
 - [edat-revision-chain](../../components/core/knowledge/mechanisms/edat-revision-chain.md): Game data is a chain of edat archives, read newest revision first (core, verified 210942)
 
+### STOCK
+
+- [game-build-classes](../../components/ops/knowledge/mechanisms/game-build-classes.md): A game update removes and renames classes and properties; a mod's files may hold only those the installed build's stock holds (ops, verified 210942)
+- [scenario-definition-layout](../../components/ops/knowledge/mechanisms/scenario-definition-layout.md): Build 210942 reads a scenario's Definition files as NDF/Scenarios/<scenario>/<Kind>.txn, each beside its .txn.tag and .dbg (ops, verified 210942)
+
 ## Lessons
 
 Taught by the trials of these mechanisms.
 
+- [check-against-every-active-mod](../../components/core/knowledge/lessons/check-against-every-active-mod.md) (core): A build's gates see that build alone; check what must stay unique across every mod active beside it
 - [debrief-by-what-the-map-shows](../../components/core/knowledge/lessons/debrief-by-what-the-map-shows.md) (core): Design probe results to show on the map, and debrief with a few multiple-choice questions about what was seen
 - [decide-zones-by-count](../../components/ops/knowledge/lessons/decide-zones-by-count.md) (ops): Decide zone rules by timed counts and force the owner; keep real captures for flavour
+- [derive-cross-mod-ids-from-a-hash](../../components/core/knowledge/lessons/derive-cross-mod-ids-from-a-hash.md) (core): A value that must be unique across every mod a player runs comes from a hash, never a hand pick
 - [explicit-zero-is-the-sure-failure](../../components/core/knowledge/lessons/explicit-zero-is-the-sure-failure.md) (core): Stock leaves required properties out and still loads; only an explicit zero is sure to fail
 - [fix-loop-after-a-failed-launch](../../components/core/knowledge/lessons/fix-loop-after-a-failed-launch.md) (core): After a failed launch, find the root cause, gate it, fix, reinstall hash-checked, and update the play sheet
 - [gates-model-the-game-lookup](../../components/core/knowledge/lessons/gates-model-the-game-lookup.md) (core): A gate checks the data where the game reads it, not just that it exists somewhere
+- [no-stock-precedent-is-untested](../../components/ops/knowledge/lessons/no-stock-precedent-is-untested.md) (ops): No stock script does it means untested, whatever the API allows
 - [one-stall-hides-the-rest](../../components/core/knowledge/lessons/one-stall-hides-the-rest.md) (core): Put each probe beat in its own parallel branch, so one stall cannot hide the rest
 - [prove-each-gate-both-ways](../../components/core/knowledge/lessons/prove-each-gate-both-ways.md) (core): A gate is proven when it fails the bad build with the game's own words and passes every stock file
 - [stock-value-forms-only](../../components/ops/knowledge/lessons/stock-value-forms-only.md) (ops): Use only value forms stock serialises; a form stock never writes is a crash risk
@@ -33,7 +45,12 @@ Taught by the trials of these mechanisms.
 
 ## Trials, newest first
 
+- 2026-11-12 [2026-11-12-port-210942-survey](../../components/ops/knowledge/trials/2026-11-12-port-210942-survey.md) (ops): survey, pass
 - 2026-11-12 [2026-11-12-build-210942-port](../../components/core/knowledge/trials/2026-11-12-build-210942-port.md) (core): survey, pass
+- 2026-11-11 [2026-11-11-twin-strike-strike-unseen](../../components/ops/knowledge/trials/2026-11-11-twin-strike-strike-unseen.md) (ops): play, mixed
+- 2026-11-11 [2026-11-11-twin-strike-launch1-duplicate-menu-order](../../components/ops/knowledge/trials/2026-11-11-twin-strike-launch1-duplicate-menu-order.md) (ops): play, fail
+- 2026-11-11 [2026-11-11-fxprobe-play1](../../components/ops/knowledge/trials/2026-11-11-fxprobe-play1.md) (ops): play, pass
+- 2026-11-10 [2026-11-10-probe3-play1-effect-crash](../../components/ops/knowledge/trials/2026-11-10-probe3-play1-effect-crash.md) (ops): play, fail
 - 2026-11-06 [2026-11-06-probe2-play-run-a](../../components/ops/knowledge/trials/2026-11-06-probe2-play-run-a.md) (ops): play, pass
 - 2026-11-03 [2026-11-03-probe1-launch1-damagetype](../../components/core/knowledge/trials/2026-11-03-probe1-launch1-damagetype.md) (core): launch, fail
 - 2026-11-03 [2026-11-03-ndfrules-stock-sweep](../../components/core/knowledge/trials/2026-11-03-ndfrules-stock-sweep.md) (core): re, pass

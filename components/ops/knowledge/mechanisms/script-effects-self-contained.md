@@ -4,10 +4,10 @@ title: A script launches a GameFx effect that takes no parameters, or a paramete
 status: PLAYED
 last_verified: 201602 2026-11-11
 source: play
-topics: [units-and-orders, script-flow]
+topics: [units-and-orders, script-flow, game-updates]
 gates: [modkit.ops.gates.check_script_effects]
 shapes: [modkit.ops.bricks.fx_wrapper]
-trials: [2026-11-10-probe3-play1-effect-crash, 2026-11-11-twin-strike-strike-unseen, 2026-11-11-fxprobe-play1]
+trials: [2026-11-10-probe3-play1-effect-crash, 2026-11-11-twin-strike-strike-unseen, 2026-11-11-fxprobe-play1, 2026-11-12-port-210942-survey]
 stock_precedent: stock scripts launch exactly three effects, all self-contained and all from FX_script.ndf: fx_FumeeBlanche_ForScript_RandomPosition (45 launches), fx_HE_Artillery_203mm_ForScript_RandomPosition (27) and fx_FumeeNoire_ForScript_RandomPosition (3)
 ---
 **The rule.** A script's `LaunchFXFireAndForgetOnPosition` carries only an effect's name (`DatabaseName`,
@@ -40,13 +40,20 @@ barrage, the white and the black smoke, massed at stock's scale, with no crash (
 into huge plumes that lingered for minutes, and the game became slow, worse with time. Twin Strike's strike launches
 no black smoke.
 
+**On build 210942: unverified in play.** The plays above were on 201602. On 210942 the game reads its GameFx from
+`NDF/GFX/GameFx.txn` in Transactions.dat (the gate reads that file: `gates.gamefx_file`), and every GameFx object
+names itself with `_NdfIdentifierName` where 201602 wrote `_ShortDatabaseName`, so the wrapper writes the new name
+(`bricks.NAME_PROP`). The stock launches are unchanged: 75 in 7 stock scripts, the same three self-contained effects,
+each a `LaunchFXFireAndForgetOnPosition` of `DatabaseName` and `Position`. The script's root, which holds every launch,
+is now `TGDDescriptorLaunchEffetMap` ([[scenario-definition-layout]], [[2026-11-12-port-210942-survey]]).
+
 <!-- referenced-by:start -->
 ## Referenced by
 
-- Trials: [2026-11-10-probe3-play1-effect-crash](../trials/2026-11-10-probe3-play1-effect-crash.md), [2026-11-11-fxprobe-play1](../trials/2026-11-11-fxprobe-play1.md), [2026-11-11-twin-strike-strike-unseen](../trials/2026-11-11-twin-strike-strike-unseen.md)
+- Trials: [2026-11-10-probe3-play1-effect-crash](../trials/2026-11-10-probe3-play1-effect-crash.md), [2026-11-11-fxprobe-play1](../trials/2026-11-11-fxprobe-play1.md), [2026-11-11-twin-strike-strike-unseen](../trials/2026-11-11-twin-strike-strike-unseen.md), [2026-11-12-port-210942-survey](../trials/2026-11-12-port-210942-survey.md)
 - Gates: [`modkit.ops.gates.check_script_effects`](../../src/modkit/ops/gates.py)
 - Shapes: [`modkit.ops.bricks.fx_wrapper`](../../src/modkit/ops/bricks.py)
 - Skills: [`components/ops/skills/warno-new-operation/references/op-anatomy.md`](../../skills/warno-new-operation/references/op-anatomy.md)
 - Examples: [`components/ops/examples/probes/README.md`](../../examples/probes/README.md), [`components/ops/examples/probes/probes/fxprobe.py`](../../examples/probes/probes/fxprobe.py), [`components/ops/examples/probes/probes/nuke.py`](../../examples/probes/probes/nuke.py), [`components/ops/examples/twin-strike/README.md`](../../examples/twin-strike/README.md), [`components/ops/examples/twin-strike/docs/design.md`](../../examples/twin-strike/docs/design.md), [`components/ops/examples/twin-strike/twinstrike/op.py`](../../examples/twin-strike/twinstrike/op.py)
-- Records: [2026-11-10-probe3-play1-effect-crash](../trials/2026-11-10-probe3-play1-effect-crash.md), [2026-11-11-fxprobe-play1](../trials/2026-11-11-fxprobe-play1.md), [2026-11-11-twin-strike-strike-unseen](../trials/2026-11-11-twin-strike-strike-unseen.md), [scripted-fires](scripted-fires.md), [scripted-nuke-effect](scripted-nuke-effect.md)
+- Records: [2026-11-10-probe3-play1-effect-crash](../trials/2026-11-10-probe3-play1-effect-crash.md), [2026-11-11-fxprobe-play1](../trials/2026-11-11-fxprobe-play1.md), [2026-11-11-twin-strike-strike-unseen](../trials/2026-11-11-twin-strike-strike-unseen.md), [2026-11-12-port-210942-survey](../trials/2026-11-12-port-210942-survey.md), [game-build-classes](game-build-classes.md), [scripted-fires](scripted-fires.md), [scripted-nuke-effect](scripted-nuke-effect.md)
 <!-- referenced-by:end -->

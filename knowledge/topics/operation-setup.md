@@ -21,6 +21,8 @@ Topic `operation-setup`, declared by ops. Back to [the map](../README.md).
 
 ### STOCK
 
+- [game-build-classes](../../components/ops/knowledge/mechanisms/game-build-classes.md): A game update removes and renames classes and properties; a mod's files may hold only those the installed build's stock holds (ops, verified 210942)
+- [scenario-definition-layout](../../components/ops/knowledge/mechanisms/scenario-definition-layout.md): Build 210942 reads a scenario's Definition files as NDF/Scenarios/<scenario>/<Kind>.txn, each beside its .txn.tag and .dbg (ops, verified 210942)
 - [scripted-economy](../../components/ops/knowledge/mechanisms/scripted-economy.md): A script sets the player's points, a zero income, one-time grants and a later income in stock's own nodes (ops, verified 201602)
 
 ## Lessons
@@ -41,6 +43,7 @@ Taught by the trials of these mechanisms.
 
 ## Trials, newest first
 
+- 2026-11-12 [2026-11-12-port-210942-survey](../../components/ops/knowledge/trials/2026-11-12-port-210942-survey.md) (ops): survey, pass
 - 2026-11-11 [2026-11-11-twin-strike-play1](../../components/ops/knowledge/trials/2026-11-11-twin-strike-play1.md) (ops): play, mixed
 - 2026-11-11 [2026-11-11-twin-strike-launch1-duplicate-menu-order](../../components/ops/knowledge/trials/2026-11-11-twin-strike-launch1-duplicate-menu-order.md) (ops): play, fail
 - 2026-11-11 [2026-11-11-probe3b-play1-no-supply](../../components/ops/knowledge/trials/2026-11-11-probe3b-play1-no-supply.md) (ops): play, fail

@@ -24,7 +24,9 @@ extraction and resolved only when a build runs.
 ```
 
 - **Definition:** the template's MapConfiguration, ScenarioInfo and ScenarioLoader re-keyed to the new scenario id
-  and GUID, the content's GDScript (or, with `Content.script = None`, the template's own, re-keyed), and no Trophy.
+  and GUID, the content's GDScript (or, with `Content.script = None`, the template's own, re-keyed), and no TrophyDef.
+  Each kind is three entries under `NDF/Scenarios/<scenario>/`: `<Kind>.txn`, its `.txn.tag` and its `.dbg` source
+  map, the layout build 210942 reads ([[scenario-definition-layout]]).
 - **Details:** the generated LevelDesign; the deployment and command zone files, generated when the content has zone
   items and the template's otherwise; and the map's own playable zone, AI grid, path cache and camera paths, byte for
   byte (`map_copies`). With `details_from_template` the template's Details ship whole instead.
@@ -95,6 +97,7 @@ Each runs through `modkit.core.gates.run_gate` under its name, which is also its
 | 3 | the profile's `extra_gates` | below |
 | 4 | `dump-diff`, `dump-rows` | each re-keyed file differs from stock only by the re-keying rows, and every row changed something |
 | 5 | `package` | every entry lies under the scenario; no Gameplay file ([[gameplay-mod-relaunch]]) |
+| 5 | `definition-layout`, `stock-classes` | the Definition pack in the installed build's layout, each `.txn` with its tag and a source map of one line per object ([[scenario-definition-layout]]); every class and property in the installed build's stock, or admitted ([[game-build-classes]]). `python -m modkit.ops.packs check DIR` runs both on a mod already built, after a game update |
 | 6 | `read-back` | every written pack reads back to the planned bytes |
 
 **Ready-made extra gates** (`modkit.ops.gates`), all five used by Open Door:

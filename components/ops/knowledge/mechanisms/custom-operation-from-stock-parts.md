@@ -8,8 +8,9 @@ topics: [operation-setup]
 trials: [2026-11-02-new-scenario-id-loads, 2026-11-02-kreide-op-playtest-1, 2026-11-03-probe1-play1-worked, 2026-11-06-probe2-play-run-a]
 ---
 **What we built.** A custom Operation on Kreide and two probe Operations on Geisa, none made in Eugen's editor:
-- **Definition:** Survivors' runtime files cloned, with a new GDScript, the Trophy file dropped, and about 20 identity
-  fields changed.
+- **Definition:** Survivors' runtime files cloned, with a new GDScript, the Trophy file (TrophyDef on 210942) dropped,
+  and about 20 identity fields changed; on 210942 each file ships with its tag and source map
+  ([[scenario-definition-layout]]).
 - **Details:** zones and camera paths cloned from the map's own multiplayer layout, then a generated LevelDesign,
   playable zone, AI grid and zone files.
 - **Assets:** small dictionaries and the menu textures; no voice, video or Python is needed.
