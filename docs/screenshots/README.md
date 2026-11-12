@@ -24,3 +24,6 @@ illustration; not affiliated with or endorsed by Eugen Systems.
 - `open-door-authoring-page.jpg`: the whole of Operation Open Door's authoring page (`components/ops/examples/open-door/docs/authoring-page.html`), scaled down.
 - `twin-strike-map.jpg`: Operation Twin Strike's authoring page, its map: the plan in APP-6 symbols over the game's satellite picture of the cut. A schematic, not gameplay.
 - `twin-strike-authoring-page.jpg`: the whole of Operation Twin Strike's authoring page (`components/ops/examples/twin-strike/docs/authoring-page.html`), scaled down.
+- `twin-strike-nuclear-release.jpg`: Operation Twin Strike in play (v0 demo): Front offers one tactical nuclear strike on the second NATO battalion's assembly area, and the objectives track the scripted phases.
+- `twin-strike-prep-fire.jpg`: Operation Twin Strike in play (v0 demo): during the assault, the division's guns offer one salvo on the village: fire now, or hold.
+- `twin-strike-box-w.jpg`: Operation Twin Strike in play (v0 demo): the first NATO battalion's column comes under fire on the west lane.

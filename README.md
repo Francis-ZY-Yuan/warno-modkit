@@ -29,8 +29,19 @@ Unofficial, and not affiliated with Eugen Systems; see [Notice](#notice).
 | [Operation Open Door](components/ops/examples/open-door/README.md): you play NATO | [Operation Twin Strike](components/ops/examples/twin-strike/README.md): you play the Soviets |
 
 These are the authoring pages of the two example Operations: the design schematics each op was built from, in APP-6
-symbols over the game's own map, not gameplay. Gameplay screenshots will follow. Map imagery from WARNO, (c) Eugen
-Systems, shown for non-commercial illustration; not affiliated with or endorsed by Eugen Systems.
+symbols over the game's own map, not gameplay. Map imagery from WARNO, (c) Eugen Systems, shown for non-commercial
+illustration; not affiliated with or endorsed by Eugen Systems.
+
+**In play: Operation Twin Strike, v0 demo.**
+
+| ![Front offers a tactical nuclear strike, with the op's scripted objectives](docs/screenshots/twin-strike-nuclear-release.jpg) | ![The division's guns offer a preparation fire on the village](docs/screenshots/twin-strike-prep-fire.jpg) |
+| --- | --- |
+| Front offers one tactical nuclear strike on the second NATO battalion; the objectives track the scripted phases. | Mid-assault, the division's guns offer one salvo on the village: fire now, or hold. |
+
+![The first NATO battalion's column under fire on the west lane](docs/screenshots/twin-strike-box-w.jpg)
+
+The first NATO battalion's column comes under fire on the west lane. In-game pictures: WARNO's art belongs to Eugen
+Systems ([NOTICE](NOTICE)).
 
 ## Components
 
