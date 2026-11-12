@@ -420,10 +420,10 @@ RedJuggernaut card shows.
 | 0 | Forward Detachment HQ | **Command:** `T80BV_CMD_SOV` ×2, `BMP_2_CMD_SOV` ×1, `MTLB_CMD_SOV` ×3 · **Recon Platoon:** `BRM_1_SOV` ×2 (xp 1), `Scout_SOV` ×2 in `UAZ_469_SOV` · **Air Defence Platoon:** `ZSU_23_Shilka_SOV` ×2, `MTLB_Strela10_SOV` ×1 (xp 1) · **Artillery Battery:** `2S1_Gvozdika_SOV` ×4 (xp 1) · **Supply:** `Ural_4320_SOV` ×4, `Mi_8TZ_SOV` ×2 · **Helicopter Flight:** `Ka_29_SOV` ×4 | open |
 | 1 | Tank Battalion | **1st, 2nd, 3rd Tank Platoon:** `T80BV_SOV` ×4 / ×3 / ×3 (xp 1, one pack of 10) | open |
 | 2 | Motor Rifle Company | **1st, 2nd, 3rd MR Platoon:** `MotRifles_SOV` ×3 / ×3 / ×2 in `BMP_2_SOV` · **ATGM Platoon:** `ATteam_KonkursM_TTsko_SOV` ×2 in `BTR_80_SOV` · **Assault Engineers:** `Engineers_Flam_SOV` ×2 in `MTLB_transp_SOV` | open |
-| 3 | Reserve: Tanks | **HQ & 1st Tank Platoon:** `T80U_CMD_SOV` ×1, `T80U_Obr89_SOV` ×3 · **2nd, 3rd, 4th Tank Platoon:** `T80U_Obr89_SOV` ×4 each · **AT Platoon:** `BRDM_2_Konkurs_SOV` ×6 | locked until the fall |
-| 4 | Reserve: Support | **1st, 2nd MR Platoon (Metis):** `MotRifles_Metis_SOV` ×4 / ×4 in `BMP_2_SOV` · **ATGM Platoon:** `ATteam_KonkursM_TTsko_SOV` ×4 in `BTR_80_SOV` (xp 1) · **Air Defence:** `Tunguska_2K22_SOV` ×2, `Osa_9K33M3_SOV` ×2, `2K12_KUB_SOV` ×2 · **Attack Helicopters:** `Mi_24V_AT_SOV` ×6, `Ka_50_SOV` ×4 · **Strike Aircraft:** `Su_25T_SOV` ×2, `Su_24M_clu_SOV` ×2 | locked until the fall |
+| 3 | Reserve: Tanks | **HQ & 1st Tank Platoon:** `T80U_CMD_SOV` ×1, `T80U_Obr89_SOV` ×3 · **2nd, 3rd, 4th Tank Platoon:** `T80U_Obr89_SOV` ×4 each · **AT Platoon:** `BRDM_2_Konkurs_SOV` ×6, `ATteam_KonkursM_TTsko_SOV` ×4 in `BTR_80_SOV` (xp 1) · **5th Tank Platoon:** `T80U_Obr89_SOV` ×4 | locked until the fall |
+| 4 | Reserve: Support | **1st, 2nd MR Platoon (Metis):** `MotRifles_Metis_SOV` ×4 / ×4 in `BMP_2_SOV` · **Air Defence:** `Tunguska_2K22_SOV` ×4, `Osa_9K33M3_SOV` ×2 · **SAM Battery:** `Buk_9K37M_SOV` ×2, `2K12_KUB_SOV` ×2 · **Attack Helicopters:** `Mi_24V_AT_SOV` ×6, `Ka_50_SOV` ×4 · **Strike Aircraft:** `Su_25T_SOV` ×2, `Su_24M_clu_SOV` ×4 | locked until the fall |
 
-- **Totals.** 49 cards in 15 packs on the open pages, 54 in 12 packs in the reserve. A platoon holds at most three
+- **Totals.** 49 cards in 15 packs on the open pages, 64 in 13 packs in the reserve. A platoon holds at most three
   card keys and a page six platoons, five pages in all: the game's group rules for an Operation's deck.
 - **Experience.** The four types the first play fielded from RedJuggernaut's deck keep its level, 1: the T-80BV,
   BRM-1, Strela-10 and 2S1. Every other card is at 0, but the reserve's Konkurs-M teams: at 1 they are a card key of
@@ -454,8 +454,9 @@ RedJuggernaut card shows.
 - **The T-80U is the obr. 1989** (`T80U_Obr89_SOV`), whose 9M119M Invar has 25 AP; the T-80U, the T-80UD and the
   T-80U command tank fire the 21 AP Refleks. No command variant has the Invar, so the reserve's command tank stays
   `T80U_CMD_SOV`. A stock test re-checks the AP.
-- **Heavy air defence** against NATO's fighter sweeps (6.3): `2K12_KUB_SOV` ×2 in the reserve, the 79th Guards Tank
-  Division's own SAM, bare as every stock pack holds it.
+- **Heavy air defence** against NATO's fighter sweeps (6.3), in the reserve: a SAM battery of `Buk_9K37M_SOV` ×2 and
+  `2K12_KUB_SOV` ×2 (the 79th Guards Tank Division's own SAM), bare as every stock pack holds them, beside four
+  Tunguskas and two Osas.
 - **Helicopters.**
   - **Ka-29 ×4 from the start**, bare gunship cards: rocket and gun runs on the garrison. The Ka-29 carries no troops
     in the game (it has no transporter module, and its tags are a gunship's), so it can never be a transport card.
@@ -543,10 +544,11 @@ points given are the start, the grant and one income tick a minute after the fal
 | 3, Hard: 4 teams | 86, 15,990 | the fall + 7:00 | 0.48 | 0.91 |
 | 4: battalion 2, every level | 52, 9,335 | the fall + 5:20 to 7:20 | 0.78 to 0.83 | 1.45 to 1.55 |
 
-- **The reserve** was worth more than the fall's points buy: with RJ's three unlocked types, 11,590 against the
-  11,000 the grant and Medium's income bring by battalion 1's last wave. The own deck's reserve pages hold the same
-  54 units without RJ's types: 10,805, 195 short (one Su-25T's cost). Under review: the balance test marks it as an
-  expected failure until the reserve or the rule changes.
+- **The reserve** is worth more than the fall's points buy: 13,195 against the 11,000 the grant and Medium's income
+  bring by battalion 1's last wave. Its first own-deck form, the old reserve without RedJuggernaut's three unlocked
+  types, fell 195 short (10,805); Francis, 2026-11-12: "Add more tanks and CLU bombers and proper AA": a fifth T-80U
+  platoon (+4), two more Su-24M with cluster bombs, two more Tunguskas and a SAM battery with two Buks. It holds 64
+  units.
 - **The knobs.** The economy's constants (4.3) are the player's side. Difficulty (5.7) and the scale knob (6.4) move
   NATO alone, so lowering either only raises the ratios.
 
@@ -574,8 +576,9 @@ points given are the start, the grant and one income tick a minute after the fal
   - `TS_Strike`, the strike's shot (5.6): one key over ASSEMBLY, flown from the player's camera in 4 s and held 11 s
     ◐ [[camera-shot-from-current-position]]; the camera gate holds it too.
 - **Text.** English and Simplified Chinese (`twinstrike/strings.toml`, its terms in `terms.toml`). The Chinese was
-  reviewed by a native reader, all but the deck's page and platoon names and the reserve's unlock, written since; none
-  of it has been seen in a Chinese play.
+  reviewed by a native reader, all but the deck's page and platoon names, the reserve's unlock and the briefing's later
+  edit (the reserve's Su-24Ms and Buks, and the cuts that made room for them), written since; none of it has been seen
+  in a Chinese play.
 - **The Operations menu** takes stock's form: a briefing dated July 1989 in four numbered points, the forces line, the
   background and the outcome texts, at stock's lengths. Its emblems are RedJuggernaut's (the 79th Guards Tank
   Division's star, flag and Guards badge); its map picture is still Survivors'.

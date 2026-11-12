@@ -7,7 +7,7 @@ second. You play the Soviets.
 > **v0.1 showcase.** Twin Strike is a demonstration of what the toolkit builds, not a polished or historical scenario.
 > Its context, its formations and their orders of battle are fictional. It has been played on game builds 201602 and
 > 210942. Its text is in English and Simplified Chinese; the Chinese, reviewed by a native reader but for the deck's
-> names and the reserve's unlock (written since), has not yet been seen in a Chinese play.
+> names, the reserve's unlock and the briefing's later edit (written since), has not yet been seen in a Chinese play.
 >
 > Known issues:
 > - **The deck:** the op's own deck, its page and platoon names and its reserve's page lock are new and not yet
@@ -129,8 +129,9 @@ is for the next.)
 2. Does the buy menu show the deck's five pages, Forward Detachment HQ, Tank Battalion, Motor Rifle Company, Reserve:
    Tanks and Reserve: Support, with no switch to another view and no RedJuggernaut card anywhere? Do the engineers and
    scouts come in their MT-LBs and UAZs, and the two Konkurs-M ATGM teams in their BTR-80s? What do the two reserve
-   pages look like before the fall (greyed, hidden, or shown but unbuyable), and can any of their cards be bought? Does
-   buying from a platoon take the whole platoon, or a unit at a time?
+   pages look like before the fall (greyed, hidden, or shown but unbuyable), and can any of their cards be bought (the
+   T-80Us, the Konkurs-M teams, the Buks and Kubs, the Su-24Ms among them)? Does buying from a platoon take the whole
+   platoon, or a unit at a time?
 3. Does the deploy screen open with a camera move of about 8 s, from high over the whole cut down to a view facing
    south, your deployment box in the near part of it and the village beyond? Does Escape skip straight to that view?
    Do you start with 3,000 points and no income?
@@ -156,8 +157,8 @@ minutes per fire, then vanish)
    BOX C, then west across the stream) into the village, and once there keep attacking your units rather than stand?
    Does the garrison fight from the village (into the houses, or holding its ground)?
 10. At the fall, did the village's zone turn yours, did 8,000 points arrive and then 500 a minute, and did the two
-    reserve pages unlock (T-80U obr. 1989, Ka-50, the Konkurs-M teams in BTR-80s, the two Kubs and the rest)? Did the
-    forces feel even against each battalion?
+    reserve pages unlock (T-80U obr. 1989, Ka-50, the Konkurs-M teams in BTR-80s, the Buk and Kub SAM battery, the
+    Su-24M cluster bombers and the rest)? Did the forces feel even against each battalion?
 11. The frame rate at the peak, when the second battalion appears with the first's survivors and your force on the
     map: smooth, or stuttering?
 
