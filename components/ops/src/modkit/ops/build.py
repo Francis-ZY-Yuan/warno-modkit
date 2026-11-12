@@ -417,7 +417,7 @@ def build(profile: OpProfile, content: Content, out_dir: str) -> list[Item]:
           f"{content.mod_name}), {len(content.items)} LevelDesign items"
           + ("" if content.script is not None else "; the template's script"))
     print("gate 1 strings: " + str(g("strings", gates.check_strings, content.name, content.strings,
-                                     profile.dictionaries, content.menu_tokens, stock_dictionaries("SC"))))
+                                     profile.dictionaries, content.menu_tokens, stock_dictionaries)))
     p = plan(profile, content)
     print(f"gate 2 generated: {check_generated(profile, content, p.items, g)}")
     script = check_script(profile, content, p, g)

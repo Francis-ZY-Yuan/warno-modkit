@@ -415,9 +415,10 @@ class CliTest(unittest.TestCase):
         unverified install adds is test_build_warning's: held off here, whatever build is installed.)"""
         with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(os.environ, {"MODKIT_EXTRACTED": tmp}), \
                 mock.patch.object(gamebuild, "build_warning", return_value=None):
-            os.makedirs(os.path.join(tmp, "scenarios"))   # gate 1 finds a Chinese dictionary; the template is gone
-            with open(os.path.join(tmp, "scenarios", "X-SC.dic"), "wb") as fh:
-                fh.write(trad.build_dic({"t_x": "x"}))
+            os.makedirs(os.path.join(tmp, "scenarios"))   # gate 1 finds both languages' sets; no template
+            for lang in ("SC", "US"):
+                with open(os.path.join(tmp, "scenarios", f"X-{lang}.dic"), "wb") as fh:
+                    fh.write(trad.build_dic({"t_x": "x"}))
             code, err = self.run_cli(profile, {"tiny": content}, ["--content", "tiny", "--out",
                                                                   os.path.join(tmp, "out")])
             self.assertFalse(os.path.exists(os.path.join(tmp, "out")))

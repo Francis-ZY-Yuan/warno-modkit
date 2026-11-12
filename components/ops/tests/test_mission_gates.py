@@ -1,7 +1,10 @@
 """Tests for the script and package gates in modkit.ops.gates, on tiny synthetic scripts: the parameters a profile
 sets (the end funnel's exports, the tier camps), the never-finishing rule, the strings and scenario-only gates."""
+import os
+import tempfile
 import unittest
 
+from modkit.core import trad
 from modkit.core.gates import CheckError
 from modkit.core.packaging import GAMEPLAY_FILES
 from modkit.ops.bricks import g_seq, g_simul, g_wait
@@ -115,14 +118,29 @@ class PackageTest(unittest.TestCase):
 
 class StringsGateTest(unittest.TestCase):
     def test_the_table_holds_exactly_the_dictionaries(self):
-        with self.assertRaisesRegex(StringError, r"x: the string table must hold exactly \['A', 'B'\]; unknown "
-                                                 r"\['C'\], missing \['B'\]"):
-            check_strings("x", {"A": {}, "C": {}}, ("A", "B"), (), [])
+        with self.assertRaisesRegex(StringError, r"x: the string table fails gate 1:\n  the table must hold exactly "
+                                                 r"\['A', 'B'\]; unknown \['C'\], missing \['B'\]"):
+            check_strings("x", {"A": {}, "C": {}}, ("A", "B"), (), lambda lang: [])
         self.assertTrue(issubclass(StringError, CheckError))  # so a profile can review it
 
-    def test_no_stock_chinese_dictionaries_fails(self):
-        with self.assertRaisesRegex(CheckError, "no stock"):
-            check_strings("x", {"A": {}}, ("A",), (), [])
+    def test_every_failure_at_once(self):
+        """A language with text and no stock dictionary fails, naming warno-setup; then parity, glyphs (each language
+        against its own stock set) and titles, one line per violation."""
+        table = {"A": {"a_name": {"US": "Go %1", "SC": "走", "FR": "Va %1"}, "a_x": ("Hold", "坚守")}}
+        stock = {"US": []}
+        with tempfile.TemporaryDirectory() as tmp:
+            for lang, text in (("SC", "走"), ("FR", "Va")):
+                stock[lang] = [os.path.join(tmp, f"T-{lang}.dic")]
+                with open(stock[lang][0], "wb") as fh:
+                    fh.write(trad.build_dic({"t": text}))
+            with self.assertRaises(StringError) as cm:
+                check_strings("x", table, ("A",), ("a_name",), stock.__getitem__)
+        lines = str(cm.exception).splitlines()[1:]
+        self.assertEqual(len(lines), 4, cm.exception)
+        self.assertRegex(lines[0], r"no stock \*-US\.dic .*warno-setup")
+        self.assertIn("A 'a_name': SC placeholder differs from US", lines[1])
+        self.assertIn("A 'a_x': the SC text has characters outside the stock SC set: 坚 (U+575A), 守 (U+5B88)", lines[2])
+        self.assertIn("'a_name': title token is not in the table", lines[3])
 
 
 if __name__ == "__main__":

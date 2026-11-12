@@ -1,22 +1,23 @@
-"""Tests for modkit.ops.strings, the bilingual string table and its gates.
+"""Tests for modkit.ops.strings, the per-language string table and its gates. Most tables use the (English, Chinese)
+shorthand; Languages holds the per-language form to it.
 
-The gates are pure string checks. Only test_stock_sc_chars_real reads files: the stock Simplified-Chinese dictionaries
-in the extraction (skipped without one).
+The gates are pure string checks. Only test_stock_chars_real reads files: the stock dictionaries in the extraction
+(skipped without one).
 """
 from __future__ import annotations
 
-import glob
 import os
 import tempfile
 import unittest
 
 from modkit.core import paths, trad
-from modkit.ops.strings import LANGS, StringError, check_glyphs, check_parity, check_titles, payloads, stock_sc_chars
+from modkit.core.glossary import stock_dictionaries
+from modkit.ops.strings import LANGS, StringError, check_glyphs, check_parity, check_titles, payloads, stock_chars
 
 DICTS = ("SCENARIO_DEFINITION", "Scripting/Dialog", "Scripting/Localization")
 
 
-def one(text: tuple[str, str], token: str = "od_t", dic: str = "Scripting/Localization"):
+def one(text: tuple[str, str] | dict[str, str], token: str = "od_t", dic: str = "Scripting/Localization"):
     """A one-token table."""
     return {dic: {token: text}}
 
@@ -49,6 +50,37 @@ class Payloads(unittest.TestCase):
     def test_payloads_run_the_parity_gate(self):
         with self.assertRaises(StringError):
             payloads(one(("Hold %1 / %2", "坚守 %1")))
+
+
+class Languages(unittest.TestCase):
+    """The per-language form: US is required, any other language optional, each packed from its own texts or US's."""
+
+    def test_the_shorthand_packs_as_its_two_languages(self):
+        pair = {"Scripting/Dialog": {"od_dlg": ("Hold %1", "坚守 %1")}}
+        self.assertEqual(payloads(pair), payloads({"Scripting/Dialog": {"od_dlg": {"US": "Hold %1", "SC": "坚守 %1"}}}))
+
+    def test_each_language_from_its_own_texts_else_us(self):
+        out = payloads(one({"US": "Hold", "FR": "Tenir"}))
+        texts = [dict(trad.read_dic(out[("Scripting/Localization", lang)]))[trad.token_key("od_t")]
+                 for lang in ("FR", "US", "SC", "GER")]
+        self.assertEqual(texts, ["Tenir", "Hold", "Hold", "Hold"])
+
+    def test_parity_holds_each_language_to_us(self):
+        with self.assertRaisesRegex(StringError, r"'od_t': FR placeholder differs from US: missing \['%1'\]"):
+            check_parity(one({"US": "Hold %1", "SC": "坚守 %1", "FR": "Tenir"}))
+        for texts in ({"SC": "坚守"}, {"US": "Hold", "XX": "x"}):
+            with self.subTest(texts=texts), self.assertRaisesRegex(StringError, "US is required"):
+                check_parity(one(texts))
+
+    def test_every_violation_in_one_error(self):
+        table = {"Scripting/Dialog": {"od_a": {"US": "Go %1", "SC": "走", "FR": "Va"}, "od_b": ("Hold", "")}}
+        with self.assertRaises(StringError) as cm:
+            check_parity(table)
+        self.assertEqual(len(str(cm.exception).splitlines()), 3, cm.exception)  # od_a in SC and FR, od_b's empty SC
+
+    def test_titles_in_every_language(self):
+        with self.assertRaisesRegex(StringError, "the FR title is 31 UTF-16 units"):
+            check_titles(one({"US": "a", "FR": "b" * 31}, "od_name", "SCENARIO_DEFINITION"), ["od_name"])
 
 
 class Parity(unittest.TestCase):
@@ -105,7 +137,7 @@ class Parity(unittest.TestCase):
 
 
 class Glyphs(unittest.TestCase):
-    ALLOWED = set("坚守")
+    ALLOWED = {"SC": set("坚守")}
 
     def test_glyph_outside_stock_set(self):
         with self.assertRaises(StringError) as cm:
@@ -124,8 +156,10 @@ class Glyphs(unittest.TestCase):
             with self.subTest(bad=bad), self.assertRaises(StringError):
                 check_glyphs(one(("x", bad)), self.ALLOWED)
 
-    def test_glyph_checks_only_the_chinese_column(self):
+    def test_glyph_checks_only_the_languages_given(self):
         check_glyphs(one(("Café", "坚守")), self.ALLOWED)
+        with self.assertRaisesRegex(StringError, "the US text has characters outside the stock US set: é"):
+            check_glyphs(one(("Café", "坚守")), {**self.ALLOWED, "US": set()})
 
 
 class Titles(unittest.TestCase):
@@ -170,20 +204,24 @@ class StockChars(unittest.TestCase):
             path = os.path.join(tmp, "t-SC.dic")
             with open(path, "wb") as fh:
                 fh.write(trad.write_dic(entries))
-            self.assertEqual(stock_sc_chars([path]), set("x守阵"))
+            self.assertEqual(stock_chars([path]), set("x守阵"))
             other = os.path.join(tmp, "u-SC.dic")
             with open(other, "wb") as fh:
                 fh.write(trad.build_dic({"b": "领"}))
-            self.assertEqual(stock_sc_chars(iter([path, other])), set("x守阵领"))
+            self.assertEqual(stock_chars(iter([path, other])), set("x守阵领"))
 
-    @paths.skip_unless_extracted("scenarios")
-    def test_stock_sc_chars_real(self):
-        paths_ = glob.glob(os.path.join(str(paths.extracted_root()), "**", "*-SC.dic"), recursive=True)
-        self.assertTrue(paths_)
-        chars = stock_sc_chars(paths_)
-        for ch in "占领区":
-            self.assertIn(ch, chars)
-        self.assertGreater(len(chars), 1000)
+    @paths.skip_unless_extracted("localisation")
+    def test_stock_chars_real(self):
+        """Each language's set is its stock dictionaries', the game's own (core's localisation) with the scenarios'
+        [[chinese-text-stock-glyphs]]: 核 (nuclear), which only the game's own SC dictionaries use, is in the SC set;
+        龘, which no stock text uses, is not."""
+        chars = {lang: stock_chars(stock_dictionaries(lang)) for lang in LANGS}
+        for ch in "占领区核":
+            self.assertIn(ch, chars["SC"])
+        self.assertNotIn("龘", chars["SC"])
+        self.assertGreater(len(chars["SC"]), 2000)
+        for lang in LANGS:
+            self.assertGreater(len(chars[lang]), 50, lang)
 
 
 if __name__ == "__main__":

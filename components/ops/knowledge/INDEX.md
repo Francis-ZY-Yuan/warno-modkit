@@ -74,7 +74,7 @@ A mechanism filed under two topics is listed under both.
 - [dialog-button-ingame-dictionary](mechanisms/dialog-button-ingame-dictionary.md): Dialog button labels resolve only in the game's in-game interface dictionary (PLAYED, verified 201602 2026-11-03)
 - [dialog-reask-loop](mechanisms/dialog-reask-loop.md): A multiple-choice dialog can be asked again in a loop if the choice is reset before each ask (PLAYED, verified 201602 2026-11-11)
 - [objective-counters](mechanisms/objective-counters.md): Objective text shows live counters from a variable list (PLAYED, verified 201602 2026-11-06)
-- [chinese-text-stock-glyphs](mechanisms/chinese-text-stock-glyphs.md): Simplified Chinese text must stay within the characters stock text already uses (PROBED, verified 201602 2026-11-03)
+- [chinese-text-stock-glyphs](mechanisms/chinese-text-stock-glyphs.md): Simplified Chinese text must stay within the characters stock text already uses (PROBED, verified 210942 2026-11-12)
 - [objective-waits-until-resolved](mechanisms/objective-waits-until-resolved.md): An objective finishes only after it resolves and its chosen actions finish (PROBED, verified 201602 2026-11-06)
 - [dialog-text-takes-no-variables](mechanisms/dialog-text-takes-no-variables.md): Dialog text cannot show live numbers; counts go in an objective counter or a hint (STOCK, verified 201602 2026-11-04)
 - [objective-label-needs-position](mechanisms/objective-label-needs-position.md): An objective's map label needs a position, or it pins the map corner (STOCK, verified 201602 2026-11-03)
@@ -179,6 +179,7 @@ The game's own words in this component's trials, the mechanism behind them, and 
 
 - 2026-11-12 [2026-11-12-twin-strike-launch-config-hash](trials/2026-11-12-twin-strike-launch-config-hash.md): launch, fail. NDF parsing error. Retry? @file:ScenariosData:/challenge_OperationTwinStrike/Scenario.ndf@(0:0): File not found : 'ScenariosData:/challenge_OperationTwinStrike/Scenario.ndf'
 - 2026-11-12 [2026-11-12-twin-strike-210942-play1](trials/2026-11-12-twin-strike-210942-play1.md): play, mixed. It is largely working. Only thing is very slow after nuking, and nuking didn't reveal enemy, so the effect was under represented
+- 2026-11-12 [2026-11-12-sc-glyph-every-dictionary](trials/2026-11-12-sc-glyph-every-dictionary.md): survey, pass
 - 2026-11-12 [2026-11-12-port-210942-survey](trials/2026-11-12-port-210942-survey.md): survey, pass
 - 2026-11-12 [2026-11-12-config-hash-stock-survey](trials/2026-11-12-config-hash-stock-survey.md): survey, pass
 - 2026-11-11 [2026-11-11-twin-strike-strike-unseen](trials/2026-11-11-twin-strike-strike-unseen.md): play, mixed. Not seeing the massive nuke effect, just a scripted effect of all units dead, while they were not detected; small explosions seen

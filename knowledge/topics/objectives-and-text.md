@@ -15,7 +15,7 @@ Topic `objectives-and-text`, declared by ops. Back to [the map](../README.md).
 
 ### PROBED
 
-- [chinese-text-stock-glyphs](../../components/ops/knowledge/mechanisms/chinese-text-stock-glyphs.md): Simplified Chinese text must stay within the characters stock text already uses (ops, verified 201602)
+- [chinese-text-stock-glyphs](../../components/ops/knowledge/mechanisms/chinese-text-stock-glyphs.md): Simplified Chinese text must stay within the characters stock text already uses (ops, verified 210942)
 - [objective-waits-until-resolved](../../components/ops/knowledge/mechanisms/objective-waits-until-resolved.md): An objective finishes only after it resolves and its chosen actions finish (ops, verified 201602)
 
 ### STOCK
@@ -38,6 +38,7 @@ Taught by the trials of these mechanisms.
 
 ## Trials, newest first
 
+- 2026-11-12 [2026-11-12-sc-glyph-every-dictionary](../../components/ops/knowledge/trials/2026-11-12-sc-glyph-every-dictionary.md) (ops): survey, pass
 - 2026-11-11 [2026-11-11-twin-strike-play1](../../components/ops/knowledge/trials/2026-11-11-twin-strike-play1.md) (ops): play, mixed
 - 2026-11-06 [2026-11-06-probe2-play-run-a](../../components/ops/knowledge/trials/2026-11-06-probe2-play-run-a.md) (ops): play, pass
 - 2026-11-04 [2026-11-04-lifecycle-survey](../../components/ops/knowledge/trials/2026-11-04-lifecycle-survey.md) (ops): re, pass

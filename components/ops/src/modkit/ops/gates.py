@@ -60,7 +60,9 @@ from modkit.ops.items import Item
 from modkit.ops.leveldesign import GD_TAG_CLASS, LD_FILE, TAG_ID, ZONE_FILES, LdItem, read_ld_items
 from modkit.ops.rekey import DBG, DEF_EXTS, TAG, TAG_CLASS, TXN, DumpRow, def_entry, def_path
 from modkit.ops.script import BRICK_DEFAULT, BRICK_FORCE_HIDE, PROD_MENU_SWITCH
-from modkit.ops.strings import StringError, Table, check_glyphs, check_parity, check_titles, stock_sc_chars
+from modkit.ops.strings import (
+    LANGS, StringError, Table, check_glyphs, check_parity, check_titles, per_language, stock_chars,
+)
 from modkit.ops.zones import (
     area_bbox, as_f32, camera_paths_graph, heading, ia_grid, ia_grid_subset, ia_zone_graph, path_cache_graph,
     playable_zone_graph, point_in_polygon, polygon_centroid, read_ia_grid, read_playable_polygon, read_zone_areas,
@@ -73,25 +75,36 @@ if TYPE_CHECKING:
 # --------------------------------------------------------------------------- strings (gate 1)
 
 def check_strings(name: str, table: Table, dictionaries: Sequence[str], menu_tokens: Iterable[str],
-                  sc_dics: Sequence[str]) -> str:
-    """Gate 1. The content `name`'s string table holds exactly `dictionaries` (modkit.ops.strings.payloads does not
-    check names, and an empty .dic is unproven), then the parity, glyph and title gates of modkit.ops.strings. The
-    glyph gate admits the characters of `sc_dics`, the stock Simplified-Chinese dictionaries (the game's font has
-    them); the title gate holds `menu_tokens` to 30 UTF-16 units (a toolkit convention: strings.check_titles)."""
-    names = set(table)
+                  stock: Callable[[str], Sequence[str]]) -> str:
+    """Gate 1, every failure at once. The content `name`'s string table holds exactly `dictionaries`
+    (modkit.ops.strings.payloads does not check names, and an empty .dic is unproven); then the parity, glyph and title
+    gates of modkit.ops.strings. Each language with text is held to the characters of its stock dictionaries,
+    `stock(lang)` (modkit.core.glossary.stock_dictionaries: the game's font has them), and fails without any; the
+    title gate holds `menu_tokens` to 30 UTF-16 units in every language (a toolkit convention: strings.check_titles).
+    """
+    names, problems = set(table), []
     extra, missing = sorted(names - set(dictionaries)), sorted(set(dictionaries) - names)
     if extra or missing:
-        raise StringError(f"{name}: the string table must hold exactly {list(dictionaries)}; "
-                          f"unknown {extra}, missing {missing}")
-    check_parity(table)
-    check(bool(sc_dics), "no stock *-SC.dic in the extraction: the glyph gate has nothing to compare with")
-    chars = stock_sc_chars(sc_dics)
-    check_glyphs(table, chars)
+        problems.append(f"the table must hold exactly {list(dictionaries)}; unknown {extra}, missing {missing}")
+    used = {lang for tokens in per_language(table).values() for texts in tokens.values() for lang in texts}
+    langs = [lang for lang in LANGS if lang in used]
+    dics = {lang: stock(lang) for lang in langs}
+    problems += [f"no stock *-{lang}.dic in the extraction: the glyph gate has nothing to hold {lang} text to; "
+                 f"{SETUP_FIX}" for lang in langs if not dics[lang]]
+    chars = {lang: stock_chars(dics[lang]) for lang in langs if dics[lang]}
     menu_tokens = tuple(menu_tokens)
-    check_titles(table, menu_tokens)
+    for gate, *args in ((check_parity,), (check_glyphs, chars), (check_titles, menu_tokens)):
+        try:
+            gate(table, *args)
+        except StringError as exc:
+            problems.append(str(exc))
+    if problems:
+        raise StringError(f"{name}: the string table fails gate 1:" + "".join(
+            f"\n  {line}" for problem in problems for line in problem.splitlines()))
     tokens = sum(len(t) for t in table.values())
-    return (f"{tokens} tokens in {len(dictionaries)} dictionaries: parity OK; Chinese within the {len(chars):,} "
-            f"characters of {len(sc_dics)} stock SC dictionaries; {len(menu_tokens)} titles <= 30 UTF-16 units")
+    return (f"{tokens} tokens in {len(dictionaries)} dictionaries: parity OK; "
+            + ", ".join(f"{lang} within the {len(chars[lang]):,} characters of {len(dics[lang])} stock {lang} "
+                        "dictionaries" for lang in langs) + f"; {len(menu_tokens)} titles <= 30 UTF-16 units")
 
 
 # --------------------------------------------------------------------------- LevelDesign binding
@@ -1609,9 +1622,10 @@ def dialog_text_violations(roots: Iterable[Node], texts: Mapping[int, Sequence[s
 
 
 def check_dialog_text(roots: Iterable[Node], strings: Table) -> int:
-    """Gate 3: dialog_text_violations finds nothing in the content's string table (English and Chinese). Returns the
+    """Gate 3: dialog_text_violations finds nothing in the content's string table (every language). Returns the
     number of dialog text tokens checked."""
-    texts = {ndfbin.token_hash(tok): pair for table in strings.values() for tok, pair in table.items()}
+    texts = {ndfbin.token_hash(tok): tuple(by_lang.values()) for table in per_language(strings).values()
+             for tok, by_lang in table.items()}
     n, bad = dialog_text_violations(roots, texts)
     check(not bad, f"{len(bad)} dialog texts hold a %1..%9 placeholder, which a dialog shows as is (it takes no "
                    f"variables):\n  " + "\n  ".join(bad) + "\nPut the number in an objective's or a hint's "

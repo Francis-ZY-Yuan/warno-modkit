@@ -465,7 +465,7 @@ STRINGS: Table = {
         "od_h2": ("CHECK 1, 2: deploy in the west zone (3,000 points). Deck: is the A-10A [AT] card locked? Are the "
                   "Leopard 2A4 card and the Rifles in M113A3 card there? Which badge shows?",
                   "检查1、2：在西侧部署区部署（3,000点）。卡组：A-10A [AT]卡是否已锁定？是否有Leopard 2A4卡和乘坐"
-                  "M113A3的步兵卡？显示的是哪个师的标志？"),  # 徽 (badge) is outside the stock SC set
+                  "M113A3的步兵卡？显示的是哪个师的标志？"),  # 徽 (badge) was outside the stock SC set of the time
         "od_h2b": ("CHECK 2: the A-10A [AT] card should be unlocked now.", "检查2：A-10A [AT]卡现在应已解锁。"),
         "od_h3": ("CHECK 3: reserves revealed: 4 M1A1HA at RESERVE N and 4 Leopard 2A4 at HIDE S. Can you command "
                   "them?",

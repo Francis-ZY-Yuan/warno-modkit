@@ -8,6 +8,7 @@ A fact holds for the build it was last verified on. After a game update, a recor
 ### Mechanisms last verified on it
 
 - [changestress-damagetype-zero](../components/ops/knowledge/mechanisms/changestress-damagetype-zero.md) (ops): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load (PLAYED, 2026-11-12)
+- [chinese-text-stock-glyphs](../components/ops/knowledge/mechanisms/chinese-text-stock-glyphs.md) (ops): Simplified Chinese text must stay within the characters stock text already uses (PROBED, 2026-11-12)
 - [custom-operation-from-stock-parts](../components/ops/knowledge/mechanisms/custom-operation-from-stock-parts.md) (ops): A custom Operation can be built entirely from cloned stock files plus a generated LevelDesign and GDScript (PLAYED, 2026-11-12)
 - [edat-revision-chain](../components/core/knowledge/mechanisms/edat-revision-chain.md) (core): Game data is a chain of edat archives, read newest revision first (RE, 2026-11-12)
 - [game-build-classes](../components/ops/knowledge/mechanisms/game-build-classes.md) (ops): A game update removes and renames classes and properties; a mod's files may hold only those the installed build's stock holds (STOCK, 2026-11-12)
@@ -29,6 +30,7 @@ A fact holds for the build it was last verified on. After a game update, a recor
 - 2026-11-12 [2026-11-12-twin-strike-workshop-page](../components/core/knowledge/trials/2026-11-12-twin-strike-workshop-page.md) (core): launch, pass
 - 2026-11-12 [2026-11-12-twin-strike-launch-config-hash](../components/ops/knowledge/trials/2026-11-12-twin-strike-launch-config-hash.md) (ops): launch, fail
 - 2026-11-12 [2026-11-12-twin-strike-210942-play1](../components/ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md) (ops): play, mixed
+- 2026-11-12 [2026-11-12-sc-glyph-every-dictionary](../components/ops/knowledge/trials/2026-11-12-sc-glyph-every-dictionary.md) (ops): survey, pass
 - 2026-11-12 [2026-11-12-port-210942-survey](../components/ops/knowledge/trials/2026-11-12-port-210942-survey.md) (ops): survey, pass
 - 2026-11-12 [2026-11-12-config-hash-stock-survey](../components/ops/knowledge/trials/2026-11-12-config-hash-stock-survey.md) (ops): survey, pass
 - 2026-11-12 [2026-11-12-build-210942-port](../components/core/knowledge/trials/2026-11-12-build-210942-port.md) (core): survey, pass
@@ -41,7 +43,6 @@ A fact holds for the build it was last verified on. After a game update, a recor
 - [ai-grid-tiles-playable-zone](../components/ops/knowledge/mechanisms/ai-grid-tiles-playable-zone.md) (ops): The AI strategic grid must tile the playable zone (PLAYED, 2026-11-03)
 - [arrival-end-in-zone](../components/ops/knowledge/mechanisms/arrival-end-in-zone.md) (ops): Every player arrival entry must end inside a deployment zone of its side or a command zone (STOCK, 2026-11-04)
 - [camera-shot-from-current-position](../components/ops/knowledge/mechanisms/camera-shot-from-current-position.md) (ops): Mid-battle, a script flies the camera from wherever it is to a one-key path, in a cutscene that can hold the view (STOCK, 2026-11-11)
-- [chinese-text-stock-glyphs](../components/ops/knowledge/mechanisms/chinese-text-stock-glyphs.md) (ops): Simplified Chinese text must stay within the characters stock text already uses (PROBED, 2026-11-03)
 - [content-identity-unique](../components/ops/knowledge/mechanisms/content-identity-unique.md) (ops): Two mods cloned from one template must not share an identity (PLAYED, 2026-11-11)
 - [count-race-forced-owner](../components/ops/knowledge/mechanisms/count-race-forced-owner.md) (ops): Decide a zone by a timed unit count, then force its owner so the map shows it (PLAYED, 2026-11-06)
 - [crash-dump-names-the-error](../components/core/knowledge/mechanisms/crash-dump-names-the-error.md) (core): The crash report's dump names the real error (RE, 2026-11-03)
