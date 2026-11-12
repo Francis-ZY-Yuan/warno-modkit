@@ -202,11 +202,11 @@ still left NATO well ahead in the next smoke play; the balance (6.5) sets the va
 
 ### 5.2 The unlock
 
-- **The cards.** The defence cards are in the deck from the start, locked with `LockDeckUnit` until the village
-  falls, then unlocked and added to ◐ [[add-unit-to-deck]].
+- **The cards.** The division's reserve is in the deck from the start, on two pages of its own (6.1), locked with
+  `LockCombatGroup` until the village falls, then unlocked: no card is added ◐ [[deck-page-lock]].
 - **The points.** 8,000 at once and an income from then on (4.3).
-- **The hint.** "Village taken. Front releases the division's reserve and 8,000 points, with income from now on. NATO
-  recon is moving north."
+- **The hint.** "Village taken. Front releases the division's reserve, its two pages of the buy menu now unlocked,
+  and 8,000 points, with income from now on. NATO recon is moving north."
 
 ### 5.3 The counter-attack
 
@@ -403,25 +403,49 @@ All units are vanilla. Every name below is in the game's DeckPacks. Each build's
 
 ### 6.1 Player deck
 
-**The base is `OP_BASE_RJ_Player`**, RedJuggernaut's deck for the 79th Guards Tank Division ✓ [[soviet-player-camp]].
-- **It keeps its own cards.** These include T-80B and T-80BV packs, a Tunguska, 2S1s, BRM-1, Strela-10, Mi-24K/P,
-  Su-25, MiG-23, Su-24M, and DShV in Mi-8s.
-- **The script only adds to it**, because a script cannot remove cards.
-- **`OP_BASE_GOT_Player` is not used.** It is an East German division.
+**The deck is the op's own** ? [[op-exported-deck]]. The script exports it (`op.player_deck_export`, from
+`forces.DECK_PAGES`) and the player camp's `SetDeck` names it by its own identifier, hash-derived (`TS_<hash>_Player`)
+so no stock deck or other mod's has it. The buy menu offers exactly the order of battle, on the op's own pages: no
+RedJuggernaut card shows.
+- **What stays stock.** The menu's deck (`LocalPlayerDeck`) stays RedJuggernaut's `OP_BASE_RJ_Player`, because the
+  out-game screens resolve it before the op's script loads; `SetDeck` replaces it at the load
+  [[soviet-player-camp]]. The deck's division is RedJuggernaut's (the 79th Guards Tank Division's Operation
+  division), its `DeckName` the division's own name. The NATO2 camp keeps `OP_BASE_RJ_IA`.
+- **One source.** `forces.DECK_PAGES` holds the pages, their platoons and every card (unit, count, carrier,
+  experience). The deck's packs are derived from it: one pack per card key (unit, carrier, experience), its count the
+  sum over its platoons, so every card is on a page, once. The game pools a deck's cards by that key.
 
-| When | Script | Cards |
-|---|---|---|
-| start | AddUnitToDeck, only what RJ lacks or holds too few of (diffed against RJ's packs, pinned in `forces.py`; a stock test re-derives it) | to reach at least `T80BV_SOV` ×10, `T80BV_CMD_SOV` ×2, `BMP_2_CMD_SOV` ×1, `BMP_2_SOV` ×8 with `MotRifles_SOV` ×8, `BTR_80_SOV` ×2 with `ATteam_KonkursM_TTsko_SOV` ×2, `MTLB_transp_SOV` ×2 with `Engineers_Flam_SOV` ×2, `BRM_1_SOV` ×2, `UAZ_469_SOV` ×2 with `Scout_SOV` ×2, `ZSU_23_Shilka_SOV` ×2, `MTLB_Strela10_SOV` ×1, `2S1_Gvozdika_SOV` ×4, `Ka_29_SOV` ×4 |
-| start, after those | AddUnitToDeck, the Soviet player's supply (`modkit.ops.profile.SOVIET_PLAYER_SUPPLY`, `forces.SUPPLY`): RJ's deck has no supply helicopter, and its supply trucks sit only in battlegroups 2 and 3's HQ groups (a stock test re-checks both) | `Ural_4320_SOV` ×4, `Mi_8TZ_SOV` ×2 |
-| start, until the village falls | LockDeckUnit, by type | RJ's own defence-grade types: `Tunguska_2K22_SOV`, the Su-24M and Mi-24P variants it holds |
-| the fall | unlock, then AddUnitToDeck | `T80U_Obr89_SOV` ×15, `T80U_CMD_SOV` ×1, `Tunguska_2K22_SOV` ×2, `Osa_9K33M3_SOV` ×2, `Mi_24V_AT_SOV` ×6, `Ka_50_SOV` ×4, `Su_25T_SOV` ×2, `Su_24M_clu_SOV` ×2, `BRDM_2_Konkurs_SOV` ×6, `BMP_2_SOV` ×8 with `MotRifles_Metis_SOV` ×8, `BTR_80_SOV` ×4 with `ATteam_KonkursM_TTsko_SOV` ×4, `2K12_KUB_SOV` ×2 |
+| # | Page | Platoons (unit ×n, carrier, xp) | |
+|---|---|---|---|
+| 0 | Forward Detachment HQ | **Command:** `T80BV_CMD_SOV` ×2, `BMP_2_CMD_SOV` ×1, `MTLB_CMD_SOV` ×3 · **Recon Platoon:** `BRM_1_SOV` ×2 (xp 1), `Scout_SOV` ×2 in `UAZ_469_SOV` · **Air Defence Platoon:** `ZSU_23_Shilka_SOV` ×2, `MTLB_Strela10_SOV` ×1 (xp 1) · **Artillery Battery:** `2S1_Gvozdika_SOV` ×4 (xp 1) · **Supply:** `Ural_4320_SOV` ×4, `Mi_8TZ_SOV` ×2 · **Helicopter Flight:** `Ka_29_SOV` ×4 | open |
+| 1 | Tank Battalion | **1st, 2nd, 3rd Tank Platoon:** `T80BV_SOV` ×4 / ×3 / ×3 (xp 1, one pack of 10) | open |
+| 2 | Motor Rifle Company | **1st, 2nd, 3rd MR Platoon:** `MotRifles_SOV` ×3 / ×3 / ×2 in `BMP_2_SOV` · **ATGM Platoon:** `ATteam_KonkursM_TTsko_SOV` ×2 in `BTR_80_SOV` · **Assault Engineers:** `Engineers_Flam_SOV` ×2 in `MTLB_transp_SOV` | open |
+| 3 | Reserve: Tanks | **HQ & 1st Tank Platoon:** `T80U_CMD_SOV` ×1, `T80U_Obr89_SOV` ×3 · **2nd, 3rd, 4th Tank Platoon:** `T80U_Obr89_SOV` ×4 each · **AT Platoon:** `BRDM_2_Konkurs_SOV` ×6 | locked until the fall |
+| 4 | Reserve: Support | **1st, 2nd MR Platoon (Metis):** `MotRifles_Metis_SOV` ×4 / ×4 in `BMP_2_SOV` · **ATGM Platoon:** `ATteam_KonkursM_TTsko_SOV` ×4 in `BTR_80_SOV` (xp 1) · **Air Defence:** `Tunguska_2K22_SOV` ×2, `Osa_9K33M3_SOV` ×2, `2K12_KUB_SOV` ×2 · **Attack Helicopters:** `Mi_24V_AT_SOV` ×6, `Ka_50_SOV` ×4 · **Strike Aircraft:** `Su_25T_SOV` ×2, `Su_24M_clu_SOV` ×2 | locked until the fall |
 
+- **Totals.** 49 cards in 15 packs on the open pages, 54 in 12 packs in the reserve. A platoon holds at most three
+  card keys and a page six platoons, five pages in all: the game's group rules for an Operation's deck.
+- **Experience.** The four types the first play fielded from RedJuggernaut's deck keep its level, 1: the T-80BV,
+  BRM-1, Strela-10 and 2S1. Every other card is at 0, but the reserve's Konkurs-M teams: at 1 they are a card key of
+  their own, which the start's teams at 0 cannot sell.
+- **The lock.** Pages 3 and 4 are locked from the start until the village falls, one `LockCombatGroup` per page in a
+  Competition with a WaitCondition on the fall, as RunningTheGauntlet locks its two pages ◐ [[deck-page-lock]]. The
+  decks gate holds that no card key is on a locked page and an open one, so the lock holds every reserve card back.
+- **The buy menu is held in its GROUPS view,** the deck's pages, with the view switch hidden, as stock does wherever
+  it locks a page (Marauders #107, #108, #162): `ChangeProductionType` Groups, the hide-all with the switch hidden,
+  the buy menu shown with the switch still hidden. The other view pools the cards and would sell the locked pages'.
+- **Names.** The pages and platoons carry the op's own names, in two dictionaries of its own, `DECK_COMPANIES` and
+  `DECK_PLATOONS`, which the op's MapConfiguration appends to the game's COMPANIES and PLATOONS lists beside its menu
+  dictionary ? [[deck-names-from-op-dictionaries]]. Stock has no page name for a reserve. The fallback,
+  `forces.STOCK_NAMES` (`build.py --stock-names`), carries stock names instead ("Company HQ", "1-1-17-y GvTP", "Inf.
+  Company", "2-1-17-y GvTP", "Air Support", "Platoon HQ", "1st Platoon" and so on) and ships neither dictionary: the
+  retry if a launch shows a dictionary error naming a `ts_*` token.
 - **Every infantry card rides in a carrier,** as stock fields each of these squads (no stock deck holds one bare): in
   the first play the bare engineers and scouts deployed on foot, while the motor rifles in their BMP-2s deployed
   loaded ✓ [[add-unit-to-deck]]. Each carrier is one stock pairs the squad with: the engineers in MT-LBs (the 2S12's
-  tractor, in RJ's deck), the scouts in UAZ-469s (RJ's), the Metis teams in BMP-2s (the start adds'), the Konkurs-M
-  teams in BTR-80s (their division's).
-- **ATGM teams, with the best missile.** Two Konkurs-M teams in BTR-80s from the start, four more with the reserve.
+  tractor, in RJ's deck), the scouts in UAZ-469s (RJ's), the motor rifles and the Metis teams in BMP-2s, the Konkurs-M
+  teams in BTR-80s (their division's). The decks gate holds every pairing to the game's own transport rules.
+- **ATGM teams, with the best missile.** Two Konkurs-M teams in BTR-80s from the start, four more in the reserve.
   The team (`ATteam_KonkursM_TTsko_SOV`) fires the 9M113M (late), 23 AP at 2,625 GRU: the highest AT penetration of
   any Soviet ATGM infantry a Soviet division's rules field (every other is 20 AP or less). Its division, the 27th Guards
   Motor Rifle, fields it in a UAZ-469 or a BTR-80; the BTR-80 is the armoured one. AT infantry is a defence asset, as
@@ -430,28 +454,25 @@ All units are vanilla. Every name below is in the game's DeckPacks. Each build's
 - **The T-80U is the obr. 1989** (`T80U_Obr89_SOV`), whose 9M119M Invar has 25 AP; the T-80U, the T-80UD and the
   T-80U command tank fire the 21 AP Refleks. No command variant has the Invar, so the reserve's command tank stays
   `T80U_CMD_SOV`. A stock test re-checks the AP.
-- **The buy menu opens on its BATTLEGROUP view** (`ChangeProductionType` Deck, 0, Twin Strike's alone through
-  `profile.PRODUCTION_TYPE`; every other content keeps stock's Groups, 1). The cards the script adds join no
-  battlegroup, so they show in that view only, as the first play showed; the view switch stays, so GROUPS is a click
-  away.
-- **Heavy air defence** against NATO's fighter sweeps (6.3): `2K12_KUB_SOV` ×2 with the reserve, the 79th Guards Tank
+- **Heavy air defence** against NATO's fighter sweeps (6.3): `2K12_KUB_SOV` ×2 in the reserve, the 79th Guards Tank
   Division's own SAM, bare as every stock pack holds it.
-
-- **Helicopters.** RJ's deck already flies Mi-8s with DShV, Mi-2s and Mi-24K/P, so a Soviet player's helicopter
-  cards are stock.
-  - **Ka-29 ×4 from the start**, bare, as its only stock pack has it: rocket and gun runs on the garrison. Loaded with
-    infantry it would be a transport card (6.1's proof line).
-  - **Ka-50 ×4 with the reserve.** The game has no Ka-52; the Ka-50 is its single-seat parent. It is a tank killer,
+- **Helicopters.**
+  - **Ka-29 ×4 from the start**, bare gunship cards: rocket and gun runs on the garrison. The Ka-29 carries no troops
+    in the game (it has no transporter module, and its tags are a gunship's), so it can never be a transport card.
+  - **Ka-50 ×4 in the reserve.** The game has no Ka-52; the Ka-50 is its single-seat parent. It is a tank killer,
     held for battalion 1's Abrams, like the Mi-24V. At the start it would make short work of the garrison's three
-    Leopards and one Gepard. Stock's own mid-battle AddUnitToDeck uses are all aircraft ◐ [[add-unit-to-deck]].
-
-- **Command units.** Three of them (2 T-80BV CMD, 1 BMP-2 CMD), so the fall (5.1) does not depend on one vehicle.
-- **Supply.** RJ's deck was shaped for RedJuggernaut: no supply helicopter, and its Ural-4320s only in the two tank
-  battalions' HQ groups, so a player who never opens those groups finds no supply ([[soviet-player-camp]]). The
-  script adds four Ural-4320 trucks and two Mi-8TZ supply helicopters at the start, the toolkit's shared Soviet
-  supply, so the player can supply by road and by air whatever battlegroups the buy menu shows.
-- **The lock acts by type,** so it never names a type the player needs before the fall.
-- **Proof.** A transport card played ✓ [[add-unit-to-deck]]; lock-then-unlock is ◐.
+    Leopards and one Gepard.
+  - **No airborne infantry.** The deck is the order of battle (2026-11-12): RedJuggernaut's air-assault battalion is
+    gone with its deck.
+- **Command units.** Six from the start (2 T-80BV CMD, 1 BMP-2 CMD, 3 MT-LB CMD), so the fall (5.1) does not depend
+  on one vehicle, and the reserve's T-80U command tank: `forces.COMMAND_UNITS`, every command card of the deck.
+- **Supply.** Four Ural-4320 trucks and two Mi-8TZ supply helicopters on the HQ page from the start, the toolkit's
+  shared Soviet supply, so the player can supply by road and by air.
+- **What the player no longer has** against the first plays: RedJuggernaut's cards outside the order of battle,
+  among them its T-80Bs, its Su-25s (napalm) and its MiG-23s. With the MiG-23s gone the player has no fighter at all
+  against NATO's fighter sweeps, only air defence.
+- **Proof.** A transport card played ✓ [[add-unit-to-deck]]; the own deck, its names and the page lock are not yet
+  played ?.
 
 ### 6.2 Soviet units not in the deck
 
@@ -522,9 +543,10 @@ points given are the start, the grant and one income tick a minute after the fal
 | 3, Hard: 4 teams | 86, 15,990 | the fall + 7:00 | 0.48 | 0.91 |
 | 4: battalion 2, every level | 52, 9,335 | the fall + 5:20 to 7:20 | 0.78 to 0.83 | 1.45 to 1.55 |
 
-- **The reserve** is worth more than the fall's points buy: with RJ's three unlocked types, 11,590 against the 11,000
-  the grant and Medium's income bring by battalion 1's last wave. It holds 54 units (37 before), the deck at the start
-  122 (120).
+- **The reserve** was worth more than the fall's points buy: with RJ's three unlocked types, 11,590 against the
+  11,000 the grant and Medium's income bring by battalion 1's last wave. The own deck's reserve pages hold the same
+  54 units without RJ's types: 10,805, 195 short (one Su-25T's cost). Under review: the balance test marks it as an
+  expected failure until the reserve or the rule changes.
 - **The knobs.** The economy's constants (4.3) are the player's side. Difficulty (5.7) and the scale knob (6.4) move
   NATO alone, so lowering either only raises the ratios.
 
@@ -551,8 +573,9 @@ points given are the start, the grant and one income tick a minute after the fal
     the camera sat on the ground [[2026-11-11-twin-strike-opening-camera]].
   - `TS_Strike`, the strike's shot (5.6): one key over ASSEMBLY, flown from the player's camera in 4 s and held 11 s
     ◐ [[camera-shot-from-current-position]]; the camera gate holds it too.
-- **Text.** English and Simplified Chinese (`twinstrike/strings.toml`, its terms in `terms.toml`). The Chinese was reviewed by a native reader and
-  has not yet been seen in a Chinese play.
+- **Text.** English and Simplified Chinese (`twinstrike/strings.toml`, its terms in `terms.toml`). The Chinese was
+  reviewed by a native reader, all but the deck's page and platoon names and the reserve's unlock, written since; none
+  of it has been seen in a Chinese play.
 - **The Operations menu** takes stock's form: a briefing dated July 1989 in four numbered points, the forces line, the
   background and the outcome texts, at stock's lengths. Its emblems are RedJuggernaut's (the 79th Guards Tank
   Division's star, flag and Guards badge); its map picture is still Survivors'.

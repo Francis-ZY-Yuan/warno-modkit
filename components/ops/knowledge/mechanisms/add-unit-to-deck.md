@@ -21,9 +21,13 @@ Twin Strike's first play settled two questions ([[2026-11-11-twin-strike-play1]]
 - **A transport card works:** motor rifles added with their BMP-2 as the Transporter were bought and deployed loaded.
   Infantry added with no carrier deployed on foot, so every infantry card now names a carrier stock pairs it with.
 - **Added cards show in the buy menu's BATTLEGROUP view only,** not in its GROUPS view. A card added at load joins no
-  battlegroup (no property or sibling node adds a pack to a group; the deck's groups are data of the Gameplay deck
-  file). Every stock `ChangeProductionType` writes Groups (1); a content whose cards matter can open the menu on Deck
-  (0, `script.PRODUCTION_DECK`, the BATTLEGROUP view) and leave the view switch at Default.
+  battlegroup (no property or sibling node adds a pack to a group, and a stock deck's groups are the deck's own
+  data). Every stock `ChangeProductionType` writes Groups (1); a content whose added cards matter can open the menu on
+  Deck (0, `script.PRODUCTION_DECK`, the BATTLEGROUP view) and leave the view switch at Default.
+
+**Twin Strike no longer adds cards.** Its first plays topped RedJuggernaut's deck up so; since then it fields a deck
+of its own, its cards on its own pages from the start and its reserve on locked pages, so it neither adds nor locks
+a card [[op-exported-deck]] [[deck-page-lock]]. The probes still add cards (`nuke_sov` its supply).
 
 `LockDeckUnit` holds a card back until its action is retired, so stock puts it last in a Competition that ends at
 the moment of the unlock ([[seteffect-never-finishes]]); our lock-then-unlock has not been reported in play.
@@ -37,6 +41,6 @@ deployment buy menu first, which separates "card missing" from "buy refused" fro
 - Trials: [2026-11-03-play2-stock-survey](../trials/2026-11-03-play2-stock-survey.md), [2026-11-03-probe1-play2-sead-card](../trials/2026-11-03-probe1-play2-sead-card.md), [2026-11-06-probe2-play-run-a](../trials/2026-11-06-probe2-play-run-a.md), [2026-11-06-spawns-and-deck-survey](../trials/2026-11-06-spawns-and-deck-survey.md), [2026-11-11-twin-strike-play1](../trials/2026-11-11-twin-strike-play1.md)
 - Shapes: [`modkit.ops.shapes.add_card`](../../src/modkit/ops/shapes.py), [`modkit.ops.shapes.lock_card`](../../src/modkit/ops/shapes.py), [`modkit.ops.script.PRODUCTION_DECK`](../../src/modkit/ops/script.py)
 - Skills: [`components/ops/skills/warno-new-operation/references/op-anatomy.md`](../../skills/warno-new-operation/references/op-anatomy.md), [`components/ops/skills/warno-new-operation/references/script-recipes.md`](../../skills/warno-new-operation/references/script-recipes.md)
-- Examples: [`components/ops/examples/open-door/README.md`](../../examples/open-door/README.md), [`components/ops/examples/open-door/docs/design.md`](../../examples/open-door/docs/design.md), [`components/ops/examples/open-door/opendoor/op.py`](../../examples/open-door/opendoor/op.py), [`components/ops/examples/probes/README.md`](../../examples/probes/README.md), [`components/ops/examples/twin-strike/README.md`](../../examples/twin-strike/README.md), [`components/ops/examples/twin-strike/docs/design.md`](../../examples/twin-strike/docs/design.md)
+- Examples: [`components/ops/examples/open-door/README.md`](../../examples/open-door/README.md), [`components/ops/examples/open-door/docs/design.md`](../../examples/open-door/docs/design.md), [`components/ops/examples/open-door/opendoor/op.py`](../../examples/open-door/opendoor/op.py), [`components/ops/examples/probes/README.md`](../../examples/probes/README.md), [`components/ops/examples/twin-strike/docs/design.md`](../../examples/twin-strike/docs/design.md)
 - Records: [2026-11-11-twin-strike-play1](../trials/2026-11-11-twin-strike-play1.md), [deployment-phase-recipe](deployment-phase-recipe.md), [helicopter-boarding](helicopter-boarding.md), [soviet-player-camp](soviet-player-camp.md)
 <!-- referenced-by:end -->

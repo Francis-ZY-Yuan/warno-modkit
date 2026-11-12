@@ -39,7 +39,7 @@ a locked page and an open one. Every one of the game's 2,486 decks passes the ga
 decks draw their packs unevenly, which only the op's rule refuses.
 
 **Not yet seen in play:** the first launch, a mission restart (whether the old deck is gone before the new one
-registers), and whether a platoon is bought whole or unit by unit.
+registers), and whether a platoon is bought whole or unit by unit. Twin Strike is the first content to use it.
 
 <!-- referenced-by:start -->
 ## Referenced by
@@ -47,7 +47,7 @@ registers), and whether a platoon is bought whole or unit by unit.
 - Trials: [2026-11-12-deck-gate-bad-builds](../trials/2026-11-12-deck-gate-bad-builds.md), [2026-11-12-deck-gate-stock-survey](../trials/2026-11-12-deck-gate-stock-survey.md)
 - Gates: [`modkit.ops.gates.check_decks`](../../src/modkit/ops/gates.py)
 - Shapes: [`modkit.ops.shapes.player_deck`](../../src/modkit/ops/shapes.py), [`modkit.ops.shapes.DECK_SHAPE_SOURCES`](../../src/modkit/ops/shapes.py), [`modkit.ops.forces.deck_packs`](../../src/modkit/ops/forces.py), [`modkit.ops.leveldesign.derived_deck_identifier`](../../src/modkit/ops/leveldesign.py)
-- Skills: [`components/ops/skills/warno-new-operation/references/op-anatomy.md`](../../skills/warno-new-operation/references/op-anatomy.md)
-- Examples: [`components/ops/examples/twin-strike/twinstrike/forces.py`](../../examples/twin-strike/twinstrike/forces.py), [`components/ops/examples/twin-strike/twinstrike/op.py`](../../examples/twin-strike/twinstrike/op.py), [`components/ops/examples/twin-strike/twinstrike/profile.py`](../../examples/twin-strike/twinstrike/profile.py)
-- Records: [2026-11-12-deck-gate-bad-builds](../trials/2026-11-12-deck-gate-bad-builds.md), [2026-11-12-deck-gate-stock-survey](../trials/2026-11-12-deck-gate-stock-survey.md), [deck-page-lock](deck-page-lock.md)
+- Skills: [`components/core/skills/warno-launch-triage/SKILL.md`](../../../core/skills/warno-launch-triage/SKILL.md), [`components/ops/skills/warno-new-operation/references/op-anatomy.md`](../../skills/warno-new-operation/references/op-anatomy.md)
+- Examples: [`components/ops/examples/twin-strike/README.md`](../../examples/twin-strike/README.md), [`components/ops/examples/twin-strike/docs/design.md`](../../examples/twin-strike/docs/design.md), [`components/ops/examples/twin-strike/twinstrike/forces.py`](../../examples/twin-strike/twinstrike/forces.py), [`components/ops/examples/twin-strike/twinstrike/op.py`](../../examples/twin-strike/twinstrike/op.py), [`components/ops/examples/twin-strike/twinstrike/profile.py`](../../examples/twin-strike/twinstrike/profile.py)
+- Records: [2026-11-12-deck-gate-bad-builds](../trials/2026-11-12-deck-gate-bad-builds.md), [2026-11-12-deck-gate-stock-survey](../trials/2026-11-12-deck-gate-stock-survey.md), [add-unit-to-deck](add-unit-to-deck.md), [deck-page-lock](deck-page-lock.md), [soviet-player-camp](soviet-player-camp.md)
 <!-- referenced-by:end -->

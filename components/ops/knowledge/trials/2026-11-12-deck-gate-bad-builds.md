@@ -15,3 +15,6 @@ name in the scenario's own dictionary and a platoon name in the COMPANIES file, 
 up in, which the game would meet as a dictionary error at the first SetDeck [[deck-names-from-op-dictionaries]]; a
 SetDeck on an unknown identifier; a lock past the pages; a pack index past the packs; a carrier with no unit; a unit
 that cannot be carried; a carrier and a unit with no shared tag; the group rules; the identifier and the division.
+Twin Strike's own deck rebuilt with the first three faults (`test_twin_strike_frame.Build`: its Ka-29 platoon carrying
+motor rifles, its reserve's Konkurs-M teams at the start's experience, a tank platoon named `ts_pl_none`) fails the
+build with the gate's line, before anything is written.

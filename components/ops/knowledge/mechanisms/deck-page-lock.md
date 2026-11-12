@@ -25,6 +25,7 @@ script's own deck) [[op-exported-deck]], and an op's own deck to no card key on 
 the game pools a deck's cards by (unit, carrier, experience), so the open page would sell what the lock holds back.
 
 **Not yet seen in play:** what a locked page looks like (greyed, hidden or just unbuyable), and the pages unlocking.
+Twin Strike locks its reserve's two pages until the village falls.
 
 <!-- referenced-by:start -->
 ## Referenced by
@@ -33,6 +34,6 @@ the game pools a deck's cards by (unit, carrier, experience), so the open page w
 - Gates: [`modkit.ops.gates.check_decks`](../../src/modkit/ops/gates.py), [`modkit.ops.gates.check_never_finishing`](../../src/modkit/ops/gates.py)
 - Shapes: [`modkit.ops.shapes.lock_page`](../../src/modkit/ops/shapes.py), [`modkit.ops.script.PRODUCTION_TYPE`](../../src/modkit/ops/script.py)
 - Skills: [`components/ops/skills/warno-new-operation/references/op-anatomy.md`](../../skills/warno-new-operation/references/op-anatomy.md)
-- Examples: [`components/ops/examples/twin-strike/twinstrike/forces.py`](../../examples/twin-strike/twinstrike/forces.py), [`components/ops/examples/twin-strike/twinstrike/op.py`](../../examples/twin-strike/twinstrike/op.py), [`components/ops/examples/twin-strike/twinstrike/profile.py`](../../examples/twin-strike/twinstrike/profile.py)
-- Records: [2026-11-12-deck-gate-stock-survey](../trials/2026-11-12-deck-gate-stock-survey.md), [op-exported-deck](op-exported-deck.md)
+- Examples: [`components/ops/examples/twin-strike/README.md`](../../examples/twin-strike/README.md), [`components/ops/examples/twin-strike/docs/design.md`](../../examples/twin-strike/docs/design.md), [`components/ops/examples/twin-strike/twinstrike/forces.py`](../../examples/twin-strike/twinstrike/forces.py), [`components/ops/examples/twin-strike/twinstrike/op.py`](../../examples/twin-strike/twinstrike/op.py), [`components/ops/examples/twin-strike/twinstrike/profile.py`](../../examples/twin-strike/twinstrike/profile.py)
+- Records: [2026-11-12-deck-gate-stock-survey](../trials/2026-11-12-deck-gate-stock-survey.md), [add-unit-to-deck](add-unit-to-deck.md), [op-exported-deck](op-exported-deck.md)
 <!-- referenced-by:end -->

@@ -40,13 +40,19 @@ played well past the deploy phase with the player's camp Soviet: the player's ca
 script adds, were bought and deployed, and the battle against the NATO camps ran on to the second counter-attack
 ([[2026-11-11-twin-strike-play1]]).
 
+**The player's own deck.** Twin Strike's player row now names a deck the op's script exports, not RedJuggernaut's:
+its rows are `SOVIET_PLAYER_CAMP_ROWS` with the player's `SetDeck` replaced (`modkit.ops.shapes.with_deck`), every
+other row the shared one, the NATO2 camp's `OP_BASE_RJ_IA` among them. The menu's deck (`LocalPlayerDeck`) stays
+RedJuggernaut's: the out-game screens resolve it before the op's script loads, and the camp's `SetDeck` replaces it at
+the load [[op-exported-deck]]. Not yet played.
+
 **The stock deck's supply.** `OP_BASE_RJ_Player` has no supply helicopter. Its only supply unit is the Ural-4320
 truck, and the buy menu offers it only in the HQ groups of its two tank battalions (battlegroups 2 and 3); its recon,
 air defence and artillery group and its air groups hold none. A Soviet player on it found no supply to buy
 ([[2026-11-11-probe3b-play1-no-supply]]), and with the buy menu's view switch hidden those groups may never show. So
 the toolkit adds the shared supply at load, `modkit.ops.profile.SOVIET_PLAYER_SUPPLY` (Ural-4320 trucks x4, Mi-8TZ
-supply helicopters x2), with AddUnitToDeck [[add-unit-to-deck]]: `nuke_sov` and Twin Strike both do. A stock test
-re-checks the gap ([[stock-deck-fits-its-own-mission]]).
+supply helicopters x2), with AddUnitToDeck [[add-unit-to-deck]]: `nuke_sov` does; Twin Strike's own deck holds the
+same supply on its HQ page. A stock test re-checks the gap ([[stock-deck-fits-its-own-mission]]).
 
 **Not yet seen in play:**
 - whether the menu and the briefing show a Soviet player (their pictures are Survivors' own);

@@ -6,11 +6,12 @@ second. You play the Soviets.
 
 > **v0.1 showcase.** Twin Strike is a demonstration of what the toolkit builds, not a polished or historical scenario.
 > Its context, its formations and their orders of battle are fictional. It has been played on game builds 201602 and
-> 210942. Its text is in English and Simplified Chinese; the Chinese, reviewed by a native reader, has not yet been
-> seen in a Chinese play.
+> 210942. Its text is in English and Simplified Chinese; the Chinese, reviewed by a native reader but for the deck's
+> names and the reserve's unlock (written since), has not yet been seen in a Chinese play.
 >
 > Known issues:
-> - **Decks:** RedJuggernaut's stock cards still show in the buy menu beside the op's own.
+> - **The deck:** the op's own deck, its page and platoon names and its reserve's page lock are new and not yet
+>   played: the first launch, a mission restart and the locked pages are on the play sheet.
 > - **The nuke's effects:** the game can slow down markedly after the strike, and the strike plays in fog, so the
 >   second battalion isn't seen being hit.
 > - **Balance:** untuned, and played only a handful of times, on Medium.
@@ -54,7 +55,7 @@ Soviet ground in red with the star and the NATO ground in blue with its badge (`
 |---|---|---|
 | 0. Deploy | Buy and place the forward detachment in the north box (3,000 points, no income yet) | You launch the battle |
 | 1. Assault | Take the village from its West German garrison, which holds it. Division guns offer a preparation fire on it. | The village falls: few of its defenders left and one of your command units inside. Lost at 20 min. |
-| 2. Unlock | The division's reserve joins your deck, with 8,000 points and an income of 500 from then on; NATO's recon moves north | 2 min |
+| 2. Unlock | The division's reserve, the buy menu's last two pages, unlocks, with 8,000 points and an income of 500 from then on; NATO's recon moves north | 2 min |
 | 3. Counter-attack | A US armoured battalion comes up both lanes, its recon screen first, then company teams with their air defence, each attacking your units once in the village; NATO fighters sweep the boxes. Fire missions on BOX W or BOX C, and one division fire plan. | The battalion is broken, or 15 min on (its survivors break off) |
 | 4. Surprise | A West German Panzer battalion appears at the assembly area: it attacks in 5:00. Front offers nuclear release. A strike guts it; you finish it. | After a strike, the battalion broken (20 min at most); or the countdown runs out |
 | 5. Hold | Hold the village; HOLD ON, on the village and in the objectives, shows the time left | 5 min after a struck battalion is broken; after withholding, until the second battalion is broken, up to 20 min; at once when NATO has no ground unit left |
@@ -125,9 +126,11 @@ is for the next.)
 **Loading and the deploy screen**
 1. Does the op load, past the deploy screen, with the map clipped to the cut: the village in the south-west, your
    deployment box north of it, nothing playable east of the valley?
-2. Does the buy menu open on the BATTLEGROUP view, with the Ka-29s, the Ural and Mi-8TZ supply and the start cards in
-   it without switching? Is the switch to the GROUPS view still there? Do the engineers and scouts come in their
-   MT-LBs and UAZs, and the two Konkurs-M ATGM teams in their BTR-80s?
+2. Does the buy menu show the deck's five pages, Forward Detachment HQ, Tank Battalion, Motor Rifle Company, Reserve:
+   Tanks and Reserve: Support, with no switch to another view and no RedJuggernaut card anywhere? Do the engineers and
+   scouts come in their MT-LBs and UAZs, and the two Konkurs-M ATGM teams in their BTR-80s? What do the two reserve
+   pages look like before the fall (greyed, hidden, or shown but unbuyable), and can any of their cards be bought? Does
+   buying from a platoon take the whole platoon, or a unit at a time?
 3. Does the deploy screen open with a camera move of about 8 s, from high over the whole cut down to a view facing
    south, your deployment box in the near part of it and the village beyond? Does Escape skip straight to that view?
    Do you start with 3,000 points and no income?
@@ -152,9 +155,9 @@ minutes per fire, then vanish)
 9. AI pathing: do the first battalion's columns drive up the roads (the main road through BOX W; the east road through
    BOX C, then west across the stream) into the village, and once there keep attacking your units rather than stand?
    Does the garrison fight from the village (into the houses, or holding its ground)?
-10. At the fall, did the village's zone turn yours, did 8,000 points arrive and then 500 a minute, and did the locked
-    cards (Tunguska, Su-24M, Mi-24P) unlock and the reserve (T-80U obr. 1989, Ka-50, the Konkurs-M teams in BTR-80s,
-    the two Kubs and the rest) appear in the buy menu? Did the forces feel even against each battalion?
+10. At the fall, did the village's zone turn yours, did 8,000 points arrive and then 500 a minute, and did the two
+    reserve pages unlock (T-80U obr. 1989, Ka-50, the Konkurs-M teams in BTR-80s, the two Kubs and the rest)? Did the
+    forces feel even against each battalion?
 11. The frame rate at the peak, when the second battalion appears with the first's survivors and your force on the
     map: smooth, or stuttering?
 
@@ -184,8 +187,12 @@ left)
     difficulty?
 
 **Supply**
-18. Were the supply trucks (Ural-4320 ×4) and supply helicopters (Mi-8TZ ×2) in the buy menu from the start, and could
+18. Were the supply trucks (Ural-4320 ×4) and supply helicopters (Mi-8TZ ×2) on the HQ page from the start, and could
     they deliver supply to your units?
+
+**A restart**
+21. Restart the mission once from the in-game menu. Does it load again with no error, and does the deck show the same
+    five pages, the reserve locked again?
 
 **The new pieces**
 19. NATO fighters: did two F-15Cs come over BOX W about 2:30 into phase 3, and two over BOX C at 6:00? Did they leave
@@ -195,7 +202,7 @@ left)
 
 ## What the op stands on
 
-- The Soviet player: the stock camp shape and RedJuggernaut's deck, as probe 3's `nuke_sov` built it
+- The Soviet player: the stock camp shape, as probe 3's `nuke_sov` built it, with the menu's deck RedJuggernaut's
   [[soviet-player-camp]].
 - The deployment phase and its arrivals ending in the Soviet box: [[deployment-phase-recipe]], [[arrival-end-in-zone]].
 - The garrison is pre-placed, standing from the start, and holds the village by stock's orders
@@ -203,9 +210,10 @@ left)
   [[spawn-and-create-units]] [[scripted-air-sweep]]. The circles are detectors: [[detector-circles-only]].
 - The economy: 3,000 points with no income, then 8,000 and an income at the fall, set by the balance's ratios
   (design 6.5) [[scripted-economy]].
-- The deck: AddUnitToDeck adds only what RedJuggernaut's deck lacks, and LockDeckUnit holds its defence types back
-  until the village falls: [[add-unit-to-deck]]. It adds the Soviet player's supply too: the deck has no supply
-  helicopter, and its supply trucks sit only in the tank battalions' groups [[soviet-player-camp]].
+- The deck: the op's own, exported from its script and named by the player's SetDeck, the order of battle on five
+  pages of its own [[op-exported-deck]], their names in two dictionaries of the op's appended to the game's lists
+  [[deck-names-from-op-dictionaries]], the reserve's two pages locked until the village falls with the buy menu held
+  in its GROUPS view [[deck-page-lock]].
 - The fall: a count in the village's circle and a command unit inside, then the zone forced to the player
   [[count-race-forced-owner]] [[zone-capture-command-units]].
 - The waves and lanes: [[fast-move-and-attack-keeps-roads]], each ending with an Attack on your units
@@ -231,12 +239,12 @@ left)
   the extra gates, the review picture)
 - `twinstrike/map.py`: the cut, the named places, the zones, the arrivals, the FOBs and the opening camera;
   `python -m twinstrike.map overlay OUT.png` draws them on Twin Cities' Preview
-- `twinstrike/forces.py`: the player's deck (start cards, locks, reserve, command units), the force tables, the scale
-  knob and the share thresholds
+- `twinstrike/forces.py`: the player's deck (its pages, platoons and cards, the reserve pages, the command units, the
+  stock-names fallback), the force tables, the scale knob and the share thresholds
 - `twinstrike/strings.toml`: the string table, English and Simplified Chinese side by side: one section per token, one
-  key per language (`modkit.ops.strings.load`)
+  key per language (`modkit.ops.strings.load`); the deck's page and platoon names among them
 - `twinstrike/terms.toml`: the Chinese term table, each term's text and its source (`warno-localization`)
-- `twinstrike/strings.py`: where the two tables are, and each dialog's two stock buttons
+- `twinstrike/strings.py`: where the two tables are, each dialog's two stock buttons, and which dictionaries ship
 - `twinstrike/op.py`: the mission: its items, its beats (the five phases, the losses, the fires, the strike, the
   difficulty and the end funnel), its script (`modkit.ops.mission.script_frame`) and its content
 

@@ -14,8 +14,9 @@
 # to 30 UTF-16 units.
 #
 # The Chinese follows the warno-localization skill, with terms.toml as the op's term table. A native reader reviewed
-# it; no Chinese play has shown it yet. Each dialog's text names its two buttons (twinstrike.strings.BUTTONS, stock
-# in-game tokens) by their labels in its language.
+# it, all but the deck's names and the reserve's unlock, written since; no Chinese play has shown it yet. Each
+# dialog's text names its two buttons (twinstrike.strings.BUTTONS, stock in-game tokens) by their labels in its
+# language.
 
 # the menu (profile.MENU_RENAMES), in stock's form (this file's header)
 

@@ -24,16 +24,16 @@
   "phases": [
     {"id": "0", "name": "Deploy", "time": "3 min",
      "summary": "Buy and place the forward detachment in the north zone.",
-     "details": ["Deck base: RedJuggernaut's 79th Guards Tank Division, topped up by script, with four Ka-29s.",
+     "details": ["The op's own deck: the order of battle on five named pages, no stock card beside it.",
                  "Two FOBs already stand in the zone, placed on the map: no deck can carry one.",
-                 "The defence cards stay locked until the village falls."]},
+                 "The reserve's two pages stay locked until the village falls."]},
     {"id": "1", "name": "Assault", "time": "~10 min · deadline 20",
      "summary": "Take the village from its pre-placed West German garrison.",
      "details": ["The division's 2S7Ms offer one preparation fire on the village, when you call it. Keep your own troops out.",
                  "The village falls when the garrison is down to a quarter and a Soviet command unit is inside. The map flips to red.",
                  "No fall by 20 min: the battle is lost."]},
     {"id": "2", "name": "Unlock", "time": "~2 min",
-     "summary": "Front releases the division's reserve: T-80U, Tunguska, Osa, Mi-24, Ka-50, Su-25T, Su-24M.",
+     "summary": "Front releases the division's reserve, its two pages unlocked: T-80U, Tunguska, Osa, Kub, Mi-24, Ka-50, Su-25T, Su-24M.",
      "details": ["A hint reports NATO recon moving north."]},
     {"id": "3", "name": "Counter-attack", "time": "~12 min · cap 15",
      "summary": "US battalion 1 comes from the south edge on two lanes, recon first, with heavy AA.",
@@ -132,18 +132,23 @@
     {"heading": "Order of battle", "intro": "One counter is one vehicle or squad, at the in-game counts. Every unit is vanilla. Counts are at scale 1×; one knob moves them all. All of it fights inside the 216 × 378 px cut.",
      "oob": [
        {"title": "Soviet · you", "tag": "Alliance 0 · REDFOR · PACT", "style": "sov", "groups": [
-         {"name": "Forward detachment", "when": "deck, at start", "note": "On top of RedJuggernaut's own 79th Guards Tank Division cards.", "units": [
-           [10, "T-80BV", "T80BV_SOV"], [2, "T-80BV command", "T80BV_CMD_SOV"],
-           [8, "BMP-2 with motor rifles x8", "BMP_2_SOV · MotRifles_SOV"], [1, "BMP-2 command", "BMP_2_CMD_SOV"],
+         {"name": "Forward detachment", "when": "deck, at start", "note": "The op's own deck, its three open pages: Forward Detachment HQ, Tank Battalion, Motor Rifle Company.", "units": [
+           [10, "T-80BV", "T80BV_SOV"], [2, "T-80BV command", "T80BV_CMD_SOV"], [1, "BMP-2 command", "BMP_2_CMD_SOV"],
+           [3, "MT-LB command", "MTLB_CMD_SOV"],
+           [8, "BMP-2 with motor rifles x8", "BMP_2_SOV · MotRifles_SOV"],
            [2, "BTR-80 with Konkurs-M ATGM teams x2", "BTR_80_SOV · ATteam_KonkursM_TTsko_SOV"],
-           [2, "Flamethrower engineers", "Engineers_Flam_SOV"], [2, "BRM-1 recon", "BRM_1_SOV"], [2, "Scouts", "Scout_SOV"],
+           [2, "MT-LB with flamethrower engineers x2", "MTLB_transp_SOV · Engineers_Flam_SOV"], [2, "BRM-1 recon", "BRM_1_SOV"],
+           [2, "UAZ-469 with scouts x2", "UAZ_469_SOV · Scout_SOV"],
            [2, "ZSU-23-4 Shilka", "ZSU_23_Shilka_SOV"], [1, "Strela-10", "MTLB_Strela10_SOV"], [4, "2S1 Gvozdika", "2S1_Gvozdika_SOV"],
-           [4, "Ka-29", "Ka_29_SOV"]]},
-         {"name": "Division reserve", "when": "unlocks when the village falls", "note": "", "units": [
-           [15, "T-80U obr. 1989", "T80U_Obr89_SOV"], [1, "T-80U command", "T80U_CMD_SOV"], [2, "2K22 Tunguska", "Tunguska_2K22_SOV"],
-           [2, "9K33 Osa", "Osa_9K33M3_SOV"], [6, "Mi-24V (AT)", "Mi_24V_AT_SOV"], [4, "Ka-50 (the game has no Ka-52)", "Ka_50_SOV"], [2, "Su-25T", "Su_25T_SOV"],
-           [2, "Su-24M (cluster)", "Su_24M_clu_SOV"], [6, "BRDM-2 Konkurs", "BRDM_2_Konkurs_SOV"], [8, "Motor rifles (Metis)", "MotRifles_Metis_SOV"],
-           [4, "BTR-80 with Konkurs-M ATGM teams x4", "BTR_80_SOV · ATteam_KonkursM_TTsko_SOV"]]},
+           [4, "Ural-4320 supply truck", "Ural_4320_SOV"], [2, "Mi-8TZ supply helicopter", "Mi_8TZ_SOV"],
+           [4, "Ka-29, a gunship: it carries no troops", "Ka_29_SOV"]]},
+         {"name": "Division reserve", "when": "two locked pages · unlocked when the village falls", "note": "Reserve: Tanks and Reserve: Support.", "units": [
+           [15, "T-80U obr. 1989", "T80U_Obr89_SOV"], [1, "T-80U command", "T80U_CMD_SOV"], [6, "BRDM-2 Konkurs", "BRDM_2_Konkurs_SOV"],
+           [8, "BMP-2 with motor rifles (Metis) x8", "BMP_2_SOV · MotRifles_Metis_SOV"],
+           [4, "BTR-80 with Konkurs-M ATGM teams x4", "BTR_80_SOV · ATteam_KonkursM_TTsko_SOV"],
+           [2, "2K22 Tunguska", "Tunguska_2K22_SOV"], [2, "9K33 Osa", "Osa_9K33M3_SOV"], [2, "2K12 Kub", "2K12_KUB_SOV"],
+           [6, "Mi-24V (AT)", "Mi_24V_AT_SOV"], [4, "Ka-50 (the game has no Ka-52)", "Ka_50_SOV"], [2, "Su-25T", "Su_25T_SOV"],
+           [2, "Su-24M (cluster)", "Su_24M_clu_SOV"]]},
          {"name": "Supply", "when": "placed on the map · yours from the start", "note": "No deck can carry a FOB, so both stand on the map in your camp, as stock's Marauders and SigurdsStrike place theirs.", "units": [
            [2, "FOB, at FOB_W and FOB_E in the north zone", "FOB_SOV"]]},
          {"name": "Division artillery", "when": "scripted · ally camp · at GUN_SPAWN, the cut's north-west corner", "note": "It fires only on your call: the preparation fire, fire missions and the fire plan.", "units": [
@@ -170,10 +175,10 @@
      "tables": [
        {"columns": ["Piece", "State", "Note"], "rows": [
          ["Waves, road orders, detectors, counters, dialogs, hidden batteries, scripted end", {"mark": "ok", "text": "played"}, "Probes 1 and 2"],
-         ["Cards added mid-battle; lock then unlock; transport cards", {"mark": "half", "text": "stock / built"}, "Probe 3 tests them with a Soviet player"],
-         ["Your helicopter cards: Ka-29 at the start, Ka-50 at the fall", {"mark": "half", "text": "stock"}, "RedJuggernaut's player deck flies Mi-8s, Mi-2s and Mi-24s; stock adds aircraft cards mid-battle"],
+         ["The op's own deck, its page and platoon names, the reserve's two pages locked until the fall", {"mark": "open", "text": "open"}, "Built and gated on the game's own deck rules; not played yet. Stock locks pages so (RunningTheGauntlet, Marauders)"],
+         ["Transport cards", {"mark": "ok", "text": "played"}, "Motor rifles in BMP-2s, bought and deployed loaded in the first play"],
          ["Your FOBs, placed on the map in your camp", {"mark": "half", "text": "stock"}, "Marauders and SigurdsStrike place the player's FOB this way. Fallback: create them by script at launch, played."],
-         ["Soviet player camp on RedJuggernaut's deck", {"mark": "open", "text": "open"}, "Stock precedent: RedJuggernaut, Götterdämmerung"],
+         ["Soviet player camp, the menu's deck RedJuggernaut's", {"mark": "half", "text": "built"}, "Stock precedent: RedJuggernaut, Götterdämmerung; played well past the deploy phase"],
          ["The nuke effect from a script", {"mark": "ok", "text": "played"}, "fx_impact_sol_Tactical_Nuke, which no weapon uses, through the script's own wrapper: played in the strike-effects probe"],
          ["The kill leaving wrecks (Penetration)", {"mark": "open", "text": "open"}, "Fallback: Vanished, played"],
          ["The cut: a 40-tile box of SM_SU_03's own AI grid", {"mark": "half", "text": "shape played"}, "The grid-subset shape played on Geisa in probe 1; this cut is not built yet. Fallback: SM_SU_03's whole zone."],
