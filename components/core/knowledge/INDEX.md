@@ -19,12 +19,13 @@ A mechanism filed under two topics is listed under both.
 ### Mod packaging
 
 - [mod-version-and-config-lines](mechanisms/mod-version-and-config-lines.md): A mod is active only with Gen/Version.ndf, and its [Config] hashes mark it outdated after an update (PLAYED, verified 210942 2026-11-12)
-- [workshop-upload-folder](mechanisms/workshop-upload-folder.md): The Workshop upload sends the mod folder as it is; a scenario mod needs no generate step (UNTESTED)
+- [workshop-upload-folder](mechanisms/workshop-upload-folder.md): The Workshop upload sends the mod folder as it is; a scenario mod needs no generate step (PROBED, verified 210942 2026-11-12)
 
 ### Game updates
 
 - [load-time-validation-rules](mechanisms/load-time-validation-rules.md): Every object is validated at load, and the first broken rule stops the load (PLAYED, verified 210942 2026-11-12)
 - [mod-version-and-config-lines](mechanisms/mod-version-and-config-lines.md): A mod is active only with Gen/Version.ndf, and its [Config] hashes mark it outdated after an update (PLAYED, verified 210942 2026-11-12)
+- [workshop-upload-folder](mechanisms/workshop-upload-folder.md): The Workshop upload sends the mod folder as it is; a scenario mod needs no generate step (PROBED, verified 210942 2026-11-12)
 - [edat-revision-chain](mechanisms/edat-revision-chain.md): Game data is a chain of edat archives, read newest revision first (RE, verified 210942 2026-11-12)
 
 ## Symptom index
@@ -40,6 +41,7 @@ The game's own words in this component's trials, the mechanism behind them, and 
 
 ## Trials, newest first
 
+- 2026-11-12 [2026-11-12-twin-strike-workshop-upload](trials/2026-11-12-twin-strike-workshop-upload.md): launch, pass
 - 2026-11-12 [2026-11-12-build-210942-port](trials/2026-11-12-build-210942-port.md): survey, pass
 - 2026-11-03 [2026-11-03-probe1-launch1-damagetype](trials/2026-11-03-probe1-launch1-damagetype.md): launch, fail. Fatal error at load, Property 'DamageType' must be defined (TGDDescriptorChangeStress)
 - 2026-11-03 [2026-11-03-ndfrules-stock-sweep](trials/2026-11-03-ndfrules-stock-sweep.md): re, pass

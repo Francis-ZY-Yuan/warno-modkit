@@ -104,10 +104,13 @@ folder as a zip with a one-click `.cmd` installer, in `share/` in the build fold
 installer, switch every Gameplay mod off, and play one run with the play sheet below beside you. Record what you see as
 a trial (the `warno-record-finding` skill).
 
-**After the first Workshop upload,** set `WORKSHOP_ID` in `twinstrike/profile.py` to the new item's ID and commit. The
-upload writes that ID into the installed `Config.ini` only, and every build writes `ID = 0`: without it, the next build
-and reinstall reset the ID, and the next upload creates a second Workshop item instead of updating the first. (The share
-installer also keeps an installed non-zero ID over a build's 0, and refuses a build with a different non-zero one.)
+**On the Workshop:** Twin Strike is item
+[3838528915](https://steamcommunity.com/sharedfiles/filedetails/?id=3838528915), and `WORKSHOP_ID` in
+`twinstrike/profile.py` holds that ID, so every build writes it into `Config.ini`. The upload writes the ID into the
+installed `Config.ini` only: a build that wrote `ID = 0` would reset it on the next reinstall, and the next upload would
+create a second Workshop item instead of updating this one. (The share installer also keeps an installed non-zero ID
+over a build's 0, and refuses a build with a different non-zero one.) What the first upload did to the installed files
+is in [[workshop-upload-folder]].
 
 ## Play sheet
 

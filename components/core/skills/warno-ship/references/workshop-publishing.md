@@ -1,7 +1,8 @@
 # Publishing a scenario mod to the Steam Workshop
 
 Read from the official upload scripts, the game's mod-manager data and installed Workshop items, on build 201602.
-No upload was made while writing this, so the upload itself is still [[workshop-upload-folder]]'s open question.
+The first upload made with it was Twin Strike's, on 210942 ([[2026-11-12-twin-strike-workshop-upload]]); installing an item from a
+subscription is still [[workshop-upload-folder]]'s open question.
 
 ## What the upload sends
 
@@ -12,7 +13,9 @@ sends a copy to Eugen's own mod server. It needs Steam running, logged in to the
 and a working connection to the game's online services.
 
 The upload rewrites `Config.ini`: it fills `TagList`, `ID` and `ModGenVersion`. A scenario-only mod comes out tagged
-Scenarios.
+Scenarios. On 210942 it also drops the `Description =` line, the `CosmeticOnly` line and the empty `[Config]`
+section's header line from the installed copy, and leaves every other file byte-identical
+([[2026-11-12-twin-strike-workshop-upload]]).
 
 ## A scenario mod needs no generate step
 
@@ -28,7 +31,9 @@ produces too ([[mod-version-and-config-lines]]).
 - **Direct:** call the game's executable by its full path from any folder:
   `"<game folder>\WARNO.exe" -headless -uploadmod "<Name>" CommonData:Clusters/Bootstrap/ClusterBootstrapUploadMod.ndf`.
   Nothing is written to the install by you; the game itself writes its usual log files on every launch. The only
-  file the upload changes is your mod's `Config.ini`.
+  file the upload changes is your mod's `Config.ini`. On 210942 the mod tools' own upload line also passes
+  `-datapackonly`, before `-uploadmod`; Twin Strike's first upload used it, and it left the packs and
+  `Gen/Version.ndf` untouched.
 
 ## Checklist
 
@@ -44,7 +49,9 @@ produces too ([[mod-version-and-config-lines]]).
 5. `ModGenVersion` equals the current game build (the newest numeric folder under the install's `Data/PC`). The
    toolkit writes it (`modkit.core.packaging`); if it names an older build, the toolkit needs a release for this game
    build (see "After a game update"). Don't edit it.
-6. `[Config]` is present and empty. A `cluster=md5` line belongs only to a mod that replaces that cluster.
+6. `[Config]` is present and empty. A `cluster=md5` line belongs only to a mod that replaces that cluster. This is
+   the release you build: on 210942 the upload drops the empty `[Config]` header from the installed copy, and
+   whether the game still lists a mod without it is unseen ([[workshop-upload-folder]]).
 7. `PreviewImagePath` is empty, or names an image of about 1 MB or less at a path without your user name. The path
    itself is published inside `Config.ini`, and an image placed inside the mod folder ships too.
 

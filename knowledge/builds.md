@@ -20,9 +20,11 @@ A fact holds for the build it was last verified on. After a game update, a recor
 - [script-effects-self-contained](../components/ops/knowledge/mechanisms/script-effects-self-contained.md) (ops): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (PLAYED, 2026-11-12)
 - [scripted-nuke-effect](../components/ops/knowledge/mechanisms/scripted-nuke-effect.md) (ops): A script plays the tactical-nuke impact effect only through a wrapper of its own that binds its parameters; a direct launch crashes the game (PLAYED, 2026-11-12)
 - [txn-tag-config-hash](../components/ops/knowledge/mechanisms/txn-tag-config-hash.md) (ops): Build 210942 loads a compiled .txn only when its .txn.tag holds the ConfigHash the game computes for the transaction; any other makes it compile the sources (RE, 2026-11-12)
+- [workshop-upload-folder](../components/core/knowledge/mechanisms/workshop-upload-folder.md) (core): The Workshop upload sends the mod folder as it is; a scenario mod needs no generate step (PROBED, 2026-11-12)
 
 ### Trials run on it
 
+- 2026-11-12 [2026-11-12-twin-strike-workshop-upload](../components/core/knowledge/trials/2026-11-12-twin-strike-workshop-upload.md) (core): launch, pass
 - 2026-11-12 [2026-11-12-twin-strike-launch-config-hash](../components/ops/knowledge/trials/2026-11-12-twin-strike-launch-config-hash.md) (ops): launch, fail
 - 2026-11-12 [2026-11-12-twin-strike-210942-play1](../components/ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md) (ops): play, mixed
 - 2026-11-12 [2026-11-12-port-210942-survey](../components/ops/knowledge/trials/2026-11-12-port-210942-survey.md) (ops): survey, pass
@@ -125,4 +127,3 @@ A fact holds for the build it was last verified on. After a game update, a recor
 ## Not verified on any build
 
 - [script-and-battle-scale](../components/ops/knowledge/mechanisms/script-and-battle-scale.md) (ops): How big a script and a battle can get is untested beyond the probes (UNTESTED)
-- [workshop-upload-folder](../components/core/knowledge/mechanisms/workshop-upload-folder.md) (core): The Workshop upload sends the mod folder as it is; a scenario mod needs no generate step (UNTESTED)

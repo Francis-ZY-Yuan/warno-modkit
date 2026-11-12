@@ -43,6 +43,7 @@ How far each mechanism is proven: `PLAYED` worked in a real play; `PROBED` loade
 - [chinese-text-stock-glyphs](../components/ops/knowledge/mechanisms/chinese-text-stock-glyphs.md) (ops): Simplified Chinese text must stay within the characters stock text already uses
 - [objective-waits-until-resolved](../components/ops/knowledge/mechanisms/objective-waits-until-resolved.md) (ops): An objective finishes only after it resolves and its chosen actions finish
 - [soviet-player-camp](../components/ops/knowledge/mechanisms/soviet-player-camp.md) (ops): A clone of Survivors loads and plays with a Soviet player in the stock PACT-player camp shape
+- [workshop-upload-folder](../components/core/knowledge/mechanisms/workshop-upload-folder.md) (core): The Workshop upload sends the mod folder as it is; a scenario mod needs no generate step
 
 ## RE
 
@@ -74,4 +75,3 @@ How far each mechanism is proven: `PLAYED` worked in a real play; `PROBED` loade
 ## UNTESTED
 
 - [script-and-battle-scale](../components/ops/knowledge/mechanisms/script-and-battle-scale.md) (ops): How big a script and a battle can get is untested beyond the probes
-- [workshop-upload-folder](../components/core/knowledge/mechanisms/workshop-upload-folder.md) (core): The Workshop upload sends the mod folder as it is; a scenario mod needs no generate step

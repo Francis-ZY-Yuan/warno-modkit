@@ -17,6 +17,10 @@ Topic `game-updates`, declared by core. Back to [the map](../README.md).
 - [operation-menu-registration](../../components/ops/knowledge/mechanisms/operation-menu-registration.md): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden (ops, verified 210942)
 - [script-effects-self-contained](../../components/ops/knowledge/mechanisms/script-effects-self-contained.md): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (ops, verified 210942)
 
+### PROBED
+
+- [workshop-upload-folder](../../components/core/knowledge/mechanisms/workshop-upload-folder.md): The Workshop upload sends the mod folder as it is; a scenario mod needs no generate step (core, verified 210942)
+
 ### RE
 
 - [edat-revision-chain](../../components/core/knowledge/mechanisms/edat-revision-chain.md): Game data is a chain of edat archives, read newest revision first (core, verified 210942)
@@ -46,6 +50,7 @@ Taught by the trials of these mechanisms.
 
 ## Trials, newest first
 
+- 2026-11-12 [2026-11-12-twin-strike-workshop-upload](../../components/core/knowledge/trials/2026-11-12-twin-strike-workshop-upload.md) (core): launch, pass
 - 2026-11-12 [2026-11-12-twin-strike-launch-config-hash](../../components/ops/knowledge/trials/2026-11-12-twin-strike-launch-config-hash.md) (ops): launch, fail
 - 2026-11-12 [2026-11-12-twin-strike-210942-play1](../../components/ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md) (ops): play, mixed
 - 2026-11-12 [2026-11-12-port-210942-survey](../../components/ops/knowledge/trials/2026-11-12-port-210942-survey.md) (ops): survey, pass

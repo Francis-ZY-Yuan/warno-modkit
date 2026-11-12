@@ -171,6 +171,12 @@ class Profile(unittest.TestCase):
                               CAMPATHS_FILE}, set(p.shape_sources))
         self.assertEqual(p.end_exports, (f"{GD}/TS/EndFunnel",))
 
+    def test_the_workshop_item(self):
+        """Twin Strike's Workshop item, from its first upload: every build writes its ID, so the next upload updates
+        that item."""
+        self.assertEqual(profile.WORKSHOP_ID, 3838528915)
+        self.assertEqual(profile.profile().mod_id, 3838528915)
+
 
 class Items(unittest.TestCase):
     def test_every_item_is_inside_the_cut_and_named_once(self):
@@ -551,7 +557,8 @@ class Build(unittest.TestCase):
 
     def test_builds(self):
         self.assertEqual(self.code, 0, self.log)
-        self.assertTrue(os.path.isfile(os.path.join(OUT, "TwinStrike", "Config.ini")))
+        with open(os.path.join(OUT, "TwinStrike", "Config.ini"), encoding="ascii") as fh:
+            self.assertIn("\nID = 3838528915 ;", fh.read())       # the Workshop item's ID, never 0 again
         self.assertTrue(os.path.isfile(os.path.join(OUT, profile.OVERLAY)))
         dumps = set(os.listdir(os.path.join(OUT, "dumps")))
         self.assertLessEqual({"GDScript.txt", "LevelDesign.txt", "PlayableZone.txt", "IAStratZone.txt",
