@@ -54,6 +54,7 @@ MENU_ELEMENTS = {"ts_name": "MissionName", "ts_cname": "TitreObjectifs", "ts_hea
                  "ts_order": "TextePresentationScenario", "ts_recap": "TexteObjectifs",
                  "ts_vic": "VictoryOperationOutcomeText", "ts_def": "DefeatOperationOutcomeText"}
 MENU_PICTURES = ("MapTexture", "CornerLogo", "MissionCountry", "EndgameBlazon")  # DescriptionTextureElements
+ENGLISH = {dic: {tok: texts["US"] for tok, texts in tokens.items()} for dic, tokens in strings.STRINGS.items()}
 
 
 def units(text: str) -> int:
@@ -115,8 +116,8 @@ class Identity(unittest.TestCase):
         self.assertEqual(sorted(strings.STRINGS["SCENARIO_DEFINITION"]), sorted(profile.MENU_TOKENS))
         self.assertEqual(c.menu_tokens, profile.TITLE_TOKENS)
         self.assertEqual(profile.TITLE_TOKENS, ("ts_name", "ts_cname"))
-        self.assertEqual(strings.ENGLISH["SCENARIO_DEFINITION"]["ts_name"], "Operation Twin Strike")
-        self.assertEqual(strings.ENGLISH["SCENARIO_DEFINITION"]["ts_cname"], "OPERATION TWIN STRIKE")
+        self.assertEqual(ENGLISH["SCENARIO_DEFINITION"]["ts_name"], "Operation Twin Strike")
+        self.assertEqual(ENGLISH["SCENARIO_DEFINITION"]["ts_cname"], "OPERATION TWIN STRIKE")
         self.assertEqual(CONTENTS["op"]().scenario, profile.SCENARIO)
 
     def test_installs_beside_open_door_and_the_probes(self):
@@ -359,25 +360,25 @@ class Camera(unittest.TestCase):
 
 
 class Strings(unittest.TestCase):
-    def test_english_only_in_both_columns(self):
-        """The SC column is the English text until the Chinese build: plain ASCII (the glyph gate's printable set)."""
+    def test_english_and_simplified_chinese(self):
+        """Every token holds US, in plain ASCII (the glyph gate's printable set), and SC (test_twin_strike_chinese)."""
         for dic, tokens in strings.STRINGS.items():
-            for tok, (en, zh) in tokens.items():
+            for tok, texts in tokens.items():
                 with self.subTest(token=tok):
-                    self.assertEqual(en, zh)
-                    self.assertTrue(all(" " <= ch <= "~" or ch == "\n" for ch in en), en)
+                    self.assertEqual(set(texts), {"US", "SC"})
+                    self.assertTrue(all(" " <= ch <= "~" or ch == "\n" for ch in texts["US"]), texts["US"])
                     trad.token_key(tok)
         self.assertEqual(set(strings.STRINGS), set(profile.DICTIONARIES))
 
     def test_every_token_is_ts_and_unique(self):
-        toks = [t for tokens in strings.ENGLISH.values() for t in tokens]
+        toks = [t for tokens in ENGLISH.values() for t in tokens]
         self.assertEqual(len(toks), len(set(toks)))
         self.assertTrue(all(t.startswith("ts_") for t in toks))
 
     def test_what_the_whole_op_needs(self):
         """The camp names, the start hint, every phase's hint, the objectives P1, P2, P3 (each road's), B1 and B2 with
         their labels, the five choice dialogs and every ending (design 4.2, 5.8)."""
-        loc, dialog = strings.ENGLISH["Scripting/Localization"], strings.ENGLISH["Scripting/Dialog"]
+        loc, dialog = ENGLISH["Scripting/Localization"], ENGLISH["Scripting/Dialog"]
         self.assertLessEqual(set(profile.CAMP_TOKENS.values()), set(loc))
         self.assertLessEqual({"ts_hdep", "ts_hph1", "ts_hprep", "ts_hfall", "ts_hph3", "ts_hbn2", "ts_hrel",
                               "ts_hph5"}, set(loc))
@@ -390,30 +391,36 @@ class Strings(unittest.TestCase):
         self.assertIn("VILLAGE", loc["ts_hdep"])
 
     def test_dialogs_take_no_variables(self):
-        for tok, text in strings.ENGLISH["Scripting/Dialog"].items():
+        for tok, text in ENGLISH["Scripting/Dialog"].items():
             self.assertNotRegex(text, r"%\d", tok)
 
     def test_menu_texts_in_stocks_form(self):
-        """The menu's five texts that are not titles each run inside stock's English range for their element
-        (test_gates_stock.MENU_SPANS), without markup or placeholders. The briefing opens with its date and time, its
-        order number and a blank line, and holds stock's four numbered points; the forces line is two lines; the text
-        under the title is three paragraphs."""
-        menu = strings.ENGLISH["SCENARIO_DEFINITION"]
-        self.assertEqual(set(menu), set(MENU_ELEMENTS))
-        for tok in sorted(set(menu) - set(profile.TITLE_TOKENS)):
-            (lo, hi), _ = MENU_SPANS[MENU_ELEMENTS[tok]]
-            with self.subTest(token=tok):
-                self.assertTrue(lo <= units(menu[tok]) <= hi, f"{tok}: {units(menu[tok])} units, stock {lo}-{hi}")
-                self.assertNotRegex(menu[tok], r"#\w+\{|%\d")
-        for tok in profile.TITLE_TOKENS:
-            self.assertLessEqual(units(menu[tok]), 30)
-        lines = menu["ts_order"].split("\n")
-        self.assertRegex(lines[0], r"^July [0-9]{1,2}, 1989, [0-9]{2}:[0-9]{2} UTC$")   # design 1: early July 1989
-        self.assertRegex(lines[1], r"^Combat Order No\. \S+$")
-        self.assertEqual(lines[2], "")
-        self.assertEqual([line[:3] for line in lines if re.match(r"\d\. ", line)], ["1. ", "2. ", "3. ", "4. "])
-        self.assertEqual(menu["ts_headr"].count("\n"), 1)
-        self.assertEqual(menu["ts_recap"].count("\n\n"), 2)
+        """The menu's five texts that are not titles each run inside stock's range for their element in their language
+        (test_gates_stock.MENU_SPANS: the English among stock's English texts, the Chinese among its Chinese ones),
+        without markup or placeholders. In both languages the briefing opens with its date and time, its order number
+        and a blank line, and holds stock's four numbered points; the forces line is two lines; the text under the
+        title is three paragraphs."""
+        forms = {"US": (r"^July [0-9]{1,2}, 1989, [0-9]{2}:[0-9]{2} UTC$", r"^Combat Order No\. \S+$"),
+                 "SC": (r"^1989年7月[0-9]{1,2}日 [0-9]{2}:[0-9]{2} UTC$", r"^战斗命令第\S+号$")}
+        for column, (lang, (date, order)) in enumerate(forms.items()):
+            menu = {tok: texts[lang] for tok, texts in strings.STRINGS["SCENARIO_DEFINITION"].items()}
+            self.assertEqual(set(menu), set(MENU_ELEMENTS))
+            for tok in sorted(set(menu) - set(profile.TITLE_TOKENS)):
+                lo, hi = MENU_SPANS[MENU_ELEMENTS[tok]][column]
+                with self.subTest(lang=lang, token=tok):
+                    self.assertTrue(lo <= units(menu[tok]) <= hi,
+                                    f"{lang} {tok}: {units(menu[tok])} units, stock {lo}-{hi}")
+                    self.assertNotRegex(menu[tok], r"#\w+\{|%\d")
+            for tok in profile.TITLE_TOKENS:
+                self.assertLessEqual(units(menu[tok]), 30)
+            lines = menu["ts_order"].split("\n")
+            with self.subTest(lang=lang, token="ts_order"):
+                self.assertRegex(lines[0], date)   # design 1: early July 1989
+                self.assertRegex(lines[1], order)
+                self.assertEqual(lines[2], "")
+                self.assertEqual([line[:3] for line in lines if re.match(r"\d\. ", line)], ["1. ", "2. ", "3. ", "4. "])
+            self.assertEqual(menu["ts_headr"].count("\n"), 1)
+            self.assertEqual(menu["ts_recap"].count("\n\n"), 2)
 
     @paths.skip_unless_extracted("glad_201602", "Localisation", "Core")
     def test_buttons_are_ingame_tokens_in_every_language(self):

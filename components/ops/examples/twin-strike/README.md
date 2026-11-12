@@ -6,7 +6,8 @@ second. You play the Soviets.
 
 > **v0.1 showcase.** Twin Strike is a demonstration of what the toolkit builds, not a polished or historical scenario.
 > Its context, its formations and their orders of battle are fictional. It has been played on game builds 201602 and
-> 210942.
+> 210942. Its text is in English and Simplified Chinese; the Chinese, reviewed by a native reader, has not yet been
+> seen in a Chinese play.
 >
 > Known issues:
 > - **Decks:** RedJuggernaut's stock cards still show in the buy menu beside the op's own.
@@ -232,7 +233,7 @@ left)
   `python -m twinstrike.map overlay OUT.png` draws them on Twin Cities' Preview
 - `twinstrike/forces.py`: the player's deck (start cards, locks, reserve, command units), the force tables, the scale
   knob and the share thresholds
-- `twinstrike/strings.py`: the string table, English only for now (the Chinese column holds the English text)
+- `twinstrike/strings.py`: the string table, in English and Simplified Chinese, and the Chinese term table
 - `twinstrike/op.py`: the mission: its items, its beats (the five phases, the losses, the fires, the strike, the
   difficulty and the end funnel), its script (`modkit.ops.mission.script_frame`) and its content
 

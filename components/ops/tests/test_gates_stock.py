@@ -212,7 +212,8 @@ class MenuTexts(unittest.TestCase):
 
 # Stock's menu texts (MapConfiguration's DescriptionTextElements) in UTF-16 units, (English, Chinese) min..max per
 # element, over the 8 stock challenges that ship their own SCENARIO_DEFINITION dictionary: MenuTexts measures them, and
-# Twin Strike's menu texts keep inside the English ranges (test_twin_strike_frame.Strings).
+# Twin Strike's menu texts keep inside them, the English in the English ranges and the Chinese in the Chinese
+# (test_twin_strike_frame.Strings).
 MENU_SPANS = {
     "MissionName": ((9, 20), (3, 5)),
     "MissionNameInWarningOrder": ((9, 20), (3, 5)),

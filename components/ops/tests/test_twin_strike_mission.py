@@ -24,10 +24,10 @@ from modkit.ops.testing import last, objective_named, of, parent_of, prop, subs,
 from twinstrike import forces, profile
 from twinstrike import map as ts_map
 from twinstrike import op
-from twinstrike.strings import BUTTONS, ENGLISH
+from twinstrike.strings import BUTTONS, STRINGS
 
 GD = "$/GDScript"
-STRINGS_LOC = ENGLISH["Scripting/Localization"]
+STRINGS_LOC = {tok: texts["US"] for tok, texts in STRINGS["Scripting/Localization"].items()}
 VILLAGE_CZ = op.VILLAGE_ZONE
 
 

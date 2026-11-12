@@ -551,7 +551,8 @@ points given are the start, the grant and one income tick a minute after the fal
     the camera sat on the ground [[2026-11-11-twin-strike-opening-camera]].
   - `TS_Strike`, the strike's shot (5.6): one key over ASSEMBLY, flown from the player's camera in 4 s and held 11 s
     ◐ [[camera-shot-from-current-position]]; the camera gate holds it too.
-- **Text.** English. Simplified Chinese is a later build; the toolkit's glyph gate is ready for it.
+- **Text.** English and Simplified Chinese (`twinstrike/strings.py`). The Chinese was reviewed by a native reader and
+  has not yet been seen in a Chinese play.
 - **The Operations menu** takes stock's form: a briefing dated July 1989 in four numbered points, the forces line, the
   background and the outcome texts, at stock's lengths. Its emblems are RedJuggernaut's (the 79th Guards Tank
   Division's star, flag and Guards badge); its map picture is still Survivors'.
