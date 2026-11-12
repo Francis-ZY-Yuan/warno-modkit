@@ -103,11 +103,11 @@ class PackageTest(unittest.TestCase):
         one of the 16 GAMEPLAY_FILES makes the mod Gameplay, even when its path holds the scenario id; the same name
         outside Gen/ does not."""
         ok = [mem_item("Definition", "NDF/Scenarios/GDScript/challenge_X.ndfbin", b"x", "generate", "t"),
-              mem_item("Loose", "challenge_X/GFX/Unit.ndfbin", b"x", "copy", "t")]   # not under Gen/
+              mem_item("Loose", "challenge_X/GFX/Unit.txn", b"x", "copy", "t")]   # not under Gen/
         self.assertEqual(check_package(ok, "challenge_X"), 2)
         self.assertEqual(len(GAMEPLAY_FILES), 16)
         bad = [("Loose", f"Gen/challenge_X/{f}") for f in GAMEPLAY_FILES] + [("Definition",
-                                                                              "Gen/challenge_X/GFX/Deck.ndfbin")]
+                                                                              "Gen/challenge_X/GFX/Deck.txn")]
         for pack, path in bad:
             with self.subTest(path=path), self.assertRaisesRegex(CheckError, f"{pack}:{path}: a Gameplay file"):
                 check_package(ok + [mem_item(pack, path, b"x", "copy", "t")], "challenge_X")

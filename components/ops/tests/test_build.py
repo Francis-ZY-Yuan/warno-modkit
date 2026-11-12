@@ -264,11 +264,11 @@ class WholeBuildTest(unittest.TestCase):
             quiet(ops_build.build, other, broken, self.out("c"))
 
     def test_a_gameplay_file_fails_gate_5(self):
-        """A loose Gen/<scenario>/GFX/Unit.ndfbin lies under the scenario, but the game tags the mod Gameplay by it:
+        """A loose Gen/<scenario>/GFX/Unit.txn lies under the scenario, but the game tags the mod Gameplay by it:
         gate 5 fails before anything is written. The same build without it passes gate 5."""
-        unit = mem_item("Loose", "Gen/challenge_ModkitTest/GFX/Unit.ndfbin", b"unit", "copy", "test")
+        unit = mem_item("Loose", "Gen/challenge_ModkitTest/GFX/Unit.txn", b"unit", "copy", "test")
         bad = profile(build_root=self.tmp.name, extra_loose_files=(lambda c: [unit],))
-        with self.assertRaisesRegex(CheckError, r"^Loose:Gen/challenge_ModkitTest/GFX/Unit.ndfbin: a Gameplay file"):
+        with self.assertRaisesRegex(CheckError, r"^Loose:Gen/challenge_ModkitTest/GFX/Unit.txn: a Gameplay file"):
             quiet(ops_build.build, bad, content(), self.out("bad"))
         self.assertFalse(os.path.exists(self.out("bad")))
         _, report = quiet(ops_build.build, profile(build_root=self.tmp.name), content(), self.out("ok"))
@@ -277,7 +277,7 @@ class WholeBuildTest(unittest.TestCase):
     def test_a_pending_gate_5_does_not_claim_a_pass(self):
         """With the Gameplay failure reviewed-pending, the build goes on, but its gate 5 line says the gate is pending,
         not that the package holds no Gameplay file."""
-        unit = mem_item("Loose", "Gen/challenge_ModkitTest/GFX/Unit.ndfbin", b"unit", "copy", "test")
+        unit = mem_item("Loose", "Gen/challenge_ModkitTest/GFX/Unit.txn", b"unit", "copy", "test")
         bad = profile(build_root=self.tmp.name, extra_loose_files=(lambda c: [unit],))
         with self.assertRaises(CheckError) as cm:
             quiet(ops_build.build, bad, content(), self.out("bad"))

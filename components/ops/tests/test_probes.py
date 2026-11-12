@@ -89,8 +89,8 @@ class Build(unittest.TestCase):
         bad = mem_item("Assets", "GameData/Gameplay/Gfx/Decks.ndfbin", b"", "generated", "test")
         with self.assertRaisesRegex(CheckError, "GameData/Gameplay/Gfx/Decks.ndfbin"):
             gates.check_package(self.items + [bad], profile.SCENARIO)
-        unit = mem_item("Loose", f"Gen/{profile.SCENARIO}/GFX/Unit.ndfbin", b"", "copy", "test")
-        with self.assertRaisesRegex(CheckError, f"Loose:Gen/{profile.SCENARIO}/GFX/Unit.ndfbin: a Gameplay file"):
+        unit = mem_item("Loose", f"Gen/{profile.SCENARIO}/GFX/Unit.txn", b"", "copy", "test")
+        with self.assertRaisesRegex(CheckError, f"Loose:Gen/{profile.SCENARIO}/GFX/Unit.txn: a Gameplay file"):
             gates.check_package(self.items + [unit], profile.SCENARIO)
 
     def test_dictionaries_per_language(self):

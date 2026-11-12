@@ -1903,7 +1903,7 @@ def check_package(items: list[Item], scenario: str) -> int:
     ScenariosData:/<scenario>/<inner path> (the ScenarioLoader's TClusterMountAdditionalDatapack), since Details inner
     paths (out/LevelDesign.ndfbin, ...) carry no id. A Gameplay file (modkit.core.packaging.is_gameplay_file: under
     Gen/, ending with one of the 16 GAMEPLAY_FILES, the game's own lookup) fails even under the scenario
-    (Gen/<scenario>/GFX/Unit.ndfbin): the game tags the mod Gameplay by that lookup alone. Returns the number of
+    (Gen/<scenario>/GFX/Unit.txn): the game tags the mod Gameplay by that lookup alone. Returns the number of
     entries."""
     for it in items:
         path = f"ScenariosData:/{scenario}/{it.path}" if it.pack == "Details" else it.path
