@@ -4,7 +4,7 @@
 
 id = 3838528915                 # twinstrike.profile.WORKSHOP_ID
 mod_name = "TwinStrike"         # twinstrike.profile.MOD_NAME: Config.ini's Name; every upload resets the title to it
-title = "Operation Twin Strike | The first custom scripted Operation on the Workshop (WIP)"
+title = "Operation Twin Strike | 双重突击行动 | The first custom scripted Operation on the Workshop (WIP)"
 description = "description.bbcode"
 # The images are in docs/screenshots/, the one folder where the hygiene gate admits pictures. A path that starts
 # with / is from the repository root, as in the README's links.
