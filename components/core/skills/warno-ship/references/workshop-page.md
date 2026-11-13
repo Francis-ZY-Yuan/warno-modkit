@@ -12,6 +12,7 @@ A `workshop/` folder beside the mod's sources, with the images wherever your pro
 workshop/
   item.toml           the item: ID, mod name, title, and where the files below are
   description.bbcode  the description, in Steam's BBCode
+  changes.toml        the change notes, one table per upload, newest first
 the main image        square, about 1 MB or less
 the gallery images    in page order
 ```
@@ -28,10 +29,16 @@ listed in its README.
 | `title` | the page title, 128 characters at most |
 | `description`, `preview`, `gallery` | paths relative to `item.toml`, or from the repository root when they start with `/` |
 | `vars` | the placeholders the description uses, written `{{name}}` |
+| `changes` | optional: the change notes' file (below) |
 
 Anything personal in the description, such as your GitHub user name in a link, is a placeholder: its value goes in
 your git-ignored `modkit.local.toml`, under `[workshop.vars]` (`repo = "github.com/<you>/<repo>"`).
 `python -m modkit.core.workshop render workshop/item.toml` prints the description filled in, ready to paste.
+
+`changes.toml` holds one table per upload, newest first, each with `note`, the text (BBCode works; keep it short,
+for players). A table is named by the id of its note on the item's Change Notes page (the update's Unix time, which
+`check` names), such as `[1794521820]`; the next upload's is `[next]`, at the top. `python -m modkit.core.workshop
+note workshop/item.toml` prints the newest one's note, ready to paste.
 
 ## What sets each part
 
@@ -41,6 +48,7 @@ your git-ignored `modkit.local.toml`, under `[workshop.vars]` (`repo = "github.c
 | Title | the item's "Edit title & description" page | after every upload, which resets it to `mod_name` |
 | Description | the same page (English is the default language) | when it changes; uploads leave it |
 | Gallery | the item's "Add/edit images & videos" page | once; uploads leave it |
+| Change note | the upload adds one, always `Game Version = <build>` / `Mod Version = <Version>`; the item's Change Notes page edits it | after every upload |
 
 The modder runs every upload. Claude can fill the two web pages in the modder's own browser, where they are signed in
 to Steam, when asked; the modder can also paste the files' text themselves.
@@ -53,14 +61,19 @@ to Steam, when asked; the modder can also paste the files' text themselves.
    slashes, and upload again.
 3. **Title and description:** on "Edit title & description", the title from `item.toml` and the `render` output.
 4. **Gallery:** on "Add/edit images & videos", each image in order.
-5. **Check:** `python -m modkit.core.workshop check workshop/item.toml` compares the live title, description and
-   main image with the files and says what to fix. The gallery needs a Steam Web API key to read, so check it by eye.
+5. **Change note:** on the Change Notes page, the `note` output over the game's default; then rename `[next]` in
+   `changes.toml` to the note's id.
+6. **Check:** `python -m modkit.core.workshop check workshop/item.toml` compares the live title, description, main
+   image and change notes with the files and says what to fix. The gallery needs a Steam Web API key to read, so
+   check it by eye.
 
 ## Every later upload
 
 - **Before:** a reinstall writes `PreviewImagePath` empty. Set it again: whether an upload with an empty path keeps
   the main image is not known.
-- **After:** set the title again, then run the check.
+- **Before:** add the upload's note at the top of `changes.toml`, as `[next]`.
+- **After:** set the title again, paste the note over the default on the Change Notes page, rename `[next]` to the
+  id the check names, then run the check.
 - **Changing the page:** change the files first, then the page, then run the check, and commit the files.
 
 ## Writing it

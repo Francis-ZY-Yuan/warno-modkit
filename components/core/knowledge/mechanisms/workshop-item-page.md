@@ -16,6 +16,11 @@ trials: [2026-11-12-twin-strike-workshop-page]
 - **Description:** "Edit title & description" (one text per language; English is the default). An upload leaves it.
 - **Gallery:** "Add/edit images & videos", which adds images beside the main one and cannot replace it. An upload
   leaves the gallery.
+- **Change notes:** every upload adds one, and WARNO's upload always writes `Game Version = <build>` and
+  `Mod Version = <Config.ini's Version>` (the exe's fixed format string); no `Config.ini` line or upload flag sets
+  other text. The item's public Change Notes page (`steamcommunity.com/sharedfiles/filedetails/changelog/<id>`)
+  shows each note as `<p id="<update>">`, the update's Unix time. Other games' Workshop guides say the owner edits a
+  note on that page; not yet tried here.
 
 **Gotchas.**
 - Saving a description with links to other sites put the item on hold for Steam's automated content check, hidden

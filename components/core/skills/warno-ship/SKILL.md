@@ -55,10 +55,15 @@ The modder runs the upload, never Claude. Full checklist:
    description and the gallery ([[workshop-item-page]]). The page says: unofficial and not affiliated with Eugen
    Systems; contains modified Eugen game data; single-player; the game build it was made for; may break after game
    updates. No donation links.
-7. **Check the live page:** `python -m modkit.core.workshop check workshop/item.toml`.
+7. **Write the change note:** the upload writes only `Game Version = <build>` / `Mod Version = <Version>`. Keep each
+   upload's real note in `workshop/changes.toml` (item.toml's `changes`; one table per upload, newest first, the
+   coming one `[next]`), paste it over the default on the item's Change Notes page (`python -m modkit.core.workshop
+   note workshop/item.toml` prints it), then rename `[next]` to the note's id, which the check names.
+8. **Check the live page:** `python -m modkit.core.workshop check workshop/item.toml`.
 
-**Every later upload** resets the title to `Config.ini`'s `Name`: set the title again, then run the check. After a
-reinstall, set `PreviewImagePath` again before uploading.
+**Every later upload** resets the title to `Config.ini`'s `Name` and adds a default change note: write its note as
+`[next]` in `changes.toml` before uploading, then set the title, paste the note and run the check. After a reinstall, set
+`PreviewImagePath` again before uploading.
 
 ## After a game update
 
@@ -79,4 +84,5 @@ Don't edit the installed core; until that release, the mod ships the build the t
 | A preview image path under your user folder | It is published inside `Config.ini`; move it |
 | Editing the page on Steam only | Change the `workshop/` files first, then the page, then run the check |
 | Leaving the title as the upload reset it | Set it again after every upload |
+| Leaving the game's default change note | Paste the release's note from `changes.toml` over it |
 | Shipping a Gameplay file in an Operation mod | It makes the game relaunch with mods off ([[gameplay-mod-relaunch]]) |

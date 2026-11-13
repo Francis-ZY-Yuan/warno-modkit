@@ -434,5 +434,102 @@ class Cli(Env):
             self.assertEqual(cm.exception.code, 2)
 
 
+CHANGELOG = workshop.CHANGELOG_URL.format(id=ITEM_ID)
+DEFAULT = "Game Version = 210942<br>Mod Version = 0"
+
+
+def page(*notes: tuple[int, str]) -> bytes:
+    """A Change Notes page as Steam serves it, newest first."""
+    return "".join(f'<div class="changelog headline">Update: Nov 12 @ 2:17pm</div>\n\t<p id="{u}">{t}</p>\n'
+                   for u, t in notes).encode()
+
+
+class Changes(Env):
+    """The item's change notes: a changes file, one table per upload, against the Change Notes page."""
+
+    GOOD = '[next]\nnote = "Next"\n[20]\nnote = "[b]Two[/b]\\nlines"\n[10]\nnote = "One"\n'
+
+    def changes(self, text: str) -> workshop.Item:
+        root = self.root / "item"
+        make_item(root, changes="changes.toml")
+        (root / "changes.toml").write_text(text, encoding="utf-8")
+        return workshop.load_item(root / "item.toml")
+
+    def test_load(self):
+        item = self.changes(self.GOOD)
+        self.assertEqual(item.releases, (workshop.Release("Next"), workshop.Release("[b]Two[/b]\nlines", 20),
+                                         workshop.Release("One", 10)))
+
+    def test_bad_files(self):
+        for text, want in (("[next", "not TOML"),
+                           ('note = "x"', r"\[note\]: write each release as a table holding only note"),
+                           ('[9]\nnote = "x"\ndate = 1', r"\[9\]: write each release as a table"),
+                           ('[next]\nnote = " "', r"\[next\]: note must be a non-empty string"),
+                           ('[0]\nnote = "x"', r"\[0\]: name a release by its note's id"),
+                           ('[v2]\nnote = "x"', r"\[v2\]: name a release by its note's id"),
+                           ('[9]\nnote = "x"\n[next]\nnote = "y"', r"\[next\]: only the first release"),
+                           ('[9]\nnote = "x"\n[10]\nnote = "y"', r"\[10\]: not older than the release above it")):
+            with self.subTest(text=text), self.assertRaisesRegex(ValueError, "changes.toml: " + want):
+                self.changes(text)
+
+    def test_a_missing_file_is_a_problem(self):
+        item = workshop.load_item(make_item(self.root / "item", changes="nope.toml"))
+        self.assertEqual(item.releases, ())
+        self.assertIn("changes: nope.toml not found", workshop.validate(item))
+
+    def test_change_notes(self):
+        self.assertEqual(workshop.change_notes(page((20, "A &amp; B<br>\n<b>bold</b>"), (10, DEFAULT)).decode()),
+                         [(20, "A & B\n\nbold"), (10, "Game Version = 210942\nMod Version = 0")])
+
+    def diffs(self, text: str, *notes) -> list[tuple[str, bool, str]]:
+        found = workshop.compare_changes(self.changes(text), workshop.change_notes(page(*notes).decode()))
+        return [(d.field, d.ok, d.detail) for d in found]
+
+    def test_every_release_matches(self):
+        """BBCode tags, line ends and blank lines aside; the pending release and older notes are reported only."""
+        out = self.diffs(self.GOOD, (20, "<b>Two</b><br>lines"), (10, "One"), (5, DEFAULT))
+        self.assertEqual(out, [("changes", True, "2 release(s) match their notes"),
+                               ("pending", True, "[next] is not uploaded yet"),
+                               ("older notes", True, "1 note(s) older than the newest release have none, not checked")])
+
+    def test_a_new_upload_with_the_default_note(self):
+        out = self.diffs(self.GOOD, (30, DEFAULT), (20, "Two<br>lines"), (10, "One"))
+        self.assertEqual(out[0][:2], ("changes", False))
+        self.assertIn("(update 30) is the game's default note, newer than every release in changes.toml", out[0][2])
+
+    def test_a_note_that_differs_or_is_gone(self):
+        out = self.diffs(self.GOOD, (20, DEFAULT))
+        self.assertEqual(out, [
+            ("changes", False, "[20] (still the game's default): line 1 differs: live "
+                               "'Game Version = 210942', local 'Two'"),
+            ("changes", False, "[10] is not on the Change Notes page's first page"),
+            ("pending", True, "[next] is not uploaded yet")])
+
+    def test_check_and_note_on_the_command_line(self):
+        self.set_vars()
+        toml = str(self.changes(self.GOOD).path)
+        notes = page((30, DEFAULT), (20, "Two<br>lines"), (10, "One"))
+        opener = FakeOpener(files={PREVIEW_URL: PREVIEW, CHANGELOG: notes})
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
+            code = workshop.main(["check", toml], opener=opener)
+        self.assertEqual(code, 1, out.getvalue())
+        self.assertRegex(out.getvalue(), r"FAIL  changes: the note of .* \(update 30\) is the game's default note, "
+                                         r".*-> paste the \[next\] note \(python -m modkit.core.workshop note .*\) "
+                                         r"over it on the item's Change Notes page, then rename \[next\] to \[30\]")
+        self.assertEqual([r.full_url for r, _ in opener.requests], [workshop.API_URL, PREVIEW_URL, CHANGELOG])
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(workshop.main(["note", toml]), 0)
+        self.assertEqual(out.getvalue(), "Next")
+
+    def test_without_changes_the_page_is_not_read(self):
+        self.set_vars()
+        opener = FakeOpener()
+        with contextlib.redirect_stdout(io.StringIO()):
+            workshop.main(["check", str(make_item(self.root / "item"))], opener=opener)
+        self.assertNotIn(CHANGELOG, [r.full_url for r, _ in opener.requests])
+
+
 if __name__ == "__main__":
     unittest.main()
