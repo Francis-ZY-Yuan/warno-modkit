@@ -2,7 +2,8 @@
 
 Pure data and arithmetic, in Open Door's style. Nothing here reads the game or the map: a row's spawn is a point name
 of twinstrike.map's POINTS, and its units are bare stock names (`T80BV_SOV` for `Descriptor_Unit_T80BV_SOV`). The row
-type and the arithmetic (ForceRow, rows_of, scaled, group_rows, group_total, share_count) are modkit.ops.forces'.
+type is modkit.ops.models' ForceRow; the arithmetic (rows_of, scaled, group_rows, group_total, share_count) is
+modkit.ops.forces'.
 
 The player's deck (design 6.1) is RedJuggernaut's, OP_BASE_RJ_Player [[soviet-player-camp]], which a script can only
 add to [[add-unit-to-deck]]:
@@ -33,14 +34,15 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Iterable, Mapping
 
-from modkit.ops.forces import ForceRow, group_rows, group_total, rows_of, scaled, share_count
-from modkit.ops.profile import RJ_PLAYER_DECK, SOVIET_PLAYER_SUPPLY, Card
+from modkit.ops.forces import group_rows, group_total, rows_of, scaled, share_count
+from modkit.ops.models import ForceRow
+from modkit.ops.profile import RJ_PLAYER_DECK, SOVIET_PLAYER_SUPPLY
 
 FORCE_SCALE = 1.0       # design 6.4: 1x at release
 
 # --------------------------------------------------------------------------- the player's deck (design 6.1)
 
-DECK_BASE = RJ_PLAYER_DECK            # Card (unit, count, transport or None) is modkit.ops.profile's
+DECK_BASE = RJ_PLAYER_DECK            # a card is a ForceRow (unit, count, transport or None)
 
 # The ATGM team (game build 201602; a stock test re-derives both): the Soviet ATGM infantry team whose missile has the
 # highest AT penetration among the teams a Soviet division's rules field (DivisionRules.ndf), the longer range on a tie.
@@ -57,25 +59,25 @@ T80U_TANK = "T80U_Obr89_SOV"
 # engineers in MT-LBs (RJ's deck fields the MT-LB, the 2S12's tractor; 5 Army General pawns pair them so) and the
 # scouts in UAZ-469s (RJ's deck fields them; the pairing of 170 of 198 pawns and of the 79th Guards Tank Division's own
 # rule); the ATGM teams in their BTR-80s.
-START_TARGETS: tuple[Card, ...] = (
-    ("T80BV_SOV", 10, None), ("T80BV_CMD_SOV", 2, None), ("BMP_2_CMD_SOV", 1, None),
-    ("MotRifles_SOV", 8, "BMP_2_SOV"), (ATGM_TEAM, 2, ATGM_CARRIER),
-    ("Engineers_Flam_SOV", 2, "MTLB_transp_SOV"), ("BRM_1_SOV", 2, None),
-    ("Scout_SOV", 2, "UAZ_469_SOV"), ("ZSU_23_Shilka_SOV", 2, None), ("MTLB_Strela10_SOV", 1, None),
-    ("2S1_Gvozdika_SOV", 4, None), ("Ka_29_SOV", 4, None),
+START_TARGETS: tuple[ForceRow, ...] = (
+    ForceRow("T80BV_SOV", 10), ForceRow("T80BV_CMD_SOV", 2), ForceRow("BMP_2_CMD_SOV", 1),
+    ForceRow("MotRifles_SOV", 8, "BMP_2_SOV"), ForceRow(ATGM_TEAM, 2, ATGM_CARRIER),
+    ForceRow("Engineers_Flam_SOV", 2, "MTLB_transp_SOV"), ForceRow("BRM_1_SOV", 2),
+    ForceRow("Scout_SOV", 2, "UAZ_469_SOV"), ForceRow("ZSU_23_Shilka_SOV", 2), ForceRow("MTLB_Strela10_SOV", 1),
+    ForceRow("2S1_Gvozdika_SOV", 4), ForceRow("Ka_29_SOV", 4),
 )
 # top_up(START_TARGETS, RJ's packs), pinned (game build 201602). RJ already holds 16 T-80BV, 2 BRM-1 and 2 MT-LB
 # Strela-10, so those add nothing; it holds 2 2S1, so 2 more. The stock test re-derives this.
-START_ADDS: tuple[Card, ...] = (
-    ("T80BV_CMD_SOV", 2, None), ("BMP_2_CMD_SOV", 1, None), ("MotRifles_SOV", 8, "BMP_2_SOV"),
-    (ATGM_TEAM, 2, ATGM_CARRIER),
-    ("Engineers_Flam_SOV", 2, "MTLB_transp_SOV"), ("Scout_SOV", 2, "UAZ_469_SOV"), ("ZSU_23_Shilka_SOV", 2, None),
-    ("2S1_Gvozdika_SOV", 2, None), ("Ka_29_SOV", 4, None),
+START_ADDS: tuple[ForceRow, ...] = (
+    ForceRow("T80BV_CMD_SOV", 2), ForceRow("BMP_2_CMD_SOV", 1), ForceRow("MotRifles_SOV", 8, "BMP_2_SOV"),
+    ForceRow(ATGM_TEAM, 2, ATGM_CARRIER),
+    ForceRow("Engineers_Flam_SOV", 2, "MTLB_transp_SOV"), ForceRow("Scout_SOV", 2, "UAZ_469_SOV"),
+    ForceRow("ZSU_23_Shilka_SOV", 2), ForceRow("2S1_Gvozdika_SOV", 2), ForceRow("Ka_29_SOV", 4),
 )
 # The Soviet player's supply, added at load after START_ADDS: the shared constant, not a copy. RJ's deck has no supply
 # helicopter, and its Ural-4320 trucks sit only in battlegroups 2 and 3's HQ groups (the tank battalions); a stock test
 # re-checks both, pinned at game build 201602 [[soviet-player-camp]].
-SUPPLY: tuple[Card, ...] = SOVIET_PLAYER_SUPPLY
+SUPPLY: tuple[ForceRow, ...] = SOVIET_PLAYER_SUPPLY
 # RJ's own defence-grade types, locked by type until the village falls: its Tunguska, its Su-24M and its Mi-24P. None
 # is a start target, so the lock never holds back a card the assault needs.
 START_LOCKS: tuple[str, ...] = ("Tunguska_2K22_SOV", "Su_24M_SOV", "Mi_24P_SOV")
@@ -85,11 +87,11 @@ START_LOCKS: tuple[str, ...] = ("Tunguska_2K22_SOV", "Su_24M_SOV", "Mi_24P_SOV")
 # hold the village against the Abrams. The heavy air defence against NATO's fighter sweeps is the division's own SAM,
 # the 2K12 Kub (in the 79th Guards Tank Division's multiplayer deck and pawn, and Survivors' Soviet deck), bare as every
 # stock pack holds it. The counts are the balance's (design 6.5): the reserve holds more than the fall's points buy.
-RESERVE: tuple[Card, ...] = (
-    (T80U_TANK, 15, None), ("T80U_CMD_SOV", 1, None), ("Tunguska_2K22_SOV", 2, None), ("Osa_9K33M3_SOV", 2, None),
-    ("Mi_24V_AT_SOV", 6, None), ("Ka_50_SOV", 4, None), ("Su_25T_SOV", 2, None), ("Su_24M_clu_SOV", 2, None),
-    ("BRDM_2_Konkurs_SOV", 6, None), ("MotRifles_Metis_SOV", 8, "BMP_2_SOV"), (ATGM_TEAM, 4, ATGM_CARRIER),
-    ("2K12_KUB_SOV", 2, None),
+RESERVE: tuple[ForceRow, ...] = (
+    ForceRow(T80U_TANK, 15), ForceRow("T80U_CMD_SOV", 1), ForceRow("Tunguska_2K22_SOV", 2),
+    ForceRow("Osa_9K33M3_SOV", 2), ForceRow("Mi_24V_AT_SOV", 6), ForceRow("Ka_50_SOV", 4), ForceRow("Su_25T_SOV", 2),
+    ForceRow("Su_24M_clu_SOV", 2), ForceRow("BRDM_2_Konkurs_SOV", 6), ForceRow("MotRifles_Metis_SOV", 8, "BMP_2_SOV"),
+    ForceRow(ATGM_TEAM, 4, ATGM_CARRIER), ForceRow("2K12_KUB_SOV", 2),
 )
 # The Soviet command units the player can field: RJ's own (T-80B CMD, BMP-1 CMD, and DShV CMD in its Mi-8s), the start
 # adds' and the reserve's. The village falls only with one of them inside (design 5.1) [[zone-capture-command-units]];
@@ -98,23 +100,23 @@ COMMAND_UNITS: tuple[str, ...] = ("T80BV_CMD_SOV", "BMP_2_CMD_SOV", "T80B_CMD_SO
                                   "T80U_CMD_SOV")
 
 
-def top_up(targets: Iterable[Card], held: Mapping[str, int]) -> tuple[Card, ...]:
+def top_up(targets: Iterable[ForceRow], held: Mapping[str, int]) -> tuple[ForceRow, ...]:
     """The cards that bring a deck holding `held` (unit -> count, every pack of the unit summed, carried or not) up to
     each target's count: each target's unit, count less what is held, and transport, in target order; a target the
     deck already meets adds nothing."""
     out = []
-    for unit, count, transport in targets:
-        more = count - held.get(unit, 0)
+    for t in targets:
+        more = t.count - held.get(t.unit, 0)
         if more > 0:
-            out.append((unit, more, transport))
+            out.append(ForceRow(t.unit, more, t.transport))
     return tuple(out)
 
 
-def deck_units(cards: Iterable[Card]) -> Counter:
+def deck_units(cards: Iterable[ForceRow]) -> Counter:
     """unit -> count over `cards` (a transport's carrier is not counted: it is not a card of its own)."""
     out: Counter = Counter()
-    for unit, count, _ in cards:
-        out[unit] += count
+    for c in cards:
+        out[c.unit] += c.count
     return out
 
 
@@ -124,31 +126,32 @@ FOB_UNIT = "FOB_SOV"
 
 ROWS: tuple[ForceRow, ...] = tuple(
     # --- the player's, not in the deck (design 6.2): two FOBs in the Soviet box, pre-placed in the player's camp
-    rows_of("fob", "Soviet", "FOB_W", "forward detachment FOB", (FOB_UNIT, 1), fixed=True)
-    + rows_of("fob", "Soviet", "FOB_E", "forward detachment FOB", (FOB_UNIT, 1), fixed=True)
+    rows_of("fob", "Soviet", "FOB_W", "forward detachment FOB", ForceRow(FOB_UNIT, 1), fixed=True)
+    + rows_of("fob", "Soviet", "FOB_E", "forward detachment FOB", ForceRow(FOB_UNIT, 1), fixed=True)
     # the division artillery, no longer pre-placed: each fire creates its battery at GUN_SPAWN, the cut's north-west
     # corner, in the player's allied camp (SovietAlly: the player's units never engage it), and removes it after (5.4)
-    + rows_of("guns_heavy", "SovietAlly", "GUN_SPAWN", "division artillery: 2S7M battery", ("2S7M_Malka_SOV", 6),
-              fixed=True)
-    + rows_of("guns_rockets", "SovietAlly", "GUN_SPAWN", "division artillery: BM-27 battery", ("BM27_Uragan_SOV", 6),
-              fixed=True)
+    + rows_of("guns_heavy", "SovietAlly", "GUN_SPAWN", "division artillery: 2S7M battery",
+              ForceRow("2S7M_Malka_SOV", 6), fixed=True)
+    + rows_of("guns_rockets", "SovietAlly", "GUN_SPAWN", "division artillery: BM-27 battery",
+              ForceRow("BM27_Uragan_SOV", 6), fixed=True)
     # --- NATO (design 6.3). The garrison is pre-placed in and around the village; both battalions are created by
     # the script (TS4b): battalion 1 in waves at both lane entries (its rows' spawn is the west entry, nominally),
     # battalion 2 at ASSEMBLY.
     + rows_of("garrison", "NATO", "VILLAGE", "West German Panzergrenadier company (-)",
-              ("Panzergrenadier_IFV_RFA", 4), ("Marder_1A3_RFA", 3), ("ATteam_Milan_2_RFA", 2), ("Leopard_1A5_RFA", 3),
-              ("Gepard_1A2_RFA", 1), ("Fernspaher_RFA", 1))
+              ForceRow("Panzergrenadier_IFV_RFA", 4), ForceRow("Marder_1A3_RFA", 3), ForceRow("ATteam_Milan_2_RFA", 2),
+              ForceRow("Leopard_1A5_RFA", 3), ForceRow("Gepard_1A2_RFA", 1), ForceRow("Fernspaher_RFA", 1))
     + rows_of("bn1", "NATO", "NATO_ENTRY_W", "US armoured task force",
-              ("M1A1HA_Abrams_US", 30), ("M1A1HA_Abrams_CMD_US", 1), ("M2A2_Bradley_IFV_US", 10),
-              ("Rifles_half_AT4_US", 9, "M2A2_Bradley_IFV_US"))
+              ForceRow("M1A1HA_Abrams_US", 30), ForceRow("M1A1HA_Abrams_CMD_US", 1),
+              ForceRow("M2A2_Bradley_IFV_US", 10), ForceRow("Rifles_half_AT4_US", 9, "M2A2_Bradley_IFV_US"))
     + rows_of("bn1_recon", "NATO", "NATO_ENTRY_W", "the task force's recon screen",
-              ("M3A2_Bradley_CFV_US", 3), ("Scout_US", 3), ("OH58D_Kiowa_Warrior_US", 2))
+              ForceRow("M3A2_Bradley_CFV_US", 3), ForceRow("Scout_US", 3), ForceRow("OH58D_Kiowa_Warrior_US", 2))
     + rows_of("bn1_ad", "NATO", "NATO_ENTRY_W", "the task force's air defence",
-              ("M163_PIVADS_US", 2), ("M48_Chaparral_MIM72F_US", 2), ("M998_Avenger_US", 2), ("MANPAD_Stinger_C_US", 3))
+              ForceRow("M163_PIVADS_US", 2), ForceRow("M48_Chaparral_MIM72F_US", 2), ForceRow("M998_Avenger_US", 2),
+              ForceRow("MANPAD_Stinger_C_US", 3))
     + rows_of("bn2", "NATO", "ASSEMBLY", "West German Panzer battalion",
-              ("Leopard_2A4_RFA", 28), ("Leopard_2A3_CMD_RFA", 1), ("Marder_1A3_RFA", 8),
-              ("Panzergrenadier_IFV_RFA", 8, "Marder_1A3_RFA"), ("Gepard_1A2_RFA", 3), ("Marder_Roland_2_RFA", 2),
-              ("Luchs_A1_RFA", 2))
+              ForceRow("Leopard_2A4_RFA", 28), ForceRow("Leopard_2A3_CMD_RFA", 1), ForceRow("Marder_1A3_RFA", 8),
+              ForceRow("Panzergrenadier_IFV_RFA", 8, "Marder_1A3_RFA"), ForceRow("Gepard_1A2_RFA", 3),
+              ForceRow("Marder_Roland_2_RFA", 2), ForceRow("Luchs_A1_RFA", 2))
 )
 GROUPS = tuple(dict.fromkeys(r.group for r in ROWS))
 # Each battalion's tanks: the base of its "broken" share and its B1 / B2 counter (design 4.1: "N / 31").
@@ -183,5 +186,5 @@ def threshold(name: str, rows: Iterable[ForceRow] | None = None, share: float | 
         base = group_total(rows, "garrison")
     else:
         tanks = BN1_TANKS if name == "bn1" else BN2_TANKS
-        base = sum(r.count for r in rows if r.group == name and r.descriptor in tanks)
+        base = sum(r.count for r in rows if r.group == name and r.unit in tanks)
     return share_count(SHARES[name] if share is None else share, base)

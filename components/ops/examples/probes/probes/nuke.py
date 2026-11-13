@@ -36,6 +36,7 @@ from modkit.ops.bricks import (
 from modkit.ops.graph import Node
 from modkit.ops.leveldesign import LdItem, derived_menu_order
 from modkit.ops.mission import script_frame
+from modkit.ops.models import CampRow
 from modkit.ops.profile import (
     SOVIET_PLAYER_CAMP_ROWS, SOVIET_PLAYER_DECK_SWAP, SOVIET_PLAYER_SIDES, SOVIET_PLAYER_SUPPLY, Content,
 )
@@ -107,7 +108,7 @@ class Variant(NamedTuple):
     victim_side: str                 # the side the victims belong to
     sides: Mapping[str, str]         # side -> camp export name
     player: str                      # the player's side
-    camp_rows: tuple                 # shapes.CampRow of the four camps, CampList order
+    camp_rows: tuple[CampRow, ...]   # the four camps, CampList order
     camp_names: dict[str, Texts]     # camp export name -> its PlayerName
     deck_swap: Mapping[str, str] | None  # MapConfiguration LocalPlayerDeck swap (None: the profile's)
     timeline: tuple = TIMELINE       # the Steps
@@ -230,7 +231,7 @@ def load_deck(ctx: Ctx) -> Node:
     (shapes.lock_card: Competition[WaitCondition, LockDeckUnit]; the race is the last node)."""
     return g_seq([add_card(ctx, CARD_UNIT, CARD_COUNT, transport=TRANSPORT_CARD),
                   add_card(ctx, LOCKED_CARD, LOCKED_COUNT),
-                  *(add_card(ctx, unit, n, transport=carrier) for unit, n, carrier in SOVIET_PLAYER_SUPPLY),
+                  *(add_card(ctx, c.unit, c.count, transport=c.transport) for c in SOVIET_PLAYER_SUPPLY),
                   lock_card(ctx, LOCKED_CARD, g_cmp(ctx.int_var(f"{ctx.variant.prefix}_t80u"), 1))])
 
 

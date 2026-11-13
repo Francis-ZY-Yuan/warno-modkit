@@ -14,6 +14,7 @@ from modkit.ops.bricks import g_cmp, g_modify, g_seq, g_set, g_simul, g_wait, un
 from modkit.ops.files import read_file
 from modkit.ops.graph import TRUE, Node, decode, i32, walk
 from modkit.ops.maps import GEISA
+from modkit.ops.models import ForceRow, Knobs
 from modkit.ops.profile import SURVIVORS
 from modkit.ops.testing import (
     cmp_of, last, of, parent_of, prop, sets, subs, token,
@@ -258,26 +259,27 @@ class Phase1(unittest.TestCase):
         with the BMP-1 command vehicle, S 11; B1's thresholds are 28/42/55 % of them (forces.threshold)."""
         companies, rows = mission.fe_tallies()
         self.assertEqual(companies, rows)
-        self.assertEqual(rows, Counter({(r.descriptor, r.transport): r.count for r in
+        self.assertEqual(rows, Counter({(r.unit, r.transport): r.count for r in
                                         forces.force_rows("first_echelon")}))
-        self.assertEqual(mission.tally([("A", 1, None), ("A", 2, None), ("A", 1, "B")]),
+        self.assertEqual(mission.tally([ForceRow("A", 1), ForceRow("A", 2), ForceRow("A", 1, "B")]),
                          Counter({("A", None): 3, ("A", "B"): 1}))
         self.assertEqual(mission.FE_TOTAL, 36)
         self.assertEqual(mission.FE_TYPES, ("T80B_SOV", "BMP_2_SOV", "MotRifles_SOV", "BMP_1_CMD_SOV", "BRDM_2_SOV",
                                          "BRDM_2_Konkurs_SOV", "Scout_SOV", "ZSU_23_Shilka_SOV", "BRDM_Strela_1_SOV"))
-        self.assertEqual([(c.key, sum(n for _, n, _ in c.rows)) for c in mission.FE_COMPANIES],
+        self.assertEqual([(c.key, sum(r.count for r in c.rows)) for c in mission.FE_COMPANIES],
                          [("n", 11), ("c", 14), ("s", 11)])
-        self.assertEqual([c.key for c in mission.FE_COMPANIES if any(u == "BMP_1_CMD_SOV" for u, _, _ in c.rows)],
+        self.assertEqual([c.key for c in mission.FE_COMPANIES if any(r.unit == "BMP_1_CMD_SOV" for r in c.rows)],
                          ["c"])
         for c in mission.FE_COMPANIES:  # every company's riflemen have their carriers beside them
             with self.subTest(company=c.key):
-                rows = {u: n for u, n, _ in c.rows}
-                for unit, n, carrier in c.rows:
-                    if carrier:
-                        self.assertEqual(rows[carrier], n)
-        self.assertEqual(mission.KNOBS["od_b1_n"], tuple(forces.threshold("B1", d, forces.force_rows("first_echelon"))
-                                                      for d in ("easy", "medium", "hard")))
-        self.assertEqual(mission.KNOBS["od_b1_n"], (10, 15, 20))
+                rows = {r.unit: r.count for r in c.rows}
+                for r in c.rows:
+                    if r.transport:
+                        self.assertEqual(rows[r.transport], r.count)
+        self.assertEqual(mission.KNOBS["od_b1_n"],
+                         Knobs(*(forces.threshold("B1", d, forces.force_rows("first_echelon"))
+                                 for d in ("easy", "medium", "hard"))))
+        self.assertEqual(mission.KNOBS["od_b1_n"], Knobs(10, 15, 20))
 
     def test_first_echelon(self):
         """H+1:00: each row created (PACT) at its company's entry, riflemen and carriers in groups of their own that
@@ -287,8 +289,8 @@ class Phase1(unittest.TestCase):
         ctx, seq = self.beat("first_echelon")
         *made, attacks = subs(seq)
         creates = [n for n in made if n.cls == "TGDDescriptorCreateUnitOnPosition"]
-        want = [(f"od_fe_{c.key}" + ("_inf" if t else "_ifv" if u == "BMP_2_SOV" else ""), n, c.entry,
-                 unit_path(u), PACT) for c in mission.FE_COMPANIES for u, n, t in c.rows]
+        want = [(f"od_fe_{c.key}" + ("_inf" if r.transport else "_ifv" if r.unit == "BMP_2_SOV" else ""), r.count,
+                 c.entry, unit_path(r.unit), PACT) for c in mission.FE_COMPANIES for r in c.rows]
         self.assertEqual([(last(prop(c, "Group")), prop(c, "NbUnit").v, last(prop(c, "Position")),
                            prop(c, "TypeUnit").path, prop(c, "Camp").export) for c in creates], want)
         joins = [n for n in made if n.cls == "TGDDescriptorAddUnitGroupListToUnitGroup"]
@@ -406,7 +408,7 @@ class Phase1(unittest.TestCase):
                           last(prop(kills, "Variable")), prop(wait, "Duree").v),
                          ("TGDDescriptorGetNbKillsCamp", JOUEUR, [unit_path(u) for u in mission.FE_TYPES], "od_b1_k",
                           1.0))
-        self.assertEqual(set(mission.FE_TYPES), {r.descriptor for r in forces.force_rows("first_echelon")})
+        self.assertEqual(set(mission.FE_TYPES), {r.unit for r in forces.force_rows("first_echelon")})
         writers = [n for n in self.nodes if any(v is self.var("od_b1_k") for k, v in n.props
                                                 if k in ("Variable", "Variable1"))
                    and n.cls.startswith("TGDDescriptor")]
@@ -714,24 +716,24 @@ class Phase2(unittest.TestCase):
         of wave 3; every main-body vehicle type the rear exit counts is in a wave."""
         waves, rows = mission.mb_tallies()
         self.assertEqual(waves, rows)
-        self.assertEqual(rows, Counter({(r.descriptor, r.transport): r.count for r in
+        self.assertEqual(rows, Counter({(r.unit, r.transport): r.count for r in
                                         [*forces.force_rows("main_body"), *forces.force_rows("pocket_ad")]}))
         self.assertEqual((mission.MB_TOTAL, mission.MB_DISMOUNTS), (60, 9))
         self.assertEqual([(w.key, w.offset, w.lane) for w in mission.WAVES],
                          [(1, 0.0, "MID"), (2, 60.0, "BOTTOM"), (3, 120.0, "MID"), (4, 180.0, "BOTTOM"),
                           (5, 240.0, "MID"), (6, 300.0, "BOTTOM")])
         self.assertEqual([w.rows for w in mission.WAVES], [
-            (("T80BV_SOV", 10, None),),
-            (("T80BV_SOV", 10, None),),
-            (("BMP_2_SOV", 10, None), ("MotRifles_SOV", 9, "BMP_2_SOV"), ("BRDM_2_Konkurs_SOV", 3, None)),
-            (("T80BV_SOV", 10, None), ("T80BV_CMD_SOV", 1, None)),
-            (("Tunguska_2K22_SOV", 2, None), ("Osa_9K33M3_SOV", 2, None), ("MTLB_Strela10_SOV", 2, None),
-             ("BMP_1_CMD_SOV", 1, None)),
-            (("2S3M_Akatsiya_SOV", 6, None), ("MTLB_supply_SOV", 3, None)),
+            (ForceRow("T80BV_SOV", 10),),
+            (ForceRow("T80BV_SOV", 10),),
+            (ForceRow("BMP_2_SOV", 10), ForceRow("MotRifles_SOV", 9, "BMP_2_SOV"), ForceRow("BRDM_2_Konkurs_SOV", 3)),
+            (ForceRow("T80BV_SOV", 10), ForceRow("T80BV_CMD_SOV", 1)),
+            (ForceRow("Tunguska_2K22_SOV", 2), ForceRow("Osa_9K33M3_SOV", 2), ForceRow("MTLB_Strela10_SOV", 2),
+             ForceRow("BMP_1_CMD_SOV", 1)),
+            (ForceRow("2S3M_Akatsiya_SOV", 6), ForceRow("MTLB_supply_SOV", 3)),
         ])
-        self.assertEqual(sum(n for w in mission.WAVES for _, n, t in w.rows if t is None), mission.MB_TOTAL)
-        main_vehicles = {r.descriptor for r in forces.force_rows("main_body") if r.transport is None}
-        self.assertLessEqual(main_vehicles, {u for w in mission.WAVES for u, _, t in w.rows if t is None})
+        self.assertEqual(sum(r.count for w in mission.WAVES for r in w.rows if r.transport is None), mission.MB_TOTAL)
+        main_vehicles = {r.unit for r in forces.force_rows("main_body") if r.transport is None}
+        self.assertLessEqual(main_vehicles, {r.unit for w in mission.WAVES for r in w.rows if r.transport is None})
 
     def test_main_body(self):
         """Each wave, once released (od_released = 1) and from its offset: its rows created (PACT) at its lane's entry,
@@ -756,9 +758,9 @@ class Phase2(unittest.TestCase):
                 self.assertTrue(all(last(prop(o, "Group")) == f"od_mb{w.key}" for o in walk([route])
                                     if o.cls == "TGDDescriptorGiveOrderStandard"))
                 creates = [n for n in steps if n.cls == "TGDDescriptorCreateUnitOnPosition"]
-                carriers = {t for _, _, t in w.rows if t}
-                want = [(f"od_mb{w.key}" + ("_inf" if t else "_ifv" if u in carriers else ""), n,
-                         mission.LANES[w.lane].entry, unit_path(u), PACT) for u, n, t in w.rows]
+                carriers = {r.transport for r in w.rows if r.transport}
+                want = [(f"od_mb{w.key}" + ("_inf" if r.transport else "_ifv" if r.unit in carriers else ""), r.count,
+                         mission.LANES[w.lane].entry, unit_path(r.unit), PACT) for r in w.rows]
                 self.assertEqual([(last(prop(c, "Group")), prop(c, "NbUnit").v, last(prop(c, "Position")),
                                    prop(c, "TypeUnit").path, prop(c, "Camp").export) for c in creates], want)
                 rest = steps[len(creates):]
@@ -847,8 +849,8 @@ class Phase2(unittest.TestCase):
                              [unit_path("MotRifles_SOV"), unit_path("Scout_SOV")])
         self.assertEqual((count.cls, last(prop(count, "Group")), last(prop(count, "Variable")), prop(wait, "Duree").v),
                          ("TGDDescriptorSetVariableIntegerFromUnitGroup", "od_sackg", "od_sack", 2.0))
-        infantry = {r.descriptor for r in forces.ROWS
-                    if r.camp == "PACT" and (r.transport or "Scout" in r.descriptor)}
+        infantry = {r.unit for r in forces.ROWS
+                    if r.camp == "PACT" and (r.transport or "Scout" in r.unit)}
         self.assertEqual(infantry, set(mission.SACK_INFANTRY))
 
     def test_p4(self):
@@ -865,7 +867,7 @@ class Phase2(unittest.TestCase):
         self.assertEqual((done.cls, last(prop(done, "Variable1")), prop(done, "Value").v),
                          ("TGDDescriptorModifieVariableInteger", "od_p4", 1))
         self.assertEqual(mission.KNOBS["od_smin"],
-                         tuple(forces.share_count(s, mission.MB_TOTAL) for s in (0.25, 0.33, 0.40)))
+                         Knobs(*(forces.share_count(s, mission.MB_TOTAL) for s in (0.25, 0.33, 0.40))))
 
     def test_spring(self):
         """Design 5.2's spring, probe 2's ask loop: pick = ans = CHOICE_NONE (the sentinel) before the race and before
@@ -989,7 +991,7 @@ class Phase2(unittest.TestCase):
         self.assertEqual(cmp_vars(prop(obj, "Condition")), ("od_b6_t", 2, "od_b6_s"))
         self.assertEqual(cmp_of(prop(obj, "ConditionEchec")), ("od_window", 0, mission.WINDOW_CLOSED))
         self.assertEqual(self.kv(prop(obj, "ActionsReussi")), [("Variable1", "od_b6"), ("Value", 1)])
-        self.assertEqual(mission.KNOBS["od_b6_s"], (90, 120, 150))
+        self.assertEqual(mission.KNOBS["od_b6_s"], Knobs(90, 120, 150))
         start, comp = subs(mission.b6_contact(ctx))                     # no reset: both necks' stays add up
         _, stop = subs(comp)
         holds, broken = prop(start, "Condition"), prop(stop, "Condition")
@@ -1187,7 +1189,7 @@ def surrender_point(sealed_n: int, pct: int) -> int:
     """Design 5.4's surrender point in plain Python: floor(sealed_n x pct / 100) for the difficulty's shares; a pct
     that is none of them reads as Medium's (the fallback)."""
     shares = mission.KNOBS["od_surr_pct"]
-    return sealed_n * (pct if pct in shares else shares[mission.MEDIUM]) // 100
+    return sealed_n * (pct if pct in (shares.easy, shares.medium, shares.hard) else shares.medium) // 100
 
 
 def grade(alive: int, captured_seen: int, sealed: bool) -> tuple[int, int]:
@@ -1232,11 +1234,11 @@ class Phase34(unittest.TestCase):
     def test_constants(self):
         """The values: design 6.1's spring row, the seal at 30 s, design 5.4's surrender at 45/35/25 % and T_hold
         15:00, the backstop at spring + 25:00, design 5.5's bands at 70 % and 40 % of the main body's 60 vehicles."""
-        self.assertEqual(mission.SPRING_CARDS, (("M1A1HA_Abrams_US", 4), ("Leopard_2A4_RFA", 4),
-                                             ("OH58D_Kiowa_Warrior_US", 2)))
+        self.assertEqual(mission.SPRING_CARDS, (ForceRow("M1A1HA_Abrams_US", 4), ForceRow("Leopard_2A4_RFA", 4),
+                                             ForceRow("OH58D_Kiowa_Warrior_US", 2)))
         self.assertEqual((mission.SEAL_NATO_N, mission.SEAL_HOLD_S, mission.T_HOLD_S, mission.BACKSTOP_S),
                          (1, 30.0, 900.0, 1500.0))
-        self.assertEqual(mission.KNOBS["od_surr_pct"], (45, 35, 25))
+        self.assertEqual(mission.KNOBS["od_surr_pct"], Knobs(45, 35, 25))
         self.assertEqual((mission.CATCH_TOTAL_N, mission.CATCH_MAJOR_N), (42, 24))
         self.assertEqual((mission.CATCH_TOTAL_N, mission.CATCH_MAJOR_N),
                          tuple(forces.share_count(s, mission.MB_TOTAL) for s in (0.70, 0.40)))
@@ -1265,7 +1267,7 @@ class Phase34(unittest.TestCase):
         self.assertEqual((last(prop(join, "GroupDestination")), [last(g) for g in prop(join, "ListGroupSource")]),
                          ("Groupe_Joueur", self.jaws))
         self.assertEqual([(prop(c, "TypeUnit").path, prop(c, "NbUnitsToAdd").v) for c in cards],
-                         [(unit_path(u), n) for u, n in mission.SPRING_CARDS])
+                         [(unit_path(c.unit), c.count) for c in mission.SPRING_CARDS])
         for c in cards:
             self.assertEqual(([k for k, _ in c.props], prop(c, "Camp").export), (["Camp", "NbUnitsToAdd", "TypeUnit"],
                                                                                  JOUEUR))
@@ -1456,7 +1458,8 @@ class Phase34(unittest.TestCase):
                          [[("Variable1", "od_pocket"), ("Variable2", "od_sealed_n")], [("Variable1", "od_surr_x")],
                           [("Variable1", "od_surr_x"), ("Value", 100), ("ModificationType", 4)],
                           [("Variable1", "od_surr_n"), ("Variable2", "od_surr_x")]])
-        easy, medium, hard = mission.KNOBS["od_surr_pct"]
+        knob = mission.KNOBS["od_surr_pct"]
+        easy, medium, hard = knob.easy, knob.medium, knob.hard
         branches, node = [], shares                                         # IfThenElse(easy, IfThenElse(hard, ...))
         while node.cls == "TGDDescriptorIfThenElse":
             branches.append((cmp_of(prop(node, "Condition")), prop(node, "EffetIfTrue")))

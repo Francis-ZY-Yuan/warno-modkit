@@ -14,8 +14,8 @@ import unittest
 from twin_strike_support import (DECK_DATA, GAME, division_rules, stock_deck, stock_deck_groups, supply_units,
                                  unit_facts)
 from modkit.ops import gates
-from modkit.ops import profile as ops_profile
 from modkit.ops.forces import scaled
+from modkit.ops.models import ForceRow
 from modkit.ops.profile import RJ_PLAYER_DECK, SOVIET_PLAYER_SIDES, SOVIET_PLAYER_SUPPLY
 from twinstrike import forces, op
 from twinstrike.map import POINTS
@@ -42,23 +42,23 @@ class Tables(unittest.TestCase):
                                          "bn2"))
 
     def test_one_row_per_unit_type_and_group(self):
-        keys = [(r.group, r.descriptor) for r in forces.ROWS if r.group != "fob"]
+        keys = [(r.group, r.unit) for r in forces.ROWS if r.group != "fob"]
         self.assertEqual(len(keys), len(set(keys)))
 
     def test_places_camps_and_carriers(self):
         """Every row spawns at a named place of the map, in a side of the Soviet-player camps; a squad's carrier is a
         row of its own group."""
         for r in forces.ROWS:
-            with self.subTest(row=(r.group, r.descriptor)):
+            with self.subTest(row=(r.group, r.unit)):
                 self.assertIn(r.spawn, POINTS)
                 self.assertIn(r.camp, SOVIET_PLAYER_SIDES)
                 if r.transport:
-                    self.assertIn(r.transport, {x.descriptor for x in forces.ROWS if x.group == r.group})
+                    self.assertIn(r.transport, {x.unit for x in forces.ROWS if x.group == r.group})
         self.assertEqual({r.camp for r in forces.ROWS if r.group in ("garrison", "bn1", "bn1_recon", "bn1_ad", "bn2")},
                          {"NATO"})
         self.assertEqual({(r.camp, r.spawn) for r in forces.ROWS if r.group.startswith("guns")},
                          {("SovietAlly", "GUN_SPAWN")})
-        self.assertEqual([(r.spawn, r.descriptor) for r in forces.ROWS if r.group == "fob"],
+        self.assertEqual([(r.spawn, r.unit) for r in forces.ROWS if r.group == "fob"],
                          [("FOB_W", "FOB_SOV"), ("FOB_E", "FOB_SOV")])
 
     def test_the_knob_scales_nato_and_not_the_fixed_rows(self):
@@ -70,7 +70,7 @@ class Tables(unittest.TestCase):
         self.assertTrue(all(r.count >= 1 for r in scaled(forces.ROWS, 0.1)))
 
     def test_force_rows_is_the_group_at_the_knob(self):
-        self.assertEqual([(r.descriptor, r.count) for r in forces.force_rows("guns_heavy")], [("2S7M_Malka_SOV", 6)])
+        self.assertEqual([(r.unit, r.count) for r in forces.force_rows("guns_heavy")], [("2S7M_Malka_SOV", 6)])
         self.assertEqual(sum(r.count for r in forces.force_rows("garrison")), 14)
 
 
@@ -83,8 +83,8 @@ class Thresholds(unittest.TestCase):
 
     def test_the_bases(self):
         rows = scaled(forces.ROWS, 1.0)
-        self.assertEqual(sum(r.count for r in rows if r.group == "bn1" and r.descriptor in forces.BN1_TANKS), 31)
-        self.assertEqual(sum(r.count for r in rows if r.group == "bn2" and r.descriptor in forces.BN2_TANKS), 29)
+        self.assertEqual(sum(r.count for r in rows if r.group == "bn1" and r.unit in forces.BN1_TANKS), 31)
+        self.assertEqual(sum(r.count for r in rows if r.group == "bn2" and r.unit in forces.BN2_TANKS), 29)
 
     def test_scaled_and_own_shares(self):
         """At 2x the bases double (28, 62, 58); a difficulty's own share replaces the table's; a share is never past
@@ -102,45 +102,45 @@ class Deck(unittest.TestCase):
     def test_top_up(self):
         """Only what the deck lacks, or holds too few of, in target order, the carrier kept; a met target adds
         nothing."""
-        targets = (("A", 4, None), ("B", 2, "C"), ("D", 3, None), ("E", 1, None))
-        self.assertEqual(forces.top_up(targets, {"A": 1, "D": 3, "E": 9}), (("A", 3, None), ("B", 2, "C")))
+        targets = (ForceRow("A", 4), ForceRow("B", 2, "C"), ForceRow("D", 3), ForceRow("E", 1))
+        self.assertEqual(forces.top_up(targets, {"A": 1, "D": 3, "E": 9}), (ForceRow("A", 3), ForceRow("B", 2, "C")))
         self.assertEqual(forces.top_up(targets, {}), targets)
         self.assertEqual(forces.top_up(targets, {"A": 4, "B": 2, "D": 3, "E": 1}), ())
 
     def test_deck_units_counts_units_not_carriers(self):
-        self.assertEqual(forces.deck_units([("A", 2, "C"), ("A", 3, None), ("B", 1, None)]), {"A": 5, "B": 1})
+        self.assertEqual(forces.deck_units([ForceRow("A", 2, "C"), ForceRow("A", 3), ForceRow("B", 1)]),
+                         {"A": 5, "B": 1})
 
     def test_base_and_lists(self):
         """RJ's deck; the adds are targets cut down, never more; no lock is a start target (the lock never holds back
         what the assault needs); the reserve's Tunguskas join the locked type."""
         self.assertEqual(forces.DECK_BASE, RJ_PLAYER_DECK)
-        targets = {u: (n, t) for u, n, t in forces.START_TARGETS}
-        for unit, n, carrier in forces.START_ADDS:
-            with self.subTest(unit=unit):
-                self.assertLessEqual(n, targets[unit][0])
-                self.assertEqual(carrier, targets[unit][1])
+        targets = {c.unit: c for c in forces.START_TARGETS}
+        for c in forces.START_ADDS:
+            with self.subTest(unit=c.unit):
+                self.assertLessEqual(c.count, targets[c.unit].count)
+                self.assertEqual(c.transport, targets[c.unit].transport)
         self.assertFalse(set(forces.START_LOCKS) & set(targets))
         self.assertEqual(forces.START_LOCKS, ("Tunguska_2K22_SOV", "Su_24M_SOV", "Mi_24P_SOV"))
-        self.assertIn("Tunguska_2K22_SOV", {u for u, _, _ in forces.RESERVE})
+        self.assertIn("Tunguska_2K22_SOV", {c.unit for c in forces.RESERVE})
 
     def test_supply_is_the_shared_constant(self):
         """The supply is modkit.ops.profile's (not a copy): four Ural-4320 trucks and two Mi-8TZ supply helicopters, its
-        own add beside START_ADDS (no unit of it is a start target); the card shape is the profile's too."""
+        own add beside START_ADDS (no unit of it is a start target)."""
         self.assertIs(forces.SUPPLY, SOVIET_PLAYER_SUPPLY)
-        self.assertEqual(forces.SUPPLY, (("Ural_4320_SOV", 4, None), ("Mi_8TZ_SOV", 2, None)))
-        self.assertFalse({u for u, _, _ in forces.SUPPLY} & {u for u, _, _ in (*forces.START_TARGETS, *forces.RESERVE)})
-        self.assertIs(forces.Card, ops_profile.Card)
+        self.assertEqual(forces.SUPPLY, (ForceRow("Ural_4320_SOV", 4), ForceRow("Mi_8TZ_SOV", 2)))
+        self.assertFalse({c.unit for c in forces.SUPPLY} & {c.unit for c in (*forces.START_TARGETS, *forces.RESERVE)})
 
     def test_design_counts(self):
         """Design 6.1's start targets (BMP-2s carrying 8 motor rifle squads, two Konkurs-M teams in BTR-80s, three
         command units, four Ka-29s) and its reserve (T-80U obr. 1989 x15 and the T-80U command tank, four more
         Konkurs-M teams, Ka-50 x4, ...)."""
         self.assertEqual(forces.deck_units(forces.START_TARGETS)["T80BV_SOV"], 10)
-        self.assertEqual(sum(n for u, n, _ in forces.START_TARGETS if "_CMD_" in u), 3)
-        self.assertIn(("MotRifles_SOV", 8, "BMP_2_SOV"), forces.START_TARGETS)
+        self.assertEqual(sum(c.count for c in forces.START_TARGETS if "_CMD_" in c.unit), 3)
+        self.assertIn(ForceRow("MotRifles_SOV", 8, "BMP_2_SOV"), forces.START_TARGETS)
         self.assertEqual((forces.ATGM_TEAM, forces.ATGM_CARRIER, forces.T80U_TANK),
                          ("ATteam_KonkursM_TTsko_SOV", "BTR_80_SOV", "T80U_Obr89_SOV"))
-        self.assertIn((forces.ATGM_TEAM, 2, forces.ATGM_CARRIER), forces.START_TARGETS)
+        self.assertIn(ForceRow(forces.ATGM_TEAM, 2, forces.ATGM_CARRIER), forces.START_TARGETS)
         self.assertEqual(forces.deck_units(forces.RESERVE),
                          {"T80U_Obr89_SOV": 15, "T80U_CMD_SOV": 1, "Tunguska_2K22_SOV": 2, "Osa_9K33M3_SOV": 2,
                           "Mi_24V_AT_SOV": 6, "Ka_50_SOV": 4, "Su_25T_SOV": 2, "Su_24M_clu_SOV": 2,
@@ -152,13 +152,13 @@ class Deck(unittest.TestCase):
         rifles in their BMP-2s as before, the Konkurs-M teams in BTR-80s wherever they are added; the Kubs bare, as
         every stock pack holds them."""
         cards = (*forces.START_TARGETS, *forces.START_ADDS, *forces.RESERVE)
-        carriers = {u: t for u, _, t in cards}
+        carriers = {c.unit: c.transport for c in cards}
         self.assertEqual({u: carriers[u] for u in ("MotRifles_SOV", "Engineers_Flam_SOV", "Scout_SOV",
                                                    "MotRifles_Metis_SOV", forces.ATGM_TEAM, "2K12_KUB_SOV")},
                          {"MotRifles_SOV": "BMP_2_SOV", "Engineers_Flam_SOV": "MTLB_transp_SOV",
                           "Scout_SOV": "UAZ_469_SOV", "MotRifles_Metis_SOV": "BMP_2_SOV",
                           forces.ATGM_TEAM: "BTR_80_SOV", "2K12_KUB_SOV": None})
-        self.assertEqual({t for u, _, t in cards if u == forces.ATGM_TEAM}, {forces.ATGM_CARRIER})
+        self.assertEqual({c.transport for c in cards if c.unit == forces.ATGM_TEAM}, {forces.ATGM_CARRIER})
 
 
 @DECK_DATA
@@ -183,14 +183,14 @@ class StockDeck(unittest.TestCase):
                          {"T80BV_SOV": 16, "BRM_1_SOV": 2, "MTLB_Strela10_SOV": 2, "2S1_Gvozdika_SOV": 2})
 
     def test_reader_knows_a_carried_pack(self):
-        self.assertIn(("DShV_SOV", 9, "Mi_8TV_non_arme_SOV"), self.packs)
+        self.assertIn(ForceRow("DShV_SOV", 9, "Mi_8TV_non_arme_SOV"), self.packs)
         with self.assertRaises(LookupError):
             stock_deck("NO_SUCH_DECK")
 
     def test_command_units_are_every_cmd_card(self):
         """The fall's command units (design 5.1) are every *_CMD_* unit the player can field: RJ's, the start adds'
         and the reserve's."""
-        cards = [u for u, _, _ in self.packs] + [u for u, _, _ in (*forces.START_ADDS, *forces.RESERVE)]
+        cards = [p.unit for p in self.packs] + [c.unit for c in (*forces.START_ADDS, *forces.RESERVE)]
         self.assertEqual(sorted(forces.COMMAND_UNITS), sorted({u for u in cards if "_CMD_" in u}))
 
 
@@ -208,21 +208,21 @@ class StockSupply(unittest.TestCase):
         self.groups = stock_deck_groups(RJ_PLAYER_DECK)
 
     def test_rj_has_no_supply_helicopter_and_trucks_only_in_the_tank_battalions(self):
-        names = {u for u, _, _ in self.packs} | {t for _, _, t in self.packs if t}
+        names = {p.unit for p in self.packs} | {p.transport for p in self.packs if p.transport}
         self.assertEqual(sorted(names & set(self.supply)), ["Ural_4320_SOV"])
         self.assertFalse(self.supply["Ural_4320_SOV"])                       # a truck: no supply helicopter at all
-        supply_packs = {i for i, (u, _, t) in enumerate(self.packs) if u in self.supply or t in self.supply}
+        supply_packs = {i for i, p in enumerate(self.packs) if p.unit in self.supply or p.transport in self.supply}
         held = {(k, name): set(packs) for k, group in enumerate(self.groups, 1) for name, packs in group
                 if set(packs) & supply_packs}
         self.assertEqual(sorted(k for k, _ in held), [2, 3])                # battlegroups 2 and 3 only
         for (k, name), packs in held.items():
             with self.subTest(battlegroup=k, group=name):                    # each its HQ group, with a command tank
-                self.assertTrue(any("_CMD_" in self.packs[i][0] for i in packs))
+                self.assertTrue(any("_CMD_" in self.packs[i].unit for i in packs))
         self.assertEqual(len(self.groups), 5)
 
     def test_the_supply_added_is_stock_supply(self):
         """A Ural-4320 truck and an Mi-8TZ supply helicopter, both stock supply units."""
-        self.assertEqual({u: self.supply.get(u) for u, _, _ in forces.SUPPLY},
+        self.assertEqual({c.unit: self.supply.get(c.unit) for c in forces.SUPPLY},
                          {"Ural_4320_SOV": False, "Mi_8TZ_SOV": True})
 
 
@@ -262,7 +262,8 @@ class StockChoices(unittest.TestCase):
         t80u = {u: max(f.missiles)[0] for u, f in self.units.items() if u.startswith("T80U") and f.missiles}
         self.assertEqual(t80u, {"T80U_SOV": 21, "T80UD_SOV": 21, "T80U_CMD_SOV": 21, "T80U_Obr89_SOV": 25})
         self.assertEqual(t80u[forces.T80U_TANK], 25)
-        self.assertEqual({u for u, _, _ in forces.RESERVE if u.startswith("T80U")}, {forces.T80U_TANK, "T80U_CMD_SOV"})
+        self.assertEqual({c.unit for c in forces.RESERVE if c.unit.startswith("T80U")},
+                         {forces.T80U_TANK, "T80U_CMD_SOV"})
 
 
 @GAME
@@ -278,7 +279,8 @@ class Balance(unittest.TestCase):
         cls.facts = unit_facts()
 
     def cost(self, cards) -> int:
-        return sum(n * (self.facts[u].cost + (self.facts[t].cost if t else 0)) for u, n, t in cards)
+        return sum(c.count * (self.facts[c.unit].cost + (self.facts[c.transport].cost if c.transport else 0))
+                   for c in cards)
 
     @staticmethod
     def points_by(after_fall_s: float) -> int:
@@ -291,11 +293,11 @@ class Balance(unittest.TestCase):
         return [row for w in waves for row in w.rows], op.PHASE2_S + max(w.offset for w in waves)
 
     def test_the_assault_is_three_to_one(self):
-        garrison = [(r.descriptor, r.count, r.transport) for r in forces.force_rows("garrison")]
+        garrison = forces.force_rows("garrison")
         self.assertGreaterEqual(op.DEPLOY_POINTS, 3 * self.cost(garrison))
 
     def test_each_battalion_is_met_on_easy_and_medium(self):
-        bn2 = [(r.descriptor, r.count, r.transport) for r in forces.force_rows("bn2")]
+        bn2 = forces.force_rows("bn2")
         for level in (EASY, MEDIUM):
             rows, all_in = self.bn1(level)
             with self.subTest(level=level):
@@ -305,7 +307,7 @@ class Balance(unittest.TestCase):
     def test_the_reserve_holds_what_the_fall_buys(self):
         """The cards the fall unlocks and adds are worth at least the grant and Medium's income until battalion 1 is
         all in, so the fall's points buy the division's reserve, not only what is left of the start's deck."""
-        unlocked = [c for c in gates.stock_deck_packs(RJ_PLAYER_DECK) if c[0] in forces.START_LOCKS]
+        unlocked = [c for c in gates.stock_deck_packs(RJ_PLAYER_DECK) if c.unit in forces.START_LOCKS]
         _, all_in = self.bn1(MEDIUM)
         self.assertGreaterEqual(self.cost([*unlocked, *forces.RESERVE]), self.points_by(all_in) - op.DEPLOY_POINTS)
 
@@ -315,9 +317,9 @@ class Units(unittest.TestCase):
     def test_every_name_is_in_the_unit_database(self):
         """Every unit of the tables and the deck lists, carriers included, is a unit the game's database exports."""
         known = {name.removeprefix(gates.UNIT_PREFIX + "Descriptor_Unit_") for name in gates.unit_database()}
-        names = {r.descriptor for r in forces.ROWS} | {r.transport for r in forces.ROWS if r.transport}
+        names = {r.unit for r in forces.ROWS} | {r.transport for r in forces.ROWS if r.transport}
         for cards in (forces.START_TARGETS, forces.START_ADDS, forces.SUPPLY, forces.RESERVE):
-            names |= {u for u, _, _ in cards} | {t for _, _, t in cards if t}
+            names |= {c.unit for c in cards} | {c.transport for c in cards if c.transport}
         names |= set(forces.START_LOCKS) | set(forces.COMMAND_UNITS) | set(forces.NATO_INFANTRY)
         self.assertEqual(sorted(names - known), [])
 

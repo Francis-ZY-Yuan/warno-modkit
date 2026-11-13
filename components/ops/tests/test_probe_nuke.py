@@ -97,7 +97,7 @@ class Pure(unittest.TestCase):
         self.assertIsNone(NUKE.deck_swap)
 
     def test_sov_camp_scalars_and_decks(self):
-        rows = {name: ({p: v for p, _, v in scalars}, deck) for name, scalars, deck in SOV.camp_rows}
+        rows = {r.name: ({p: v for p, _, v in r.scalars}, r.deck) for r in SOV.camp_rows}
         red = {"AllianceStyle": 4, "Nationalite": 1}     # REDFOR, PACT; Alliance 0 is the default
         blue = {"Alliance": 1, "AllianceStyle": 3}       # BLUFOR, NATO (the default); Alliance 1
         self.assertEqual(rows["joueur"], (red, "OP_BASE_RJ_Player"))
@@ -114,7 +114,7 @@ class Pure(unittest.TestCase):
         self.assertIs(SOV.sides, ops_profile.SOVIET_PLAYER_SIDES)
         self.assertIs(SOV.deck_swap, ops_profile.SOVIET_PLAYER_DECK_SWAP)
         self.assertIs(profile.SURVIVORS_PLAYER_DECK, ops_profile.SURVIVORS_PLAYER_DECK)
-        self.assertEqual([deck for _, _, deck in SOV.camp_rows][0], ops_profile.RJ_PLAYER_DECK)
+        self.assertEqual(SOV.camp_rows[0].deck, ops_profile.RJ_PLAYER_DECK)
 
 
 @SCRIPT_DATA
@@ -141,9 +141,9 @@ class Script(unittest.TestCase):
         cards = {props(n)["TypeUnit"].path.rsplit("/", 1)[-1]: n for n in walk(r) if n.cls == "TGDDescriptorAddUnitToDeck"}
         self.assertEqual(sorted(k.split("Descriptor_Unit_")[-1] for k in cards),
                          ["Mi_8TZ_SOV", "MotRifles_SOV", "T80U_SOV", "Ural_4320_SOV"])
-        for unit, n, _ in ops_profile.SOVIET_PLAYER_SUPPLY:   # the Soviet player's supply, the shared constant
-            supply = next(c for k, c in cards.items() if k.endswith(f"Descriptor_Unit_{unit}"))
-            self.assertEqual(props(supply)["NbUnitsToAdd"].v, n)
+        for row in ops_profile.SOVIET_PLAYER_SUPPLY:   # the Soviet player's supply, the shared constant
+            supply = next(c for k, c in cards.items() if k.endswith(f"Descriptor_Unit_{row.unit}"))
+            self.assertEqual(props(supply)["NbUnitsToAdd"].v, row.count)
             self.assertNotIn("Transporter", props(supply))
         rifles = next(n for k, n in cards.items() if "MotRifles_SOV" in k)
         self.assertTrue(props(rifles)["Transporter"].path.endswith("BMP_2_SOV"))
@@ -232,7 +232,7 @@ class Script(unittest.TestCase):
             with self.subTest(content=v.name):
                 decks = {props(nd)["Camp"].export.rsplit("/", 1)[-1]: props(nd)["DeckIdentifier"].text
                          for nd in walk(roots(v.name)) if nd.cls == "TGDDescriptorSetDeck"}
-                self.assertEqual(decks, {name: deck for name, _, deck in v.camp_rows})
+                self.assertEqual(decks, {r.name: r.deck for r in v.camp_rows})
         self.assertIsNone(CONTENTS["nuke"]().deck_swap)
         self.assertEqual(CONTENTS["nuke_sov"]().deck_swap, SOV.deck_swap)
 

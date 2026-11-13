@@ -11,6 +11,7 @@ from modkit.ops.bricks import g_hint, g_kill, g_seq, g_spawn, g_union, unit_path
 from modkit.ops.forces import formation
 from modkit.ops.graph import Imp, Node, walk
 from modkit.ops.maps import GEISA
+from modkit.ops.models import Buttons, CampRow, Ending, ForceRow, Knobs
 from modkit.ops.mission import (
     CHOICE_NONE, Lane, Leg, Wave, after_launch, board, create_rows, difficulty, end_funnel, hidden_units, lane_route,
     placed_units, reask_loop, ring_round, script_frame, wave, zone_handover, zone_race,
@@ -24,7 +25,8 @@ from modkit.ops.shapes import (
 from modkit.ops.testing import cmp_of, end_game, last, prop, set_values, subs, token
 from test_script import TEMPLATES, template   # the three-object template script of the script tests
 
-CAMPS = (("blue", (("AllianceStyle", 0x02, 3),), "DECK_BLUE"), ("red", (("Alliance", 0x03, 1),), "DECK_RED"))
+CAMPS = (CampRow("blue", (("AllianceStyle", 0x02, 3),), "DECK_BLUE"),
+         CampRow("red", (("Alliance", 0x03, 1),), "DECK_RED"))
 TOKENS = {"blue": "t_blue", "red": "t_red"}
 MAP = Minimap(GEISA, {"HILL": (100.0, 200.0), "ROAD": (150.0, 200.0), "TOWN": (200.0, 260.0)})
 ITEMS = [
@@ -175,7 +177,7 @@ class Lanes(unittest.TestCase):
 
 
 class Waves(unittest.TestCase):
-    ROWS = (("T80BV_SOV", 3, None), ("BMP_2_SOV", 2, None), ("MotRifles_SOV", 2, "BMP_2_SOV"))
+    ROWS = (ForceRow("T80BV_SOV", 3), ForceRow("BMP_2_SOV", 2), ForceRow("MotRifles_SOV", 2, "BMP_2_SOV"))
     LANES = {"N": Lane("T_Entry", (Leg("T_Road", 60.0), Leg("T_Town", None)))}
 
     def test_create_rows(self):
@@ -184,9 +186,9 @@ class Waves(unittest.TestCase):
         group, inf, ifv = c.group("g"), c.group("g_inf"), c.group("g_ifv")
         nodes = create_rows(c, "E", self.ROWS, c.tag("T_Entry"), group, inf, ifv)
         self.assertEqual([kv(n) for n in nodes],
-                         [[("Camp", "red"), ("Group", into), ("NbUnit", n), ("Position", "T_Entry"),
-                           ("TypeUnit", unit_path(unit))]
-                          for (unit, n, _), into in zip(self.ROWS, ("g", "g_ifv", "g_inf"))])
+                         [[("Camp", "red"), ("Group", into), ("NbUnit", r.count), ("Position", "T_Entry"),
+                           ("TypeUnit", unit_path(r.unit))]
+                          for r, into in zip(self.ROWS, ("g", "g_ifv", "g_inf"))])
         self.assertEqual([last(prop(n, "Group")) for n in create_rows(c, "E", self.ROWS[:2], c.tag("T_Entry"), group)],
                          ["g", "g"])
         with self.assertRaisesRegex(CheckError, "need the inf and ifv groups"):
@@ -275,7 +277,7 @@ class Reask(unittest.TestCase):
         the gap."""
         c = ctx()
         pick, ans, asking = c.int_var("p"), c.int_var("a"), c.int_var("o")
-        loop = reask_loop("t_ask", ("ORD_AIARA", "ORD_HOLDF"), c.camp("P"), pick, ans, asking, 90.0)
+        loop = reask_loop("t_ask", Buttons("ORD_AIARA", "ORD_HOLDF"), c.camp("P"), pick, ans, asking, 90.0)
         reset_pick, reset_ans, opened, dialog, copy, closed, gap = subs(loop)
         self.assertEqual(prop(loop, "NbExecutions").v, FOREVER)
         self.assertEqual([kv(n) for n in (reset_pick, reset_ans, opened, copy, closed)],
@@ -363,8 +365,8 @@ class Zones(unittest.TestCase):
 
 
 class Endings(unittest.TestCase):
-    ENDINGS = {1: ("t_win", TOTAL_VICTORY, False), 2: ("t_major", MAJOR_VICTORY, False),
-               3: ("t_lost", TOTAL_VICTORY, True)}
+    ENDINGS = {1: Ending("t_win", TOTAL_VICTORY, False), 2: Ending("t_major", MAJOR_VICTORY, False),
+               3: Ending("t_lost", TOTAL_VICTORY, True)}
 
     def test_end_funnel(self):
         """Wait for end >= 1, then IfThenElse(end == v) per row in order, the last row the last else; each branch the
@@ -380,17 +382,17 @@ class Endings(unittest.TestCase):
             pick = prop(pick, "EffetIfFalse")
         rows.append((None, pick))
         self.assertEqual([cond for cond, _ in rows], [("end", 0, 1), ("end", 0, 2), None])
-        for (_, branch), (dialog_token, kind, loses) in zip(rows, self.ENDINGS.values()):
+        for (_, branch), e in zip(rows, self.ENDINGS.values()):
             dialog, trigger = subs(branch)
             (text,) = [n for n in walk([dialog]) if n.cls == "TGDDescriptorCutsceneTextComponent"]
-            self.assertEqual(token(prop(text, "LocalizedText")), dialog_token)
-            self.assertEqual(end_game(trigger), (6, kind, 1 if loses else None))
+            self.assertEqual(token(prop(text, "LocalizedText")), e.token)
+            self.assertEqual(end_game(trigger), (6, e.kind, 1 if e.loses else None))
         with self.assertRaisesRegex(CheckError, "must be 1 or more"):
-            end_funnel(end, {0: ("t_win", TOTAL_VICTORY, False)}, "$/GDScript/T/EndFunnel")
+            end_funnel(end, {0: Ending("t_win", TOTAL_VICTORY, False)}, "$/GDScript/T/EndFunnel")
 
 
 class Difficulty(unittest.TestCase):
-    KNOBS = {"k_a": (1, 2, 3), "k_b": (40, 50, 60)}
+    KNOBS = {"k_a": Knobs(1, 2, 3), "k_b": Knobs(40, 50, 60)}
 
     def test_after_launch(self):
         phase, wait, hint = subs(after_launch("t_h", 12.0))
@@ -416,7 +418,7 @@ class Difficulty(unittest.TestCase):
                 *sets, launch = subs(body)
                 self.assertEqual(set_values(sets, diff), [level])
                 knobs = {last(prop(s, "Variable1")): prop(s, "Value").v for s in sets[1:]}
-                self.assertEqual(knobs, {} if level == MEDIUM else {k: v[level] for k, v in self.KNOBS.items()})
+                self.assertEqual(knobs, {} if level == MEDIUM else {k: v.at(level) for k, v in self.KNOBS.items()})
                 _, wait, hint = subs(launch)
                 self.assertEqual((prop(wait, "Duree").v, token(prop(subs(hint)[0], "Info"))), (7.0, f"t_dif{level}"))
         self.assertEqual(cmp_of(prop(fallback, "Condition")), ("diff", 0, DIFF_NONE))

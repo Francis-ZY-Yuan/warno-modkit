@@ -1,10 +1,10 @@
 """Force tables: rows of units a script creates or reveals, the scale knob, share thresholds and spawn formations.
 
-Pure data and arithmetic. A ``ForceRow`` names its spawn by a point of the content's map (``shapes.Minimap.points``)
-and its units by their bare stock names (``T80BV_SOV`` for ``Descriptor_Unit_T80BV_SOV``). ``scaled()`` turns a table
-at 1x into the forces for another scale: every row not marked ``fixed`` is multiplied and rounded per row, never below
-1. Thresholds are shares of a base count, turned into counts with ``share_count()``, so a resize can never push one
-past its base or down to 0.
+Pure data and arithmetic. A force table's ``ForceRow`` (``modkit.ops.models``, placed by ``rows_of``) names its spawn
+by a point of the content's map (``shapes.Minimap.points``) and its units by their bare stock names (``T80BV_SOV`` for
+``Descriptor_Unit_T80BV_SOV``). ``scaled()`` turns a table at 1x into the forces for another scale: every row not
+marked ``fixed`` is multiplied and rounded per row, never below 1. Thresholds are shares of a base count, turned into
+counts with ``share_count()``, so a resize can never push one past its base or down to 0.
 
 Rounding: floor(x + 0.5), never Python's round() (which takes 10.5 to 10).
 
@@ -14,25 +14,16 @@ once here (``GEISA_SOVIET_ROWS``).
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, replace
+from dataclasses import replace
 from typing import Iterable
 
-
-@dataclass(frozen=True)
-class ForceRow:
-    group: str                      # the scripted group this row belongs to
-    camp: str                       # the side it is created in (a key of the content's sides, shapes.Ctx.camp)
-    descriptor: str                 # bare stock name, e.g. "T80BV_SOV"
-    count: int                      # at 1x
-    spawn: str                      # a named point of the content's map
-    echelon: str                    # the order-of-battle label for the briefing
-    transport: str | None = None    # bare name of the carrier the squad rides in, if any
-    fixed: bool = False             # True: not multiplied by the scale knob
+from modkit.ops.models import ForceRow
 
 
-def rows_of(group: str, camp: str, spawn: str, echelon: str, *rows: tuple, fixed: bool = False) -> list[ForceRow]:
-    """One group of a force table: a ForceRow per `(descriptor, count)` or `(descriptor, count, transport)` tuple."""
-    return [ForceRow(group, camp, r[0], r[1], spawn, echelon, r[2] if len(r) > 2 else None, fixed) for r in rows]
+def rows_of(group: str, camp: str, spawn: str, echelon: str, *rows: ForceRow, fixed: bool = False) -> list[ForceRow]:
+    """One group of a force table: each of `rows` (a bare ForceRow: unit, count, transport) placed in `group`, created
+    in `camp` at `spawn`, labelled `echelon`, and `fixed` or not."""
+    return [replace(r, group=group, camp=camp, spawn=spawn, echelon=echelon, fixed=fixed) for r in rows]
 
 
 def _round_half_up(x: float) -> int:
@@ -82,15 +73,17 @@ def formation(anchor: tuple[float, float], n: int, spacing: float, cols: int) ->
 # with the op.
 GEISA_SOVIET_ROWS: tuple[ForceRow, ...] = tuple(
     rows_of("main_body", "PACT", "ENTRY_N", "5th GTA lead division forward detachment",
-            ("T80BV_SOV", 30), ("T80BV_CMD_SOV", 1), ("BMP_2_SOV", 10), ("MotRifles_SOV", 9, "BMP_2_SOV"),
-            ("BRDM_2_Konkurs_SOV", 3), ("2S3M_Akatsiya_SOV", 6), ("BMP_1_CMD_SOV", 1), ("MTLB_supply_SOV", 3))
+            ForceRow("T80BV_SOV", 30), ForceRow("T80BV_CMD_SOV", 1), ForceRow("BMP_2_SOV", 10),
+            ForceRow("MotRifles_SOV", 9, "BMP_2_SOV"), ForceRow("BRDM_2_Konkurs_SOV", 3),
+            ForceRow("2S3M_Akatsiya_SOV", 6), ForceRow("BMP_1_CMD_SOV", 1), ForceRow("MTLB_supply_SOV", 3))
     + rows_of("pocket_ad", "PACT", "ENTRY_N", "forward detachment air defence",
-              ("Tunguska_2K22_SOV", 2), ("Osa_9K33M3_SOV", 2), ("MTLB_Strela10_SOV", 2))
+              ForceRow("Tunguska_2K22_SOV", 2), ForceRow("Osa_9K33M3_SOV", 2), ForceRow("MTLB_Strela10_SOV", 2))
     + rows_of("relief", "PACT", "ENTRY_NE", "follow-on division forward detachment",
-              ("T80U_SOV", 30), ("T80U_CMD_SOV", 1), ("BMP_2_SOV", 10), ("MotRifles_SOV", 9, "BMP_2_SOV"),
-              ("Tunguska_2K22_SOV", 3), ("MTLB_Strela10_SOV", 2))
+              ForceRow("T80U_SOV", 30), ForceRow("T80U_CMD_SOV", 1), ForceRow("BMP_2_SOV", 10),
+              ForceRow("MotRifles_SOV", 9, "BMP_2_SOV"), ForceRow("Tunguska_2K22_SOV", 3),
+              ForceRow("MTLB_Strela10_SOV", 2))
     + rows_of("opener_battery", "PACT", "CORNER_PACT", "8th Guards Army artillery",
-              ("BM27_Uragan_SOV", 2), ("2S3M_Akatsiya_SOV", 4))
+              ForceRow("BM27_Uragan_SOV", 2), ForceRow("2S3M_Akatsiya_SOV", 4))
     + rows_of("probe", "PACT", "TRACK_SE_IN", "recon patrol",
-              ("BRM_1_SOV", 1), ("BRDM_2_SOV", 2), ("Scout_SOV", 1))
+              ForceRow("BRM_1_SOV", 1), ForceRow("BRDM_2_SOV", 2), ForceRow("Scout_SOV", 1))
 )

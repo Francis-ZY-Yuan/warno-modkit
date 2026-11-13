@@ -31,9 +31,10 @@ from modkit.ops.bricks import (
     c_any, c_team, c_type, g_ammo, g_choice, g_cmp, g_collect, g_compete, g_count, g_create, g_detect, g_fx, g_hint,
     g_hold, g_if, g_kill, g_modify, g_seize, g_seq, g_set, g_simul, g_spawn, g_stress, g_until, g_wait, unit_path,
 )
-from modkit.ops.forces import ForceRow, group_rows, scaled
+from modkit.ops.forces import group_rows, scaled
 from modkit.ops.graph import TRUE, Imp, Node, i32
 from modkit.ops.mission import board, hidden_units, script_frame
+from modkit.ops.models import ForceRow
 from modkit.ops.profile import Content
 from modkit.ops.script import BRICK_FORCE_HIDE
 from modkit.ops.leveldesign import LdItem
@@ -143,7 +144,7 @@ def point_tag(ctx: Ctx, point: str) -> Node:
 def create_row(ctx: Ctx, row: ForceRow, group: Node, at: str | None = None) -> Node:
     """create() of one force row into `group`, in the row's camp, at point `at` or else the row's spawn. A row with a
     transport is created as units of its own beside its carriers' row."""
-    return create(ctx, row.camp, group, row.count, point_tag(ctx, at or row.spawn), unit_path(row.descriptor))
+    return create(ctx, row.camp, group, row.count, point_tag(ctx, at or row.spawn), unit_path(row.unit))
 
 
 # --------------------------------------------------------------------------- items
@@ -276,7 +277,7 @@ def probe(ctx: Ctx) -> Node:
     group, ring, rows = ctx.group("od_probe"), ctx.tag("OD_RingS"), force_rows("probe")
 
     def in_ring(value: int | None = None, op: int | None = None) -> Node:
-        return g_detect(ring, c_any(*(c_type(r.descriptor) for r in rows)), value, op)
+        return g_detect(ring, c_any(*(c_type(r.unit) for r in rows)), value, op)
 
     waypoints = [ctx.tag(f"OD_ProbeWp{k + 1}") for k in range(len(PROBE_WAYPOINTS))]
     return beat_hint("od_h4p", g_seq([

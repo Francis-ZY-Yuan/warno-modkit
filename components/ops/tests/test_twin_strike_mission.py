@@ -15,7 +15,7 @@ from unittest import mock
 from collections import Counter
 
 from twin_strike_support import JOUEUR, NATO, SCRIPT_DATA, Model, World, beats_root
-from modkit.ops import gates, shapes
+from modkit.ops import gates, models, shapes
 from modkit.ops.files import read_file
 from modkit.ops.graph import decode, walk
 from modkit.ops.profile import SURVIVORS
@@ -76,11 +76,11 @@ class Knobs(unittest.TestCase):
         """(Easy, Medium, Hard): the village falls with 5, 4 or 2 of the garrison's 14 left (35/25/15 %); 2, 3 or 4
         company teams; a 2, 3 or 4 min cooldown; B1's tanks and the kills that break battalion 1 (30 % left); the third
         fighter sweep on Hard only; the strike kills 50, 40 or 30 % of battalion 2."""
-        self.assertEqual(op.KNOBS, {"ts_fall_n": (5, 4, 2), "ts_teams": (2, 3, 4), "ts_cool_s": (120, 180, 240),
-                                    "ts_b1_tanks": (21, 31, 41), "ts_b1_need": (15, 22, 29), "ts_sweep3": (0, 0, 1),
-                                    "ts_kill_pct": (50, 40, 30)})
-        self.assertEqual(op.KNOBS["ts_fall_n"][op.MEDIUM], forces.threshold("fall"))
-        self.assertEqual(op.KNOBS["ts_b1_tanks"][op.MEDIUM] - op.KNOBS["ts_b1_need"][op.MEDIUM],
+        self.assertEqual(op.KNOBS, {name: models.Knobs(*values) for name, values in {
+            "ts_fall_n": (5, 4, 2), "ts_teams": (2, 3, 4), "ts_cool_s": (120, 180, 240), "ts_b1_tanks": (21, 31, 41),
+            "ts_b1_need": (15, 22, 29), "ts_sweep3": (0, 0, 1), "ts_kill_pct": (50, 40, 30)}.items()})
+        self.assertEqual(op.KNOBS["ts_fall_n"].medium, forces.threshold("fall"))
+        self.assertEqual(op.KNOBS["ts_b1_tanks"].medium - op.KNOBS["ts_b1_need"].medium,
                          forces.threshold("bn1"))
         self.assertEqual(op.GARRISON_N, 14)
 
@@ -95,12 +95,12 @@ class Knobs(unittest.TestCase):
         self.assertEqual([t.team for t in op.BN1_WAVES], [0, 0, 1, 2, 3, 4])
         for t in op.BN1_WAVES:
             with self.subTest(wave=t.wave.key):
-                units = {u: n for u, n, _ in t.wave.rows}
-                for unit, n, carrier in t.wave.rows:   # riflemen ride in their own wave's Bradleys
-                    if carrier:
-                        self.assertGreaterEqual(units[carrier], n)
+                units = {r.unit: r.count for r in t.wave.rows}
+                for r in t.wave.rows:                  # riflemen ride in their own wave's Bradleys
+                    if r.transport:
+                        self.assertGreaterEqual(units[r.transport], r.count)
                 if t.team:                             # a company team: tanks, Bradleys, riflemen and air defence
-                    self.assertEqual(sum(n for u, n, _ in t.wave.rows if u in forces.BN1_TANKS) // 10, 1)
+                    self.assertEqual(sum(r.count for r in t.wave.rows if r.unit in forces.BN1_TANKS) // 10, 1)
                     self.assertTrue({"MANPAD_Stinger_C_US"} <= set(units))
 
     def test_waves_by_lane(self):
@@ -147,12 +147,12 @@ class Knobs(unittest.TestCase):
         """END's values: the six wins first (Total, Major, Minor, each released then withheld), then the three
         losses; a Minor victory shows Major's screen, a loss names alliance 1."""
         self.assertEqual(list(op.ENDINGS), list(range(1, 10)))
-        self.assertEqual([op.ENDINGS[k][0] for k in op.ENDINGS],
+        self.assertEqual([op.ENDINGS[k].token for k in op.ENDINGS],
                          ["ts_dtotr", "ts_dtotw", "ts_dmajr", "ts_dmajw", "ts_dminr", "ts_dminw", "ts_dfail",
                           "ts_dlost", "ts_dempty"])
-        self.assertEqual([op.ENDINGS[k][1] for k in range(1, op.WON + 1)],
+        self.assertEqual([op.ENDINGS[k].kind for k in range(1, op.WON + 1)],
                          [shapes.TOTAL_VICTORY] * 2 + [shapes.MAJOR_VICTORY] * 4)
-        self.assertEqual([op.ENDINGS[k][2] for k in op.ENDINGS], [False] * op.WON + [True] * 3)
+        self.assertEqual([op.ENDINGS[k].loses for k in op.ENDINGS], [False] * op.WON + [True] * 3)
 
 
 class Places(unittest.TestCase):
@@ -170,9 +170,9 @@ class Places(unittest.TestCase):
         """The command units are the player's (Soviet) *_CMD_* types; NATO's infantry are NATO rows' types, every
         carried squad among them."""
         self.assertTrue(all("_CMD_" in u and u.endswith("_SOV") for u in forces.COMMAND_UNITS))
-        nato = {r.descriptor for r in forces.ROWS if r.camp == "NATO"}
+        nato = {r.unit for r in forces.ROWS if r.camp == "NATO"}
         self.assertLessEqual(set(forces.NATO_INFANTRY), nato)
-        self.assertLessEqual({r.descriptor for r in forces.ROWS if r.camp == "NATO" and r.transport},
+        self.assertLessEqual({r.unit for r in forces.ROWS if r.camp == "NATO" and r.transport},
                              set(forces.NATO_INFANTRY))
 
     def test_the_strike_zone(self):
@@ -196,8 +196,7 @@ class Places(unittest.TestCase):
         self.assertEqual(len(spawns), 52)
         self.assertEqual(sum(it.unit in forces.BN2_TANKS for it in spawns), 29)
         self.assertEqual(op.BN2_BROKEN_N, 9)
-        sent, table = op.tally(r for rows in op.BN2_HALVES.values() for r in rows), op.tally(
-            (r.descriptor, r.count, r.transport) for r in forces.force_rows("bn2"))
+        sent, table = op.tally(r for rows in op.BN2_HALVES.values() for r in rows), op.tally(forces.force_rows("bn2"))
         self.assertEqual(sent, table)
         a = ts_map.POINTS["ASSEMBLY"]
         x0, y0, x1, y1 = ts_map.CUT_PX
@@ -341,7 +340,7 @@ class Shapes(unittest.TestCase):
             name = token(prop(text, "LocalizedText"))
             with self.subTest(dialog=name):
                 self.assertEqual((token(prop(dialog, "TokenBoutonChoix0")), token(prop(dialog, "TokenBoutonChoix1"))),
-                                 BUTTONS[name])
+                                 (BUTTONS[name].yes, BUTTONS[name].no))
                 self.assertEqual(last(prop(dialog, "VisibleByCamp")), JOUEUR)
 
     def test_fires_aim_at_name_tags(self):
@@ -351,8 +350,9 @@ class Shapes(unittest.TestCase):
         targets = {last(prop(n, "Position")) for n in of(self.nodes, "GiveOrderStandard")
                    if prop(n, "OrderType").v == shapes.SHOOT_ON_POSITION}
         self.assertEqual(targets, {"TS_Village", *op.BOX_TAGS.values()})
-        self.assertEqual(op.BATTERIES, {op.HEAVY: (("2S7M_Malka_SOV", 6),), op.ROCKETS: (("BM27_Uragan_SOV", 6),),
-                                        op.GUNS: (("2S7M_Malka_SOV", 6), ("BM27_Uragan_SOV", 6))})
+        self.assertEqual({k: [(r.unit, r.count) for r in rows] for k, rows in op.BATTERIES.items()},
+                         {op.HEAVY: [("2S7M_Malka_SOV", 6)], op.ROCKETS: [("BM27_Uragan_SOV", 6)],
+                          op.GUNS: [("2S7M_Malka_SOV", 6), ("BM27_Uragan_SOV", 6)]})
 
     def test_every_reask_race_resets_its_flag(self):
         """Every Competition holding a re-ask loop (a forever Sequential asking a choice dialog) is followed in its
@@ -662,7 +662,7 @@ class Phase2(unittest.TestCase):
         self.assertEqual((m.entries("points"), m.entries("income")),
                          ([(FALL_T, op.FALL_GRANT)], [(FALL_T, op.FALL_INCOME)]))
         cards = m.entries("card")
-        self.assertEqual(cards, [(FALL_T + 1, u, n) for u, n, _ in forces.RESERVE])
+        self.assertEqual(cards, [(FALL_T + 1, c.unit, c.count) for c in forces.RESERVE])
         self.assertIn((FALL_T + 1, "2K12_KUB_SOV", 2), cards)
         self.assertEqual(m.when("hint", "ts_hph3"), [PH3_T])
 
@@ -726,7 +726,7 @@ class Phase3(unittest.TestCase):
         """Steps of battalion 1's tanks alive, every tank of every team alive from its wave's creation."""
         out, n = [], 0
         for t in op.BN1_WAVES:
-            n += sum(k for u, k, _ in t.wave.rows if u in forces.BN1_TANKS)
+            n += sum(r.count for r in t.wave.rows if r.unit in forces.BN1_TANKS)
             out.append((PH3_T + int(t.wave.offset), n))
         return out
 
@@ -761,7 +761,8 @@ class Phase3(unittest.TestCase):
                 return f"_{op.TANKS}"
             return "_inf" if c else "_ifv" if u == "M2A2_Bradley_IFV_US" else ""
 
-        self.assertEqual(rows, [(f"{op.BN1}3{into(u, c)}", n, u, "TS_EntryW") for u, n, c in op.BN1_WAVES[2].wave.rows])
+        self.assertEqual(rows, [(f"{op.BN1}3{into(r.unit, r.transport)}", r.count, r.unit, "TS_EntryW")
+                                for r in op.BN1_WAVES[2].wave.rows])
         self.assertEqual(m.when("board", f"{op.BN1}3_inf"), [t0])
         self.assertEqual([(t, at, kind, blocking) for t, g, kind, at, blocking in m.entries("order")
                           if g == f"{op.BN1}3"],
@@ -829,7 +830,7 @@ class Fires(unittest.TestCase):
         then the reload hint and the cooldown; the next mission, ARTILLERY on ALPHA, the 2S7Ms on BOX W."""
         m = self.fires({"ts_dfire1": [0, 1], "ts_dfire2": [1, 0]})
         first = PH3_T + int(op.FIRE_T0)
-        second = first + self.LEAD + self.HOLD + op.KNOBS["ts_cool_s"][op.MEDIUM]
+        second = first + self.LEAD + self.HOLD + op.KNOBS["ts_cool_s"].medium
         self.assertEqual(m.when("ask", "ts_dfire1")[:2], [first, second])
         self.assertEqual(m.when("ask", "ts_dfire2")[:2], [first, second])
         self.assertEqual([e for e in m.entries("order")][:2],
@@ -868,7 +869,7 @@ class Fires(unittest.TestCase):
         """A fire mission answered while the fire plan holds the guns waits for it to end."""
         m = self.fires({"ts_dplan": [1, 0]}, until=PH3_T + 1200)
         plan = PH3_T + int(op.PLAN_T0 + op.PLAN_GAP_S)
-        second = PH3_T + int(op.FIRE_T0) + self.LEAD + self.HOLD + op.KNOBS["ts_cool_s"][op.MEDIUM]
+        second = PH3_T + int(op.FIRE_T0) + self.LEAD + self.HOLD + op.KNOBS["ts_cool_s"].medium
         self.assertLess(plan, second)
         self.assertLess(second, plan + self.LEAD + self.HOLD)   # asked while the plan's guns are held
         shots = [t for t, *_ in m.entries("order")]
@@ -1371,7 +1372,7 @@ class EndClock(unittest.TestCase):
 
         creates = [n for n in of(self.nodes, "CreateUnitOnPosition") if last(prop(n, "Camp")) == NATO]
         self.assertEqual(sum(prop(n, "NbUnit").v for n in creates),
-                         sum(n for t in op.BN1_WAVES for _, n, _ in t.wave.rows))
+                         sum(r.count for t in op.BN1_WAVES for r in t.wave.rows))
         for n in creates:
             self.assertTrue(counted(prop(n, "Group")), last(prop(n, "Group")))
         spawns = [it for it in op.ITEMS if it.addon == "Spawn" and it.camp == profile.camp_index(op.ENEMY)]
@@ -1384,11 +1385,11 @@ class EndClock(unittest.TestCase):
 class Funnel(unittest.TestCase):
     def test_every_ending(self):
         """Each END value: its dialog, then its TriggerEndGame (a win leaves the winner out)."""
-        for value, (dialog, kind, loses) in op.ENDINGS.items():
+        for value, e in op.ENDINGS.items():
             with self.subTest(end=value):
                 m = run(World(), 5, "funnel", values={op.END: value})
-                self.assertEqual([e[1:] for e in m.log], [("dialog", dialog),
-                                                          ("end", kind, shapes.PACT_ALLIANCE if loses else None)])
+                self.assertEqual([x[1:] for x in m.log], [("dialog", e.token),
+                                                          ("end", e.kind, shapes.PACT_ALLIANCE if e.loses else None)])
 
 
 class Difficulty(unittest.TestCase):
@@ -1400,7 +1401,7 @@ class Difficulty(unittest.TestCase):
                 m = run(World(difficulty=level), 20, "difficulty")
                 k = op.MEDIUM if level is None else level
                 self.assertEqual({name: m.vars[name] for name in op.KNOBS},
-                                 {name: values[k] for name, values in op.KNOBS.items()})
+                                 {name: values.at(k) for name, values in op.KNOBS.items()})
                 self.assertEqual(m.vars["ts_diff"], k)
                 self.assertEqual(m.when("hint", hint), [int(op.DIFF_HINT_T)])
 

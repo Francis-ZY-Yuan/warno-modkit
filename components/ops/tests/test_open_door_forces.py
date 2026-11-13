@@ -68,7 +68,7 @@ class Forces(unittest.TestCase):
         rows = scaled(ROWS, 0.5)
         self.assertEqual(len(rows), len(ROWS))
         for row in rows:
-            with self.subTest(group=row.group, descriptor=row.descriptor):
+            with self.subTest(group=row.group, descriptor=row.unit):
                 self.assertGreaterEqual(row.count, 1)
 
     def test_scaled_half_threshold_stays_in_bounds(self):
@@ -76,7 +76,7 @@ class Forces(unittest.TestCase):
         rows = scaled(ROWS, 0.5)
         base = {"B1": group_total(rows, "first_echelon"),
                 "B5": sum(r.count for r in rows if r.group == "relief"
-                          and r.descriptor in ("T80U_SOV", "T80U_CMD_SOV"))}
+                          and r.unit in ("T80U_SOV", "T80U_CMD_SOV"))}
         for name, diff in itertools.product(("B1", "B5"), ("easy", "medium", "hard")):
             with self.subTest(name=name, difficulty=diff):
                 self.assertTrue(1 <= threshold(name, diff, rows) <= base[name])
@@ -110,16 +110,16 @@ class Forces(unittest.TestCase):
     def test_descriptors_exist_in_the_game(self):
         """Every unit the force table and the op's deck cards name, carriers included, is in the game's unit database
         (the mod SDK's descriptors: what the build's unit gate checks a generated file against)."""
-        names = {r.descriptor for r in ROWS} | {r.transport for r in ROWS if r.transport}
-        names |= {u for u, *_ in (*op.REARGUARD_CARDS, *op.SUPPORT_CARDS, *op.FOREST_CARDS, *op.SOVIET_CARDS,
+        names = {r.unit for r in ROWS} | {r.transport for r in ROWS if r.transport}
+        names |= {c.unit for c in (*op.REARGUARD_CARDS, *op.SUPPORT_CARDS, *op.FOREST_CARDS, *op.SOVIET_CARDS,
                                    *op.SPRING_CARDS)}
-        names |= {t for _, _, t in op.REARGUARD_CARDS if t} | {op.A10_CARD, op.CAPTURED_UNIT}
+        names |= {c.transport for c in op.REARGUARD_CARDS if c.transport} | {op.A10_CARD, op.CAPTURED_UNIT}
         known = gates.unit_database()
         self.assertEqual(sorted(n for n in names if UNIT_PREFIX + n not in known), [])
 
     def test_rows_are_well_formed(self):
         for row in ROWS:
-            with self.subTest(group=row.group, descriptor=row.descriptor):
+            with self.subTest(group=row.group, descriptor=row.unit):
                 self.assertIn(row.camp, ("PACT", "NATO", "Decoys"))
                 self.assertGreaterEqual(row.count, 1)
                 self.assertTrue(row.spawn and row.echelon)

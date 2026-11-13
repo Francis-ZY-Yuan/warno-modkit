@@ -71,6 +71,7 @@ from modkit.ops.mission import (
     CHOICE_NONE, Lane, Leg, Wave, board, create_rows, hidden_units, reask_loop, ring_round, wave, zone_race,
 )
 from modkit.ops.mission import zone_handover as tier_handover  # the tiers' hand-over: see "shared pieces" below
+from modkit.ops.models import Buttons, Ending, ForceRow, Knobs
 from modkit.ops.profile import Content
 from modkit.ops.script import BRICK_DEFAULT
 from modkit.ops.shapes import Beat, lock_card, objective  # noqa: F401  (lock_card: the deck beat's and the tests')
@@ -89,12 +90,12 @@ BATTLE_PHASE = shapes.BATTLE_PHASE  # TGDConditionPhase: the battle is launched 
 # Easy and Hard branches overwrite it. B1's kills are design 5.7's shares 28/42/55 % of the first echelon
 # (forces.threshold: 10/15/20 at 1x); S_min is 0.25/0.33/0.40 of the main body's 60 vehicles; B6's contact seconds
 # 1:30/2:00/2:30 and the surrender share 45/35/25 % are design 5.7's.
-KNOBS: dict[str, tuple[int, int, int]] = {
-    "od_b1_n": tuple(forces.threshold("B1", d, scaled(forces.ROWS, forces.FORCE_SCALE))
-                     for d in ("easy", "medium", "hard")),
-    "od_smin": (15, 20, 24),
-    "od_b6_s": (90, 120, 150),
-    "od_surr_pct": (45, 35, 25),
+KNOBS: dict[str, Knobs] = {
+    "od_b1_n": Knobs(*(forces.threshold("B1", d, scaled(forces.ROWS, forces.FORCE_SCALE))
+                       for d in ("easy", "medium", "hard"))),
+    "od_smin": Knobs(15, 20, 24),
+    "od_b6_s": Knobs(90, 120, 150),
+    "od_surr_pct": Knobs(45, 35, 25),
 }
 # The difficulty hint shows this long after "Launch battle": after phase 1's hint (H+0:00, HINT_S long) and before the
 # captured T-80U's (H+0:30), and never beside the deploy hint, the one hint of the deployment phase.
@@ -107,13 +108,13 @@ FLAGS = ("od_released", "od_window", "od_sprung", "od_sealed_mid", "od_sealed_s"
 END_TOTAL, END_MAJOR, END_MINOR, END_ANVIL, END_REAR, END_LOST = 1, 2, 3, 4, 5, 6
 # The funnel's rows: od_end value -> (dialog token, EVictoryType, whether the player loses). No stock Minor screen
 # exists for a win we call Minor (the band under 40 %): it shows Major's, with its own dialog.
-ENDINGS: dict[int, tuple[str, int, bool]] = {
-    END_TOTAL: ("od_dtotal", shapes.TOTAL_VICTORY, False),
-    END_MAJOR: ("od_dmajor", shapes.MAJOR_VICTORY, False),
-    END_MINOR: ("od_dminor", shapes.MAJOR_VICTORY, False),
-    END_ANVIL: ("od_danvil", shapes.TOTAL_VICTORY, True),   # a loss: the winner is the Soviet alliance (#254)
-    END_REAR: ("od_drear", shapes.TOTAL_VICTORY, True),
-    END_LOST: ("od_dlost", shapes.TOTAL_VICTORY, True),
+ENDINGS: dict[int, Ending] = {
+    END_TOTAL: Ending("od_dtotal", shapes.TOTAL_VICTORY, False),
+    END_MAJOR: Ending("od_dmajor", shapes.MAJOR_VICTORY, False),
+    END_MINOR: Ending("od_dminor", shapes.MAJOR_VICTORY, False),
+    END_ANVIL: Ending("od_danvil", shapes.TOTAL_VICTORY, True),   # a loss: the winner is the Soviet alliance (#254)
+    END_REAR: Ending("od_drear", shapes.TOTAL_VICTORY, True),
+    END_LOST: Ending("od_dlost", shapes.TOTAL_VICTORY, True),
 }
 # The defeats (design 4). The anvil falls when PACT has ANVIL_PACT_N units in an anvil command zone and NATO none for
 # ANVIL_HOLD_S; the rear exit when REAR_N Soviet main-body vehicles stand in its circle (0.10 of the main body's 60
@@ -177,7 +178,8 @@ B6_PAIRS = (("OD_CZ_NeckMid", "OD_RingApprMid"), ("OD_CZ_NeckS", "OD_RingApprS")
 # none for SEAL_HOLD_S (zone_race); then the zone goes back to NATO (its tier reopens) and od_sealed_<key> = 1. The
 # seal hints take turns through od_hturn (seal_hints): HTURN_MID or HTURN_S names the one that shows first, HTURN_ANY
 # lets the other.
-SPRING_CARDS = (("M1A1HA_Abrams_US", 4), ("Leopard_2A4_RFA", 4), ("OH58D_Kiowa_Warrior_US", 2))
+SPRING_CARDS = (ForceRow("M1A1HA_Abrams_US", 4), ForceRow("Leopard_2A4_RFA", 4),
+                ForceRow("OH58D_Kiowa_Warrior_US", 2))
 SEAL_NATO_N, SEAL_HOLD_S = 1, 30.0
 HTURN_MID, HTURN_S, HTURN_ANY = 1, 2, 3
 # Phase 4 (design 5.4-5.5). Once both necks are sealed, od_sealed_n = the Soviet vehicles in the pocket (the sack's
@@ -192,22 +194,23 @@ BACKSTOP_S = 1500.0
 SURR_PCT_BASE = 100
 ADD, DIVIDE = shapes.ADD, shapes.DIVIDE                # EVariableIntegerModification Add, Divide
 STRICTLY_LESS = shapes.STRICTLY_LESS                     # EGDOperator
-check(len(set(KNOBS["od_surr_pct"])) == 3, "share_of branches on od_surr_pct's value: the three shares must differ")
+check(len({KNOBS["od_surr_pct"].at(level) for level in (EASY, MEDIUM, HARD)}) == 3,
+      "share_of branches on od_surr_pct's value: the three shares must differ")
 CATCH_SHARES = (0.70, 0.40)                                # Total (with both necks sealed), Major; below: Minor
 
 # The load beat's cards (design 6.1, Start rows) [[add-unit-to-deck]]. The rearguard's are written at Experience 0,
 # the worn 8th ID (an Experience is written even when 0: shapes.add_card); the rest leave it out, as SigurdsStrike
 # #1042 does.
 REARGUARD_EXPERIENCE = 0
-REARGUARD_CARDS = (("M1_Abrams_US", 6, None), ("Rifles_US", 6, "M113A3_US"), ("M901_TOW_US", 3, None),
-                   ("M113_Dragon_US", 2, None), ("AH1F_Cobra_US", 2, None))
-SUPPORT_CARDS = (("ATteam_TOW2_US", 4), ("Engineers_Dragon_US", 2))              # the shoulder and the anvil
-FOREST_CARDS = (("Rifles_half_Dragon_US", 6), ("Engineers_Flash_US", 2),         # the screen's forest infantry
-                ("Panzergrenadier_IFV_RFA", 6), ("ATteam_Milan_2_RFA", 2))
+REARGUARD_CARDS = (ForceRow("M1_Abrams_US", 6), ForceRow("Rifles_US", 6, "M113A3_US"), ForceRow("M901_TOW_US", 3),
+                   ForceRow("M113_Dragon_US", 2), ForceRow("AH1F_Cobra_US", 2))
+SUPPORT_CARDS = (ForceRow("ATteam_TOW2_US", 4), ForceRow("Engineers_Dragon_US", 2))    # the shoulder and the anvil
+FOREST_CARDS = (ForceRow("Rifles_half_Dragon_US", 6), ForceRow("Engineers_Flash_US", 2),  # the screen's forest infantry
+                ForceRow("Panzergrenadier_IFV_RFA", 6), ForceRow("ATteam_Milan_2_RFA", 2))
 # Captured Soviet equipment, hard to miss: no NATO look-alike, none in the Soviet waves, all self-propelled (no
 # Transporter). The deploy hint names them by unit and count: their factory tabs (Tanks, Helis, Art) are only
 # reachable once the buy menu may leave Groups mode (PROD_MENU_SWITCH).
-SOVIET_CARDS = (("T80U_SOV", 2), ("Ka_50_SOV", 2), ("TOS1_Buratino_SOV", 2))
+SOVIET_CARDS = (ForceRow("T80U_SOV", 2), ForceRow("Ka_50_SOV", 2), ForceRow("TOS1_Buratino_SOV", 2))
 # The buy menu's Groups/factory-tabs switch at the HUD restore (Content.prod_menu_switch). Every stock HUD node that
 # shows the buy menu force-hides it, so the menu stays in Groups mode, and where that mode shows a card with no group
 # (the Soviet cards, design 6.1's start cards) is unread; Default (stock's other value, written by omission, as the
@@ -350,40 +353,41 @@ class Company(NamedTuple):
     key: str
     entry: str                       # its spawn tag (TAGS)
     town: str                        # the command zone it seizes (TOWN_CZ)
-    rows: tuple[tuple[str, int, str | None], ...]   # (descriptor, count, transport), the first_echelon rows
+    rows: tuple[ForceRow, ...]       # the first_echelon rows
 
 
 # Design 6.3's first echelon (the force table's "first_echelon" at FORCE_SCALE, 36) split into three companies, one per
 # lane: N 11 from ENTRY N on Town NE, C 14 with the battalion's BMP-1 command vehicle (the one unit that captures
 # [[zone-capture-command-units]]) from ENTRY E on Village E, S 11 from ENTRY SE on Town SE (tanks 3/4/3, a BMP-2
 # platoon with its riflemen 2/4/2, recon, ATGM and air defence spread). Towns NE and SE fall by the race.
-_FLANK = (("T80B_SOV", 3, None), ("BMP_2_SOV", 2, None), ("MotRifles_SOV", 2, "BMP_2_SOV"), ("BRDM_2_SOV", 1, None),
-          ("BRDM_2_Konkurs_SOV", 1, None), ("Scout_SOV", 1, None), ("ZSU_23_Shilka_SOV", 1, None))
+_FLANK = (ForceRow("T80B_SOV", 3), ForceRow("BMP_2_SOV", 2), ForceRow("MotRifles_SOV", 2, "BMP_2_SOV"),
+          ForceRow("BRDM_2_SOV", 1), ForceRow("BRDM_2_Konkurs_SOV", 1), ForceRow("Scout_SOV", 1),
+          ForceRow("ZSU_23_Shilka_SOV", 1))
 FE_COMPANIES: tuple[Company, ...] = (
     Company("n", "OD_EntryN", "OD_CZ_TownNE", _FLANK),
-    Company("c", "OD_EntryE", "OD_CZ_VillageE", (("T80B_SOV", 4, None), ("BMP_2_SOV", 4, None),
-                                                 ("MotRifles_SOV", 4, "BMP_2_SOV"), ("BMP_1_CMD_SOV", 1, None),
-                                                 ("BRDM_Strela_1_SOV", 1, None))),
+    Company("c", "OD_EntryE", "OD_CZ_VillageE", (ForceRow("T80B_SOV", 4), ForceRow("BMP_2_SOV", 4),
+                                                 ForceRow("MotRifles_SOV", 4, "BMP_2_SOV"),
+                                                 ForceRow("BMP_1_CMD_SOV", 1), ForceRow("BRDM_Strela_1_SOV", 1))),
     Company("s", "OD_EntrySE", "OD_CZ_TownSE", _FLANK),
 )
 FE_TOTAL = group_total(forces.force_rows("first_echelon"), "first_echelon")
 # B1 counts the player's kills of these types (GetNbKillsCamp [[kill-counts-by-type]]): the first echelon's
 # descriptors, in table order.
-FE_TYPES = tuple(dict.fromkeys(r.descriptor for r in forces.force_rows("first_echelon")))
+FE_TYPES = tuple(dict.fromkeys(r.unit for r in forces.force_rows("first_echelon")))
 
 
-def tally(rows: Iterable[tuple[str, int, str | None]]) -> Counter:
-    """(descriptor, transport) -> count over (descriptor, count, transport) rows: FE_COMPANIES' or the table's."""
+def tally(rows: Iterable[ForceRow]) -> Counter:
+    """(unit, transport) -> count over `rows`: FE_COMPANIES' or the table's."""
     out: Counter = Counter()
-    for unit, n, transport in rows:
-        out[unit, transport] += n
+    for r in rows:
+        out[r.unit, r.transport] += r.count
     return out
 
 
 def fe_tallies() -> tuple[Counter, Counter]:
     """(FE_COMPANIES' tally, the first_echelon rows' tally at FORCE_SCALE): equal while the split holds."""
     return (tally(row for c in FE_COMPANIES for row in c.rows),
-            tally((r.descriptor, r.count, r.transport) for r in forces.force_rows("first_echelon")))
+            tally(forces.force_rows("first_echelon")))
 
 
 # A FORCE_SCALE or table change must re-split the companies (design 6.4: a table edit plus one replay).
@@ -412,14 +416,14 @@ LANES: dict[str, Lane] = {
 # rows), one a minute from the release, alternating MID and BOTTOM. Each is created into od_mb<key> but for the
 # riflemen (od_mb<key>_inf) and their carriers (od_mb<key>_ifv), which board first; then it drives its lane.
 WAVES: tuple[Wave, ...] = (
-    Wave(1, 0 * WAVE_GAP_S, "MID", (("T80BV_SOV", 10, None),)),
-    Wave(2, 1 * WAVE_GAP_S, "BOTTOM", (("T80BV_SOV", 10, None),)),
-    Wave(3, 2 * WAVE_GAP_S, "MID", (("BMP_2_SOV", 10, None), ("MotRifles_SOV", 9, "BMP_2_SOV"),
-                                    ("BRDM_2_Konkurs_SOV", 3, None))),
-    Wave(4, 3 * WAVE_GAP_S, "BOTTOM", (("T80BV_SOV", 10, None), ("T80BV_CMD_SOV", 1, None))),
-    Wave(5, 4 * WAVE_GAP_S, "MID", (("Tunguska_2K22_SOV", 2, None), ("Osa_9K33M3_SOV", 2, None),
-                                    ("MTLB_Strela10_SOV", 2, None), ("BMP_1_CMD_SOV", 1, None))),
-    Wave(6, 5 * WAVE_GAP_S, "BOTTOM", (("2S3M_Akatsiya_SOV", 6, None), ("MTLB_supply_SOV", 3, None))),
+    Wave(1, 0 * WAVE_GAP_S, "MID", (ForceRow("T80BV_SOV", 10),)),
+    Wave(2, 1 * WAVE_GAP_S, "BOTTOM", (ForceRow("T80BV_SOV", 10),)),
+    Wave(3, 2 * WAVE_GAP_S, "MID", (ForceRow("BMP_2_SOV", 10), ForceRow("MotRifles_SOV", 9, "BMP_2_SOV"),
+                                    ForceRow("BRDM_2_Konkurs_SOV", 3))),
+    Wave(4, 3 * WAVE_GAP_S, "BOTTOM", (ForceRow("T80BV_SOV", 10), ForceRow("T80BV_CMD_SOV", 1))),
+    Wave(5, 4 * WAVE_GAP_S, "MID", (ForceRow("Tunguska_2K22_SOV", 2), ForceRow("Osa_9K33M3_SOV", 2),
+                                    ForceRow("MTLB_Strela10_SOV", 2), ForceRow("BMP_1_CMD_SOV", 1))),
+    Wave(6, 5 * WAVE_GAP_S, "BOTTOM", (ForceRow("2S3M_Akatsiya_SOV", 6), ForceRow("MTLB_supply_SOV", 3))),
 )
 MB_ROWS = (*forces.force_rows("main_body"), *forces.force_rows("pocket_ad"))
 MB_TOTAL = sum(r.count for r in MB_ROWS if r.transport is None)      # od_mb: the vehicles (the catch's base)
@@ -446,7 +450,7 @@ SEALS: tuple[Seal, ...] = (Seal("OD_CZ_NeckMid", "mid", HTURN_MID, "od_hsm", "od
 def mb_tallies() -> tuple[Counter, Counter]:
     """(WAVES' tally, the main_body and pocket_ad rows' tally at FORCE_SCALE): equal while the split holds."""
     return (tally(row for w in WAVES for row in w.rows),
-            tally((r.descriptor, r.count, r.transport) for r in MB_ROWS))
+            tally(MB_ROWS))
 
 
 check(mb_tallies()[0] == mb_tallies()[1], "WAVES no longer split the main_body and pocket_ad rows at FORCE_SCALE: "
@@ -466,7 +470,7 @@ def jaw_items(group: str) -> list[LdItem]:
     """The hidden player (camp 0) spawns of a jaw (modkit.ops.mission.hidden_units): one per unit of its force table
     rows, in row order, named <prefix>_01, <prefix>_02, ..."""
     prefix, point, cols = JAWS[group]
-    units = [r.descriptor for r in forces.force_rows(group) for _ in range(r.count)]
+    units = [r.unit for r in forces.force_rows(group) for _ in range(r.count)]
     return hidden_units(MAP, px(point), [(f"{prefix}_{k + 1:02d}", unit) for k, unit in enumerate(units)],
                         RESERVE_SPACING_PX, cols, group)
 
@@ -563,7 +567,7 @@ def rear_exit(ctx: Ctx) -> Node:
     set_end(END_REAR). The constraint is the types alone, as probe 1's probe ring (stock has no All-of-Any constraint,
     gate 2); the player's deck holds none of them (the captured cards are T-80U, Ka-50, TOS-1). Infantry (rows with a
     transport) are not counted."""
-    vehicles = [r.descriptor for r in forces.force_rows("main_body") if r.transport is None]
+    vehicles = [r.unit for r in forces.force_rows("main_body") if r.transport is None]
     ring = ctx.tag("OD_RingRear")
     pact_vehicles = c_any(*(c_type(u) for u in dict.fromkeys(vehicles)))
     return g_seq([g_until(g_detect(ring, pact_vehicles, REAR_N, GE)), shapes.set_end(ctx.int_var("od_end"), END_REAR)])
@@ -589,9 +593,9 @@ def load_deck(ctx: Ctx) -> Node:
     the shoulder and the anvil; the screen's forest infantry), then the captured Soviet cards (SigurdsStrike #1042's
     shape, Experience omitted), then the A-10A lock until the spring (od_sprung = 1). The lock goes last: its race
     holds the Sequential until the spring."""
-    cards = [shapes.add_card(ctx, unit, n, transport=carrier, experience=REARGUARD_EXPERIENCE)
-             for unit, n, carrier in REARGUARD_CARDS]
-    cards += [shapes.add_card(ctx, unit, n) for unit, n in (*SUPPORT_CARDS, *FOREST_CARDS, *SOVIET_CARDS)]
+    cards = [shapes.add_card(ctx, c.unit, c.count, transport=c.transport, experience=REARGUARD_EXPERIENCE)
+             for c in REARGUARD_CARDS]
+    cards += [shapes.add_card(ctx, c.unit, c.count) for c in (*SUPPORT_CARDS, *FOREST_CARDS, *SOVIET_CARDS)]
     return g_seq([*cards, lock_card(ctx, A10_CARD, g_cmp(ctx.int_var("od_sprung"), 1))])
 
 
@@ -799,7 +803,7 @@ def spring(ctx: Ctx) -> Node:
     (IfThenElse on 0, set_end's latch). Phase 3 starts on od_sprung."""
     released, sprung = ctx.int_var("od_released"), ctx.int_var("od_sprung")
     pick, ans, asking = ctx.int_var("od_spr_pick"), ctx.int_var("od_spr_ans"), ctx.int_var("od_spr_open")
-    ask = reask_loop("od_dspring", (BUTTON_NOW, BUTTON_WAIT), ctx.camp("NATO"), pick, ans, asking, SPRING_GAP_S)
+    ask = reask_loop("od_dspring", Buttons(BUTTON_NOW, BUTTON_WAIT), ctx.camp("NATO"), pick, ans, asking, SPRING_GAP_S)
     contested = g_and(g_units_in_zones([ctx.tag(z) for z in ANVIL_CZ], c_team(ctx.camp("PACT")), 1, GE),
                       g_cmp(asking))
     exits = g_compete([g_seq([g_until(g_cmp(ctx.int_var("od_p4"), 1)), ask]),
@@ -886,7 +890,7 @@ def spring_effects(ctx: Ctx) -> Node:
     tags = jaw_tags(ctx)
     return g_seq([g_dialog("od_dcode"), g_spawn(tags),
                   g_union(ctx.group("Groupe_Joueur"), tags),
-                  *(shapes.add_card(ctx, unit, n) for unit, n in SPRING_CARDS)])
+                  *(shapes.add_card(ctx, c.unit, c.count) for c in SPRING_CARDS)])
 
 
 def seal_hints(ctx: Ctx) -> Node:
@@ -955,7 +959,8 @@ def share_of(ctx: Ctx, into: Node, base: Node) -> list[Node]:
     probe 1's shapes.DIVIDE). The knob is the one source of the share: the branches read its value, and their loop
     counts are KNOBS'."""
     pct = ctx.int_var("od_surr_pct")
-    easy, medium, hard = KNOBS["od_surr_pct"]
+    shares = KNOBS["od_surr_pct"]
+    easy, medium, hard = shares.easy, shares.medium, shares.hard
 
     def adds(n: int) -> Node:
         return g_seq([g_modify(into, ADD, other=base)], runs=n)

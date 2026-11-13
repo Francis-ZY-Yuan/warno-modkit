@@ -67,7 +67,7 @@ class Buttons(unittest.TestCase):
                 labels[lang] = dict(trad.read_dic(fh.read()))
         for dialog, buttons in strings.BUTTONS.items():
             texts = strings.STRINGS["Scripting/Dialog"][dialog]
-            for button in buttons:
+            for button in (buttons.yes, buttons.no):
                 us, sc = (labels[lang][trad.token_key(button)] for lang in ("US", "SC"))
                 with self.subTest(dialog=dialog, button=button):
                     self.assertIn(f"\n{us}: ", texts.US)

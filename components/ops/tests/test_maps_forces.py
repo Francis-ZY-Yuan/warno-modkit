@@ -10,8 +10,9 @@ import unittest
 
 from modkit.core import paths
 from modkit.ops.forces import (
-    GEISA_SOVIET_ROWS, ForceRow, formation, group_rows, group_total, rows_of, scaled, share_count,
+    GEISA_SOVIET_ROWS, formation, group_rows, group_total, rows_of, scaled, share_count,
 )
+from modkit.ops.models import ForceRow
 from modkit.ops.files import read_file
 from modkit.ops.graph import decode
 from modkit.ops.leveldesign import LdItem
@@ -115,7 +116,7 @@ class SharedForces(unittest.TestCase):
         self.assertEqual(totals, {"main_body": 63, "pocket_ad": 6, "relief": 55, "opener_battery": 6, "probe": 4})
         self.assertEqual({r.camp for r in GEISA_SOVIET_ROWS}, {"PACT"})
         self.assertLessEqual({r.spawn for r in GEISA_SOVIET_ROWS}, set(GEISA_POINTS))
-        self.assertEqual([(r.descriptor, r.count, r.transport) for r in GEISA_SOVIET_ROWS if r.group == "main_body"],
+        self.assertEqual([(r.unit, r.count, r.transport) for r in GEISA_SOVIET_ROWS if r.group == "main_body"],
                          [("T80BV_SOV", 30, None), ("T80BV_CMD_SOV", 1, None), ("BMP_2_SOV", 10, None),
                           ("MotRifles_SOV", 9, "BMP_2_SOV"), ("BRDM_2_Konkurs_SOV", 3, None),
                           ("2S3M_Akatsiya_SOV", 6, None), ("BMP_1_CMD_SOV", 1, None), ("MTLB_supply_SOV", 3, None)])
@@ -124,11 +125,11 @@ class SharedForces(unittest.TestCase):
 
 
 class Forces(unittest.TestCase):
-    ROWS = tuple(rows_of("a", "E", "P1", "first", ("Tank", 10), ("Rifles", 5, "Truck"))
-                 + rows_of("b", "F", "P2", "second", ("Heli", 3), fixed=True))
+    ROWS = tuple(rows_of("a", "E", "P1", "first", ForceRow("Tank", 10), ForceRow("Rifles", 5, "Truck"))
+                 + rows_of("b", "F", "P2", "second", ForceRow("Heli", 3), fixed=True))
 
     def test_rows_of(self):
-        self.assertEqual(self.ROWS[1], ForceRow("a", "E", "Rifles", 5, "P1", "first", "Truck", False))
+        self.assertEqual(self.ROWS[1], ForceRow("Rifles", 5, "Truck", group="a", camp="E", spawn="P1", echelon="first"))
         self.assertTrue(self.ROWS[2].fixed)
         self.assertEqual(group_total(self.ROWS, "a"), 15)
 

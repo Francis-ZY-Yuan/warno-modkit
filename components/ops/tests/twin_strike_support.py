@@ -27,6 +27,7 @@ from modkit.core import paths  # noqa: E402
 from modkit.ops import build as ops_build  # noqa: E402
 from modkit.ops import testing  # noqa: E402
 from modkit.ops.maps import WORLD_PER_MINIMAP_PX  # noqa: E402
+from modkit.ops.models import ForceRow  # noqa: E402
 from modkit.ops.profile import Content  # noqa: E402
 from modkit.ops.shapes import GRU_WORLD  # noqa: E402
 from twinstrike import CONTENTS, profile  # noqa: E402
@@ -76,10 +77,10 @@ def _deck_block(identifier: str) -> str:
     return blocks[0]
 
 
-def stock_deck(identifier: str) -> list[tuple[str, int, str | None]]:
-    """The packs of the stock deck `identifier` as (unit, number, transport or None), in its DeckPackList order: the
-    mod SDK's Decks.ndf and DeckPacks.ndf from the extraction, read by the toolkit's reader (gates.deck_packs, which
-    gates.stock_deck_packs reads the game's copy with). A deck stock lacks raises LookupError."""
+def stock_deck(identifier: str) -> list[ForceRow]:
+    """The packs of the stock deck `identifier` as rows (unit, number, transport or None), in its DeckPackList order:
+    the mod SDK's Decks.ndf and DeckPacks.ndf from the extraction, read by the toolkit's reader (gates.deck_packs,
+    which gates.stock_deck_packs reads the game's copy with). A deck stock lacks raises LookupError."""
     _deck_block(identifier)
     texts = []
     for name in ("Decks.ndf", "DeckPacks.ndf"):

@@ -80,6 +80,7 @@ from modkit.ops.leveldesign import LdItem
 from modkit.ops.mission import (
     CHOICE_NONE, Lane, Leg, Wave, board, lane_route, placed_units, reask_loop, ring_round, wave, zone_handover,
 )
+from modkit.ops.models import Ending, ForceRow, Knobs
 from modkit.ops.profile import Content
 from modkit.ops.script import BRICK_DEFAULT
 from modkit.ops.shapes import (
@@ -247,16 +248,16 @@ EASY, MEDIUM, HARD = shapes.EASY, shapes.MEDIUM, shapes.HARD
 END_TOTAL_R, END_TOTAL_W, END_MAJOR_R, END_MAJOR_W, END_MINOR_R, END_MINOR_W = 1, 2, 3, 4, 5, 6
 END_FAIL, END_LOST, END_EMPTY = 7, 8, 9
 WON = END_MINOR_W                      # END 1..WON is a win
-ENDINGS: dict[int, ops_mission.Ending] = {
-    END_TOTAL_R: ("ts_dtotr", shapes.TOTAL_VICTORY, False),
-    END_TOTAL_W: ("ts_dtotw", shapes.TOTAL_VICTORY, False),
-    END_MAJOR_R: ("ts_dmajr", shapes.MAJOR_VICTORY, False),
-    END_MAJOR_W: ("ts_dmajw", shapes.MAJOR_VICTORY, False),
-    END_MINOR_R: ("ts_dminr", shapes.MAJOR_VICTORY, False),
-    END_MINOR_W: ("ts_dminw", shapes.MAJOR_VICTORY, False),
-    END_FAIL: ("ts_dfail", shapes.TOTAL_VICTORY, True),     # phase 1's deadline
-    END_LOST: ("ts_dlost", shapes.TOTAL_VICTORY, True),     # NATO owned the village for NATO_HOLD_S
-    END_EMPTY: ("ts_dempty", shapes.TOTAL_VICTORY, True),   # no Soviet unit in the village's zone for EMPTY_S
+ENDINGS: dict[int, Ending] = {
+    END_TOTAL_R: Ending("ts_dtotr", shapes.TOTAL_VICTORY, False),
+    END_TOTAL_W: Ending("ts_dtotw", shapes.TOTAL_VICTORY, False),
+    END_MAJOR_R: Ending("ts_dmajr", shapes.MAJOR_VICTORY, False),
+    END_MAJOR_W: Ending("ts_dmajw", shapes.MAJOR_VICTORY, False),
+    END_MINOR_R: Ending("ts_dminr", shapes.MAJOR_VICTORY, False),
+    END_MINOR_W: Ending("ts_dminw", shapes.MAJOR_VICTORY, False),
+    END_FAIL: Ending("ts_dfail", shapes.TOTAL_VICTORY, True),     # phase 1's deadline
+    END_LOST: Ending("ts_dlost", shapes.TOTAL_VICTORY, True),     # NATO owned the village for NATO_HOLD_S
+    END_EMPTY: Ending("ts_dempty", shapes.TOTAL_VICTORY, True),   # no Soviet unit in the village's zone for EMPTY_S
 }
 
 # Phase 1 (seconds after "Launch battle"). The village falls once the NATO units left in its circle are ts_fall_n or
@@ -367,32 +368,32 @@ LANES: dict[str, Lane] = {
 # so no two waves are created together. Teams A, B and C split the table's battalion 1 at FORCE_SCALE (checked
 # below); Hard's fourth team, D, is a second company like A.
 WAVE_GAP_S, LANE_STAGGER_S = 120.0, 60.0
-_TEAM_A = (("M1A1HA_Abrams_US", 10, None), ("M2A2_Bradley_IFV_US", 3, None),
-           ("Rifles_half_AT4_US", 3, "M2A2_Bradley_IFV_US"), ("M163_PIVADS_US", 1, None), ("M998_Avenger_US", 1, None),
-           ("MANPAD_Stinger_C_US", 1, None))
+_TEAM_A = (ForceRow("M1A1HA_Abrams_US", 10), ForceRow("M2A2_Bradley_IFV_US", 3),
+           ForceRow("Rifles_half_AT4_US", 3, "M2A2_Bradley_IFV_US"), ForceRow("M163_PIVADS_US", 1),
+           ForceRow("M998_Avenger_US", 1), ForceRow("MANPAD_Stinger_C_US", 1))
 BN1_WAVES: tuple[Team, ...] = (
-    Team(Wave(1, 0.0, "W", (("M3A2_Bradley_CFV_US", 2, None), ("Scout_US", 2, None),
-                            ("OH58D_Kiowa_Warrior_US", 1, None))), 0),
-    Team(Wave(2, LANE_STAGGER_S, "C", (("M3A2_Bradley_CFV_US", 1, None), ("Scout_US", 1, None),
-                                       ("OH58D_Kiowa_Warrior_US", 1, None))), 0),
+    Team(Wave(1, 0.0, "W", (ForceRow("M3A2_Bradley_CFV_US", 2), ForceRow("Scout_US", 2),
+                            ForceRow("OH58D_Kiowa_Warrior_US", 1))), 0),
+    Team(Wave(2, LANE_STAGGER_S, "C", (ForceRow("M3A2_Bradley_CFV_US", 1), ForceRow("Scout_US", 1),
+                                       ForceRow("OH58D_Kiowa_Warrior_US", 1))), 0),
     Team(Wave(3, WAVE_GAP_S, "W", _TEAM_A), 1),
     Team(Wave(4, WAVE_GAP_S + LANE_STAGGER_S, "C", (
-        ("M1A1HA_Abrams_US", 10, None), ("M1A1HA_Abrams_CMD_US", 1, None), ("M2A2_Bradley_IFV_US", 3, None),
-        ("Rifles_half_AT4_US", 3, "M2A2_Bradley_IFV_US"), ("M163_PIVADS_US", 1, None),
-        ("M48_Chaparral_MIM72F_US", 1, None), ("MANPAD_Stinger_C_US", 1, None))), 2),
+        ForceRow("M1A1HA_Abrams_US", 10), ForceRow("M1A1HA_Abrams_CMD_US", 1), ForceRow("M2A2_Bradley_IFV_US", 3),
+        ForceRow("Rifles_half_AT4_US", 3, "M2A2_Bradley_IFV_US"), ForceRow("M163_PIVADS_US", 1),
+        ForceRow("M48_Chaparral_MIM72F_US", 1), ForceRow("MANPAD_Stinger_C_US", 1))), 2),
     Team(Wave(5, 2 * WAVE_GAP_S, "W", (
-        ("M1A1HA_Abrams_US", 10, None), ("M2A2_Bradley_IFV_US", 4, None),
-        ("Rifles_half_AT4_US", 3, "M2A2_Bradley_IFV_US"), ("M48_Chaparral_MIM72F_US", 1, None),
-        ("M998_Avenger_US", 1, None), ("MANPAD_Stinger_C_US", 1, None))), 3),
+        ForceRow("M1A1HA_Abrams_US", 10), ForceRow("M2A2_Bradley_IFV_US", 4),
+        ForceRow("Rifles_half_AT4_US", 3, "M2A2_Bradley_IFV_US"), ForceRow("M48_Chaparral_MIM72F_US", 1),
+        ForceRow("M998_Avenger_US", 1), ForceRow("MANPAD_Stinger_C_US", 1))), 3),
     Team(Wave(6, 2 * WAVE_GAP_S + LANE_STAGGER_S, "C", _TEAM_A), 4),
 )
 
 
-def tally(rows: Iterable[tuple[str, int, str | None]]) -> Counter:
-    """(descriptor, transport) -> count over (descriptor, count, transport) rows."""
+def tally(rows: Iterable[ForceRow]) -> Counter:
+    """(unit, transport) -> count over `rows`."""
     out: Counter = Counter()
-    for unit, n, transport in rows:
-        out[unit, transport] += n
+    for r in rows:
+        out[r.unit, r.transport] += r.count
     return out
 
 
@@ -401,7 +402,7 @@ def bn1_tallies(teams: int = TEAMS[MEDIUM]) -> tuple[Counter, Counter]:
     bn1, bn1_recon, bn1_ad): equal at Medium while the split holds."""
     rows = [r for g in ("bn1", "bn1_recon", "bn1_ad") for r in forces.force_rows(g)]
     return (tally(row for t in BN1_WAVES if t.team <= teams for row in t.wave.rows),
-            tally((r.descriptor, r.count, r.transport) for r in rows))
+            tally(rows))
 
 
 # A FORCE_SCALE or table change must re-split the waves (design 6.4: a table edit plus one replay).
@@ -414,12 +415,13 @@ check(bn1_tallies()[0] == bn1_tallies()[1],
 # the village; pre-placed hidden in the NATO camp until battalion 1 is beaten. They split the table's battalion 2 at
 # FORCE_SCALE (checked below). The Panzergrenadiere stand beside their Marders: no spawn starts infantry aboard
 # (spawn-and-create-units); they board when the battalion attacks.
-BN2_HALVES: dict[str, tuple[tuple[str, int, str | None], ...]] = {
-    "W": (("Leopard_2A4_RFA", 14, None), ("Leopard_2A3_CMD_RFA", 1, None), ("Marder_1A3_RFA", 4, None),
-          ("Panzergrenadier_IFV_RFA", 4, "Marder_1A3_RFA"), ("Gepard_1A2_RFA", 2, None),
-          ("Marder_Roland_2_RFA", 1, None), ("Luchs_A1_RFA", 1, None)),
-    "C": (("Leopard_2A4_RFA", 14, None), ("Marder_1A3_RFA", 4, None), ("Panzergrenadier_IFV_RFA", 4, "Marder_1A3_RFA"),
-          ("Gepard_1A2_RFA", 1, None), ("Marder_Roland_2_RFA", 1, None), ("Luchs_A1_RFA", 1, None)),
+BN2_HALVES: dict[str, tuple[ForceRow, ...]] = {
+    "W": (ForceRow("Leopard_2A4_RFA", 14), ForceRow("Leopard_2A3_CMD_RFA", 1), ForceRow("Marder_1A3_RFA", 4),
+          ForceRow("Panzergrenadier_IFV_RFA", 4, "Marder_1A3_RFA"), ForceRow("Gepard_1A2_RFA", 2),
+          ForceRow("Marder_Roland_2_RFA", 1), ForceRow("Luchs_A1_RFA", 1)),
+    "C": (ForceRow("Leopard_2A4_RFA", 14), ForceRow("Marder_1A3_RFA", 4),
+          ForceRow("Panzergrenadier_IFV_RFA", 4, "Marder_1A3_RFA"), ForceRow("Gepard_1A2_RFA", 1),
+          ForceRow("Marder_Roland_2_RFA", 1), ForceRow("Luchs_A1_RFA", 1)),
 }
 BN2_POSTS = {"W": (145.0, 500.0), "C": (167.0, 500.0)}
 BN2_SPACING_PX, BN2_COLS = 5.0, 5
@@ -434,26 +436,27 @@ BN2_LANES: dict[str, tuple[Leg, ...]] = {
     "C": LANES["C"].legs,
 }
 check(tally(row for rows in BN2_HALVES.values() for row in rows)
-      == tally((r.descriptor, r.count, r.transport) for r in forces.force_rows("bn2")),
+      == tally(forces.force_rows("bn2")),
       "BN2_HALVES no longer split battalion 2's rows at FORCE_SCALE: re-split them")
 
 
 def bn1_tanks(teams: int) -> int:
     """Battalion 1's tanks (forces.BN1_TANKS) with `teams` company teams sent: B1's %2."""
-    return sum(n for t in BN1_WAVES if t.team <= teams for unit, n, _ in t.wave.rows if unit in forces.BN1_TANKS)
+    return sum(r.count for t in BN1_WAVES if t.team <= teams for r in t.wave.rows if r.unit in forces.BN1_TANKS)
 
 
 # The difficulty knobs, (Easy, Medium, Hard): each a script variable that mission.difficulty sets at load.
-KNOBS: dict[str, tuple[int, int, int]] = {
-    "ts_fall_n": tuple(forces.threshold("fall", share=s) for s in FALL_SHARES),
-    "ts_teams": TEAMS,
-    "ts_cool_s": COOLDOWN_S,
-    "ts_b1_tanks": tuple(bn1_tanks(k) for k in TEAMS),
-    "ts_b1_need": tuple(bn1_tanks(k) - share_count(forces.SHARES["bn1"], bn1_tanks(k)) for k in TEAMS),
-    "ts_sweep3": SWEEP3,
-    "ts_kill_pct": tuple(round(s * 100) for s in STRIKE_KILL_SHARES),   # the strike's kill, % of battalion 2
+KNOBS: dict[str, Knobs] = {
+    "ts_fall_n": Knobs(*(forces.threshold("fall", share=s) for s in FALL_SHARES)),
+    "ts_teams": Knobs(*TEAMS),
+    "ts_cool_s": Knobs(*COOLDOWN_S),
+    "ts_b1_tanks": Knobs(*(bn1_tanks(k) for k in TEAMS)),
+    "ts_b1_need": Knobs(*(bn1_tanks(k) - share_count(forces.SHARES["bn1"], bn1_tanks(k)) for k in TEAMS)),
+    "ts_sweep3": Knobs(*SWEEP3),
+    "ts_kill_pct": Knobs(*(round(s * 100) for s in STRIKE_KILL_SHARES)),   # the strike's kill, % of battalion 2
 }
-check(len(set(KNOBS["ts_kill_pct"])) == 3, "strike_kill branches on ts_kill_pct's value: the three shares must differ")
+check(len({KNOBS["ts_kill_pct"].at(level) for level in (EASY, MEDIUM, HARD)}) == 3,
+      "strike_kill branches on ts_kill_pct's value: the three shares must differ")
 
 
 # --------------------------------------------------------------------------- NATO's fighter sweeps (design 6.3)
@@ -517,8 +520,8 @@ def garrison_items() -> list[LdItem]:
     (GARRISON_POSTS), named TS_Garrison_01, ... in table order."""
     out: list[LdItem] = []
     for row in forces.force_rows("garrison"):
-        at, spacing = GARRISON_POSTS[row.descriptor]
-        names = [(f"TS_Garrison_{len(out) + k + 1:02d}", row.descriptor) for k in range(row.count)]
+        at, spacing = GARRISON_POSTS[row.unit]
+        names = [(f"TS_Garrison_{len(out) + k + 1:02d}", row.unit) for k in range(row.count)]
         out += placed_units(MAP, at, names, spacing, row.count, "garrison", camp=profile.camp_index(ENEMY),
                             rotation=GARRISON_FACING)
     return out
@@ -542,7 +545,7 @@ def bn2_items() -> list[LdItem]:
     order (modkit.ops.mission.placed_units)."""
     out: list[LdItem] = []
     for half, rows in BN2_HALVES.items():
-        units = [unit for unit, n, _ in rows for _ in range(n)]
+        units = [r.unit for r in rows for _ in range(r.count)]
         names = [(f"TS_Bn2_{len(out) + k + 1:02d}", unit) for k, unit in enumerate(units)]
         out += placed_units(MAP, BN2_POSTS[half], names, BN2_SPACING_PX, BN2_COLS, f"bn2_{half.lower()}",
                             camp=profile.camp_index(ENEMY), hidden=True, rotation=BN2_FACING)
@@ -611,7 +614,7 @@ def load_deck(ctx: Ctx) -> Node:
     Soviet player's supply (forces.SUPPLY), then, beside each other, a LockDeckUnit by type for each of
     forces.START_LOCKS until FALLEN = 1 (shapes.lock_card: a race that never finishes before the unlock, so the locks
     go last, in one Simultaneous)."""
-    cards = [add_card(ctx, unit, n, transport=carrier) for unit, n, carrier in (*forces.START_ADDS, *forces.SUPPLY)]
+    cards = [add_card(ctx, c.unit, c.count, transport=c.transport) for c in (*forces.START_ADDS, *forces.SUPPLY)]
     fallen = ctx.int_var(FALLEN)
     return g_seq([*cards, g_simul([lock_card(ctx, unit, g_cmp(fallen, 1)) for unit in forces.START_LOCKS])])
 
@@ -645,10 +648,10 @@ def end_funnel(ctx: Ctx) -> Node:
 
 # Each fire's battery, by its group: the force groups whose rows it creates (forces.ROWS: 2S7M x6, BM-27 x6, or both
 # for the division fire plan).
-BATTERIES: dict[str, tuple[tuple[str, int], ...]] = {
-    HEAVY: tuple((r.descriptor, r.count) for r in forces.force_rows("guns_heavy")),
-    ROCKETS: tuple((r.descriptor, r.count) for r in forces.force_rows("guns_rockets")),
-    GUNS: tuple((r.descriptor, r.count) for g in ("guns_heavy", "guns_rockets") for r in forces.force_rows(g)),
+BATTERIES: dict[str, tuple[ForceRow, ...]] = {
+    HEAVY: tuple(forces.force_rows("guns_heavy")),
+    ROCKETS: tuple(forces.force_rows("guns_rockets")),
+    GUNS: tuple(r for g in ("guns_heavy", "guns_rockets") for r in forces.force_rows(g)),
 }
 
 
@@ -662,7 +665,7 @@ def salvo(ctx: Ctx, battery: str, target: str) -> list[Node]:
     then the battery removed (KillAllUnit, Vanished [[vanished-removal]]). Created guns come with full ammunition: no
     SetAmmo."""
     group, spawn = ctx.group(battery), ctx.tag(GUN_SPAWN)
-    return [*(create(ctx, GUN_CAMP, group, n, spawn, unit_path(unit)) for unit, n in BATTERIES[battery]),
+    return [*(create(ctx, GUN_CAMP, group, r.count, spawn, unit_path(r.unit)) for r in BATTERIES[battery]),
             g_ignored(group), g_wait(FIRE_LEAD_S), order(group, SHOOT_ON_POSITION, ctx.tag(target)),
             g_wait(FIRE_HOLD_S), g_vanish(group)]
 
@@ -681,7 +684,8 @@ def cooldown(ctx: Ctx) -> Node:
     difficulty, Medium's the last else (the difficulty fallback). The knob is the one source: the branches read its
     value, and their waits are KNOBS'."""
     cool = ctx.int_var("ts_cool_s")
-    easy, medium, hard = KNOBS["ts_cool_s"]
+    knob = KNOBS["ts_cool_s"]
+    easy, medium, hard = knob.easy, knob.medium, knob.hard
     return g_if(g_cmp(cool, easy), g_seq([g_wait(easy)]),
                 g_if(g_cmp(cool, hard), g_seq([g_wait(hard)]), g_seq([g_wait(medium)])))
 
@@ -744,7 +748,7 @@ def phase2(ctx: Ctx) -> Node:
     joueur = ctx.camp(PLAYER)
     return g_seq([g_until(g_cmp(ctx.int_var(FALLEN), 1)), g_simul([g_grant(joueur, FALL_GRANT)]),
                   g_income(joueur, FALL_INCOME), g_wait(RESERVE_DELAY_S),
-                  *(add_card(ctx, unit, n, transport=carrier) for unit, n, carrier in forces.RESERVE),
+                  *(add_card(ctx, c.unit, c.count, transport=c.transport) for c in forces.RESERVE),
                   g_wait(PHASE2_S - RESERVE_DELAY_S), g_set(ctx.int_var(PH3), 1)])
 
 
@@ -821,7 +825,7 @@ def bn1_wave(ctx: Ctx, t: Team) -> Node:
     sent = done if not t.team else g_and(done, g_cmp(ctx.int_var("ts_teams"), t.team, GE))
     body = wave(ctx, t.wave._replace(offset=0.0), LANES, side=ENEMY, prefix=BN1, board_s=BOARD_S,
                 track=(TANKS, forces.BN1_TANKS), before_route=wave_roe, final=lambda g: wave_end(ctx, g))
-    tanks = sum(n for unit, n, _ in t.wave.rows if unit in forces.BN1_TANKS)
+    tanks = sum(r.count for r in t.wave.rows if r.unit in forces.BN1_TANKS)
     made = [g_modify(ctx.int_var("ts_b1_made"), ADD, tanks)] if tanks else []
     go = g_if(sent, g_seq([*made, g_compete([body, g_until(g_cmp(ctx.int_var(BN1_OFF), 1))])]))
     return g_seq([g_wait(t.wave.offset), go] if t.wave.offset else [go])
@@ -893,8 +897,10 @@ def fire_missions(ctx: Ctx) -> Node:
 
     mission = g_seq([g_set(pick1, CHOICE_NONE), g_set(ans1, CHOICE_NONE), g_set(pick2, CHOICE_NONE),
                      g_set(ans2, CHOICE_NONE), g_set(asking, 1),
-                     g_choice("ts_dfire1", *BUTTONS["ts_dfire1"], camp, pick1), g_set(ans1, other=pick1),
-                     g_choice("ts_dfire2", *BUTTONS["ts_dfire2"], camp, pick2), g_set(ans2, other=pick2),
+                     g_choice("ts_dfire1", BUTTONS["ts_dfire1"].yes, BUTTONS["ts_dfire1"].no, camp, pick1),
+                     g_set(ans1, other=pick1),
+                     g_choice("ts_dfire2", BUTTONS["ts_dfire2"].yes, BUTTONS["ts_dfire2"].no, camp, pick2),
+                     g_set(ans2, other=pick2),
                      g_set(asking),
                      g_if(g_cmp(ans1, NOW), g_seq([at(ROCKETS)]), g_seq([at(HEAVY)])),
                      g_simul([g_hint("ts_hreload", HINT_S, "shint")]), cooldown(ctx)], runs=FOREVER)
@@ -966,8 +972,9 @@ def bn2_reveal(ctx: Ctx) -> list[Node]:
               g_union(ctx.group(BN2), list(halves.values())),
               g_union(ctx.group(BN2_TANKS_G), bn2_tags(ctx, units=forces.BN2_TANKS))]
     for h, rows in BN2_HALVES.items():
-        unions += [g_union(ctx.group(f"{BN2}_{h.lower()}_inf"), bn2_tags(ctx, h, [u for u, _, t in rows if t])),
-                   g_union(ctx.group(f"{BN2}_{h.lower()}_ifv"), bn2_tags(ctx, h, [t for _, _, t in rows if t]))]
+        riflemen, carriers = [r.unit for r in rows if r.transport], [r.transport for r in rows if r.transport]
+        unions += [g_union(ctx.group(f"{BN2}_{h.lower()}_inf"), bn2_tags(ctx, h, riflemen)),
+                   g_union(ctx.group(f"{BN2}_{h.lower()}_ifv"), bn2_tags(ctx, h, carriers))]
     return [g_spawn(bn2_tags(ctx)), *unions]
 
 
@@ -1009,7 +1016,7 @@ def strike_kill(ctx: Ctx) -> Node:
     their spawn tags): an IfThenElse on the knob's value, Medium's the last else (the difficulty fallback), as
     cooldown branches."""
     pct = ctx.int_var("ts_kill_pct")
-    easy, _, hard = KNOBS["ts_kill_pct"]
+    easy, hard = KNOBS["ts_kill_pct"].easy, KNOBS["ts_kill_pct"].hard
 
     def kill(level: int) -> Node:
         return g_seq([g_kill(*(ctx.tag(name) for name in STRIKE_KILLS[level]), cause=STRIKE_CAUSE)])
@@ -1060,7 +1067,7 @@ def release(ctx: Ctx) -> Node:
     quiet = g_and(g_cmp(busy), g_cmp(ctx.int_var("ts_fire_open")), g_cmp(ctx.int_var("ts_plan_open")))
     return g_seq([g_wait(RELEASE_ASK_S), g_compete([g_until(quiet), g_wait(RELEASE_MAX_WAIT_S)]), g_set(busy, 1),
                   g_set(pick, CHOICE_NONE),
-                  g_choice("ts_drel", *BUTTONS["ts_drel"], ctx.camp(PLAYER), pick),
+                  g_choice("ts_drel", BUTTONS["ts_drel"].yes, BUTTONS["ts_drel"].no, ctx.camp(PLAYER), pick),
                   g_if(g_cmp(pick, NOW), g_seq([g_set(choice, RELEASED), strike(ctx)]),
                        g_seq([g_set(choice, WITHHELD), g_set(busy), g_simul([g_hint("ts_hwith", HINT_S, "shint")])]))])
 

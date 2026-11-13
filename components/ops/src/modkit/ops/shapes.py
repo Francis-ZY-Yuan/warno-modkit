@@ -30,6 +30,7 @@ from modkit.ops.bricks import (
 from modkit.ops.graph import TRUE, Imp, Node, Str, i32, loc, walk
 from modkit.ops.leveldesign import LdItem, gd_tags
 from modkit.ops.maps import StockMap
+from modkit.ops.models import CampRow
 from modkit.ops.script import BATTLE_PHASE, FOREVER  # noqa: F401  (shared constants, re-exported)
 from modkit.ops.zones import heading, rect_polygon
 
@@ -119,11 +120,6 @@ def nuke_wrapper(export: str, position: tuple[float, float, float], radius_physi
                                                  ("parRadiusSuppress", radius_suppress)))
 
 
-# One camp of the template's CampList: export name, TGDVariableCamp scalars before PlayerName as (property, value
-# tag, value), and its SetDeck id.
-CampRow = tuple[str, tuple[tuple[str, int, int], ...], str]
-
-
 # --------------------------------------------------------------------------- frame
 
 @dataclass(frozen=True)
@@ -139,16 +135,16 @@ class Beat:
 def camp_nodes(camps: Sequence[CampRow], tokens: Mapping[str, str]) -> dict[str, Node]:
     """The template's TGDVariableCamps (Survivors S#109-#112) by export name, in CampList order, each named by its
     PlayerName token in `tokens` (Scripting/Localization)."""
-    return {name: Node("TGDVariableCamp", [*((p, Value(tag, v)) for p, tag, v in scalars),
-                                           ("PlayerName", loc(tokens[name]))],
-                       export=f"{GD}/RootDescriptor/{name}")
-            for name, scalars, _ in camps}
+    return {row.name: Node("TGDVariableCamp", [*((p, Value(tag, v)) for p, tag, v in row.scalars),
+                                               ("PlayerName", loc(tokens[row.name]))],
+                           export=f"{GD}/RootDescriptor/{row.name}")
+            for row in camps}
 
 
 def setdeck_block(camps: Mapping[str, Node], rows: Sequence[CampRow]) -> list[Node]:
     """One SetDeck per camp row (Survivors S#117-#120), each with its row's deck."""
-    return [Node("TGDDescriptorSetDeck", [("Camp", camps[name]), ("DeckIdentifier", Str(deck))])
-            for name, _, deck in rows]
+    return [Node("TGDDescriptorSetDeck", [("Camp", camps[row.name]), ("DeckIdentifier", Str(row.deck))])
+            for row in rows]
 
 
 class Ctx:

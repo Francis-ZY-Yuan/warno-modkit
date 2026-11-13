@@ -59,6 +59,7 @@ from modkit.ops.bricks import NAME_PROP
 from modkit.ops.graph import TRUE, Imp, Node, all_values, build_graph, decode, nodes_of, prop_nodes, walk
 from modkit.ops.items import Item
 from modkit.ops.leveldesign import GD_TAG_CLASS, LD_FILE, TAG_ID, ZONE_FILES, LdItem, read_ld_items
+from modkit.ops.models import ForceRow
 from modkit.ops.rekey import DBG, DEF_EXTS, TAG, TAG_CLASS, TXN, DumpRow, def_entry, def_path
 from modkit.ops.script import BRICK_DEFAULT, BRICK_FORCE_HIDE, PROD_MENU_SWITCH
 from modkit.ops.strings import StringError, check_glyphs, check_parity, check_titles, stock_chars
@@ -2267,10 +2268,10 @@ def shoot_on_position_bands(archive: str | None = None) -> dict[str, tuple[float
     return out
 
 
-def deck_packs(decks: str, packs: str, identifier: str) -> list[tuple[str, int, str | None]]:
-    """The packs of the deck `identifier` as (unit, number, transport or None), bare stock names, in its DeckPackList
-    order: from the SDK's Decks.ndf text `decks` (the TDeckDescriptor whose DeckIdentifier it is) and DeckPacks.ndf
-    text `packs` (each pack's Unit, Number and Transport)."""
+def deck_packs(decks: str, packs: str, identifier: str) -> list[ForceRow]:
+    """The packs of the deck `identifier` as rows (unit, number, transport or None), bare stock names, in its
+    DeckPackList order: from the SDK's Decks.ndf text `decks` (the TDeckDescriptor whose DeckIdentifier it is) and
+    DeckPacks.ndf text `packs` (each pack's Unit, Number and Transport)."""
     blocks = [b for b in re.split(r"(?m)^export ", decks) if f'DeckIdentifier = "{identifier}"' in b]
     check(len(blocks) == 1, f"{len(blocks)} stock decks are named {identifier}")
     bodies = {m.group(1): m.group(2) for m in re.finditer(
@@ -2280,12 +2281,12 @@ def deck_packs(decks: str, packs: str, identifier: str) -> list[tuple[str, int, 
     for name in re.findall(r"~/(Descriptor_Deck_Pack_\w+)", listed.group(1) if listed else ""):
         body = bodies[name]
         carrier = re.search(r"Transport = \$/GFX/Unit/Descriptor_Unit_(\w+)", body)
-        out.append((re.search(r"\bUnit = \$/GFX/Unit/Descriptor_Unit_(\w+)", body).group(1),
-                    int(re.search(r"\bNumber = (\d+)", body).group(1)), carrier.group(1) if carrier else None))
+        out.append(ForceRow(re.search(r"\bUnit = \$/GFX/Unit/Descriptor_Unit_(\w+)", body).group(1),
+                            int(re.search(r"\bNumber = (\d+)", body).group(1)), carrier.group(1) if carrier else None))
     return out
 
 
-def stock_deck_packs(identifier: str, archive: str | None = None) -> list[tuple[str, int, str | None]]:
+def stock_deck_packs(identifier: str, archive: str | None = None) -> list[ForceRow]:
     """deck_packs of the stock deck `identifier`, from DECK_DATABASE in the unit database archive."""
     archive = unit_archive(archive)
     return deck_packs(*(database_text(archive, inner) for inner in DECK_DATABASE), identifier)

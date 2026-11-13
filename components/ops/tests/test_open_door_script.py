@@ -10,6 +10,7 @@ from modkit.ops import gates, shapes
 from modkit.ops.bricks import g_end_game, g_seq, unit_path
 from modkit.ops.files import read_file
 from modkit.ops.graph import Node, decode, i32, prop_nodes, walk
+from modkit.ops.models import ForceRow, Knobs
 from modkit.ops.profile import SURVIVORS, Content
 from modkit.ops.testing import (
     cmp_of, end_game, last, objective_named, of, parent_of, prop, sets, subs, token,
@@ -80,16 +81,17 @@ class Script(unittest.TestCase):
         (deck,) = [b for b in mission.BEATS if b.check == "deck"]
         seq = deck.build(mission.Ctx())
         cards = subs(seq)[:-1]
-        want = [*((u, n, t, 0) for u, n, t in mission.REARGUARD_CARDS),
-                *((u, n, None, None)
-                  for u, n in (*mission.SUPPORT_CARDS, *mission.FOREST_CARDS, *mission.SOVIET_CARDS))]
+        want = [*((c.unit, c.count, c.transport, 0) for c in mission.REARGUARD_CARDS),
+                *((c.unit, c.count, None, None)
+                  for c in (*mission.SUPPORT_CARDS, *mission.FOREST_CARDS, *mission.SOVIET_CARDS))]
         self.assertEqual([(prop(c, "TypeUnit").path, prop(c, "NbUnitsToAdd").v,
                            prop(c, "Transporter").path if prop(c, "Transporter") is not None else None,
                            prop(c, "Experience").v if prop(c, "Experience") is not None else None) for c in cards],
                          [(unit_path(u), n, unit_path(t) if t else None, e) for u, n, t, e in want])
-        self.assertEqual([u for u, _, _ in mission.REARGUARD_CARDS],
+        self.assertEqual([c.unit for c in mission.REARGUARD_CARDS],
                          ["M1_Abrams_US", "Rifles_US", "M901_TOW_US", "M113_Dragon_US", "AH1F_Cobra_US"])
-        self.assertEqual(mission.SOVIET_CARDS, (("T80U_SOV", 2), ("Ka_50_SOV", 2), ("TOS1_Buratino_SOV", 2)))
+        self.assertEqual(mission.SOVIET_CARDS,
+                         (ForceRow("T80U_SOV", 2), ForceRow("Ka_50_SOV", 2), ForceRow("TOS1_Buratino_SOV", 2)))
         for c in cards[-3:]:
             self.assertEqual([k for k, _ in c.props], ["Camp", "NbUnitsToAdd", "TypeUnit"])
         self.assertTrue(all(prop(c, "Camp").export == JOUEUR for c in cards))
@@ -104,8 +106,8 @@ class Script(unittest.TestCase):
     def test_knobs(self):
         """The difficulty knobs, (Easy, Medium, Hard): B1 from design 5.7's shares of the first echelon
         (forces.threshold)."""
-        self.assertEqual(mission.KNOBS, {"od_b1_n": (10, 15, 20), "od_smin": (15, 20, 24), "od_b6_s": (90, 120, 150),
-                                      "od_surr_pct": (45, 35, 25)})
+        self.assertEqual(mission.KNOBS, {"od_b1_n": Knobs(10, 15, 20), "od_smin": Knobs(15, 20, 24),
+                                      "od_b6_s": Knobs(90, 120, 150), "od_surr_pct": Knobs(45, 35, 25)})
         self.assertEqual(forces.THRESHOLDS["B1"], (0.28, 0.42, 0.55))
 
     def run_difficulty(self, level: int | None) -> tuple[dict[str, int], list[tuple[str, bool]]]:
@@ -172,7 +174,7 @@ class Script(unittest.TestCase):
             with self.subTest(difficulty=name):
                 values, hints = self.run_difficulty(level)
                 col = mission.MEDIUM if level is None else level
-                self.assertEqual(values, {"od_diff": col, **{k: mission.KNOBS[k][col] for k in knobs}})
+                self.assertEqual(values, {"od_diff": col, **{k: mission.KNOBS[k].at(col) for k in knobs}})
                 self.assertEqual(hints, [(f"od_hdif{9 if level is None else level}", True)])
 
     def test_flags_declared(self):
@@ -230,11 +232,11 @@ class Script(unittest.TestCase):
         names = {"T80U_SOV": ("T-80U tanks", "辆T-80U坦克"), "Ka_50_SOV": ("Ka-50 helicopters", "架Ka-50直升机"),
                  "TOS1_Buratino_SOV": ("TOS-1 rocket launchers", "辆TOS-1火箭炮")}
         numbers = {2: ("two", "两")}
-        self.assertEqual([u for u, _ in mission.SOVIET_CARDS], list(names))
-        for unit, n in mission.SOVIET_CARDS:
-            with self.subTest(unit=unit):
-                self.assertIn(f"{numbers[n][0]} {names[unit][0]}", en)
-                self.assertIn(f"{numbers[n][1]}{names[unit][1]}", zh)
+        self.assertEqual([c.unit for c in mission.SOVIET_CARDS], list(names))
+        for c in mission.SOVIET_CARDS:
+            with self.subTest(unit=c.unit):
+                self.assertIn(f"{numbers[c.count][0]} {names[c.unit][0]}", en)
+                self.assertIn(f"{numbers[c.count][1]}{names[c.unit][1]}", zh)
         self.assertIn("captured Soviet equipment", en)
         self.assertNotRegex(en.lower(), r"\btabs?\b")
         self.assertNotIn("分类", zh)
@@ -412,7 +414,7 @@ class Endings(unittest.TestCase):
         op = prop(cond, "ComparaisonNbUnits")
         self.assertEqual((prop(op, "OperatorType").v, prop(op, "Value").v), (2, mission.REAR_N))
         types = [prop(c, "TypeUnit").path for c in prop(prop(cond, "Contrainte"), "ContrainteList")]
-        want = [r.descriptor for r in forces.force_rows("main_body") if r.transport is None]
+        want = [r.unit for r in forces.force_rows("main_body") if r.transport is None]
         self.assertEqual(types, [unit_path(u) for u in dict.fromkeys(want)])
         self.assertNotIn(unit_path("MotRifles_SOV"), types)
         self.assertEqual(sets(list(walk([latch])), ctx.int_var("od_end")), [mission.END_REAR])

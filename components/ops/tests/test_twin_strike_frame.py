@@ -146,7 +146,7 @@ class Profile(unittest.TestCase):
         self.assertEqual(profile.CAMPS[profile.PLAYER], "joueur")
         self.assertEqual({side: profile.camp_index(side) for side in profile.CAMPS},
                          {"Soviet": 0, "SovietAlly": 1, "NATO2": 2, "NATO": 3})
-        self.assertEqual(set(profile.CAMP_TOKENS), {name for name, _, _ in SOVIET_PLAYER_CAMP_ROWS})
+        self.assertEqual(set(profile.CAMP_TOKENS), {row.name for row in SOVIET_PLAYER_CAMP_ROWS})
 
     def test_settings(self):
         """Survivors on Twin Cities: no map Details copied (the cut and the camera are generated), the cut's and the
@@ -199,7 +199,7 @@ class Items(unittest.TestCase):
         post, inside the village's command zone and its detector circle, facing the Soviet box."""
         garrison = spawns("garrison")
         self.assertEqual([it.unit for it in garrison],
-                         [r.descriptor for r in forces.force_rows("garrison") for _ in range(r.count)])
+                         [r.unit for r in forces.force_rows("garrison") for _ in range(r.count)])
         zone, ring = item(op.VILLAGE_ZONE), item(op.VILLAGE_RING)
         radius = ring.radius_gru * GRU_WORLD
         for it in garrison:
@@ -429,7 +429,7 @@ class Strings(unittest.TestCase):
         for lang in LANGS:
             keys = gates.ingame_keys(os.path.join(str(paths.extracted_root()), INGAME_DIC.format(lang=lang)))
             for dialog, pair in strings.BUTTONS.items():
-                for button in pair:
+                for button in (pair.yes, pair.no):
                     with self.subTest(lang=lang, button=button):
                         self.assertIn(trad.token_key(button), keys)
 
@@ -448,12 +448,12 @@ class Script(unittest.TestCase):
         Main's SetDecks give each its deck."""
         (root,) = [nd for nd in self.nodes if nd.export == f"{GD}/RootDescriptor"]
         camps = prop(root, "CampList")
-        self.assertEqual([last(c) for c in camps], [name for name, _, _ in SOVIET_PLAYER_CAMP_ROWS])
-        for camp, (name, scalars, _) in zip(camps, SOVIET_PLAYER_CAMP_ROWS):
-            self.assertEqual([(p, v.v) for p, v in camp.props[:-1]], [(p, v) for p, _, v in scalars])
-            self.assertEqual(token(prop(camp, "PlayerName")), profile.CAMP_TOKENS[name])
+        self.assertEqual([last(c) for c in camps], [row.name for row in SOVIET_PLAYER_CAMP_ROWS])
+        for camp, row in zip(camps, SOVIET_PLAYER_CAMP_ROWS):
+            self.assertEqual([(p, v.v) for p, v in camp.props[:-1]], [(p, v) for p, _, v in row.scalars])
+            self.assertEqual(token(prop(camp, "PlayerName")), profile.CAMP_TOKENS[row.name])
         decks = [(last(prop(n, "Camp")), prop(n, "DeckIdentifier").text) for n in subs(self.main)[:4]]
-        self.assertEqual(decks, [(name, deck) for name, _, deck in SOVIET_PLAYER_CAMP_ROWS])
+        self.assertEqual(decks, [(row.name, row.deck) for row in SOVIET_PLAYER_CAMP_ROWS])
         self.assertEqual(decks[0], ("joueur", "OP_BASE_RJ_Player"))
 
     def test_setup_ends_with_the_village_owner_and_the_camera_opens_after_loading_done(self):
@@ -505,8 +505,8 @@ class Script(unittest.TestCase):
         *adds, locks = subs(deck)
         got = [(prop(n, "TypeUnit").path, prop(n, "NbUnitsToAdd").v,
                 prop(n, "Transporter").path if prop(n, "Transporter") else None) for n in adds]
-        self.assertEqual(got, [(unit_path(u), n, unit_path(t) if t else None)
-                               for u, n, t in (*forces.START_ADDS, *forces.SUPPLY)])
+        self.assertEqual(got, [(unit_path(c.unit), c.count, unit_path(c.transport) if c.transport else None)
+                               for c in (*forces.START_ADDS, *forces.SUPPLY)])
         self.assertTrue(all(last(prop(n, "Camp")) == "joueur" for n in adds))
         self.assertEqual(locks.cls, "TGDDescriptorSimultaneous")
         units = []

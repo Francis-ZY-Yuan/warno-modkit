@@ -213,7 +213,7 @@ class Items(unittest.TestCase):
         for group, (prefix, point, cols) in mission.JAWS.items():
             with self.subTest(jaw=group):
                 jaw = [it for it in self.items["fixed"] if it.group == group]
-                want = [r.descriptor for r in forces.force_rows(group) for _ in range(r.count)]
+                want = [r.unit for r in forces.force_rows(group) for _ in range(r.count)]
                 self.assertEqual([it.unit for it in jaw], want)
                 self.assertEqual(len(jaw), forces.group_total(forces.ROWS, group))
                 self.assertEqual({(it.ranking, it.camp, it.disable_auto_spawn) for it in jaw}, {("Camp_0", 0, True)})

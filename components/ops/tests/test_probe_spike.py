@@ -80,7 +80,7 @@ def rows_of(rows: list[ForceRow], camp: str,
             at: str | None = None) -> list[tuple[str, int, tuple[float, float], str]]:
     """What creates_of should find for the force `rows`, created in side `camp` (profile.CAMPS) at point `at` or else
     each row's spawn."""
-    return sorted((unit_path(r.descriptor), r.count, POINTS[at or r.spawn],
+    return sorted((unit_path(r.unit), r.count, POINTS[at or r.spawn],
                    f"$/GDScript/RootDescriptor/{profile.CAMPS[camp]}") for r in rows)
 
 
@@ -410,7 +410,7 @@ class CombatBeats(unittest.TestCase):
             self.assertEqual(cond.cls, "TGDConditionDetectUnitDansDetecteur")
             self.assertIs(prop(cond, "Detecteur"), ring_tag)
             types = {prop(c, "TypeUnit").path for c in of(list(graph.walk([prop(cond, "Contrainte")])), "OnUnitType")}
-            self.assertEqual(types, {unit_path(r.descriptor) for r in probe_rows})
+            self.assertEqual(types, {unit_path(r.unit) for r in probe_rows})
             return prop(cond, "ComparaisonNbUnits")
 
         (hint,) = [h for h in of(nodes, "LDHint") if token(prop(h, "Info")) == "od_h4r"]

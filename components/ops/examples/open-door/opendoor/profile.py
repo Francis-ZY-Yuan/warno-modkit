@@ -24,6 +24,7 @@ from modkit.ops.gates import grid_gate, menu_order_gate, template_name_gate, uni
 from modkit.ops.graph import Node
 from modkit.ops.leveldesign import LD_FILE, ZONE_FILES, LdItem
 from modkit.ops.maps import GEISA
+from modkit.ops.models import CampRow
 from modkit.ops.profile import SURVIVORS, SURVIVORS_PLAYER_DECK, ExtraGate, OpProfile
 from modkit.ops.rekey import ScalarEdit
 from modkit.ops.shapes import Ctx as ShapesCtx
@@ -50,11 +51,13 @@ PLAYER = "NATO"
 PLAYER_DECK = "OP_BASE_BB_Player"
 # Survivors' camps in CampList order: export name, TGDVariableCamp scalars before PlayerName (S#109-#112), SetDeck id
 # (S#117-#120; the player gets PLAYER_DECK, the other three keep Survivors').
-CAMP_ROWS = (
-    ("joueur", (("AllianceStyle", 0x02, 3),), PLAYER_DECK),
-    ("Allie", (("AllianceStyle", 0x02, 3),), "OP_NORTH_SURV_BEL"),
-    ("ordinateur_DDR", (("Alliance", 0x03, 1), ("AllianceStyle", 0x02, 4), ("Nationalite", 0x02, 1)), "OP_NORTH_SURV_DDR"),
-    ("ordinateur_SOV", (("Alliance", 0x03, 1), ("AllianceStyle", 0x02, 4), ("Nationalite", 0x02, 1)), "OP_NORTH_SURV_SOV"),
+CAMP_ROWS: tuple[CampRow, ...] = (
+    CampRow("joueur", (("AllianceStyle", 0x02, 3),), PLAYER_DECK),
+    CampRow("Allie", (("AllianceStyle", 0x02, 3),), "OP_NORTH_SURV_BEL"),
+    CampRow("ordinateur_DDR", (("Alliance", 0x03, 1), ("AllianceStyle", 0x02, 4), ("Nationalite", 0x02, 1)),
+            "OP_NORTH_SURV_DDR"),
+    CampRow("ordinateur_SOV", (("Alliance", 0x03, 1), ("AllianceStyle", 0x02, 4), ("Nationalite", 0x02, 1)),
+            "OP_NORTH_SURV_SOV"),
 )
 # Each camp's PlayerName (Scripting/Localization). The string table holds these four tokens.
 CAMP_TOKENS = {"joueur": "od_cnato", "Allie": "od_cdecoy", "ordinateur_DDR": "od_cddr", "ordinateur_SOV": "od_csov"}

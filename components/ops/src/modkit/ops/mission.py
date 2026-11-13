@@ -31,13 +31,12 @@ from modkit.ops.bricks import (
 from modkit.ops.forces import formation
 from modkit.ops.graph import TRUE, Node, i32, template_scalars, walk
 from modkit.ops.leveldesign import LdItem
+from modkit.ops.models import Buttons, CampRow, Ending, ForceRow, Knobs
 from modkit.ops.shapes import (
     BATTLE_PHASE, DIFF_NONE, EASY, FAST_MOVE_AND_ATTACK, FOREVER, GD, GE, HARD, HINT_S, LE, MEDIUM, PACT_ALLIANCE,
-    Beat, CampRow, Ctx, Minimap, create, dialog_tokens, order, seconds_while, setdeck_block,
+    Beat, Ctx, Minimap, create, dialog_tokens, order, seconds_while, setdeck_block,
 )
 
-Row = tuple[str, int, "str | None"]   # (unit descriptor, count, transport descriptor or None): a force row
-Ending = tuple[str, int, bool]        # (dialog token, EVictoryType, whether the player loses): an end_funnel row
 CHOICE_NONE = 2                       # a choice variable's value before an answer: no button gives it (0 or 1)
 
 
@@ -113,26 +112,26 @@ class Wave(NamedTuple):
     key: int
     offset: float
     lane: str
-    rows: tuple[Row, ...]
+    rows: tuple[ForceRow, ...]
 
 
-def create_rows(ctx: Ctx, side: str, rows: Sequence[Row], at: Node, group: Node, inf: Node | None = None,
+def create_rows(ctx: Ctx, side: str, rows: Sequence[ForceRow], at: Node, group: Node, inf: Node | None = None,
                 ifv: Node | None = None, tracked: tuple[Node, Collection[str]] | None = None) -> list[Node]:
     """One CreateUnitOnPosition (shapes.create) per force row of `rows`, in `side`'s camp at tag `at`, in row order:
     a row with a transport (riflemen) into `inf`, a row of their carriers (a descriptor some row names as its
     transport) into `ifv`, a row of a type of `tracked` (a group and unit types, none of them riflemen or carriers)
     into its group, every other row into `group`. `inf` and `ifv` are needed only when a row has a transport."""
-    carriers = {t for _, _, t in rows if t}
+    carriers = {r.transport for r in rows if r.transport}
     check(not carriers or (inf is not None and ifv is not None),
           f"create_rows: rows with transports {sorted(carriers)} need the inf and ifv groups")
     trk, types = tracked if tracked is not None else (None, frozenset())
-    check(not any(unit in types and (transport or unit in carriers) for unit, _, transport in rows),
+    check(not any(r.unit in types and (r.transport or r.unit in carriers) for r in rows),
           f"create_rows: tracked types {sorted(types)} may be neither riflemen nor carriers")
 
     def into(unit: str, transport: str | None) -> Node:
         return inf if transport else ifv if unit in carriers else trk if unit in types else group
 
-    return [create(ctx, side, into(unit, transport), n, at, unit_path(unit)) for unit, n, transport in rows]
+    return [create(ctx, side, into(r.unit, r.transport), r.count, at, unit_path(r.unit)) for r in rows]
 
 
 def board(riflemen: Node, carriers: Node, timeout: float) -> Node:
@@ -164,10 +163,10 @@ def wave(ctx: Ctx, w: Wave, lanes: Mapping[str, Lane], *, side: str, prefix: str
     (RunningTheGauntlet #326 sets its counter-attack group's idle behaviour before the group's legs); `final` gives the
     route's final node (lane_route's `final`: every leg timed, then it, last). Neither given: the wave is as above."""
     group, every = ctx.group(f"{prefix}{w.key}"), ctx.group(prefix)
-    carriers = {t for _, _, t in w.rows if t}
+    carriers = {r.transport for r in w.rows if r.transport}
     inf, ifv = (ctx.group(f"{prefix}{w.key}{s}") for s in ("_inf", "_ifv")) if carriers else (None, None)
     name, types = track if track is not None else ("", frozenset())
-    trk = ctx.group(f"{prefix}{w.key}_{name}") if any(unit in types for unit, _, _ in w.rows) else None
+    trk = ctx.group(f"{prefix}{w.key}_{name}") if any(r.unit in types for r in w.rows) else None
     lane = lanes[w.lane]
     steps = [g_wait(w.offset)] if w.offset else []
     steps += create_rows(ctx, side, w.rows, ctx.tag(lane.entry), group, inf, ifv,
@@ -183,7 +182,7 @@ def wave(ctx: Ctx, w: Wave, lanes: Mapping[str, Lane], *, side: str, prefix: str
 
 # --------------------------------------------------------------------------- the dialog re-ask loop
 
-def reask_loop(token: str, buttons: tuple[str, str], camp: Node, pick: Node, ans: Node, asking: Node,
+def reask_loop(token: str, buttons: Buttons, camp: Node, pick: Node, ans: Node, asking: Node,
                gap_s: float) -> Node:
     """A two-button dialog asked again and again: Sequential(forever)[pick = ans = CHOICE_NONE, asking = 1, the
     dialog `token` (g_choice: `buttons`, INGAME tokens, shown to `camp`'s side; SelectedButton = pick), ans = pick
@@ -196,7 +195,7 @@ def reask_loop(token: str, buttons: tuple[str, str], camp: Node, pick: Node, ans
     WaitCondition(ans == ...) may end the race between the two, leaving `asking` at 1 for good. So reset `asking`
     (g_set(asking)) right after the race, in its Sequential, whichever exit won [[dialog-reask-loop]]."""
     return g_seq([g_set(pick, CHOICE_NONE), g_set(ans, CHOICE_NONE), g_set(asking, 1),
-                  g_choice(token, buttons[0], buttons[1], camp, pick),
+                  g_choice(token, buttons.yes, buttons.no, camp, pick),
                   g_set(ans, other=pick), g_set(asking), g_wait(gap_s)], runs=FOREVER)
 
 
@@ -265,8 +264,8 @@ def end_funnel(end: Node, endings: Mapping[int, Ending], export: str) -> Node:
     check(bool(values) and min(values) >= 1, f"end_funnel: ending values {values} must be 1 or more")
 
     def row(value: int) -> Node:
-        token, kind, loses = endings[value]
-        return g_seq([g_dialog(token), g_end_game(kind, PACT_ALLIANCE if loses else None)])
+        e = endings[value]
+        return g_seq([g_dialog(e.token), g_end_game(e.kind, PACT_ALLIANCE if e.loses else None)])
 
     pick = row(values[-1])
     for value in reversed(values[:-1]):
@@ -283,8 +282,8 @@ def after_launch(hint: str, delay: float) -> Node:
                   g_simul([g_hint(hint, HINT_S, "shint")])])
 
 
-def difficulty(ctx: Ctx, diff: Node, knobs: Mapping[str, tuple[int, int, int]], hint: str, hint_t: float) -> Node:
-    """`diff` = DIFF_NONE, then every `knobs` variable (by name, its (Easy, Medium, Hard) values) takes its Medium
+def difficulty(ctx: Ctx, diff: Node, knobs: Mapping[str, Knobs], hint: str, hint_t: float) -> Node:
+    """`diff` = DIFF_NONE, then every `knobs` variable (by name, its Easy, Medium and Hard values) takes its Medium
     value; then three IfThenElse on ConditionOnGameDifficulty, consecutive children of a Simultaneous with no else
     (HoldUntilRelieved #154-#156, read right after LoadingDone; Easy's condition is an empty object, #199), set `diff`
     to EASY, MEDIUM or HARD, and Easy's and Hard's overwrite the knobs. Then, if `diff` is still DIFF_NONE (no
@@ -293,12 +292,12 @@ def difficulty(ctx: Ctx, diff: Node, knobs: Mapping[str, tuple[int, int, int]], 
     and the knobs are final at load either way: a branch that fires sets them before its hint's wait, and with none
     the fallback runs at once."""
     def branch(level: int) -> Node:
-        sets = [g_set(ctx.int_var(name), values[level]) for name, values in knobs.items() if level != MEDIUM]
+        sets = [g_set(ctx.int_var(name), values.at(level)) for name, values in knobs.items() if level != MEDIUM]
         return g_if(g_difficulty(level),
                     g_simul([g_set(diff, level), *sets, after_launch(f"{hint}{level}", hint_t)]))
 
     return g_seq([g_set(diff, DIFF_NONE),
-                  *(g_set(ctx.int_var(name), values[MEDIUM]) for name, values in knobs.items()),
+                  *(g_set(ctx.int_var(name), values.medium) for name, values in knobs.items()),
                   g_simul([branch(EASY), branch(MEDIUM), branch(HARD)]),
                   g_if(g_cmp(diff, DIFF_NONE),
                        g_simul([g_set(diff, MEDIUM), after_launch(f"{hint}{DIFF_NONE}", hint_t)]))])

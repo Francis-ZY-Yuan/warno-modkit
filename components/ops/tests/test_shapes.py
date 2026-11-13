@@ -9,6 +9,7 @@ from modkit.ops.bricks import g_choice, g_cmp, g_hint, g_seq, g_start_timer
 from modkit.ops.graph import Node, walk
 from modkit.ops.leveldesign import LdItem
 from modkit.ops.maps import GEISA
+from modkit.ops.models import CampRow
 from modkit.ops.script import FOREVER
 from modkit.ops.shapes import (
     GRU_WORLD, POLL_S, REVEAL_EFFECT, TRANSPORTER_SHAPE, Ctx, Minimap, add_card, beat_hint, camp_nodes, count_ladder,
@@ -16,7 +17,8 @@ from modkit.ops.shapes import (
 )
 from modkit.ops.testing import last, of, prop, subs, token
 
-CAMPS = (("blue", (("AllianceStyle", 0x02, 3),), "DECK_BLUE"), ("red", (("Alliance", 0x03, 1),), "DECK_RED"))
+CAMPS = (CampRow("blue", (("AllianceStyle", 0x02, 3),), "DECK_BLUE"),
+         CampRow("red", (("Alliance", 0x03, 1),), "DECK_RED"))
 TOKENS = {"blue": "t_blue", "red": "t_red"}
 MAP = Minimap(GEISA, {"HILL": (100.0, 200.0)})
 

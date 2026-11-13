@@ -11,7 +11,7 @@
   id and mod folder).
 * A clone of Survivors whose player is Soviet takes the stock Soviet-player camp shape: ``SOVIET_PLAYER_CAMP_ROWS``,
   ``SOVIET_PLAYER_SIDES`` and ``SOVIET_PLAYER_DECK_SWAP`` (on ``RJ_PLAYER_DECK``, in place of
-  ``SURVIVORS_PLAYER_DECK``), and adds ``SOVIET_PLAYER_SUPPLY`` to the player's deck at load (``Card`` rows, the
+  ``SURVIVORS_PLAYER_DECK``), and adds ``SOVIET_PLAYER_SUPPLY`` to the player's deck at load (``ForceRow`` cards, the
   AddUnitToDeck card shape).
 
 Nothing here reads a module setting: two profiles build side by side in one process. Paths are relative to the stock
@@ -31,6 +31,7 @@ from modkit.core.packaging import check_mod_id
 from modkit.ops.graph import Node
 from modkit.ops.items import Item
 from modkit.ops.leveldesign import LdItem
+from modkit.ops.models import CampRow, ForceRow
 from modkit.ops.rekey import TXN, ScalarEdit, def_path
 from modkit.ops.script import BRICK_FORCE_HIDE, Templates
 
@@ -105,19 +106,19 @@ SURVIVORS_PLAYER_DECK = "OP_NORTH_SURV_PLAYER"
 RJ_PLAYER_DECK = "OP_BASE_RJ_Player"
 """RedJuggernaut's player deck (79th Guards Tank Division): a Soviet player's stock deck [[soviet-player-camp]]."""
 
-# Survivors' camps as modkit.ops.shapes.CampRow rows (export name, TGDVariableCamp scalars before PlayerName, SetDeck
-# id), in CampList order. The two Alliance 0 camps are REDFOR and PACT: the player on RJ_PLAYER_DECK and its AI ally
+# Survivors' camps as CampRow rows (export name, TGDVariableCamp scalars before PlayerName, SetDeck id), in CampList
+# order. The two Alliance 0 camps are REDFOR and PACT: the player on RJ_PLAYER_DECK and its AI ally
 # on Survivors' own Soviet deck. The two Alliance 1 camps are BLUFOR and NATO, on RedJuggernaut's NATO AI deck and
 # Survivors' Belgian deck. Nationalite 0 (NATO) is left out, as Survivors' rows leave it; so is Alliance 0 (the
 # player's alliance, so the deployment zones and arrivals stay where they are), while Alliance 1 is written
 # [[soviet-player-camp]].
-SOVIET_PLAYER_CAMP_ROWS: tuple[tuple[str, tuple[tuple[str, int, int], ...], str], ...] = (
-    ("joueur", (("AllianceStyle", 0x02, 4), ("Nationalite", 0x02, 1)), RJ_PLAYER_DECK),
-    ("Allie", (("AllianceStyle", 0x02, 4), ("Nationalite", 0x02, 1)), "OP_NORTH_SURV_SOV"),
-    ("ordinateur_DDR", (("Alliance", 0x03, 1), ("AllianceStyle", 0x02, 3)), "OP_BASE_RJ_IA"),
-    ("ordinateur_SOV", (("Alliance", 0x03, 1), ("AllianceStyle", 0x02, 3)), "OP_NORTH_SURV_BEL"),
+SOVIET_PLAYER_CAMP_ROWS: tuple[CampRow, ...] = (
+    CampRow("joueur", (("AllianceStyle", 0x02, 4), ("Nationalite", 0x02, 1)), RJ_PLAYER_DECK),
+    CampRow("Allie", (("AllianceStyle", 0x02, 4), ("Nationalite", 0x02, 1)), "OP_NORTH_SURV_SOV"),
+    CampRow("ordinateur_DDR", (("Alliance", 0x03, 1), ("AllianceStyle", 0x02, 3)), "OP_BASE_RJ_IA"),
+    CampRow("ordinateur_SOV", (("Alliance", 0x03, 1), ("AllianceStyle", 0x02, 3)), "OP_NORTH_SURV_BEL"),
 )
-"""Survivors' four camps with a Soviet player, in CampList order (shapes.CampRow rows) [[soviet-player-camp]]."""
+"""Survivors' four camps with a Soviet player, in CampList order (CampRow rows) [[soviet-player-camp]]."""
 
 # The sides of SOVIET_PLAYER_CAMP_ROWS (a side's name -> its camp's export name, shapes.Ctx's sides): the player,
 # Soviet, and its AI ally in Alliance 0; the two NATO camps in Alliance 1 [[soviet-player-camp]].
@@ -130,13 +131,10 @@ SOVIET_PLAYER_SIDES: Mapping[str, str] = MappingProxyType(
 SOVIET_PLAYER_DECK_SWAP: Mapping[str, str] = MappingProxyType({SURVIVORS_PLAYER_DECK: RJ_PLAYER_DECK})
 """The LocalPlayerDeck swap of a Soviet-player clone of Survivors: Survivors' deck -> RJ's [[soviet-player-camp]]."""
 
-Card = tuple[str, int, "str | None"]
-"""An AddUnitToDeck card (modkit.ops.shapes.add_card): (unit, count, transport or None), units by bare stock name."""
-
 # RJ_PLAYER_DECK has no supply helicopter, and its supply trucks sit only in its two tank battalions' HQ groups
-# [[soviet-player-camp]]. A Soviet player on it gets these at load (AddUnitToDeck [[add-unit-to-deck]]): the stock
-# Soviet supply truck and the medium supply helicopter.
-SOVIET_PLAYER_SUPPLY: tuple[Card, ...] = (("Ural_4320_SOV", 4, None), ("Mi_8TZ_SOV", 2, None))
+# [[soviet-player-camp]]. A Soviet player on it gets these at load (AddUnitToDeck [[add-unit-to-deck]]; ForceRow
+# cards for modkit.ops.shapes.add_card): the stock Soviet supply truck and the medium supply helicopter.
+SOVIET_PLAYER_SUPPLY: tuple[ForceRow, ...] = (ForceRow("Ural_4320_SOV", 4), ForceRow("Mi_8TZ_SOV", 2))
 """The Soviet player's supply, added at load: Ural-4320 trucks x4, Mi-8TZ helicopters x2 [[soviet-player-camp]]."""
 
 Script =Callable[[ndfbin.NdfBin], tuple[list[Node], list[Node]]]  # the template's GDScript in, (roots, exports) out

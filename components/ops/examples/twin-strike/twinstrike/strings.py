@@ -20,14 +20,15 @@ from pydantic import BaseModel, ConfigDict
 from pydantic.dataclasses import dataclass
 
 from modkit.core.models import StringTable, Texts
+from modkit.ops.models import Buttons
 
 # Each two-button dialog's buttons: stock INTERFACE_INGAME tokens, in all 8 languages (their English labels beside).
-BUTTONS: dict[str, tuple[str, str]] = {
-    "ts_dprep": ("ORD_AIARA", "ORD_HOLDF"),     # 'FIRE AT WILL', 'HOLD FIRE' (Open Door's spring)
-    "ts_dfire1": ("TC_rkt", "HPD_ARTT"),        # 'ROCKET', 'ARTILLERY'
-    "ts_dfire2": ("ZONEOTAN_A", "ZONEOTAN_B"),  # 'ALPHA', 'BRAVO'
-    "ts_dplan": ("ORD_AIARA", "ORD_HOLDF"),     # 'FIRE AT WILL', 'HOLD FIRE'
-    "ts_drel": ("UIP_YES", "UIP_NO"),           # 'Yes', 'No'
+BUTTONS: dict[str, Buttons] = {
+    "ts_dprep": Buttons("ORD_AIARA", "ORD_HOLDF"),     # 'FIRE AT WILL', 'HOLD FIRE' (Open Door's spring)
+    "ts_dfire1": Buttons("TC_rkt", "HPD_ARTT"),        # 'ROCKET', 'ARTILLERY'
+    "ts_dfire2": Buttons("ZONEOTAN_A", "ZONEOTAN_B"),  # 'ALPHA', 'BRAVO'
+    "ts_dplan": Buttons("ORD_AIARA", "ORD_HOLDF"),     # 'FIRE AT WILL', 'HOLD FIRE'
+    "ts_drel": Buttons("UIP_YES", "UIP_NO"),           # 'Yes', 'No'
 }
 
 

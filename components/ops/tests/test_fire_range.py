@@ -21,6 +21,7 @@ from modkit.ops.bricks import g_create, g_seq, unit_path
 from modkit.ops.build import details_files
 from modkit.ops.graph import Node, build_graph, decode, encode, nodes_of, u32
 from modkit.ops.leveldesign import LD_FILE, LdItem, gd_tags
+from modkit.ops.models import ForceRow
 from modkit.ops.rekey import TXN, def_path
 from modkit.ops.shapes import GRU_WORLD, SHOOT_ON_POSITION, order
 from modkit.ops.zones import playable_zone_graph, rect_polygon
@@ -151,8 +152,9 @@ class Readers(unittest.TestCase):
         self.assertEqual(gates.shoot_on_position_bands(self.zip), {unit_path("Gun_A"): (8000.0, 30000.0)})
 
     def test_deck_packs(self):
-        """A deck's packs, in its DeckPackList order, each (unit, number, transport)."""
-        self.assertEqual(gates.stock_deck_packs("DECK_A", self.zip), [("Scout_A", 2, "Car_A"), ("Gun_A", 1, None)])
+        """A deck's packs, in its DeckPackList order, each a row (unit, number, transport)."""
+        self.assertEqual(gates.stock_deck_packs("DECK_A", self.zip),
+                         [ForceRow("Scout_A", 2, "Car_A"), ForceRow("Gun_A", 1)])
         with self.assertRaisesRegex(CheckError, "0 stock decks are named NO_DECK"):
             gates.deck_packs(DECKS, PACKS, "NO_DECK")
 
@@ -312,7 +314,7 @@ class StockReaders(unittest.TestCase):
         """RedJuggernaut's player deck: 26 packs, its heavy scouts in their BMP-1P reco."""
         packs = gates.stock_deck_packs("OP_BASE_RJ_Player")
         self.assertEqual(len(packs), 26)
-        self.assertIn(("HvyScout_SOV", "BMP_1P_reco_SOV"), [(u, t) for u, _, t in packs])
+        self.assertIn(("HvyScout_SOV", "BMP_1P_reco_SOV"), [(p.unit, p.transport) for p in packs])
 
 
 if __name__ == "__main__":

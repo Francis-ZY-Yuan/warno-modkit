@@ -65,7 +65,7 @@ CAMP_TOKENS = {"joueur": "ts_csov", "Allie": "ts_cart", "ordinateur_DDR": "ts_cn
 
 def camp_index(side: str) -> int:
     """The CampList index of side `side`'s camp: a pre-placed unit's Camp (LevelDesign Spawn) and its Camp_<n>."""
-    return [name for name, _, _ in CAMP_ROWS].index(CAMPS[side])
+    return [row.name for row in CAMP_ROWS].index(CAMPS[side])
 
 
 # --------------------------------------------------------------------------- re-keying and packs
