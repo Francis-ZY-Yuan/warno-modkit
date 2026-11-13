@@ -62,6 +62,7 @@ Systems ([NOTICE](NOTICE)).
 | `warno-launch-triage` | core | go from the game's error to the cause, and end with a gate |
 | `warno-probe-and-playtest` | core | design a probe, hand a build over, debrief the play |
 | `warno-ship` | core | share a played mod: the one-click installer or the Steam Workshop |
+| `warno-localization` | core | put a mod's text into another language: the game's own labels, the language's military register and term table (Simplified Chinese first), a native review |
 | `warno-record-finding` | core | record a trial and update what it proved |
 | `warno-new-component` | core | add a component in the standard shape |
 | `warno-new-operation` | ops | build a new Operation from the examples |

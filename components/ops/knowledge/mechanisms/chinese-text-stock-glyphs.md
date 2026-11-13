@@ -34,5 +34,5 @@ character only the game's own dictionaries use.
 - Trials: [2026-11-03-sc-glyph-survey](../trials/2026-11-03-sc-glyph-survey.md), [2026-11-12-sc-glyph-every-dictionary](../trials/2026-11-12-sc-glyph-every-dictionary.md)
 - Gates: [`modkit.ops.gates.check_strings`](../../src/modkit/ops/gates.py), [`modkit.ops.strings.check_glyphs`](../../src/modkit/ops/strings.py)
 - Shapes: [`modkit.ops.strings.stock_chars`](../../src/modkit/ops/strings.py), [`modkit.core.glossary.stock_dictionaries`](../../../core/src/modkit/core/glossary.py)
-- Skills: [`components/ops/skills/warno-new-operation/SKILL.md`](../../skills/warno-new-operation/SKILL.md)
+- Skills: [`components/core/skills/warno-localization/references/zh-Hans.md`](../../../core/skills/warno-localization/references/zh-Hans.md), [`components/ops/skills/warno-new-operation/SKILL.md`](../../skills/warno-new-operation/SKILL.md)
 <!-- referenced-by:end -->

@@ -18,6 +18,7 @@ is the map of what the components know, by topic, over the one-fact-per-file rec
 | A launch or a play failed | `warno-launch-triage` |
 | Record what a launch, play, probe or survey showed | `warno-record-finding` |
 | Share a played mod | `warno-ship` |
+| Put a mod's text into another language, or extend a language's term table | `warno-localization` |
 | Add a component | `warno-new-component` |
 
 Follow the skill rather than improvising its steps. The modder plays the game; Claude never launches or drives
