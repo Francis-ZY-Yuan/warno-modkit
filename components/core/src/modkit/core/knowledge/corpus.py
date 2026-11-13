@@ -216,9 +216,9 @@ def _load_records(root: Root, corpus: Corpus, owners: dict[str, str]) -> None:
         store[id_] = record
         return True
 
-    for sub, kind, store, build in (("mechanisms", "mechanism", corpus.mechanisms, schema.mechanism_from),
-                                    ("trials", "trial", corpus.trials, schema.trial_from),
-                                    ("lessons", "lesson", corpus.lessons, schema.lesson_from)):
+    for sub, kind, store, build in (("mechanisms", "mechanism", corpus.mechanisms, Mechanism.read),
+                                    ("trials", "trial", corpus.trials, Trial.read),
+                                    ("lessons", "lesson", corpus.lessons, Lesson.read)):
         folder = root.knowledge / sub
         for path in sorted(folder.glob("*.md")) if folder.is_dir() else []:
             try:
