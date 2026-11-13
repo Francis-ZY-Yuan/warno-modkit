@@ -24,7 +24,7 @@ from modkit.ops.gates import grid_gate, menu_order_gate, template_name_gate, uni
 from modkit.ops.graph import Node
 from modkit.ops.leveldesign import LD_FILE, ZONE_FILES, LdItem
 from modkit.ops.maps import GEISA
-from modkit.ops.models import CampRow
+from modkit.ops.models import AssetRule, CampRow
 from modkit.ops.profile import SURVIVORS, SURVIVORS_PLAYER_DECK, ExtraGate, OpProfile
 from modkit.ops.rekey import ScalarEdit
 from modkit.ops.shapes import Ctx as ShapesCtx
@@ -40,9 +40,9 @@ FOLDER = "$/GDScript/OD"            # the script's own exports (Main, Variables,
 VARIABLES = f"{FOLDER}/Variables"
 # Survivors' menu tokens (MapConfiguration Name and DescriptionTextElements), renamed. Every scenario's menu texts
 # bind to one dictionary list, so a mod installed beside another needs its own tokens.
-MENU_RENAMES = (("op13_name", "o3_name"), ("op13_order", "o3_order"), ("op13_headr", "o3_headr"),
-                ("op13_cname", "o3_cname"), ("op13_recap", "o3_recap"), ("op13_vic", "o3_vic"), ("op13_def", "o3_def"))
-MENU_TOKENS = tuple(new for _, new in MENU_RENAMES)
+MENU_RENAMES = {"op13_name": "o3_name", "op13_order": "o3_order", "op13_headr": "o3_headr", "op13_cname": "o3_cname",
+                "op13_recap": "o3_recap", "op13_vic": "o3_vic", "op13_def": "o3_def"}
+MENU_TOKENS = tuple(MENU_RENAMES.values())
 
 # The sides as Survivors' camps (GDScript export names under $/GDScript/RootDescriptor). ordinateur_DDR is kept
 # (Survivors' CampList and its SetDeck stay four) but unused.
@@ -81,13 +81,13 @@ SOURCE = SURVIVORS.source
 # Survivors' Assets: what to do with each file (first matching fnmatch pattern wins). The reasons are written into
 # MANIFEST.tsv.
 ASSET_RULES = (
-    (f"PC/Texture/{SOURCE}/MapPackAssets/Textures/*.tgv", "copy", "menu pictures (zero header checksum)"),
-    ("AllPlatforms/*", "drop", "stale v2-era twin; every one has a newer prefix-less copy"),
-    (f"Localisation/{SOURCE}/*", "drop", "replaced by the generated od_* dictionaries"),
-    (f"Map/Scenario/{SOURCE}/*", "drop", "Survivors voice; the generated script uses silence_5s.ogg"),
-    ("PC/Python/*", "drop", "effetmap.xyz is not executed in 201602"),
-    (f"PC/Texture/{SOURCE}/*", "drop", "Survivors dialog portraits; not referenced"),
-    (f"PC/Video/{SOURCE}/*", "drop", "Survivors videos; not referenced"),
+    AssetRule(f"PC/Texture/{SOURCE}/MapPackAssets/Textures/*.tgv", "copy", "menu pictures (zero header checksum)"),
+    AssetRule("AllPlatforms/*", "drop", "stale v2-era twin; every one has a newer prefix-less copy"),
+    AssetRule(f"Localisation/{SOURCE}/*", "drop", "replaced by the generated od_* dictionaries"),
+    AssetRule(f"Map/Scenario/{SOURCE}/*", "drop", "Survivors voice; the generated script uses silence_5s.ogg"),
+    AssetRule("PC/Python/*", "drop", "effetmap.xyz is not executed in 201602"),
+    AssetRule(f"PC/Texture/{SOURCE}/*", "drop", "Survivors dialog portraits; not referenced"),
+    AssetRule(f"PC/Video/{SOURCE}/*", "drop", "Survivors videos; not referenced"),
 )
 SHAPE_SOURCES = {  # generated file -> stock files whose shapes it may use, relative to the extraction
     "GDScript": ("scenarios/challenge_*/NDF/Scenarios/challenge_*/GDScript.txn",),

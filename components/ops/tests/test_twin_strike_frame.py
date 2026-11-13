@@ -110,9 +110,9 @@ class Identity(unittest.TestCase):
         self.assertEqual((c.name, c.scenario, c.mod_name), ("op", "challenge_OperationTwinStrike", "TwinStrike"))
         self.assertEqual(leveldesign.scenario_guid(c.scenario, profile.GUID_NAMESPACE),
                          uuid.uuid5(uuid.NAMESPACE_URL, "warno-twinstrike/challenge_OperationTwinStrike").bytes)
-        self.assertEqual(c.menu_renames, tuple((f"op13_{k}", f"ts_{k}") for k in
-                                               ("name", "order", "headr", "cname", "recap", "vic", "def")))
-        self.assertEqual(profile.MENU_TOKENS, tuple(dict(c.menu_renames).values()))
+        self.assertEqual(c.menu_renames, {f"op13_{k}": f"ts_{k}" for k in
+                                          ("name", "order", "headr", "cname", "recap", "vic", "def")})
+        self.assertEqual(profile.MENU_TOKENS, tuple(c.menu_renames.values()))
         self.assertEqual(sorted(strings.STRINGS["SCENARIO_DEFINITION"]), sorted(profile.MENU_TOKENS))
         self.assertEqual(c.menu_tokens, profile.TITLE_TOKENS)
         self.assertEqual(profile.TITLE_TOKENS, ("ts_name", "ts_cname"))

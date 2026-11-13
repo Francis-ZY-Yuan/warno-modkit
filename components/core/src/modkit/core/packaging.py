@@ -9,6 +9,7 @@ from typing import Iterable, Protocol, Sequence
 
 from modkit.core import paths
 from modkit.core.gates import check
+from modkit.core.models import Dropped, ManifestRow
 
 CONFIG_HEADER = "[Config] ; Used for mod compatibility check, do not modify"  # the last line of CONFIG_INI
 # Same keys, comments and spacing as the Config.ini of a mod made with the game's own mod tools (LF, no BOM; the
@@ -112,22 +113,22 @@ class ManifestEntry(Protocol):
     source: str
 
 
-def write_manifest(entries: Iterable[ManifestEntry], dropped: Iterable[tuple[str, str]], out_dir: str, *,
-                   packs: Sequence[str], extra_manifest_rows: Iterable[tuple[str, str, str]]) -> str:
+def write_manifest(entries: Iterable[ManifestEntry], dropped: Iterable[Dropped], out_dir: str, *,
+                   packs: Sequence[str], extra_manifest_rows: Iterable[ManifestRow]) -> str:
     """out_dir/MANIFEST.tsv, beside the mod folder so it is never installed: a header; one row per shipped entry
     (pack, inner path, bytes, action, source), by pack in `packs` order (then 'Loose') and by path; one row per
-    `extra_manifest_rows` (name, action, source), a manifest row of the op's own; then one row per dropped
-    source file (inner path, why). Returns its path."""
+    `extra_manifest_rows`, a manifest row of the op's own; then one row per dropped source file. Returns its
+    path."""
     order = (*packs, "Loose")
     path = os.path.join(out_dir, "MANIFEST.tsv")
     with open(path, "w", encoding="utf-8", newline="\n") as fh:
         fh.write("pack\tinner_path\tbytes\taction\tsource\n")
         for it in sorted(entries, key=lambda i: (order.index(i.pack), i.path)):
             fh.write(f"{it.pack}\t{it.path}\t{it.size}\t{it.action}\t{it.source}\n")
-        for name, action, source in extra_manifest_rows:
-            fh.write(f"-\t{name}\t\t{action}\t{source}\n")
-        for inner, why in dropped:
-            fh.write(f"-\t{inner}\t\tdrop\t{why}\n")
+        for row in extra_manifest_rows:
+            fh.write(f"-\t{row.name}\t\t{row.action}\t{row.source}\n")
+        for d in dropped:
+            fh.write(f"-\t{d.path}\t\tdrop\t{d.why}\n")
     return path
 
 

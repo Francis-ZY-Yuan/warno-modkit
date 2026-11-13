@@ -7,6 +7,7 @@ from unittest import mock
 
 from modkit.core import ndfbin, packaging, paths
 from modkit.core.gates import CheckError
+from modkit.core.models import Dropped, ManifestRow
 
 
 class ConstantsTest(unittest.TestCase):
@@ -96,9 +97,9 @@ class WriteTest(unittest.TestCase):
     def test_write_manifest(self):
         entries = [Entry("Loose", "v.webm", 3), Entry("Assets", "b", 2), Entry("Definition", "z", 1),
                    Entry("Definition", "a", 4, "rekey", "extracted/x")]
-        path = packaging.write_manifest(entries, [("old.ogg", "not referenced")], self.root,
+        path = packaging.write_manifest(entries, [Dropped("old.ogg", "not referenced")], self.root,
                                         packs=("Definition", "Assets"),
-                                        extra_manifest_rows=[("OtherMod", "requires", "its builder")])
+                                        extra_manifest_rows=[ManifestRow("OtherMod", "requires", "its builder")])
         self.assertEqual(path, os.path.join(self.root, "MANIFEST.tsv"))
         self.assertEqual(self.read("MANIFEST.tsv").decode("utf-8").split("\n"), [
             "pack\tinner_path\tbytes\taction\tsource", "Definition\ta\t4\trekey\textracted/x",

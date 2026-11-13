@@ -30,7 +30,7 @@ from modkit.ops.bricks import (
 from modkit.ops.graph import TRUE, Imp, Node, Str, i32, loc, walk
 from modkit.ops.leveldesign import LdItem, gd_tags
 from modkit.ops.maps import StockMap
-from modkit.ops.models import CampRow
+from modkit.ops.models import CampRow, ExtraShape
 from modkit.ops.script import BATTLE_PHASE, FOREVER  # noqa: F401  (shared constants, re-exported)
 from modkit.ops.zones import heading, rect_polygon
 
@@ -78,32 +78,32 @@ PHYSICAL, STUN = 1, 2                # not Suppress (0): ChangeStress rejects Da
 # the shape. add_card(transport=...) sets AddUnitToDeck.Transporter, a property the class has; a KillAllUnit with a
 # DeathCause is stock only in the strategic-campaign tutorials (CampagneStrat_tuto_1 #145: DeathCause <int32> 2), which
 # the shape gate does not survey; every challenge kills Vanished (0, omitted).
-TRANSPORTER_SHAPE = ("TGDDescriptorAddUnitToDeck", "Transporter", 0x09, "import $/GFX/Unit")
-DEATH_CAUSE_SHAPE = ("TGDDescriptorKillAllUnit", "DeathCause", 0x02, None)
+TRANSPORTER_SHAPE = ExtraShape("TGDDescriptorAddUnitToDeck", "Transporter", 0x09, "import $/GFX/Unit")
+DEATH_CAUSE_SHAPE = ExtraShape("TGDDescriptorKillAllUnit", "DeathCause", 0x02, None)
 # ChangeStress (bricks.g_stress) is a class the game has, with Group, Value and DamageType, but no stock file uses it,
 # so a content that writes it admits the class too, and its place in a Sequential. Value and DamageType are ints, as
 # SetFuel's stock MaxFuelRatio (<int32>) is; DamageType is an EDamageType and may not be 0
 # [[changestress-damagetype-zero]]. Property order: alphabetical, as the natives' own properties are (KillAllUnit,
 # SetEffect, SetFuel).
 STRESS_SHAPES = (
-    ("TGDDescriptorChangeStress", "DamageType", 0x02, None),
-    ("TGDDescriptorChangeStress", "Group", 0x09, "TGDVariableUnitGroup"),
-    ("TGDDescriptorChangeStress", "Value", 0x02, None),
-    ("TGDDescriptorSequential", "SubActions", 0x11, "TGDDescriptorChangeStress"),
+    ExtraShape("TGDDescriptorChangeStress", "DamageType", 0x02, None),
+    ExtraShape("TGDDescriptorChangeStress", "Group", 0x09, "TGDVariableUnitGroup"),
+    ExtraShape("TGDDescriptorChangeStress", "Value", 0x02, None),
+    ExtraShape("TGDDescriptorSequential", "SubActions", 0x11, "TGDDescriptorChangeStress"),
 )
 # bricks.g_fow: the scenario API's fog switch, a bool Fow, in a Sequential. No stock script writes the class.
-FOW_SHAPES = (("TGDDescriptorFow", "Fow", 0x00, None),
-              ("TGDDescriptorSequential", "SubActions", 0x11, "TGDDescriptorFow"))
+FOW_SHAPES = (ExtraShape("TGDDescriptorFow", "Fow", 0x00, None),
+              ExtraShape("TGDDescriptorSequential", "SubActions", 0x11, "TGDDescriptorFow"))
 # bricks.fx_wrapper: an effect wrapper exported by the op's own script, in GameFx's own class and value shapes
 # (fx_FumeeNoire_ForScript_RandomPosition, FX_Vehicule_Dest_Fire_FireAndForget, TConstantFloat/TConstantFloat3), which
 # no stock script holds.
-FX_WRAPPER_SHAPES = (("TSimultaneousAction", NAME_PROP, 0x07, None),
-                     ("TSimultaneousAction", "Actions", 0x11, "TActionCall"),
-                     ("TActionCall", "NamedParams", 0x12, "TConstantFloat3"),
-                     ("TActionCall", "NamedParams", 0x12, "TConstantFloat"),
-                     ("TActionCall", "Action", 0x09, "import $/GFX/GameFx"),
-                     ("TConstantFloat3", "Value", 0x0B, None),
-                     ("TConstantFloat", "Value", 0x05, None))
+FX_WRAPPER_SHAPES = (ExtraShape("TSimultaneousAction", NAME_PROP, 0x07, None),
+                     ExtraShape("TSimultaneousAction", "Actions", 0x11, "TActionCall"),
+                     ExtraShape("TActionCall", "NamedParams", 0x12, "TConstantFloat3"),
+                     ExtraShape("TActionCall", "NamedParams", 0x12, "TConstantFloat"),
+                     ExtraShape("TActionCall", "Action", 0x09, "import $/GFX/GameFx"),
+                     ExtraShape("TConstantFloat3", "Value", 0x0B, None),
+                     ExtraShape("TConstantFloat", "Value", 0x05, None))
 
 TACTICAL_NUKE_FX = "$/GFX/GameFx/fx_impact_sol_Tactical_Nuke"   # the game's tactical-nuke ground impact effect
 

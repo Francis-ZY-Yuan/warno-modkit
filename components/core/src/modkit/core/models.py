@@ -3,7 +3,9 @@
 ``Texts`` is one text in each of the game's dictionary languages (``LANGS``): an Operation's string table
 (``StringTable``, ``modkit.ops.strings``) holds one per token. ``AnyTexts`` is the same with no language required: a
 stock dictionary row (``modkit.core.glossary``), since some stock tokens have no US text. ``Pending`` is a build's
-reviewed-pending map and ``Fired`` the reviews that fired (``modkit.core.gates.run_gate``).
+reviewed-pending map and ``Fired`` the reviews that fired (``modkit.core.gates.run_gate``). ``Dropped`` is a source
+file a build does not ship and why, and ``ManifestRow`` a row of a mod's own in its MANIFEST.tsv
+(``modkit.core.packaging.write_manifest``).
 
 The byte codecs (``trad``, ``edat``, ``ndfbin`` and the rest) do not use these: they stay standard library only.
 """
@@ -12,6 +14,7 @@ from __future__ import annotations
 from typing import Mapping
 
 from pydantic import BaseModel, ConfigDict, TypeAdapter
+from pydantic.dataclasses import dataclass
 
 
 class AnyTexts(BaseModel):
@@ -60,3 +63,18 @@ Fired = list[tuple[str, str]]  # (gate name, message) of each reviewed failure t
 # Checks a Pending map: each gate's messages a tuple of strings. A bare string is refused, since a message would match
 # any part of it.
 PENDING: TypeAdapter[Pending] = TypeAdapter(Pending)
+
+
+@dataclass(frozen=True, config=ConfigDict(extra="forbid"))
+class Dropped:
+    """A source a build does not ship (its `path`), and `why`: a drop row of MANIFEST.tsv."""
+    path: str
+    why: str
+
+
+@dataclass(frozen=True, config=ConfigDict(extra="forbid"))
+class ManifestRow:
+    """A row of a mod's own in MANIFEST.tsv: its `name`, `action` and `source`."""
+    name: str
+    action: str
+    source: str

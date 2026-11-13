@@ -13,7 +13,7 @@ carries its own menu order (MENU_ORDER). Mod names never change.
 from __future__ import annotations
 
 import os
-from typing import Callable
+from typing import Callable, Mapping
 
 from modkit.core import paths
 from modkit.core.models import StringTable
@@ -21,7 +21,7 @@ from modkit.core.ndfbin import Value
 from modkit.ops.gates import menu_order_gate, unit_gate
 from modkit.ops.leveldesign import LD_FILE, ZONE_FILES
 from modkit.ops.maps import GEISA, camera_look_gate
-from modkit.ops.models import CampRow
+from modkit.ops.models import AssetRule, CampRow
 from modkit.ops.profile import SURVIVORS, SURVIVORS_PLAYER_DECK, Content, ExtraGate, OpProfile, Script
 from modkit.ops.rekey import ScalarEdit
 from modkit.ops.shapes import Ctx as ShapesCtx
@@ -67,9 +67,9 @@ LOC_RENAMES = {
 MENU_TOKENS = tuple(LOC_RENAMES.values())
 
 
-def menu_renames(prefix: str) -> tuple[tuple[str, str], ...]:
+def menu_renames(prefix: str) -> dict[str, str]:
     """LOC_RENAMES with another token prefix: op13_name -> <prefix>_name, ..."""
-    return tuple((old, f"{prefix}_{new.split('_', 1)[1]}") for old, new in LOC_RENAMES.items())
+    return {old: f"{prefix}_{new.split('_', 1)[1]}" for old, new in LOC_RENAMES.items()}
 
 
 # The Operations menu order (MapConfiguration's OrderToChainMission). Every Operation active at once needs its own, and
@@ -100,13 +100,13 @@ DICTIONARIES = ("SCENARIO_DEFINITION", "Scripting/Dialog", "Scripting/Localizati
 SOURCE = SURVIVORS.source
 # Survivors' Assets: what to do with each file (first matching fnmatch pattern wins).
 ASSET_RULES = (
-    (f"PC/Texture/{SOURCE}/MapPackAssets/Textures/*.tgv", "copy", "menu pictures (zero header checksum)"),
-    ("AllPlatforms/*", "drop", "stale v2-era twin; every one has a newer prefix-less copy"),
-    (f"Localisation/{SOURCE}/*", "drop", "replaced by the generated od_* dictionaries"),
-    (f"Map/Scenario/{SOURCE}/*", "drop", "Survivors voice; the generated script uses silence_5s.ogg"),
-    ("PC/Python/*", "drop", "effetmap.xyz is not executed in 201602"),
-    (f"PC/Texture/{SOURCE}/*", "drop", "Survivors dialog portraits; not referenced"),
-    (f"PC/Video/{SOURCE}/*", "drop", "Survivors videos; not referenced"),
+    AssetRule(f"PC/Texture/{SOURCE}/MapPackAssets/Textures/*.tgv", "copy", "menu pictures (zero header checksum)"),
+    AssetRule("AllPlatforms/*", "drop", "stale v2-era twin; every one has a newer prefix-less copy"),
+    AssetRule(f"Localisation/{SOURCE}/*", "drop", "replaced by the generated od_* dictionaries"),
+    AssetRule(f"Map/Scenario/{SOURCE}/*", "drop", "Survivors voice; the generated script uses silence_5s.ogg"),
+    AssetRule("PC/Python/*", "drop", "effetmap.xyz is not executed in 201602"),
+    AssetRule(f"PC/Texture/{SOURCE}/*", "drop", "Survivors dialog portraits; not referenced"),
+    AssetRule(f"PC/Video/{SOURCE}/*", "drop", "Survivors videos; not referenced"),
 )
 SHAPE_SOURCES = {  # generated file -> stock files whose shapes it may use, relative to the extraction
     "GDScript": ("scenarios/challenge_*/NDF/Scenarios/challenge_*/GDScript.txn",),
@@ -139,7 +139,7 @@ class Ctx(ShapesCtx):
 
 def content(name: str, items, script: Script | None, strings: StringTable, menu_tokens: tuple[str, ...], *,
             scenario: str = SCENARIO, mod_name: str = MOD_NAME,
-            menu_renames: tuple[tuple[str, str], ...] = tuple(LOC_RENAMES.items()), menu_order: int | None = None,
+            menu_renames: Mapping[str, str] = LOC_RENAMES, menu_order: int | None = None,
             **kw) -> Content:
     """A probe's Content, with probe 1's identity unless it carries its own, and its own menu order `menu_order`
     (Content.scalar_edits) or else the profile's MENU_ORDER, the frozen group's."""

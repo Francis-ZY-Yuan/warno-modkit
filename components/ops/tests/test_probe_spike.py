@@ -782,10 +782,10 @@ class Build(unittest.TestCase):
         self.assertEqual(len(of(nodes, "KillAllUnit")), 1)
         safe = spike.content(safe=True)
         self.assertEqual(safe.name, "spike_safe")
-        admitted = {s[0] for s in safe.extra_shapes} | {s[3] for s in safe.extra_shapes}
+        admitted = {s.cls for s in safe.extra_shapes} | {s.target for s in safe.extra_shapes}
         self.assertNotIn("TGDDescriptorChangeStress", admitted)
         self.assertNotIn("TGDDescriptorProductionUnites", admitted)
-        self.assertNotIn(("TGDDescriptorAddUnitToDeck", "Transporter"), {s[:2] for s in safe.extra_shapes})
+        self.assertNotIn(("TGDDescriptorAddUnitToDeck", "Transporter"), {(s.cls, s.prop) for s in safe.extra_shapes})
         self.assertEqual(of(nodes, "ProductionUnites"), [])
         self.assertEqual(spike.content().name, "spike")
 
@@ -823,7 +823,7 @@ class Build(unittest.TestCase):
         for cls, error in (("TGDDescriptorKillAllUnit", r"TGDDescriptorKillAllUnit.*DeathCause"),
                            ("TGDDescriptorChangeStress", r"TGDDescriptorChangeStress")):
             with self.subTest(cls=cls):
-                kept = tuple(s for s in spike.EXTRA_SHAPES if cls not in (s[0], s[3]))
+                kept = tuple(s for s in spike.EXTRA_SHAPES if cls not in (s.cls, s.target))
                 self.assertLess(len(kept), len(spike.EXTRA_SHAPES))
                 try:
                     with self.assertRaisesRegex(CheckError, error):

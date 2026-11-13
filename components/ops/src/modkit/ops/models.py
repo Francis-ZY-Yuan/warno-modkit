@@ -6,12 +6,17 @@ which also says where and in which group it spawns. ``CampRow`` is one camp of a
 (``shapes.camp_nodes``), ``Ending`` one row of an end funnel (``mission.end_funnel``), ``Knobs`` a difficulty knob's
 three values (``mission.difficulty``) and ``Buttons`` a two-button dialog's buttons (``mission.reask_loop``).
 
+A profile's and a content's settings: ``AssetRule`` (what a build does with a template Assets file),
+``ExtraShape`` (a GDScript shape a content admits, ``profile.Content.extra_shapes``) and ``MenuEntry`` (an Operations
+menu entry: a mod's, read by ``coinstall``, or a stock Operation's, ``gates.stock_operations``).
+
 Rows are frozen pydantic dataclasses, so a table stays positional and terse: ``ForceRow("T80BV_SOV", 4)``. Each field
 is checked against its type when a row is made.
 """
 from __future__ import annotations
 
 from dataclasses import field
+from typing import Literal
 
 from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
@@ -72,3 +77,32 @@ class Buttons:
     answer) and button 1 (`no`)."""
     yes: str
     no: str
+
+
+@dataclass(frozen=True, config=_ROW)
+class AssetRule:
+    """What a build does with a template Assets file (``items.plan_assets``): the first rule whose fnmatch `pattern`
+    matches decides; `action` is 'copy' (re-pathed to the new id) or 'drop', listed in the manifest with `why`."""
+    pattern: str
+    action: Literal["copy", "drop"]
+    why: str
+
+
+@dataclass(frozen=True, config=_ROW)
+class ExtraShape:
+    """A GDScript shape gate 2 admits although no stock file uses it (``profile.Content.extra_shapes``): a property
+    `prop` of the native class `cls` with value tag `tag`, and its reference `target` (None: not a reference). The
+    class is admitted too."""
+    cls: str
+    prop: str
+    tag: int
+    target: str | None
+
+
+@dataclass(frozen=True, config=_ROW)
+class MenuEntry:
+    """An Operations menu entry: its `scenario`, its menu order (MapConfiguration's OrderToChainMission; None: the
+    object holds none) and its MapConfiguration `guid` (None: it holds none)."""
+    scenario: str
+    order: int | None
+    guid: bytes | None

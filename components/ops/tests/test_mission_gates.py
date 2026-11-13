@@ -75,7 +75,7 @@ class ProdMenuSwitchTest(unittest.TestCase):
     """The buy-menu switch the content asks for is what its HUD restores ship."""
 
     def content(self, switch: int):
-        return Content("x", (), None, {}, (), scenario="challenge_X", mod_name="X", menu_renames=(),
+        return Content("x", (), None, {}, (), scenario="challenge_X", mod_name="X", menu_renames={},
                        prod_menu_switch=switch)
 
     def test_no_restore(self):

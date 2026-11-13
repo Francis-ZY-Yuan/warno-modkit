@@ -26,12 +26,12 @@ from typing import Callable, Iterable, Mapping, NamedTuple
 
 from modkit.core import ndfbin, paths
 from modkit.core.gates import check
-from modkit.core.models import Pending, StringTable
+from modkit.core.models import Dropped, ManifestRow, Pending, StringTable
 from modkit.core.packaging import check_mod_id
 from modkit.ops.graph import Node
 from modkit.ops.items import Item
 from modkit.ops.leveldesign import LdItem
-from modkit.ops.models import CampRow, ForceRow
+from modkit.ops.models import AssetRule, CampRow, ExtraShape, ForceRow
 from modkit.ops.rekey import TXN, ScalarEdit, def_path
 from modkit.ops.script import BRICK_FORCE_HIDE, Templates
 
@@ -54,7 +54,7 @@ class Template:
     details: str                       # its Details pack folder
     assets: str                        # its Assets pack folder
     kinds: tuple[str, ...]             # the Definition kinds shipped (re-keyed, or the generated GDScript)
-    dropped: tuple[tuple[str, str], ...]  # the Definition kinds dropped (.txn, .txn.tag, .dbg), with the manifest's why
+    dropped: tuple[Dropped, ...]       # the Definition kinds dropped (each path a kind: .txn, .txn.tag, .dbg), and why
     global_tokens: tuple[str, ...]     # stock loc tokens its files use that a mod uses without shipping them
     objects: Templates                 # the script objects a generated script copies scalars from
     asset_subtrees: tuple[str, ...]    # the Assets folder's top-level folders
@@ -84,7 +84,7 @@ SURVIVORS = Template(
     details="kreide_op/challenge_Survivors_Details",
     assets="scenarios/challenge_Survivors",
     kinds=("GDScript", "MapConfiguration", "ScenarioInfo", "ScenarioLoader"),
-    dropped=(("TrophyDef", "Trophy is dropped (C.1)"),),
+    dropped=(Dropped("TrophyDef", "Trophy is dropped (C.1)"),),
     global_tokens=("SI_NEXT", "GRL_ATTP", "GRL_ATTPB", "GRL_ATTPE"),
     objects=Templates((116, "TGDSpecificTacticalGameRules", ()), (123, "TGDDescriptorForceDisplayUIElement", ()),
                       (298, "TGDDescriptorForceDisplayUIElement", ("ShowMinimap",))),
@@ -175,15 +175,15 @@ class Content:
     strings: StringTable               # exactly the profile's dictionaries
     menu_tokens: tuple[str, ...]       # SCENARIO_DEFINITION tokens held to the 30-unit title limit (a convention)
     # GDScript shapes gate 2 admits although no stock file uses them: a property the native class has that the content
-    # exercises on purpose, as (class, property, value tag, reference target|None). The class is admitted too.
-    extra_shapes: tuple[tuple[str, str, int, str | None], ...] = ()
+    # exercises on purpose. The class is admitted too.
+    extra_shapes: tuple[ExtraShape, ...] = ()
     scenario: str = field(kw_only=True)    # the scenario id: Definition paths, Assets folder, pack names, GUIDs
     mod_name: str = field(kw_only=True)    # the mod folder (Config.ini name); two contents with one replace each other
     # Objectives (gates.objective_name) reviewed to hold up the Sequential they sit in until they resolve (gate 3).
     blocking_objectives: tuple[str, ...] = ()
     # The template's menu tokens -> the content's (MapConfiguration). Every scenario's menu texts bind to one
     # dictionary list, so two mods installed side by side need their own tokens or they show one title.
-    menu_renames: tuple[tuple[str, str], ...] = field(kw_only=True)
+    menu_renames: Mapping[str, str] = field(kw_only=True)
     # Player reinforcement locations that end in a command zone only, on purpose: tiers the script opens and closes
     # by the zone's owner (gate 3 tiers, gates.check_tiers).
     tiered_arrivals: tuple[str, ...] = ()
@@ -235,7 +235,7 @@ class OpProfile:
     deck_swap: Mapping[str, str]            # MapConfiguration STRG entries swapped (LocalPlayerDeck)
     # --- the Assets pack
     dictionaries: tuple[str, ...]           # the dictionaries a content's string table holds, packed per language
-    asset_rules: tuple[tuple[str, str, str], ...]  # the template's Assets: (fnmatch, copy|drop, why), first wins
+    asset_rules: tuple[AssetRule, ...]      # what to do with the template's Assets files, the first match wins
     # --- the gates
     import_rule: str                        # gates.check_canonical's import tree rule: 'trie' (stock) or 'preorder'
     shape_sources: Mapping[str, tuple[str, ...]]  # generated inner path ('GDScript': the script) -> stock globs
@@ -260,7 +260,7 @@ class OpProfile:
     menu_art: Mapping[str, str | MenuPicture] = field(default_factory=dict)
     # --- extension points
     extra_config_rows: tuple[str, ...] = ()                     # whole lines under Config.ini's [Config]
-    extra_manifest_rows: tuple[tuple[str, str, str], ...] = ()  # (name, action, source) rows of MANIFEST.tsv
+    extra_manifest_rows: tuple[ManifestRow, ...] = ()           # rows of MANIFEST.tsv of the op's own
     extra_packs: tuple[ExtraPack, ...] = ()
     extra_items: tuple[ExtraItems, ...] = ()   # files added to the profile's own packs (a generated Details file, ...)
     extra_loose_files: tuple[LooseFiles, ...] = ()

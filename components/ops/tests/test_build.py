@@ -14,12 +14,13 @@ from unittest import mock
 
 from modkit.core import edat, gamebuild, paths, trad
 from modkit.core.gates import CheckError
-from modkit.core.models import Texts
+from modkit.core.models import Dropped, ManifestRow, Texts
 from modkit.core.ndfbin import Value
 from modkit.ops import build as ops_build
 from modkit.ops.graph import Node, Str, build_graph, decode, encode, loc
 from modkit.ops.items import mem_item
 from modkit.ops.leveldesign import LdItem, derived_menu_order, gd_tags, scenario_guid
+from modkit.ops.models import AssetRule
 from modkit.ops.items import read_provenance
 from modkit.ops.profile import PACKS, SURVIVORS, Content, ExtraGate, ExtraPack, OpProfile, Sources
 from modkit.ops.rekey import DBG, TXN, def_path, dump_rows
@@ -44,8 +45,8 @@ def profile(namespace: str = "test-a", **kw) -> OpProfile:
         scalar_edits=(ScalarEdit("MapConfiguration", "TChallengeMapInfo", "Duration", Value(0x02, 3), Value(0x02, 1)),),
         deck_swap={},
         dictionaries=("SCENARIO_DEFINITION", "Scripting/Dialog", "Scripting/Localization"),
-        asset_rules=((f"PC/Texture/{src}/MapPackAssets/Textures/*.tgv", "copy", "menu pictures"),
-                     ("*", "drop", "not shipped")),
+        asset_rules=(AssetRule(f"PC/Texture/{src}/MapPackAssets/Textures/*.tgv", "copy", "menu pictures"),
+                     AssetRule("*", "drop", "not shipped")),
         import_rule="trie",
         shape_sources={"GDScript": ("scenarios/challenge_*/NDF/Scenarios/challenge_*/GDScript.txn",),
                        "out/LevelDesign.ndfbin": ("scenarios/challenge_*/out/LevelDesign.ndfbin",
@@ -99,7 +100,7 @@ def content(namespace: str = "test-a", scenario: str = "challenge_ModkitTest", m
                                           "t_objl": Texts(US="Hold for %1", SC="Hold %1"),
                                           **{f"t_c{k}": Texts(US=f"Side {k}", SC=f"Side {k}") for k in range(4)}}}
     return Content("tiny", items, script, strings, tuple(f"t_{m}" for m in MENU), scenario=scenario,
-                   mod_name=mod_name, menu_renames=tuple((f"op13_{m}", f"t_{m}") for m in MENU), sources=sources)
+                   mod_name=mod_name, menu_renames={f"op13_{m}": f"t_{m}" for m in MENU}, sources=sources)
 
 
 def quiet(fn, *args):
@@ -125,7 +126,7 @@ def synthetic(profile_: OpProfile, content_: Content) -> ops_build.Plan:
     items = [mem_item("Definition", def_path("MapConfiguration", TXN, content_.scenario), b"def", "generate", "test"),
              mem_item("Details", "out/LevelDesign.ndfbin", b"ld", "generate", "test"),
              mem_item("Assets", f"Localisation/{content_.scenario}/X-US.dic", b"dic", "generate", "test")]
-    return ops_build.Plan(items + ops_build.extra_items(profile_, content_), [("TrophyDef.txn", "dropped")], [])
+    return ops_build.Plan(items + ops_build.extra_items(profile_, content_), [Dropped("TrophyDef.txn", "dropped")], [])
 
 
 class ExtensionPointsTest(unittest.TestCase):
@@ -135,7 +136,7 @@ class ExtensionPointsTest(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory(dir=tempfile.gettempdir())
         self.addCleanup(self.tmp.cleanup)
         self.content = Content("x", (), lambda tpl: ([], []), {}, (), scenario="challenge_X", mod_name="ModX",
-                               menu_renames=())
+                               menu_renames={})
 
     def write(self, prof: OpProfile) -> dict[str, bytes]:
         quiet(ops_build.write, prof, self.content, synthetic(prof, self.content), self.tmp.name)
@@ -169,7 +170,8 @@ class ExtensionPointsTest(unittest.TestCase):
 
     def test_extra_config_rows(self):
         prof = profile(build_root=self.tmp.name, dumps=False, mod_id=4242,
-                       extra_config_rows=("Extra = 1",), extra_manifest_rows=(("OtherMod", "requires", "test"),))
+                       extra_config_rows=("Extra = 1",),
+                       extra_manifest_rows=(ManifestRow("OtherMod", "requires", "test"),))
         files = self.write(prof)
         config = files["ModX/Config.ini"].decode("ascii")
         self.assertIn("ID = 4242", config)
@@ -351,9 +353,9 @@ class SourcesAndTemplateTest(unittest.TestCase):
         src = SURVIVORS.source
         prof = profile(build_root=self.tmp.name, details_from_template=True, map_strings={}, map_trans={},
                        dictionaries=("SCENARIO_DEFINITION",),
-                       asset_rules=((f"Localisation/{src}/SCENARIO_DEFINITION-*.dic", "drop", "generated"),
-                                    (f"Localisation/{src}/Scripting/*.dic", "copy", "the template's texts"),
-                                    ("*", "drop", "not shipped")))
+                       asset_rules=(AssetRule(f"Localisation/{src}/SCENARIO_DEFINITION-*.dic", "drop", "generated"),
+                                    AssetRule(f"Localisation/{src}/Scripting/*.dic", "copy", "the template's texts"),
+                                    AssetRule("*", "drop", "not shipped")))
         tiny = content()
         bare = Content("bare", (), None, {"SCENARIO_DEFINITION": tiny.strings["SCENARIO_DEFINITION"]},
                        tiny.menu_tokens, scenario=tiny.scenario, mod_name=tiny.mod_name, menu_renames=tiny.menu_renames)

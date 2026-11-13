@@ -1003,15 +1003,15 @@ class Identity(unittest.TestCase):
         self.assertEqual((c.name, c.scenario, c.mod_name), ("spike2", "challenge_OpenDoorTest", "OpenDoorTest"))
         self.assertEqual(scenario_guid(c.scenario), scenario_guid("challenge_OpenDoorTest"))
         self.assertNotEqual(scenario_guid(c.scenario), scenario_guid(profile.SCENARIO))
-        self.assertEqual(dict(c.menu_renames)["op13_name"], "o2_name")
-        self.assertEqual(c.menu_tokens, tuple(dict(c.menu_renames).values()))
+        self.assertEqual(c.menu_renames["op13_name"], "o2_name")
+        self.assertEqual(c.menu_tokens, tuple(c.menu_renames.values()))
         self.assertFalse(set(c.menu_tokens) & set(profile.MENU_TOKENS))  # spike 1 keeps its od_* menu tokens
         self.assertEqual(sorted(spike2.STRINGS["SCENARIO_DEFINITION"]), sorted(c.menu_tokens))
         self.assertEqual(spike2.STRINGS["SCENARIO_DEFINITION"]["o2_name"].US, "Open Door test 2")
         ctx = spike2.Ctx()
         it = spike2.item("OD_CZ_CapA")
         self.assertEqual(prop(ctx.tag("OD_CZ_CapA"), leveldesign.TAG_ID).v, ld_guid(it, "challenge_OpenDoorTest"))
-        self.assertEqual(spike.content().menu_renames, tuple(profile.LOC_RENAMES.items()))  # spike 1 unchanged
+        self.assertEqual(spike.content().menu_renames, profile.LOC_RENAMES)  # spike 1 unchanged
 
 
 @SCRIPT_DATA

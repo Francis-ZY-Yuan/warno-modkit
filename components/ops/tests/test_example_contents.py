@@ -97,7 +97,7 @@ class Registered(unittest.TestCase):
         for key, (c, module) in contents.items():
             self.assertEqual(c.name, key.split("/")[1])
             ids[key] = (c.scenario, scenario_guid(c.scenario, module.GUID_NAMESPACE), c.mod_name,
-                        dict(c.menu_renames)["op13_name"].split("_")[0])
+                        c.menu_renames["op13_name"].split("_")[0])
         for key in FALLBACKS:
             self.assertEqual(ids[key], ids["probes/spike"])
         installed = [ids[key] for key in contents if key not in FALLBACKS]

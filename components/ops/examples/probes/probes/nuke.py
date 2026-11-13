@@ -346,6 +346,6 @@ def content(name: str = "nuke") -> Content:
     order, the order derived from its scenario GUID (modkit.ops.leveldesign.derived_menu_order)."""
     v = VARIANTS[name]
     renames = profile.menu_renames(v.prefix)
-    return profile.content(v.name, SOV_ITEMS if v is SOV else ITEMS, lambda tpl: script(tpl, v), strings(v), tuple(new for _, new in renames),
+    return profile.content(v.name, SOV_ITEMS if v is SOV else ITEMS, lambda tpl: script(tpl, v), strings(v), tuple(renames.values()),
                            extra_shapes=SOV_EXTRA_SHAPES if v is SOV else EXTRA_SHAPES, scenario=v.scenario, mod_name=v.mod_name, menu_renames=renames,
                            deck_swap=v.deck_swap, menu_order=derived_menu_order(v.scenario, profile.GUID_NAMESPACE))

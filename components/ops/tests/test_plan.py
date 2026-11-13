@@ -6,11 +6,13 @@ import unittest
 
 from modkit.core import dbg, txntag
 from modkit.core.gates import CheckError
+from modkit.core.models import Dropped
 from modkit.core.ndfbin import Value
 from modkit.ops.graph import Map, Node, Str, build_graph, decode, encode
 from modkit.ops.items import (
-    GENERATED_SOURCE, MENU_ART, AssetRule, asset_rule, menu_art, payload, plan_assets, plan_definition, plan_details,
+    GENERATED_SOURCE, MENU_ART, asset_rule, menu_art, payload, plan_assets, plan_definition, plan_details,
 )
+from modkit.ops.models import AssetRule
 from modkit.ops.rekey import DBG, TAG, TAG_CLASS, TXN, Rekey, def_path
 
 SOURCE, NEW = "challenge_A", "challenge_B"
@@ -149,13 +151,13 @@ class PlanAssetsTest(TempDirTest):
         self.assertEqual([(it.path, it.action) for it in items],
                          [(f"Localisation/{NEW}/D-US.dic", "generate"), (f"PC/Texture/{NEW}/Menu/a.tgv", "copy")])
         self.assertEqual(payload(items[1]), f"PC/Texture/{SOURCE}/Menu/a.tgv".encode())
-        self.assertEqual(dropped, [(f"Localisation/{SOURCE}/X-US.dic", "replaced"),
-                                   (f"PC/Texture/{SOURCE}/Portrait/b.tgv", "not referenced")])
+        self.assertEqual(dropped, [Dropped(f"Localisation/{SOURCE}/X-US.dic", "replaced"),
+                                   Dropped(f"PC/Texture/{SOURCE}/Portrait/b.tgv", "not referenced")])
 
-    def test_plain_tuples_and_the_first_rule_wins(self):
-        rules = [("PC/*", "drop", "first"), ("PC/*", "copy", "second")]
-        self.assertEqual(asset_rule("PC/x", rules), ("drop", "first"))
-        self.assertEqual(asset_rule("PC/x", self.RULES), ("drop", "not referenced"))
+    def test_the_first_rule_wins(self):
+        rules = [AssetRule("PC/*", "drop", "first"), AssetRule("PC/*", "copy", "second")]
+        self.assertEqual(asset_rule("PC/x", rules), rules[0])
+        self.assertEqual(asset_rule("PC/x", self.RULES), self.RULES[1])
 
     def test_every_file_needs_a_rule(self):
         with self.assertRaisesRegex(CheckError, "without a rule: Map/ignored.bin"):
@@ -185,8 +187,8 @@ class MenuArtTest(TempDirTest):
         self.assertEqual(got["CornerLogo.tgv"].action, "copy")
         self.assertTrue(got["CornerLogo.tgv"].source.endswith("/" + MENU_ART.format("challenge_C", "CornerLogo")))
         self.assertEqual(payload(got["MapTexture.tgv"]), b"template MapTexture")
-        self.assertEqual(given_up, [(MENU_ART.format(SOURCE, "CornerLogo"),
-                                     "menu art: challenge_C's CornerLogo ships in its place")])
+        self.assertEqual(given_up, [Dropped(MENU_ART.format(SOURCE, "CornerLogo"),
+                                            "menu art: challenge_C's CornerLogo ships in its place")])
 
     def test_a_generated_picture_ships_at_the_templates_path(self):
         """MapTexture made at build time (OpProfile.menu_art's MenuPicture): its bytes at the template's path,
@@ -199,10 +201,10 @@ class MenuArtTest(TempDirTest):
         self.assertEqual((payload(got["MapTexture.tgv"]), got["MapTexture.tgv"].action, got["MapTexture.tgv"].source),
                          (b"a new card", "generate", "generated (a card)"))
         self.assertEqual(payload(got["CornerLogo.tgv"]), b"stock CornerLogo")
-        self.assertEqual(given_up, [(MENU_ART.format(SOURCE, "CornerLogo"),
-                                     "menu art: challenge_C's CornerLogo ships in its place"),
-                                    (MENU_ART.format(SOURCE, "MapTexture"),
-                                     "menu art: a generated MapTexture ships in its place")])
+        self.assertEqual(given_up, [Dropped(MENU_ART.format(SOURCE, "CornerLogo"),
+                                            "menu art: challenge_C's CornerLogo ships in its place"),
+                                    Dropped(MENU_ART.format(SOURCE, "MapTexture"),
+                                            "menu art: a generated MapTexture ships in its place")])
 
     def test_no_menu_art_changes_nothing(self):
         items, given_up = menu_art(self.items, {}, SOURCE, NEW)

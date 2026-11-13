@@ -68,9 +68,9 @@ class Identity(unittest.TestCase):
         self.assertEqual((c.scenario, c.mod_name), (profile.SCENARIO, profile.MOD_NAME))
         self.assertEqual(scenario_guid(c.scenario),
                          uuid.uuid5(uuid.NAMESPACE_URL, "warno-opendoor/challenge_OperationOpenDoor").bytes)
-        self.assertEqual(c.menu_renames, tuple((f"op13_{k}", f"o3_{k}") for k in
-                                               ("name", "order", "headr", "cname", "recap", "vic", "def")))
-        self.assertEqual(c.menu_tokens, tuple(dict(c.menu_renames).values()))
+        self.assertEqual(c.menu_renames, {f"op13_{k}": f"o3_{k}" for k in
+                                          ("name", "order", "headr", "cname", "recap", "vic", "def")})
+        self.assertEqual(c.menu_tokens, tuple(c.menu_renames.values()))
         self.assertEqual(sorted(mission.STRINGS["SCENARIO_DEFINITION"]), sorted(c.menu_tokens))
         self.assertEqual(mission.STRINGS["SCENARIO_DEFINITION"]["o3_name"], Texts(US="Operation Open Door", SC="开门行动"))
         self.assertEqual(CONTENTS["op"]().scenario, profile.SCENARIO)
@@ -83,7 +83,7 @@ class Identity(unittest.TestCase):
             c = make()
             self.assertEqual(c.name, name)
             ids[name] = (c.scenario, scenario_guid(c.scenario), c.mod_name,
-                         dict(c.menu_renames)["op13_name"].split("_")[0])
+                         c.menu_renames["op13_name"].split("_")[0])
         installed = [ids[name] for name in ids if name not in ("spike_safe", "empty")]
         for k, what in enumerate(("scenario", "GUID", "mod folder", "menu prefix")):
             with self.subTest(what=what):

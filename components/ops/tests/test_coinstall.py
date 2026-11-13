@@ -22,15 +22,16 @@ from probe_support import OUT_ROOT, quiet_build
 from modkit.core import edat, paths, trad
 from modkit.core.ndfbin import Value
 from modkit.ops import coinstall
-from modkit.ops.gates import MENU_PACK, StockOperation, stock_operations
+from modkit.ops.gates import MENU_PACK, stock_operations
 from modkit.ops.graph import Imp, Node, build_graph, encode, u32
 from modkit.ops.leveldesign import derived_menu_order
+from modkit.ops.models import MenuEntry
 from modkit.ops.rekey import TXN, def_path
 from probes import empty
 from probes import profile as probe_profile
 
 GUID_A, GUID_B, GUID_STOCK = bytes(range(16)), bytes(range(1, 17)), bytes(range(2, 18))
-STOCK = (StockOperation("challenge_Stock", 130, GUID_STOCK),)
+STOCK = (MenuEntry("challenge_Stock", 130, GUID_STOCK),)
 SCRIPT_DATA = paths.skip_unless_extracted("kreide_op", "challenge_Survivors_Definition")
 GAME = paths.skip_unless_game_dir("Mods", "ModData", "base.zip")
 
@@ -91,7 +92,7 @@ class Clashes(Base):
     def test_read_mod(self):
         a = self.mod(self.root / "A", "challenge_A", 1001, GUID_A, ("aa_name",))
         self.assertEqual((a.label, a.kind, a.scenarios), ("A (local)", "local", {"challenge_A"}))
-        self.assertEqual(a.menus, [coinstall.Menu("challenge_A", 1001, GUID_A)])
+        self.assertEqual(a.menus, [MenuEntry("challenge_A", 1001, GUID_A)])
         self.assertEqual(set(a.keys) - coinstall.IGNORED_KEYS, {trad.token_key("aa_name")})
         self.assertIn(trad.CHARSET_KEY, a.keys)
         self.assertEqual(a.warnings, [])

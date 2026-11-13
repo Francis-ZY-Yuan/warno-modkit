@@ -1,4 +1,4 @@
-"""Tests for modkit.ops.models: what the rows refuse."""
+"""Tests for modkit.ops.models: what the rows and the settings records refuse."""
 from __future__ import annotations
 
 import dataclasses
@@ -6,7 +6,7 @@ import unittest
 
 from pydantic import ValidationError
 
-from modkit.ops.models import CampRow, Ending, ForceRow, Knobs
+from modkit.ops.models import AssetRule, CampRow, Ending, ForceRow, Knobs
 
 
 class RowsTest(unittest.TestCase):
@@ -35,6 +35,14 @@ class RowsTest(unittest.TestCase):
 
     def test_knobs_at_a_level(self):
         self.assertEqual([Knobs(1, 2, 3).at(level) for level in (0, 1, 2)], [1, 2, 3])
+
+
+class SettingsTest(unittest.TestCase):
+    def test_an_asset_rule_copies_or_drops(self):
+        self.assertEqual(AssetRule("PC/*", "drop", "not referenced").action, "drop")
+        for bad in ("dorp", "keep", ""):
+            with self.subTest(action=bad), self.assertRaisesRegex(ValidationError, "'copy' or 'drop'"):
+                AssetRule("PC/*", bad, "not referenced")
 
 
 if __name__ == "__main__":

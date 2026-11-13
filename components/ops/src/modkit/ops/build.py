@@ -30,7 +30,7 @@ from typing import Callable, Mapping, Sequence
 from modkit.core import edat, gamebuild, ndfbin, ndfrules, paths, trad, txntag
 from modkit.core.gates import CheckError, check, run_gate, unfired
 from modkit.core.glossary import stock_dictionaries
-from modkit.core.models import LANGS, Fired
+from modkit.core.models import LANGS, Dropped, Fired
 from modkit.core.ndfbin import Value
 from modkit.core.packaging import clean_out, write_manifest, write_mod_files
 from modkit.ops import INGAME_DIC
@@ -54,10 +54,10 @@ PENDING = "review pending"
 
 @dataclass
 class Plan:
-    """What a build ships, before it is written: the planned items, the dropped template files (inner path, why)
-    and the script's roots for the script gates (the content's, or the shipped template script decoded)."""
+    """What a build ships, before it is written: the planned items, the dropped template files and the script's
+    roots for the script gates (the content's, or the shipped template script decoded)."""
     items: list[Item]
-    dropped: list[tuple[str, str]]
+    dropped: list[Dropped]
     roots: list[Node]
 
 
@@ -141,7 +141,7 @@ def plan_details(profile: OpProfile, content: Content) -> list[Item]:
     return ops_items.plan_details(layout, made)
 
 
-def plan_assets(profile: OpProfile, content: Content) -> tuple[list[Item], list[tuple[str, str]]]:
+def plan_assets(profile: OpProfile, content: Content) -> tuple[list[Item], list[Dropped]]:
     """Each of the profile's dictionaries in every language from the content's string table (SC from the Chinese
     column, the other seven from the English; named by content.sources), plus the template's files by the profile's
     asset rules, each menu picture of the profile's menu art taken from its stock scenario, or generated, instead
@@ -214,9 +214,9 @@ def plan(profile: OpProfile, content: Content) -> Plan:
     if roots is None:  # the template's script, re-keyed: the script gates read it decoded
         gd = next(it for it in items if it.path == def_path("GDScript", TXN, content.scenario))
         roots = nodes_of(decode(payload(gd))[0])
-    dropped = [(rel_source(t.path("definition"), def_path(kind, ext, t.source)), why)
-               for kind, why in t.dropped for ext in DEF_EXTS] \
-        + [(rel_source(t.path("assets"), p), why) for p, why in dropped]
+    dropped = [Dropped(rel_source(t.path("definition"), def_path(d.path, ext, t.source)), d.why)
+               for d in t.dropped for ext in DEF_EXTS] \
+        + [Dropped(rel_source(t.path("assets"), d.path), d.why) for d in dropped]
     return Plan(items, dropped, list(roots))
 
 
@@ -236,9 +236,9 @@ def check_generated(profile: OpProfile, content: Content, items: list[Item], run
         stock, n = gates.survey_shapes(profile.shape_globs("GDScript" if it.path == gd_path else it.path), 16)
         extra = ""
         if it.path == gd_path and content.extra_shapes:
-            stock.classes |= {cls for cls, _, _, _ in content.extra_shapes}
-            stock.props |= {(cls, name, tag) for cls, name, tag, _ in content.extra_shapes}
-            stock.targets |= {(cls, name, to) for cls, name, _, to in content.extra_shapes if to is not None}
+            stock.classes |= {s.cls for s in content.extra_shapes}
+            stock.props |= {(s.cls, s.prop, s.tag) for s in content.extra_shapes}
+            stock.targets |= {(s.cls, s.prop, s.target) for s in content.extra_shapes if s.target is not None}
             extra = f" + {len(content.extra_shapes)} admitted"
         objects = g("shapes", gates.check_shapes, raw, stock, it.path)
         shapes.append(f"{it.fixture.removesuffix('.txt')} {objects} objects vs {n} stock files{extra}")
@@ -354,7 +354,7 @@ def check_definition(profile: OpProfile, content: Content, items: list[Item], ru
     kinds = g("definition-layout", gates.check_definition_layout, definition, content.scenario)
     tags = g("config-hash", gates.check_config_hashes, definition, content.scenario, gates.stock_scans())
     stock = gates.stock_classes()
-    admitted = {(cls, prop) for cls, prop, _, _ in content.extra_shapes}
+    admitted = {(s.cls, s.prop) for s in content.extra_shapes}
     shipped = [(f"{it.pack}:{it.path}", payload(it)) for it in items]
     read = g("stock-classes", gates.check_stock_classes, shipped, stock, admitted, pending=(PENDING, PENDING))
     files, objects = read

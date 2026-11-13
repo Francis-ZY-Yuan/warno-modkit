@@ -59,7 +59,7 @@ from modkit.ops.bricks import NAME_PROP
 from modkit.ops.graph import TRUE, Imp, Node, all_values, build_graph, decode, nodes_of, prop_nodes, walk
 from modkit.ops.items import Item
 from modkit.ops.leveldesign import GD_TAG_CLASS, LD_FILE, TAG_ID, ZONE_FILES, LdItem, read_ld_items
-from modkit.ops.models import ForceRow
+from modkit.ops.models import ForceRow, MenuEntry
 from modkit.ops.rekey import DBG, DEF_EXTS, TAG, TAG_CLASS, TXN, DumpRow, def_entry, def_path
 from modkit.ops.script import BRICK_DEFAULT, BRICK_FORCE_HIDE, PROD_MENU_SWITCH
 from modkit.ops.strings import StringError, check_glyphs, check_parity, check_titles, stock_chars
@@ -2494,15 +2494,9 @@ STOCK_OPERATIONS = 16                 # fewer stock Operations found means the e
 DERIVED_FIX = "modkit.ops.leveldesign.derived_menu_order(scenario, namespace)"
 
 
-class MenuEntry(NamedTuple):
-    """An Operations menu entry of a MapConfiguration: its MENU_ORDER and its GUID (None: the object holds none)."""
-    order: int | None
-    guid: bytes | None
-
-
-def menu_entries(nb: ndfbin.NdfBin) -> list[MenuEntry]:
-    """Each object of the decoded MapConfiguration `nb` whose ChapterPack is MENU_PACK (an Operations menu entry), in
-    object order, with its MENU_ORDER and its GUID."""
+def menu_entries(nb: ndfbin.NdfBin, scenario: str) -> list[MenuEntry]:
+    """Each object of the decoded MapConfiguration `nb` of `scenario` whose ChapterPack is MENU_PACK (an Operations
+    menu entry), in object order, with its MENU_ORDER and its GUID."""
     imports = {i: path for path, i in ndfbin.tree_paths(nb, nb.imports)}
     out = []
     for i in range(len(nb.objects)):
@@ -2512,7 +2506,7 @@ def menu_entries(nb: ndfbin.NdfBin) -> list[MenuEntry]:
             continue
         if imports.get(pack.v.index) == MENU_PACK:
             order, guid = props.get(MENU_ORDER), props.get("GUID")
-            out.append(MenuEntry(order.v if order is not None and isinstance(order.v, int) else None,
+            out.append(MenuEntry(scenario, order.v if order is not None and isinstance(order.v, int) else None,
                                  guid.v if guid is not None and guid.tag == 0x1A else None))
     return out
 
@@ -2520,7 +2514,7 @@ def menu_entries(nb: ndfbin.NdfBin) -> list[MenuEntry]:
 def menu_orders(nb: ndfbin.NdfBin) -> list[int | None]:
     """The MENU_ORDER of each Operations menu entry of the decoded MapConfiguration `nb` (menu_entries), in object
     order; None for one that holds no MENU_ORDER."""
-    return [entry.order for entry in menu_entries(nb)]
+    return [entry.order for entry in menu_entries(nb, "")]
 
 
 def stock_menu_files(root: str) -> list[str]:
@@ -2530,22 +2524,15 @@ def stock_menu_files(root: str) -> list[str]:
                             recursive=True))
 
 
-class StockOperation(NamedTuple):
-    """A stock Operation: its scenario id, its MENU_ORDER and its MapConfiguration GUID."""
-    scenario: str
-    order: int
-    guid: bytes | None
-
-
 @functools.cache
-def _stock_operations(root: str, minimum: int) -> tuple[StockOperation, ...]:
-    found: set[StockOperation] = set()
+def _stock_operations(root: str, minimum: int) -> tuple[MenuEntry, ...]:
+    found: set[MenuEntry] = set()
     unread: list[str] = []
     for nb in ndfrules.stock_files(stock_menu_files(root), unread):
         scenario = os.path.basename(os.path.dirname(nb.path))
-        for entry in menu_entries(nb):
+        for entry in menu_entries(nb, scenario):
             check(entry.order is not None, f"{os.path.relpath(nb.path, root)}: a stock Operation without {MENU_ORDER}")
-            found.add(StockOperation(scenario, entry.order, entry.guid))
+            found.add(entry)
     check(not unread, f"stock MapConfigurations that do not read: {[os.path.relpath(p, root) for p in unread]}")
     names = {op.scenario for op in found}
     check(len(names) >= minimum, f"menu-order gate: {len(names)} stock Operations found under {root}, expected "
@@ -2553,11 +2540,11 @@ def _stock_operations(root: str, minimum: int) -> tuple[StockOperation, ...]:
     return tuple(sorted(found, key=lambda op: (op.order, op.scenario)))
 
 
-def stock_operations(minimum: int = STOCK_OPERATIONS) -> tuple[StockOperation, ...]:
-    """Every stock Operation, by menu order: each stock MapConfiguration of the extraction (its older/ builds left
-    out, as modkit.core.ndfrules.stock_files leaves them) whose ChapterPack is MENU_PACK, read where the game reads it.
-    A scenario's copies count once. Fails when a file does not read or fewer than `minimum` Operations are found;
-    raises paths.NotConfigured without an extraction."""
+def stock_operations(minimum: int = STOCK_OPERATIONS) -> tuple[MenuEntry, ...]:
+    """Every stock Operation's menu entry (its order never None), by menu order: each stock MapConfiguration of the
+    extraction (its older/ builds left out, as modkit.core.ndfrules.stock_files leaves them) whose ChapterPack is
+    MENU_PACK, read where the game reads it. A scenario's copies count once. Fails when a file does not read or fewer
+    than `minimum` Operations are found; raises paths.NotConfigured without an extraction."""
     return _stock_operations(str(paths.extracted_root()), minimum)
 
 

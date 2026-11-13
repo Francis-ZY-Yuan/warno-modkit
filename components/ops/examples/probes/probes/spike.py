@@ -34,7 +34,7 @@ from modkit.ops.bricks import (
 from modkit.ops.forces import group_rows, scaled
 from modkit.ops.graph import TRUE, Imp, Node, i32
 from modkit.ops.mission import board, hidden_units, script_frame
-from modkit.ops.models import ForceRow
+from modkit.ops.models import ExtraShape, ForceRow
 from modkit.ops.profile import Content
 from modkit.ops.script import BRICK_FORCE_HIDE
 from modkit.ops.leveldesign import LdItem
@@ -92,8 +92,8 @@ EXTRA_SHAPES = (
     # Check 7: the UH-60A spawned with its AeroRifles aboard. ProductionUnites is stock (SigurdsStrike #1046-#1055),
     # but none of its 6 objects sets Group or Transporter; the class has both, and its load check tests
     # neither (modkit.core.ndfrules).
-    ("TGDDescriptorProductionUnites", "Group", 0x09, "TGDVariableUnitGroup"),
-    ("TGDDescriptorProductionUnites", "Transporter", 0x09, "import $/GFX/Unit"),
+    ExtraShape("TGDDescriptorProductionUnites", "Group", 0x09, "TGDVariableUnitGroup"),
+    ExtraShape("TGDDescriptorProductionUnites", "Transporter", 0x09, "import $/GFX/Unit"),
 )
 SAFE_DROPS = ("TGDDescriptorChangeStress", "TGDDescriptorProductionUnites")  # spike_safe emits neither class
 
@@ -542,6 +542,6 @@ def content(safe: bool = False) -> Content:
     loaded-helicopter ProductionUnites, and whose shape gate admits none of them."""
     if not safe:
         return profile.content("spike", ITEMS, script, STRINGS, profile.MENU_TOKENS, extra_shapes=EXTRA_SHAPES)
-    shapes = tuple(s for s in EXTRA_SHAPES if not {s[0], s[3]} & set(SAFE_DROPS) and s != TRANSPORTER_SHAPE)
+    shapes = tuple(s for s in EXTRA_SHAPES if not {s.cls, s.target} & set(SAFE_DROPS) and s != TRANSPORTER_SHAPE)
     return profile.content("spike_safe", ITEMS, functools.partial(script, safe=True), STRINGS, profile.MENU_TOKENS,
                            extra_shapes=shapes)

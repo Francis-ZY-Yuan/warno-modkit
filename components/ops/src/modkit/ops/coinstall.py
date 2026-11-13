@@ -45,7 +45,8 @@ from typing import Iterable, Sequence
 
 from modkit.core import edat, install, mods, ndfbin, paths, trad
 from modkit.core.gates import CheckError
-from modkit.ops.gates import StockOperation, menu_entries, stock_operations
+from modkit.ops.gates import menu_entries, stock_operations
+from modkit.ops.models import MenuEntry
 from modkit.ops.rekey import TXN, def_entry
 
 MAP_CONFIG = "MapConfiguration"                   # the Definition kind the Operations menu is read from
@@ -55,21 +56,13 @@ EXAMPLES = 5                                      # shared token keys named per 
 
 
 @dataclass
-class Menu:
-    """One Operations menu entry of a mod: its scenario, its menu order and its MapConfiguration GUID."""
-    scenario: str
-    order: int | None
-    guid: bytes | None
-
-
-@dataclass
 class Mod:
     """What the check reads of one mod: where it is, how it is named, its scenarios, menu entries and text keys."""
     label: str                          # its name and where it is from, for messages
     folder: Path
     kind: str                           # "local", "workshop" or "build"
     scenarios: set[str] = field(default_factory=set)
-    menus: list[Menu] = field(default_factory=list)
+    menus: list[MenuEntry] = field(default_factory=list)
     keys: dict[int, set[str]] = field(default_factory=dict)   # token key -> the dictionaries holding it
     warnings: list[str] = field(default_factory=list)
 
@@ -108,8 +101,7 @@ def read_mod(folder: Path, kind: str) -> Mod:
                                         f"rebuilt")
                 else:
                     scenario = def_entry(inner)[0]
-                    for entry in menu_entries(ndfbin.decode(raw)[0]):
-                        mod.menus.append(Menu(scenario, entry.order, entry.guid))
+                    mod.menus += menu_entries(ndfbin.decode(raw)[0], scenario)
             except (trad.TradError, ValueError, KeyError, IndexError, struct.error) as exc:
                 mod.warnings.append(f"{mod.label}: {pack.name}:{inner} does not read ({exc})")
     return mod
@@ -122,7 +114,7 @@ def is_menu_file(inner: str) -> bool:
     return entry is not None and entry[1:] == (MAP_CONFIG, TXN)
 
 
-def clashes(checked: Sequence[Mod], stock: Iterable[StockOperation]) -> list[str]:
+def clashes(checked: Sequence[Mod], stock: Iterable[MenuEntry]) -> list[str]:
     """One line per clash between two checked mods, or a mod and a stock Operation (`stock`): a non-zero menu order,
     a MapConfiguration GUID, a scenario id or a mod folder held twice."""
     stock = tuple(stock)

@@ -28,6 +28,7 @@ from modkit.ops import menuart
 from modkit.ops.gates import fire_range_gate, menu_order_gate, template_name_gate, unit_gate, zone_layout_gate
 from modkit.ops.leveldesign import LD_FILE, ZONE_FILES, LdItem, derived_menu_order
 from modkit.ops.maps import CAMERA_SHAPE_SOURCES, CUT_SHAPE_SOURCES, TWIN_CITIES
+from modkit.ops.models import AssetRule
 from modkit.ops.profile import (
     SOVIET_PLAYER_CAMP_ROWS, SOVIET_PLAYER_DECK_SWAP, SOVIET_PLAYER_SIDES, SURVIVORS, Content, ExtraGate, OpProfile,
 )
@@ -46,9 +47,9 @@ GUID_NAMESPACE = "warno-twinstrike"  # scenario and item GUIDs are uuid5 names u
 FOLDER = "$/GDScript/TS"            # the script's own exports (Main, Variables, the end funnel) live under it
 # Survivors' menu tokens (MapConfiguration Name and DescriptionTextElements), renamed. Every scenario's menu texts
 # bind to one dictionary list, so a mod installed beside another needs its own tokens [[content-identity-unique]].
-MENU_RENAMES = (("op13_name", "ts_name"), ("op13_order", "ts_order"), ("op13_headr", "ts_headr"),
-                ("op13_cname", "ts_cname"), ("op13_recap", "ts_recap"), ("op13_vic", "ts_vic"), ("op13_def", "ts_def"))
-MENU_TOKENS = tuple(new for _, new in MENU_RENAMES)
+MENU_RENAMES = {"op13_name": "ts_name", "op13_order": "ts_order", "op13_headr": "ts_headr", "op13_cname": "ts_cname",
+                "op13_recap": "ts_recap", "op13_vic": "ts_vic", "op13_def": "ts_def"}
+MENU_TOKENS = tuple(MENU_RENAMES.values())
 # The menu's titles (MissionName and TitreObjectifs), the only tokens gate 1's 30-unit title convention holds
 # (Content.menu_tokens). The other five take stock's form and lengths, the briefing over 1,000 units
 # (twinstrike.strings).
@@ -91,13 +92,13 @@ SOURCE = SURVIVORS.source
 # Survivors' Assets: what to do with each file (first matching fnmatch pattern wins). The reasons are written into
 # MANIFEST.tsv.
 ASSET_RULES = (
-    (f"PC/Texture/{SOURCE}/MapPackAssets/Textures/*.tgv", "copy", "menu pictures (zero header checksum)"),
-    ("AllPlatforms/*", "drop", "stale v2-era twin; every one has a newer prefix-less copy"),
-    (f"Localisation/{SOURCE}/*", "drop", "replaced by the generated ts_* dictionaries"),
-    (f"Map/Scenario/{SOURCE}/*", "drop", "Survivors voice; the generated script uses silence_5s.ogg"),
-    ("PC/Python/*", "drop", "effetmap.xyz is not executed in 201602"),
-    (f"PC/Texture/{SOURCE}/*", "drop", "Survivors dialog portraits; not referenced"),
-    (f"PC/Video/{SOURCE}/*", "drop", "Survivors videos; not referenced"),
+    AssetRule(f"PC/Texture/{SOURCE}/MapPackAssets/Textures/*.tgv", "copy", "menu pictures (zero header checksum)"),
+    AssetRule("AllPlatforms/*", "drop", "stale v2-era twin; every one has a newer prefix-less copy"),
+    AssetRule(f"Localisation/{SOURCE}/*", "drop", "replaced by the generated ts_* dictionaries"),
+    AssetRule(f"Map/Scenario/{SOURCE}/*", "drop", "Survivors voice; the generated script uses silence_5s.ogg"),
+    AssetRule("PC/Python/*", "drop", "effetmap.xyz is not executed in 201602"),
+    AssetRule(f"PC/Texture/{SOURCE}/*", "drop", "Survivors dialog portraits; not referenced"),
+    AssetRule(f"PC/Video/{SOURCE}/*", "drop", "Survivors videos; not referenced"),
 )
 # The menu card (the MapTexture, modkit.ops.menuart): Survivors' card, its caption retitled, its map Twin Cities' cut
 # (map.CUT), and on it the two sides' ground at the start as stock marks it, in minimap px from map.py:

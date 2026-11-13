@@ -80,7 +80,7 @@ from modkit.ops.leveldesign import LdItem
 from modkit.ops.mission import (
     CHOICE_NONE, Lane, Leg, Wave, board, lane_route, placed_units, reask_loop, ring_round, wave, zone_handover,
 )
-from modkit.ops.models import Ending, ForceRow, Knobs
+from modkit.ops.models import Ending, ExtraShape, ForceRow, Knobs
 from modkit.ops.profile import Content
 from modkit.ops.script import BRICK_DEFAULT
 from modkit.ops.shapes import (
@@ -173,7 +173,7 @@ STRIKE_MEGA_SPOTS = tuple(STRIKE_OUTER[k] for k in (1, 2, 4, 5))
 STRIKE_SMOKE_SPOTS = tuple(STRIKE_OUTER[k] for k in (0, 3))
 
 
-def extra_shapes() -> tuple[tuple[str, str, int, str | None], ...]:
+def extra_shapes() -> tuple[ExtraShape, ...]:
     """The GDScript shapes no stock file uses that the op writes (Content.extra_shapes), from the knobs as they
     stand when the content is made."""
     return (TRANSPORTER_SHAPE,                                        # the infantry cards carry their carriers

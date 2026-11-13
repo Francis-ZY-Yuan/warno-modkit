@@ -316,7 +316,7 @@ def script(tpl: ndfbin.NdfBin) -> tuple[list[Node], list[Node]]:
 def content() -> Content:
     """The probe: its own scenario, mod folder, GUIDs, menu tokens and derived menu order."""
     renames = profile.menu_renames(PREFIX)
-    return profile.content(NAME, ITEMS, script, strings(), tuple(new for _, new in renames),
+    return profile.content(NAME, ITEMS, script, strings(), tuple(renames.values()),
                            extra_shapes=EXTRA_SHAPES, scenario=SCENARIO, mod_name=MOD_NAME, menu_renames=renames,
                            deck_swap=SOVIET_PLAYER_DECK_SWAP,
                            menu_order=derived_menu_order(SCENARIO, profile.GUID_NAMESPACE))

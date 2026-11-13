@@ -7,12 +7,14 @@ import fnmatch
 import hashlib
 import os
 from dataclasses import dataclass
-from typing import Callable, Iterable, Mapping, NamedTuple
+from typing import Callable, Iterable, Mapping
 
 from modkit.core import txntag
 from modkit.core.gates import CheckError, check
+from modkit.core.models import Dropped
 from modkit.ops.files import read_file, rel_source, walk_files
 from modkit.ops.graph import decode
+from modkit.ops.models import AssetRule
 from modkit.ops.rekey import (
     DBG, TAG, TXN, Rekey, def_path, generated_dbg, rekey_dbg, rekey_definition, rekey_tag, repath,
 )
@@ -118,35 +120,27 @@ def plan_details(layout: Iterable[tuple[str, str | None]], generated: Mapping[st
     return items
 
 
-class AssetRule(NamedTuple):
-    """What a build does with a template Assets file: the first rule whose fnmatch `pattern` matches decides."""
-    pattern: str
-    action: str  # 'copy' (re-pathed to the new id) or 'drop'
-    why: str
-
-
-def asset_rule(inner: str, rules: Iterable[tuple[str, str, str]]) -> tuple[str, str]:
-    """(action, why) of the first of `rules` ((pattern, action, why), AssetRule or plain) whose pattern matches."""
-    for pattern, action, why in rules:
-        if fnmatch.fnmatchcase(inner, pattern):
-            return action, why
+def asset_rule(inner: str, rules: Iterable[AssetRule]) -> AssetRule:
+    """The first of `rules` whose pattern matches `inner`."""
+    for rule in rules:
+        if fnmatch.fnmatchcase(inner, rule.pattern):
+            return rule
     raise CheckError(f"Assets file without a rule: {inner}")
 
 
 def plan_assets(dics: Iterable[tuple[str, bytes, str]], src_dir: str, subtrees: Iterable[str],
-                rules: Iterable[tuple[str, str, str]], source: str, scenario: str
-                ) -> tuple[list[Item], list[tuple[str, str]]]:
+                rules: Iterable[AssetRule], source: str, scenario: str) -> tuple[list[Item], list[Dropped]]:
     """The Assets pack: the generated dictionaries `dics` ((inner path, payload, provenance)), then every file under
     the `subtrees` of the template's `src_dir` by asset_rule: a copy re-pathed from `source` to `scenario`, a drop
-    listed. Returns (items, dropped: (inner path, why))."""
+    listed. Returns (items, dropped)."""
     rules = tuple(rules)
     items = [mem_item("Assets", inner, raw, "generate", provenance) for inner, raw, provenance in dics]
     dropped = []
     for sub in subtrees:
         for inner in walk_files(src_dir, sub):
-            action, why = asset_rule(inner, rules)
-            if action == "drop":
-                dropped.append((inner, why))
+            rule = asset_rule(inner, rules)
+            if rule.action == "drop":
+                dropped.append(Dropped(inner, rule.why))
                 continue
             raw = read_file(os.path.join(src_dir, *inner.split("/")))
             items.append(mem_item("Assets", repath(inner, source, scenario), raw, "copy", rel_source(src_dir, inner)))
@@ -159,12 +153,12 @@ DescriptionTextureElements entry of that name (FileName ScenariosData:/<scenario
 
 
 def menu_art(items: Iterable[Item], art: Mapping[str, tuple[str, str]], source: str, scenario: str,
-             made: Mapping[str, tuple[bytes, str]] | None = None) -> tuple[list[Item], list[tuple[str, str]]]:
+             made: Mapping[str, tuple[bytes, str]] | None = None) -> tuple[list[Item], list[Dropped]]:
     """The planned Assets `items` with each menu picture `art` names (picture name -> (stock scenario, that scenario's
     Assets folder)) copied from that scenario in place of the template's: the same inner path, which the re-keyed
     MapConfiguration names, now holding the stock scenario's file byte for byte, with that file as its source. Each
     picture `made` names (picture name -> (its bytes, its source line)) ships there the same way, generated.
-    Returns (items, the template's pictures given up: (inner path, why), listed with the dropped files)."""
+    Returns (items, the template's pictures given up, listed with the dropped files)."""
     out, given_up = list(items), []
 
     def replace(name: str, raw: Callable[[], bytes], action: str, source_line: str, why: str) -> None:
@@ -173,7 +167,7 @@ def menu_art(items: Iterable[Item], art: Mapping[str, tuple[str, str]], source: 
         check(len(at) == 1, f"menu art {name}: the template's {MENU_ART.format(source, name)} is not shipped, so there "
                             f"is no menu picture to replace (the asset rules must copy it)")
         out[at[0]] = mem_item("Assets", mine, raw(), action, source_line)
-        given_up.append((MENU_ART.format(source, name), why))
+        given_up.append(Dropped(MENU_ART.format(source, name), why))
     for name, (stock, stock_dir) in art.items():
         theirs = MENU_ART.format(stock, name)
         replace(name, lambda: read_file(os.path.join(stock_dir, *theirs.split("/"))), "copy",

@@ -79,7 +79,7 @@ class Geisa(unittest.TestCase):
     @paths.skip_unless_extracted("basemaps", "_4x3_geisa")
     def test_overlay_output(self):
         content = Content("t", (LdItem("Tags", "A", *GEISA.px_to_world((100, 100)), "Name"),), None, {}, (),
-                          scenario="challenge_T", mod_name="T", menu_renames=())
+                          scenario="challenge_T", mod_name="T", menu_renames={})
         out = tempfile.mkdtemp()
         try:
             line = GEISA.overlay_output("overlay.png")(content, out)

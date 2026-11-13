@@ -87,7 +87,7 @@ class Blocks(unittest.TestCase):
         full = add_card(c, "Rifles_A", 1, transport="Truck_A", experience=0)
         self.assertEqual([p for p, _ in full.props], ["Camp", "Experience", "NbUnitsToAdd", "Transporter", "TypeUnit"])
         self.assertEqual(prop(full, "Transporter").path, "$/GFX/Unit/Descriptor_Unit_Truck_A")
-        self.assertEqual(TRANSPORTER_SHAPE[:2], ("TGDDescriptorAddUnitToDeck", "Transporter"))
+        self.assertEqual((TRANSPORTER_SHAPE.cls, TRANSPORTER_SHAPE.prop), ("TGDDescriptorAddUnitToDeck", "Transporter"))
 
     def test_lock_card_races_its_condition(self):
         c = ctx()

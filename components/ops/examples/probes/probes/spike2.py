@@ -65,7 +65,7 @@ from probes.geisa import MAP
 SCENARIO = "challenge_OpenDoorTest"
 MOD_NAME = "OpenDoorTest"
 MENU_RENAMES = profile.menu_renames("o2")   # Survivors' op13_* -> o2_*: probe 1's od_* menu texts stay its own
-MENU_TOKENS = tuple(new for _, new in MENU_RENAMES)
+MENU_TOKENS = tuple(MENU_RENAMES.values())
 
 # --------------------------------------------------------------------------- knobs
 
