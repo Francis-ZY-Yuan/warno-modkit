@@ -66,7 +66,7 @@ _FIELDS = {"id": int, "mod_name": str, "title": str, "description": str, "previe
            "vars": list}
 _OPTIONAL = {"changes": str}
 NEXT = "next"  # the changes file's table for the next upload's note
-# The change note WARNO's upload writes (WARNO.exe's "Game Version = %1\nMod Version = %2"), as the page shows it.
+# The change note WARNO's upload writes, as the Change Notes page shows it: the game build and Config.ini's Version.
 DEFAULT_NOTE = re.compile(r"Game Version = \d+\nMod Version = \d+")
 # A note on the Change Notes page: <p id="<update>">text</p>, newest first.
 _PAGE_NOTE = re.compile(r'<p id="(\d+)">(.*?)</p>', re.S)
