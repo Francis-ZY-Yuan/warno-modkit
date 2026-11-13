@@ -12,9 +12,9 @@ GitHub owner), so it is never in the tracked files: it comes from the git-ignore
 The live page is read from Steam's public ``GetPublishedFileDetails``, which needs no key: the title, description,
 main image, visibility and counts, not the gallery. What sets each part of the page: [[workshop-item-page]].
 
-Every upload adds a change note, and WARNO's upload always writes the same one, ``Game Version = <build>`` and
-``Mod Version = <Config.ini's Version>`` (``DEFAULT_NOTE``); the item's owner replaces it on the item's Change Notes
-page. The ``changes`` file (TOML) keeps the real notes, one table per upload, newest first, each holding ``note``
+An upload adds a change note (not every one: [[workshop-item-page]]), and WARNO's upload writes the same one,
+``Game Version = <build>`` and ``Mod Version = <Config.ini's Version>`` (``DEFAULT_NOTE``); the item's owner replaces
+it on the item's Change Notes page. The ``changes`` file (TOML) keeps the real notes, one table per upload, newest first, each holding ``note``
 (the text, Steam BBCode allowed) and named by its ``update``, the id of its note on the Change Notes page (the
 update's Unix time), once the upload is done: ``[1794521820]``. The next upload's is ``[next]`` (at the top).
 ``check`` reads the public Change Notes page and compares each note with its release, and fails on a note newer than

@@ -48,7 +48,7 @@ note workshop/item.toml` prints the newest one's note, ready to paste.
 | Title | the item's "Edit title & description" page | after every upload, which resets it to `mod_name` |
 | Description | the same page (English is the default language) | when it changes; uploads leave it |
 | Gallery | the item's "Add/edit images & videos" page | once; uploads leave it |
-| Change note | the upload adds one, always `Game Version = <build>` / `Mod Version = <Version>`; the item's Change Notes page edits it | after every upload |
+| Change note | an upload adds one (not always: [[workshop-item-page]]), reading `Game Version = <build>` / `Mod Version = <Version>`; the item's Change Notes page edits it | after every upload |
 
 The modder runs every upload. Claude can fill the two web pages in the modder's own browser, where they are signed in
 to Steam, when asked; the modder can also paste the files' text themselves.

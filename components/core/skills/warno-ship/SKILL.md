@@ -61,9 +61,9 @@ The modder runs the upload, never Claude. Full checklist:
    note workshop/item.toml` prints it), then rename `[next]` to the note's id, which the check names.
 8. **Check the live page:** `python -m modkit.core.workshop check workshop/item.toml`.
 
-**Every later upload** resets the title to `Config.ini`'s `Name` and adds a default change note: write its note as
-`[next]` in `changes.toml` before uploading, then set the title, paste the note and run the check. After a reinstall, set
-`PreviewImagePath` again before uploading.
+**Every later upload** resets the title to `Config.ini`'s `Name` and may add a default change note
+([[workshop-item-page]]): write its note as `[next]` in `changes.toml` before uploading, then set the title, paste the
+note and run the check. After a reinstall, set `PreviewImagePath` again before uploading.
 
 ## After a game update
 
