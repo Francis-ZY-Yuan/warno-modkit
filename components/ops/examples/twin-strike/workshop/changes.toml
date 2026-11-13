@@ -1,0 +1,20 @@
+# Twin Strike's Workshop change notes, one table per upload, newest first (modkit.core.workshop: item.toml's
+# `changes`). WARNO's upload writes every note as "Game Version = <build> / Mod Version = 0". Before an upload, write
+# its note as [next]; after it, paste the note over the default on the item's Change Notes page
+# (python -m modkit.core.workshop note item.toml prints it), then rename [next] to the note's id, which
+# `workshop check` names (the update's Unix time). Steam BBCode works in a note; keep a note short, for players.
+
+[next]
+note = """
+Simplified Chinese: set the game to Simplified Chinese and every text of the operation (the menu, the briefing, \
+hints, objectives and dialogs) is in Chinese, in the game's own terms. A native reader reviewed it.
+"""
+
+[1794521820]
+note = "A new main image."
+
+[1794508361]
+note = "The main image, title, description and screenshots of this page."
+
+[1794506683]
+note = "First release (work in progress, v0.1)."
