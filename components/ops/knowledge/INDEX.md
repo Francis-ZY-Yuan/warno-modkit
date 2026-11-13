@@ -8,10 +8,10 @@ A mechanism filed under two topics is listed under both.
 ### Operation setup
 
 - [content-identity-unique](mechanisms/content-identity-unique.md): Two mods cloned from one template must not share an identity (PLAYED, verified 201602 2026-11-11)
-- [custom-operation-from-stock-parts](mechanisms/custom-operation-from-stock-parts.md): A custom Operation can be built entirely from cloned stock files plus a generated LevelDesign and GDScript (PLAYED, verified 210942 2026-11-12)
+- [custom-operation-from-stock-parts](mechanisms/custom-operation-from-stock-parts.md): A custom Operation can be built entirely from cloned stock files plus a generated LevelDesign and GDScript (PLAYED, verified 210942 2026-11-13)
 - [deployment-phase-recipe](mechanisms/deployment-phase-recipe.md): A deployment phase needs six parts, and buying after the launch needs player arrival entries (PLAYED, verified 201602 2026-11-03)
 - [gameplay-mod-relaunch](mechanisms/gameplay-mod-relaunch.md): Operations and Gameplay mods don't mix; an Operation mod must ship none of the 16 Gameplay files (PLAYED, verified 201602 2026-11-06)
-- [operation-menu-registration](mechanisms/operation-menu-registration.md): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden (PLAYED, verified 210942 2026-11-12)
+- [operation-menu-registration](mechanisms/operation-menu-registration.md): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden (PLAYED, verified 210942 2026-11-13)
 - [soviet-player-camp](mechanisms/soviet-player-camp.md): A clone of Survivors loads and plays with a Soviet player in the stock PACT-player camp shape (PROBED, verified 201602 2026-11-11)
 - [game-build-classes](mechanisms/game-build-classes.md): A game update removes and renames classes and properties; a mod's files may hold only those the installed build's stock holds (STOCK, verified 210942 2026-11-12)
 - [scenario-definition-layout](mechanisms/scenario-definition-layout.md): Build 210942 reads a scenario's Definition files as NDF/Scenarios/<scenario>/<Kind>.txn, each beside its .txn.tag and .dbg (STOCK, verified 210942 2026-11-12)
@@ -21,7 +21,7 @@ A mechanism filed under two topics is listed under both.
 
 - [dialog-reask-loop](mechanisms/dialog-reask-loop.md): A multiple-choice dialog can be asked again in a loop if the choice is reset before each ask (PLAYED, verified 201602 2026-11-11)
 - [fog-switch](mechanisms/fog-switch.md): A script can switch the fog of war off with TGDDescriptorFow; whether it is map-wide and comes back on is unseen (PLAYED, verified 201602 2026-11-11)
-- [gdscript-is-what-loads](mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (PLAYED, verified 210942 2026-11-12)
+- [gdscript-is-what-loads](mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (PLAYED, verified 210942 2026-11-13)
 - [mission-ends-only-by-script](mechanisms/mission-ends-only-by-script.md): With CheckEndGame off, only the script's TriggerEndGame ends the battle, and the first one wins (PLAYED, verified 201602 2026-11-06)
 - [script-container-semantics](mechanisms/script-container-semantics.md): How script containers run their children, and when each action finishes (PLAYED, verified 201602 2026-11-06)
 - [script-effects-self-contained](mechanisms/script-effects-self-contained.md): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (PLAYED, verified 210942 2026-11-12)
@@ -81,15 +81,15 @@ A mechanism filed under two topics is listed under both.
 
 ### Files and formats
 
-- [gdscript-is-what-loads](mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (PLAYED, verified 210942 2026-11-12)
-- [txn-tag-config-hash](mechanisms/txn-tag-config-hash.md): Build 210942 loads a compiled .txn only when its .txn.tag holds the ConfigHash the game computes for the transaction; any other makes it compile the sources (RE, verified 210942 2026-11-12)
+- [gdscript-is-what-loads](mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (PLAYED, verified 210942 2026-11-13)
+- [txn-tag-config-hash](mechanisms/txn-tag-config-hash.md): Build 210942 loads a compiled .txn only when its .txn.tag holds the ConfigHash the game computes for the transaction; any other makes it compile the sources (RE, verified 210942 2026-11-13)
 
 ### Loading and crashes
 
 - [ai-grid-tiles-playable-zone](mechanisms/ai-grid-tiles-playable-zone.md): The AI strategic grid must tile the playable zone (PLAYED, verified 201602 2026-11-03)
 - [changestress-damagetype-zero](mechanisms/changestress-damagetype-zero.md): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load (PLAYED, verified 210942 2026-11-12)
 - [dialog-button-ingame-dictionary](mechanisms/dialog-button-ingame-dictionary.md): Dialog button labels resolve only in the game's in-game interface dictionary (PLAYED, verified 201602 2026-11-03)
-- [txn-tag-config-hash](mechanisms/txn-tag-config-hash.md): Build 210942 loads a compiled .txn only when its .txn.tag holds the ConfigHash the game computes for the transaction; any other makes it compile the sources (RE, verified 210942 2026-11-12)
+- [txn-tag-config-hash](mechanisms/txn-tag-config-hash.md): Build 210942 loads a compiled .txn only when its .txn.tag holds the ConfigHash the game computes for the transaction; any other makes it compile the sources (RE, verified 210942 2026-11-13)
 
 ### Mod packaging
 
@@ -99,11 +99,11 @@ A mechanism filed under two topics is listed under both.
 ### Game updates
 
 - [changestress-damagetype-zero](mechanisms/changestress-damagetype-zero.md): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load (PLAYED, verified 210942 2026-11-12)
-- [gdscript-is-what-loads](mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (PLAYED, verified 210942 2026-11-12)
+- [gdscript-is-what-loads](mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (PLAYED, verified 210942 2026-11-13)
 - [leveldesign-guid-binding](mechanisms/leveldesign-guid-binding.md): A script names a map item by the item's GUID in LevelDesign (210942 one GUID value, 201602 four words) (PLAYED, verified 210942 2026-11-12)
-- [operation-menu-registration](mechanisms/operation-menu-registration.md): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden (PLAYED, verified 210942 2026-11-12)
+- [operation-menu-registration](mechanisms/operation-menu-registration.md): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden (PLAYED, verified 210942 2026-11-13)
 - [script-effects-self-contained](mechanisms/script-effects-self-contained.md): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (PLAYED, verified 210942 2026-11-12)
-- [txn-tag-config-hash](mechanisms/txn-tag-config-hash.md): Build 210942 loads a compiled .txn only when its .txn.tag holds the ConfigHash the game computes for the transaction; any other makes it compile the sources (RE, verified 210942 2026-11-12)
+- [txn-tag-config-hash](mechanisms/txn-tag-config-hash.md): Build 210942 loads a compiled .txn only when its .txn.tag holds the ConfigHash the game computes for the transaction; any other makes it compile the sources (RE, verified 210942 2026-11-13)
 - [game-build-classes](mechanisms/game-build-classes.md): A game update removes and renames classes and properties; a mod's files may hold only those the installed build's stock holds (STOCK, verified 210942 2026-11-12)
 - [scenario-definition-layout](mechanisms/scenario-definition-layout.md): Build 210942 reads a scenario's Definition files as NDF/Scenarios/<scenario>/<Kind>.txn, each beside its .txn.tag and .dbg (STOCK, verified 210942 2026-11-12)
 
@@ -177,6 +177,7 @@ The game's own words in this component's trials, the mechanism behind them, and 
 
 ## Trials, newest first
 
+- 2026-11-13 [2026-11-13-twin-strike-210942-play2](trials/2026-11-13-twin-strike-210942-play2.md): play, pass
 - 2026-11-12 [2026-11-12-twin-strike-launch-config-hash](trials/2026-11-12-twin-strike-launch-config-hash.md): launch, fail. NDF parsing error. Retry? @file:ScenariosData:/challenge_OperationTwinStrike/Scenario.ndf@(0:0): File not found : 'ScenariosData:/challenge_OperationTwinStrike/Scenario.ndf'
 - 2026-11-12 [2026-11-12-twin-strike-210942-play1](trials/2026-11-12-twin-strike-210942-play1.md): play, mixed. It is largely working. Only thing is very slow after nuking, and nuking didn't reveal enemy, so the effect was under represented
 - 2026-11-12 [2026-11-12-sc-glyph-every-dictionary](trials/2026-11-12-sc-glyph-every-dictionary.md): survey, pass

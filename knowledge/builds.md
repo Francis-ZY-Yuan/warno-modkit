@@ -9,23 +9,24 @@ A fact holds for the build it was last verified on. After a game update, a recor
 
 - [changestress-damagetype-zero](../components/ops/knowledge/mechanisms/changestress-damagetype-zero.md) (ops): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load (PLAYED, 2026-11-12)
 - [chinese-text-stock-glyphs](../components/ops/knowledge/mechanisms/chinese-text-stock-glyphs.md) (ops): Simplified Chinese text must stay within the characters stock text already uses (PROBED, 2026-11-12)
-- [custom-operation-from-stock-parts](../components/ops/knowledge/mechanisms/custom-operation-from-stock-parts.md) (ops): A custom Operation can be built entirely from cloned stock files plus a generated LevelDesign and GDScript (PLAYED, 2026-11-12)
+- [custom-operation-from-stock-parts](../components/ops/knowledge/mechanisms/custom-operation-from-stock-parts.md) (ops): A custom Operation can be built entirely from cloned stock files plus a generated LevelDesign and GDScript (PLAYED, 2026-11-13)
 - [edat-revision-chain](../components/core/knowledge/mechanisms/edat-revision-chain.md) (core): Game data is a chain of edat archives, read newest revision first (RE, 2026-11-12)
 - [game-build-classes](../components/ops/knowledge/mechanisms/game-build-classes.md) (ops): A game update removes and renames classes and properties; a mod's files may hold only those the installed build's stock holds (STOCK, 2026-11-12)
-- [gdscript-is-what-loads](../components/ops/knowledge/mechanisms/gdscript-is-what-loads.md) (ops): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (PLAYED, 2026-11-12)
+- [gdscript-is-what-loads](../components/ops/knowledge/mechanisms/gdscript-is-what-loads.md) (ops): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (PLAYED, 2026-11-13)
 - [leveldesign-guid-binding](../components/ops/knowledge/mechanisms/leveldesign-guid-binding.md) (ops): A script names a map item by the item's GUID in LevelDesign (210942 one GUID value, 201602 four words) (PLAYED, 2026-11-12)
-- [load-time-validation-rules](../components/core/knowledge/mechanisms/load-time-validation-rules.md) (core): Every object is validated at load, and the first broken rule stops the load (PLAYED, 2026-11-12)
+- [load-time-validation-rules](../components/core/knowledge/mechanisms/load-time-validation-rules.md) (core): Every object is validated at load, and the first broken rule stops the load (PLAYED, 2026-11-13)
 - [mod-version-and-config-lines](../components/core/knowledge/mechanisms/mod-version-and-config-lines.md) (core): A mod is active only with Gen/Version.ndf, and its [Config] hashes mark it outdated after an update (PLAYED, 2026-11-12)
-- [operation-menu-registration](../components/ops/knowledge/mechanisms/operation-menu-registration.md) (ops): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden (PLAYED, 2026-11-12)
+- [operation-menu-registration](../components/ops/knowledge/mechanisms/operation-menu-registration.md) (ops): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden (PLAYED, 2026-11-13)
 - [scenario-definition-layout](../components/ops/knowledge/mechanisms/scenario-definition-layout.md) (ops): Build 210942 reads a scenario's Definition files as NDF/Scenarios/<scenario>/<Kind>.txn, each beside its .txn.tag and .dbg (STOCK, 2026-11-12)
 - [script-effects-self-contained](../components/ops/knowledge/mechanisms/script-effects-self-contained.md) (ops): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (PLAYED, 2026-11-12)
 - [scripted-nuke-effect](../components/ops/knowledge/mechanisms/scripted-nuke-effect.md) (ops): A script plays the tactical-nuke impact effect only through a wrapper of its own that binds its parameters; a direct launch crashes the game (PLAYED, 2026-11-12)
-- [txn-tag-config-hash](../components/ops/knowledge/mechanisms/txn-tag-config-hash.md) (ops): Build 210942 loads a compiled .txn only when its .txn.tag holds the ConfigHash the game computes for the transaction; any other makes it compile the sources (RE, 2026-11-12)
+- [txn-tag-config-hash](../components/ops/knowledge/mechanisms/txn-tag-config-hash.md) (ops): Build 210942 loads a compiled .txn only when its .txn.tag holds the ConfigHash the game computes for the transaction; any other makes it compile the sources (RE, 2026-11-13)
 - [workshop-item-page](../components/core/knowledge/mechanisms/workshop-item-page.md) (core): The upload sets a Workshop item's main image and resets its title; the item's own pages set its text and gallery (PROBED, 2026-11-12)
 - [workshop-upload-folder](../components/core/knowledge/mechanisms/workshop-upload-folder.md) (core): The Workshop upload sends the mod folder as it is; a scenario mod needs no generate step (PROBED, 2026-11-12)
 
 ### Trials run on it
 
+- 2026-11-13 [2026-11-13-twin-strike-210942-play2](../components/ops/knowledge/trials/2026-11-13-twin-strike-210942-play2.md) (ops): play, pass
 - 2026-11-12 [2026-11-12-twin-strike-workshop-upload](../components/core/knowledge/trials/2026-11-12-twin-strike-workshop-upload.md) (core): launch, pass
 - 2026-11-12 [2026-11-12-twin-strike-workshop-page](../components/core/knowledge/trials/2026-11-12-twin-strike-workshop-page.md) (core): launch, pass
 - 2026-11-12 [2026-11-12-twin-strike-launch-config-hash](../components/ops/knowledge/trials/2026-11-12-twin-strike-launch-config-hash.md) (ops): launch, fail

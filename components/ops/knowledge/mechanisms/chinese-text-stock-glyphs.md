@@ -35,4 +35,5 @@ character only the game's own dictionaries use.
 - Gates: [`modkit.ops.gates.check_strings`](../../src/modkit/ops/gates.py), [`modkit.ops.strings.check_glyphs`](../../src/modkit/ops/strings.py)
 - Shapes: [`modkit.ops.strings.stock_chars`](../../src/modkit/ops/strings.py), [`modkit.core.glossary.stock_dictionaries`](../../../core/src/modkit/core/glossary.py)
 - Skills: [`components/core/skills/warno-localization/references/zh-Hans.md`](../../../core/skills/warno-localization/references/zh-Hans.md), [`components/ops/skills/warno-new-operation/SKILL.md`](../../skills/warno-new-operation/SKILL.md)
+- Records: [2026-11-13-twin-strike-210942-play2](../trials/2026-11-13-twin-strike-210942-play2.md)
 <!-- referenced-by:end -->

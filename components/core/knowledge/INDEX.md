@@ -13,7 +13,7 @@ A mechanism filed under two topics is listed under both.
 
 ### Loading and crashes
 
-- [load-time-validation-rules](mechanisms/load-time-validation-rules.md): Every object is validated at load, and the first broken rule stops the load (PLAYED, verified 210942 2026-11-12)
+- [load-time-validation-rules](mechanisms/load-time-validation-rules.md): Every object is validated at load, and the first broken rule stops the load (PLAYED, verified 210942 2026-11-13)
 - [crash-dump-names-the-error](mechanisms/crash-dump-names-the-error.md): The crash report's dump names the real error (RE, verified 201602 2026-11-03)
 
 ### Mod packaging
@@ -24,7 +24,7 @@ A mechanism filed under two topics is listed under both.
 
 ### Game updates
 
-- [load-time-validation-rules](mechanisms/load-time-validation-rules.md): Every object is validated at load, and the first broken rule stops the load (PLAYED, verified 210942 2026-11-12)
+- [load-time-validation-rules](mechanisms/load-time-validation-rules.md): Every object is validated at load, and the first broken rule stops the load (PLAYED, verified 210942 2026-11-13)
 - [mod-version-and-config-lines](mechanisms/mod-version-and-config-lines.md): A mod is active only with Gen/Version.ndf, and its [Config] hashes mark it outdated after an update (PLAYED, verified 210942 2026-11-12)
 - [workshop-upload-folder](mechanisms/workshop-upload-folder.md): The Workshop upload sends the mod folder as it is; a scenario mod needs no generate step (PROBED, verified 210942 2026-11-12)
 - [edat-revision-chain](mechanisms/edat-revision-chain.md): Game data is a chain of edat archives, read newest revision first (RE, verified 210942 2026-11-12)
