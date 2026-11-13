@@ -22,6 +22,7 @@ from probe_support import (
 )
 from modkit.core import edat, ndfbin, paths, tgv
 from modkit.core.gates import CheckError
+from modkit.core.models import LANGS
 from modkit.ops import bricks, gates, graph, leveldesign, shapes
 from modkit.ops.bricks import unit_path
 from modkit.ops.files import read_file
@@ -31,7 +32,6 @@ from modkit.ops.maps import GEISA
 from modkit.ops.profile import extracted
 from modkit.ops.rekey import TXN, def_path
 from modkit.ops.shapes import camp_nodes
-from modkit.ops.strings import LANGS
 from modkit.ops.testing import (  # noqa: F401
     cmp_of, end_game, hints, last, objective_named, of, parent_of, prop, remove_out, set_values, sets, start_s, subs,
     token, within,
@@ -703,17 +703,17 @@ class Script(unittest.TestCase):
         self.assertEqual(sorted(token(prop(o, "ObjectiveText")) for o in objectives),
                          sorted(["od_guard", "od_o1", "od_o2", "od_o3", "od_b1", "od_capa", "od_cr", "od_vn", "od_spr",
                                  "od_tr"]))
-        table = {t: pair for d in spike2.STRINGS.values() for t, pair in d.items()}
+        table = {t: texts for d in spike2.STRINGS.values() for t, texts in d.items()}
         for o in objectives:
             with self.subTest(objective=token(prop(o, "ObjectiveText"))):
                 for text, numbers in (("ObjectiveText", "ListVariables"),
                                       ("ObjectiveEtiquetteText", "ListVariablesForEtiquetteText")):
                     n = len(prop(o, numbers) or [])
                     self.assertLessEqual(n, spike2.OBJECTIVE_VARIABLES_MAX)
-                    for words in table[token(prop(o, text))]:
+                    for words in table[token(prop(o, text))].values():
                         self.assertLessEqual(set(re.findall(r"%(\d)", words)), {str(k) for k in range(1, n + 1)})
                     if text == "ObjectiveText":
-                        self.assertEqual(set(re.findall(r"%(\d)", table[token(prop(o, text))][0])),
+                        self.assertEqual(set(re.findall(r"%(\d)", table[token(prop(o, text))].US)),
                                          {str(k) for k in range(1, n + 1)})
 
     def test_pact_beats_end_with_reveal(self):
@@ -1007,7 +1007,7 @@ class Identity(unittest.TestCase):
         self.assertEqual(c.menu_tokens, tuple(dict(c.menu_renames).values()))
         self.assertFalse(set(c.menu_tokens) & set(profile.MENU_TOKENS))  # spike 1 keeps its od_* menu tokens
         self.assertEqual(sorted(spike2.STRINGS["SCENARIO_DEFINITION"]), sorted(c.menu_tokens))
-        self.assertEqual(spike2.STRINGS["SCENARIO_DEFINITION"]["o2_name"][0], "Open Door test 2")
+        self.assertEqual(spike2.STRINGS["SCENARIO_DEFINITION"]["o2_name"].US, "Open Door test 2")
         ctx = spike2.Ctx()
         it = spike2.item("OD_CZ_CapA")
         self.assertEqual(prop(ctx.tag("OD_CZ_CapA"), leveldesign.TAG_ID).v, ld_guid(it, "challenge_OpenDoorTest"))

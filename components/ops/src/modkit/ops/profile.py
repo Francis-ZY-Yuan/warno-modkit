@@ -25,14 +25,14 @@ from types import MappingProxyType
 from typing import Callable, Iterable, Mapping, NamedTuple
 
 from modkit.core import ndfbin, paths
-from modkit.core.gates import Pending, check
+from modkit.core.gates import check
+from modkit.core.models import Pending, StringTable
 from modkit.core.packaging import check_mod_id
 from modkit.ops.graph import Node
 from modkit.ops.items import Item
 from modkit.ops.leveldesign import LdItem
 from modkit.ops.rekey import TXN, ScalarEdit, def_path
 from modkit.ops.script import BRICK_FORCE_HIDE, Templates
-from modkit.ops.strings import Table
 
 PACKS = ("Definition", "Details", "Assets")   # the scenario packs every build writes, in this order
 STOCK_ASSETS = "scenarios/{}"   # a stock challenge's Assets folder in the extraction, by scenario id (STOCK_PATHS)
@@ -174,7 +174,7 @@ class Content:
     name: str
     items: tuple[LdItem, ...]          # every LevelDesign item, deployment and command zones included
     script: Script | None              # None: ship the template's GDScript re-keyed (the gates read it decoded)
-    strings: Table                     # exactly the profile's dictionaries
+    strings: StringTable               # exactly the profile's dictionaries
     menu_tokens: tuple[str, ...]       # SCENARIO_DEFINITION tokens held to the 30-unit title limit (a convention)
     # GDScript shapes gate 2 admits although no stock file uses them: a property the native class has that the content
     # exercises on purpose, as (class, property, value tag, reference target|None). The class is admitted too.
@@ -268,7 +268,7 @@ class OpProfile:
     extra_loose_files: tuple[LooseFiles, ...] = ()
     extra_gates: tuple[ExtraGate, ...] = ()
     extra_outputs: tuple[ReviewOutput, ...] = ()
-    # Gate failures under review, {gate name: its exact message, or several for a gate run once per file}
+    # Gate failures under review, {gate name: (its exact message, ...)}, several for a gate run once per file
     # (modkit.core.gates.run_gate): reported, not raised; an entry that no longer fires is logged.
     reviewed_pending: Pending = field(default_factory=dict)
 

@@ -27,7 +27,7 @@ from twinstrike import op
 from twinstrike.strings import BUTTONS, STRINGS
 
 GD = "$/GDScript"
-STRINGS_LOC = {tok: texts["US"] for tok, texts in STRINGS["Scripting/Localization"].items()}
+STRINGS_LOC = {tok: texts.US for tok, texts in STRINGS["Scripting/Localization"].items()}
 VILLAGE_CZ = op.VILLAGE_ZONE
 
 

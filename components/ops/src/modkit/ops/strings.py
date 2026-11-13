@@ -1,9 +1,9 @@
 """An Operation's string table, each text in each language, and the gates that stop a broken one shipping.
 
-A ``Table`` maps dictionary name -> token -> ``{lang: text}``, ``lang`` a game code of ``LANGS``; an Operation ships
-three dictionaries, SCENARIO_DEFINITION, Scripting/Dialog and Scripting/Localization. ``US`` is required; any other
-language is optional and gets the US text when packed. ``(English, Chinese)`` is shorthand for ``{"US": English,
-"SC": Chinese}``. ``payloads`` turns a table into its ``.dic`` files, one per dictionary and language.
+A ``StringTable`` (modkit.core.models) maps dictionary name -> token -> ``Texts(US=..., SC=...)``, one text per game
+language; an Operation ships three dictionaries, SCENARIO_DEFINITION, Scripting/Dialog and Scripting/Localization.
+``US`` is required; any other language is optional and gets the US text when packed. ``payloads`` turns a table into
+its ``.dic`` files, one per dictionary and language.
 
 The gates catch what no English launch can: a translation that drops a ``%1`` placeholder, a ``#bold{`` markup opener,
 a closing brace or a line break shows raw markup in that language only, and a character no stock text of its language
@@ -19,10 +19,7 @@ from typing import Iterable, Mapping
 
 from modkit.core import trad
 from modkit.core.gates import CheckError
-from modkit.core.glossary import LANGS
-
-Texts = dict[str, str]  # lang -> text
-Table = dict[str, dict[str, Texts | tuple[str, str]]]  # dictionary name -> token -> texts, or (English, Chinese)
+from modkit.core.models import LANGS, StringTable
 
 TITLE_DICT = "SCENARIO_DEFINITION"
 
@@ -46,44 +43,34 @@ def _raise(problems: list[str]) -> None:
         raise StringError("\n".join(problems))
 
 
-def per_language(table: Table) -> dict[str, dict[str, Texts]]:
-    """``table`` with each ``(English, Chinese)`` pair as ``{"US": English, "SC": Chinese}``."""
-    return {dic: {token: {"US": texts[0], "SC": texts[1]} if isinstance(texts, tuple) else dict(texts)
-                  for token, texts in tokens.items()} for dic, tokens in table.items()}
-
-
-def check_parity(table: Table) -> None:
-    """Every token is a valid key with a US text, in game languages only; each other language's text is non-empty
-    wherever US is, and carries the US text's ``%N`` placeholders, ``#name{`` markup openers, ``}`` and line breaks (as
-    multisets, so a translation may reorder them)."""
+def check_parity(table: StringTable) -> None:
+    """Every token is a valid key; each other language's text is non-empty wherever US is, and carries the US text's
+    ``%N`` placeholders, ``#name{`` markup openers, ``}`` and line breaks (as multisets, so a translation may reorder
+    them). ``Texts`` itself holds a US text and the game's languages only."""
     problems = []
-    for dic, tokens in per_language(table).items():
+    for dic, tokens in table.items():
         for token, texts in tokens.items():
             where = f"{dic} {token!r}"
             try:
                 trad.token_key(token)
             except trad.TradError as exc:
                 problems.append(f"{where}: {exc}")
-            if "US" not in texts or not set(texts) <= set(LANGS):
-                problems.append(f"{where}: languages {sorted(texts)}: US is required, and the game's are "
-                                + ", ".join(LANGS))
-                continue
             for lang, text in texts.items():
-                if texts["US"] and not text:
+                if texts.US and not text:
                     problems.append(f"{where}: the {lang} text is empty")
                 for what, pattern in _MATCHED:
-                    want, got = (collections.Counter(pattern.findall(t)) for t in (texts["US"], text))
+                    want, got = (collections.Counter(pattern.findall(t)) for t in (texts.US, text))
                     if want != got:
                         problems.append(f"{where}: {lang} {what} differs from US: missing "
                                         f"{list((want - got).elements())}, extra {list((got - want).elements())}")
     _raise(problems)
 
 
-def check_glyphs(table: Table, chars: Mapping[str, set[str]]) -> None:
+def check_glyphs(table: StringTable, chars: Mapping[str, set[str]]) -> None:
     """Every character of each text in a language of ``chars`` is in that language's set, printable ASCII
     (U+0020-U+007E) or a line break."""
     problems = []
-    for dic, tokens in per_language(table).items():
+    for dic, tokens in table.items():
         for token, texts in tokens.items():
             for lang, text in texts.items():
                 bad = [ch for ch in dict.fromkeys(text) if lang in chars and ch not in chars[lang] and ch != "\n"
@@ -99,7 +86,7 @@ def _units(text: str) -> int:
     return len(text.encode("utf-16-le", "surrogatepass")) // 2
 
 
-def check_titles(table: Table, tokens: Iterable[str], limit: int = 30) -> None:
+def check_titles(table: StringTable, tokens: Iterable[str], limit: int = 30) -> None:
     """Each named SCENARIO_DEFINITION token's text in every language is at most ``limit`` UTF-16 units.
 
     A toolkit convention, not a game limit: no stock text shows one. Stock's menu titles (MissionName, TitreObjectifs)
@@ -107,12 +94,13 @@ def check_titles(table: Table, tokens: Iterable[str], limit: int = 30) -> None:
     35..991 (test_gates_stock.MenuTexts). Name only the tokens to hold to it (``Content.menu_tokens``): Open Door and
     the probes name all seven of theirs, so their briefings stay short too; Twin Strike names its two titles, and its
     other menu texts take stock's lengths."""
-    titles, problems = per_language(table).get(TITLE_DICT, {}), []
+    titles, problems = table.get(TITLE_DICT, {}), []
     for token in tokens:
         if token not in titles:
             problems.append(f"{TITLE_DICT} {token!r}: title token is not in the table")
+            continue
         problems += [f"{TITLE_DICT} {token!r}: the {lang} title is {_units(text)} UTF-16 units, over the limit of "
-                     f"{limit}" for lang, text in titles.get(token, {}).items() if _units(text) > limit]
+                     f"{limit}" for lang, text in titles[token].items() if _units(text) > limit]
     _raise(problems)
 
 
@@ -127,10 +115,10 @@ def stock_chars(dics: Iterable[str]) -> set[str]:
     return chars
 
 
-def payloads(table: Table) -> dict[tuple[str, str], bytes]:
+def payloads(table: StringTable) -> dict[tuple[str, str], bytes]:
     """``(dictionary name, language) -> .dic bytes``, each language from its own texts, US where a token has none.
 
     Runs ``check_parity`` first."""
     check_parity(table)
-    return {(dic, lang): trad.build_dic({token: texts.get(lang, texts["US"]) for token, texts in tokens.items()})
-            for dic, tokens in per_language(table).items() for lang in LANGS}
+    return {(dic, lang): trad.build_dic({token: texts.get(lang) for token, texts in tokens.items()})
+            for dic, tokens in table.items() for lang in LANGS}

@@ -6,6 +6,7 @@ import unittest
 
 from modkit.core import trad
 from modkit.core.gates import CheckError
+from modkit.core.models import Texts
 from modkit.core.packaging import GAMEPLAY_FILES
 from modkit.ops.bricks import g_seq, g_simul, g_wait
 from modkit.ops.gates import (
@@ -126,7 +127,7 @@ class StringsGateTest(unittest.TestCase):
     def test_every_failure_at_once(self):
         """A language with text and no stock dictionary fails, naming warno-setup; then parity, glyphs (each language
         against its own stock set) and titles, one line per violation."""
-        table = {"A": {"a_name": {"US": "Go %1", "SC": "走", "FR": "Va %1"}, "a_x": ("Hold", "坚守")}}
+        table = {"A": {"a_name": Texts(US="Go %1", SC="走", FR="Va %1"), "a_x": Texts(US="Hold", SC="坚守")}}
         stock = {"US": []}
         with tempfile.TemporaryDirectory() as tmp:
             for lang, text in (("SC", "走"), ("FR", "Va")):

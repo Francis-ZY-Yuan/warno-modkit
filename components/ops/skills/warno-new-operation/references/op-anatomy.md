@@ -70,7 +70,7 @@ AI-controlled ally and the enemy ([[custom-operation-from-stock-parts]]).
 | `name` | the `--content` key |
 | `items` | every LevelDesign item (`LdItem`), zones and arrivals included |
 | `script` | the template's GDScript in, `(roots, exports)` out; `None` ships the template's own |
-| `strings` | `{dictionary: {token: {lang: text}}}`, US required (`(English, Chinese)` is shorthand for US and SC), exactly the profile's dictionaries |
+| `strings` | `{dictionary: {token: Texts(US=..., SC=...)}}` (`modkit.core.models.StringTable`), US required, exactly the profile's dictionaries |
 | `menu_tokens` | the SCENARIO_DEFINITION tokens held to the 30-unit title limit (a toolkit convention: stock's briefings run past 1,000 units), so the titles only |
 | `scenario`, `mod_name`, `menu_renames` | the identity ([[content-identity-unique]]) |
 | `extra_shapes` | shapes no stock file uses but this content uses on purpose, each a reviewed decision |

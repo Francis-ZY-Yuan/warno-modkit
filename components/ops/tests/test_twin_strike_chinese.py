@@ -15,7 +15,7 @@ from modkit.ops import INGAME_DIC
 from twinstrike import profile, strings
 
 CJK = re.compile(r"[一-鿿]")
-SC = {dic: {tok: texts["SC"] for tok, texts in tokens.items()} for dic, tokens in strings.STRINGS.items()}
+SC = {dic: {tok: texts.SC for tok, texts in tokens.items()} for dic, tokens in strings.STRINGS.items()}
 
 
 class Terms(unittest.TestCase):
@@ -25,19 +25,19 @@ class Terms(unittest.TestCase):
         for tokens in strings.STRINGS.values():
             for tok, texts in tokens.items():
                 with self.subTest(token=tok):
-                    if re.search(r"[A-Za-z]{2,}", re.sub(r"#\w+\{", "", texts["US"])):
-                        self.assertRegex(texts["SC"], CJK)
+                    if re.search(r"[A-Za-z]{2,}", re.sub(r"#\w+\{", "", texts.US)):
+                        self.assertRegex(texts.SC, CJK)
                     else:
-                        self.assertEqual(texts["SC"], texts["US"])
+                        self.assertEqual(texts.SC, texts.US)
 
     def test_texts_take_their_terms_from_the_table(self):
         """Every term of TERMS is used by some Chinese text; the titles, the difficulty names and the end grades are
         the table's."""
         texts = [zh for tokens in SC.values() for zh in tokens.values()]
-        term = {english: by_lang["SC"][0] for english, by_lang in strings.TERMS.items()}
-        for english, by_lang in strings.TERMS.items():
+        term = {english: t.SC.text for english, t in strings.TERMS.items()}
+        for english, t in strings.TERMS.items():
             with self.subTest(term=english):
-                self.assertTrue(by_lang["SC"][1])
+                self.assertTrue(t.SC.source)
                 self.assertTrue(any(term[english] in text for text in texts), term[english])
         menu, loc = SC["SCENARIO_DEFINITION"], SC["Scripting/Localization"]
         for tok in profile.TITLE_TOKENS:
@@ -48,10 +48,10 @@ class Terms(unittest.TestCase):
         graded = 0
         for tok, texts in strings.STRINGS["Scripting/Dialog"].items():
             for grade in ("TOTAL VICTORY", "MAJOR VICTORY", "MINOR VICTORY", "DEFEAT"):
-                if texts["US"].startswith(f"#bold{{{grade}.}}"):
+                if texts.US.startswith(f"#bold{{{grade}.}}"):
                     graded += 1
                     with self.subTest(token=tok):
-                        self.assertTrue(texts["SC"].startswith(f"#bold{{{term[grade]}。}}"), texts["SC"])
+                        self.assertTrue(texts.SC.startswith(f"#bold{{{term[grade]}。}}"), texts.SC)
         self.assertEqual(graded, 9)   # three wins, each released or withheld, and three defeats
 
 
@@ -70,9 +70,9 @@ class Buttons(unittest.TestCase):
             for button in buttons:
                 us, sc = (labels[lang][trad.token_key(button)] for lang in ("US", "SC"))
                 with self.subTest(dialog=dialog, button=button):
-                    self.assertIn(f"\n{us}: ", texts["US"])
-                    self.assertIn(f"\n{sc}：", texts["SC"])
-                    self.assertEqual(strings.TERMS[us]["SC"][0], sc)
+                    self.assertIn(f"\n{us}: ", texts.US)
+                    self.assertIn(f"\n{sc}：", texts.SC)
+                    self.assertEqual(strings.TERMS[us].SC.text, sc)
 
 
 if __name__ == "__main__":

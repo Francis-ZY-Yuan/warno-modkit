@@ -7,12 +7,12 @@ an intro dialog, then hold NECK MID for 10 minutes; losing the Abrams fails it. 
 from __future__ import annotations
 
 from modkit.core import ndfbin
+from modkit.core.models import StringTable, Texts
 from modkit.ops.graph import Node
 from modkit.ops.leveldesign import gd_tags
 from modkit.ops.profile import Content
 from modkit.ops.script import BRICK_FORCE_HIDE, hold_script
 from modkit.ops.shapes import camp_nodes, setdeck_block
-from modkit.ops.strings import Table
 from probes import profile
 from probes.geisa import MAP
 
@@ -24,20 +24,20 @@ def content(scenario: str = profile.SCENARIO, mod_name: str = profile.MOD_NAME) 
         MAP.item("Tags", "OD_NeckMid", "NECK_MID", "Name"),
         MAP.item("Camp_0", "OD_P_Abrams", "NECK_MID", "Spawn", unit="M1A1HA_Abrams_US"),
     )
-    title = ("Open Door: empty build", "开门行动：空构建")
-    strings: Table = {
+    title = Texts(US="Open Door: empty build", SC="开门行动：空构建")
+    strings: StringTable = {
         "SCENARIO_DEFINITION": {token: title for token in profile.MENU_TOKENS},
         "Scripting/Dialog": {
-            "od_intro": ("Open Door: empty build. One M1A1HA holds NECK MID for 10 minutes.",
-                         "开门行动：空构建。一辆M1A1HA坚守NECK MID十分钟。"),
+            "od_intro": Texts(US="Open Door: empty build. One M1A1HA holds NECK MID for 10 minutes.",
+                              SC="开门行动：空构建。一辆M1A1HA坚守NECK MID十分钟。"),
         },
         "Scripting/Localization": {
-            "od_obj": ("PRIMARY: HOLD NECK MID", "主要目标：坚守NECK MID"),
-            "od_objl": ("Hold for %1", "坚守%1"),
-            "od_cnato": ("NATO", "北约"),
-            "od_cdecoy": ("NATO decoys", "北约佯动部队"),  # 诱饵 (decoy) is outside the stock SC set
-            "od_cddr": ("NVA", "东德军"),
-            "od_csov": ("Soviet Army", "苏军"),
+            "od_obj": Texts(US="PRIMARY: HOLD NECK MID", SC="主要目标：坚守NECK MID"),
+            "od_objl": Texts(US="Hold for %1", SC="坚守%1"),
+            "od_cnato": Texts(US="NATO", SC="北约"),
+            "od_cdecoy": Texts(US="NATO decoys", SC="北约佯动部队"),  # 诱饵 (decoy) is outside the stock SC set
+            "od_cddr": Texts(US="NVA", SC="东德军"),
+            "od_csov": Texts(US="Soviet Army", SC="苏军"),
         },
     }
 

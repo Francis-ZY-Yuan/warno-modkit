@@ -14,6 +14,7 @@ from unittest import mock
 
 from modkit.core import edat, gamebuild, paths, trad
 from modkit.core.gates import CheckError
+from modkit.core.models import Texts
 from modkit.core.ndfbin import Value
 from modkit.ops import build as ops_build
 from modkit.ops.graph import Node, Str, build_graph, decode, encode, loc
@@ -92,10 +93,11 @@ def content(namespace: str = "test-a", scenario: str = "challenge_ModkitTest", m
             props[at:at] = list(rules)
         return roots, exports
 
-    strings = {"SCENARIO_DEFINITION": {f"t_{m}": ("Modkit test", "Modkit test") for m in MENU},
-               "Scripting/Dialog": {"t_intro": ("Hold the place.", "Hold the place.")},
-               "Scripting/Localization": {"t_obj": ("HOLD", "HOLD"), "t_objl": ("Hold for %1", "Hold %1"),
-                                          **{f"t_c{k}": (f"Side {k}", f"Side {k}") for k in range(4)}}}
+    strings = {"SCENARIO_DEFINITION": {f"t_{m}": Texts(US="Modkit test", SC="Modkit test") for m in MENU},
+               "Scripting/Dialog": {"t_intro": Texts(US="Hold the place.", SC="Hold the place.")},
+               "Scripting/Localization": {"t_obj": Texts(US="HOLD", SC="HOLD"),
+                                          "t_objl": Texts(US="Hold for %1", SC="Hold %1"),
+                                          **{f"t_c{k}": Texts(US=f"Side {k}", SC=f"Side {k}") for k in range(4)}}}
     return Content("tiny", items, script, strings, tuple(f"t_{m}" for m in MENU), scenario=scenario,
                    mod_name=mod_name, menu_renames=tuple((f"op13_{m}", f"t_{m}") for m in MENU), sources=sources)
 
@@ -209,7 +211,7 @@ class ExtensionPointsTest(unittest.TestCase):
             if n < 0:
                 raise CheckError(f"file {n} fails")
             return n
-        run = ops_build.GateRun(profile(reviewed_pending={"files": ("file -1 fails", "file -2 fails"), "x": "y"}))
+        run = ops_build.GateRun(profile(reviewed_pending={"files": ("file -1 fails", "file -2 fails"), "x": ("y",)}))
         results = [quiet(run, "files", gate, n)[0] for n in (-1, 3)]
         self.assertEqual(results, [ops_build.PENDING, 3])
         self.assertEqual(run.unfired(), [("files", "file -2 fails"), ("x", "y")])
@@ -226,7 +228,7 @@ class ExtensionPointsTest(unittest.TestCase):
     def test_extra_gate_reviewed_pending_reports_not_raises(self):
         def gate(items, content_):
             raise CheckError("known fault")
-        prof = profile(extra_gates=(ExtraGate("custom", gate),), reviewed_pending={"custom": "known fault"})
+        prof = profile(extra_gates=(ExtraGate("custom", gate),), reviewed_pending={"custom": ("known fault",)})
         result, report = quiet(ops_build.run_extra_gates, prof, [], self.content)
         self.assertEqual(result, ["custom: review pending"])
         self.assertIn("REVIEW PENDING: custom: known fault", report)
@@ -251,14 +253,14 @@ class WholeBuildTest(unittest.TestCase):
             quiet(ops_build.build, profile(build_root=self.tmp.name), broken, self.out("a"))
         message = str(cm.exception)
         self.assertIn("CheckEndGame", message)
-        prof = profile(build_root=self.tmp.name, reviewed_pending={"rules": message, "package": "never seen"})
+        prof = profile(build_root=self.tmp.name, reviewed_pending={"rules": (message,), "package": ("never seen",)})
         items, report = quiet(ops_build.build, prof, broken, self.out("b"))
         self.assertIn(f"REVIEW PENDING: rules: {message}", report)
         self.assertIn("REVIEW PENDING, did not fire: package: never seen", report)
         self.assertNotIn("did not fire: rules", report)
         self.assertTrue(items)
         self.assertTrue(os.path.isfile(os.path.join(self.out("b"), "ModkitTest", "Config.ini")))
-        other = profile(build_root=self.tmp.name, reviewed_pending={"rules": message + " (another)"})
+        other = profile(build_root=self.tmp.name, reviewed_pending={"rules": (message + " (another)",)})
         with self.assertRaises(CheckError):
             quiet(ops_build.build, other, broken, self.out("c"))
 
@@ -286,7 +288,7 @@ class WholeBuildTest(unittest.TestCase):
         with self.assertRaises(CheckError) as cm:
             quiet(ops_build.build, bad, content(), self.out("bad"))
         pending = profile(build_root=self.tmp.name, extra_loose_files=(lambda c: [unit],),
-                          reviewed_pending={"package": str(cm.exception)})
+                          reviewed_pending={"package": (str(cm.exception),)})
         _, report = quiet(ops_build.build, pending, content(), self.out("pending"))
         self.assertIn(f"REVIEW PENDING: package: {cm.exception}", report)
         self.assertIn("gate 5 package: review pending\n", report)

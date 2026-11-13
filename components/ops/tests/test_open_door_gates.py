@@ -12,6 +12,7 @@ import uuid
 
 from modkit.core import ndfbin, paths
 from modkit.core.gates import CheckError
+from modkit.core.models import LANGS, Texts
 from modkit.ops import INGAME_DIC, gates
 from modkit.ops.bricks import (
     g_cmp, g_dialog, g_hint, g_if, g_seq, g_set, g_simul, g_until, g_wait, g_zone_owner,
@@ -25,7 +26,6 @@ from modkit.ops.profile import SURVIVORS, Content, extracted
 from modkit.ops.script import (
     BRICK_DEFAULT, BRICK_FORCE_HIDE, BRICK_FORCE_SHOW, PROD_MENU_SWITCH, ROOT_CLASS, ROOT_EXPORT, silent_cutscenes,
 )
-from modkit.ops.strings import LANGS
 from modkit.ops.shapes import camp_nodes, setdeck_block
 from modkit.ops.zones import rect_polygon
 from open_door_support import (
@@ -420,8 +420,8 @@ class EndFunnel(unittest.TestCase):
 class DialogText(unittest.TestCase):
     def test_hint_passes(self):
         """A hint takes ListVariables, so its %1 is no dialog text (the probes' dialogs: test_probes.py)."""
-        table = {"Scripting/Localization": {"od_h": ("%1 asks", "%1")},
-                 "Scripting/Dialog": {"od_ask": ("Now?", "现在？")}}
+        table = {"Scripting/Localization": {"od_h": Texts(US="%1 asks", SC="%1")},
+                 "Scripting/Dialog": {"od_ask": Texts(US="Now?", SC="现在？")}}
         roots = [g_hint("od_h", 15.0, "shint"), g_dialog("od_ask")]
         self.assertEqual(gates.check_dialog_text(roots, table), 1)
 

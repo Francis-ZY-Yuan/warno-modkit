@@ -10,6 +10,7 @@ import unittest
 from unittest import mock
 
 from modkit.core import glossary, paths, trad
+from modkit.core.models import AnyTexts
 
 # (folder, file) -> {token: text}: two copies of INTERFACE_INGAME, the second holding a text the first lacks
 STOCK = {
@@ -44,8 +45,8 @@ class Glossary(unittest.TestCase):
     def test_rows_by_stem_token_and_language(self):
         """Every language of a token in one row; a token in several copies keeps the first copy's text."""
         rows = glossary.stock_rows()
-        self.assertEqual(rows["INTERFACE_INGAME"]["BTN_GO"], {"FR": "En avant", "SC": "前进", "US": "Go ahead"})
-        self.assertEqual(rows["INTERFACE_INGAME"]["BTN_X"], {"SC": "仅此"})
+        self.assertEqual(rows["INTERFACE_INGAME"]["BTN_GO"], AnyTexts(FR="En avant", SC="前进", US="Go ahead"))
+        self.assertEqual(rows["INTERFACE_INGAME"]["BTN_X"], AnyTexts(SC="仅此"))
         self.assertEqual(set(glossary.stock_rows("MAPS")), {"MAPS"})
 
     def test_term_exact_rows_first_then_the_shortest_holding_it(self):

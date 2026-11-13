@@ -16,6 +16,7 @@ import os
 from typing import Callable
 
 from modkit.core import paths
+from modkit.core.models import StringTable
 from modkit.core.ndfbin import Value
 from modkit.ops.gates import menu_order_gate, unit_gate
 from modkit.ops.leveldesign import LD_FILE, ZONE_FILES
@@ -24,7 +25,6 @@ from modkit.ops.profile import SURVIVORS, SURVIVORS_PLAYER_DECK, Content, ExtraG
 from modkit.ops.rekey import ScalarEdit
 from modkit.ops.shapes import Ctx as ShapesCtx
 from modkit.ops.shapes import camp_nodes
-from modkit.ops.strings import Table
 from probes.geisa import MAP
 
 # --------------------------------------------------------------------------- identity
@@ -134,7 +134,7 @@ class Ctx(ShapesCtx):
         super().__init__(camp_nodes(CAMP_ROWS, CAMP_TOKENS), CAMPS, PLAYER, items, scenario, GUID_NAMESPACE, FOLDER)
 
 
-def content(name: str, items, script: Script | None, strings: Table, menu_tokens: tuple[str, ...], *,
+def content(name: str, items, script: Script | None, strings: StringTable, menu_tokens: tuple[str, ...], *,
             scenario: str = SCENARIO, mod_name: str = MOD_NAME,
             menu_renames: tuple[tuple[str, str], ...] = tuple(LOC_RENAMES.items()), menu_order: int | None = None,
             **kw) -> Content:

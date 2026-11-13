@@ -20,6 +20,7 @@ import uuid
 from probe_support import OUT_ROOT, details_files, ld_guid, quiet_build, scenario_guid, template_gdscript
 from modkit.core import dbg, edat, paths, trad
 from modkit.core.gates import CheckError
+from modkit.core.models import LANGS, Texts
 from modkit.ops import gates
 from modkit.ops.files import read_file
 from modkit.ops.graph import decode, walk
@@ -29,7 +30,7 @@ from modkit.ops.maps import GEISA
 from modkit.ops.profile import SURVIVORS, Content
 from modkit.ops.rekey import DBG, DEF_EXTS, TXN, def_path
 from modkit.ops.script import BRICK_DEFAULT, PROD_MENU_SWITCH
-from modkit.ops.strings import LANGS, StringError
+from modkit.ops.strings import StringError
 from probes import CONTENTS, empty, profile, spike, spike2
 
 OUT = os.path.join(OUT_ROOT, "empty")
@@ -204,7 +205,7 @@ class Identity(unittest.TestCase):
         before writing."""
         base = empty.content()
         out = os.path.join(OUT_ROOT, "bad")
-        extra = {**base.strings, "Scripting/Typo": {"od_x": ("x", "x")}}
+        extra = {**base.strings, "Scripting/Typo": {"od_x": Texts(US="x", SC="x")}}
         missing = {k: v for k, v in base.strings.items() if k != "Scripting/Dialog"}
         for table, name in ((extra, "Scripting/Typo"), (missing, "Scripting/Dialog")):
             with self.subTest(dictionary=name), self.assertRaisesRegex(StringError, name):

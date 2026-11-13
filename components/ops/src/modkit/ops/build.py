@@ -30,6 +30,7 @@ from typing import Callable, Mapping, Sequence
 from modkit.core import edat, gamebuild, ndfbin, ndfrules, paths, trad, txntag
 from modkit.core.gates import CheckError, check, run_gate, unfired
 from modkit.core.glossary import stock_dictionaries
+from modkit.core.models import LANGS, Fired
 from modkit.core.ndfbin import Value
 from modkit.core.packaging import clean_out, write_manifest, write_mod_files
 from modkit.ops import INGAME_DIC
@@ -45,7 +46,7 @@ from modkit.ops.packs import verify_packs, write_loose, write_packs
 from modkit.ops.profile import STOCK_ASSETS, Content, OpProfile, extracted
 from modkit.ops.rekey import DEF_EXTS, TAG, TXN, DumpRow, Rekey, ScalarEdit, def_entry, def_path, dump_rows
 from modkit.ops.script import BRICK_DEFAULT
-from modkit.ops.strings import LANGS, StringError, payloads
+from modkit.ops.strings import StringError, payloads
 from modkit.ops.zones import zone_areas_graph
 
 PENDING = "review pending"
@@ -66,7 +67,7 @@ class GateRun:
 
     def __init__(self, profile: OpProfile):
         self.pending = profile.reviewed_pending
-        self.fired: list[tuple[str, str]] = []
+        self.fired: Fired = []
 
     def __call__(self, name: str, fn: Callable, *args, pending=PENDING):
         """run_gate(name, fn, *args); a reviewed failure gives `pending` (for the build log)."""
@@ -74,7 +75,7 @@ class GateRun:
         out = run_gate(name, fn, *args, pending=self.pending, fired=self.fired)
         return pending if len(self.fired) > before else out
 
-    def unfired(self) -> list[tuple[str, str]]:
+    def unfired(self) -> Fired:
         """The pending entries that never fired in this run."""
         return unfired(self.pending, self.fired)
 

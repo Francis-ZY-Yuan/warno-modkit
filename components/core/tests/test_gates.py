@@ -6,6 +6,8 @@ import os
 import tempfile
 import unittest
 
+from pydantic import ValidationError
+
 from modkit.core import gates
 from modkit.core.gates import CheckError, check, check_fixture_text, run_gate
 
@@ -34,7 +36,7 @@ class RunGateTest(unittest.TestCase):
         self.assertEqual(self.run_quiet("positive", gate, 3, pending={}), (6, ""))
 
     def test_run_gate_pending_matches_exact_message(self):
-        result, out = self.run_quiet("positive", gate, -1, pending={"positive": "-1 is not positive"})
+        result, out = self.run_quiet("positive", gate, -1, pending={"positive": ("-1 is not positive",)})
         self.assertIsNone(result)
         self.assertEqual(out, "REVIEW PENDING: positive: -1 is not positive (the rest of this gate did not run)\n")
 
@@ -48,16 +50,16 @@ class RunGateTest(unittest.TestCase):
             seen.append("second check ran")
             check(b > 0, f"{b} is not positive")
 
-        result, out = self.run_quiet("pair", two_checks, -1, -2, pending={"pair": "-1 is not positive"})
+        result, out = self.run_quiet("pair", two_checks, -1, -2, pending={"pair": ("-1 is not positive",)})
         self.assertEqual((result, seen), (None, []))
         self.assertTrue(out.endswith(" (the rest of this gate did not run)\n"), out)
         with self.assertRaisesRegex(CheckError, "^-2 is not positive$"):  # once the first is fixed, the second shows
-            self.run_quiet("pair", two_checks, 1, -2, pending={"pair": "-1 is not positive"})
+            self.run_quiet("pair", two_checks, 1, -2, pending={"pair": ("-1 is not positive",)})
 
     def test_run_gate_other_message_raises(self):
-        for pending in ({"positive": "-2 is not positive"},     # same gate, another message
-                        {"positive": "-1 is not positive."},    # not exact
-                        {"other": "-1 is not positive"},        # same message, another gate
+        for pending in ({"positive": ("-2 is not positive",)},   # same gate, another message
+                        {"positive": ("-1 is not positive.",)},  # not exact
+                        {"other": ("-1 is not positive",)},      # same message, another gate
                         {}):
             with self.subTest(pending=pending), self.assertRaisesRegex(CheckError, "-1 is not positive"):
                 self.run_quiet("positive", gate, -1, pending=pending)
@@ -66,7 +68,7 @@ class RunGateTest(unittest.TestCase):
         def boom():
             raise ValueError("not a gate failure")
         with self.assertRaises(ValueError):
-            self.run_quiet("boom", boom, pending={"boom": "not a gate failure"})
+            self.run_quiet("boom", boom, pending={"boom": ("not a gate failure",)})
 
     def test_several_messages_per_gate(self):
         """A gate that runs once per file may hold one reviewed failure per file."""
@@ -80,7 +82,7 @@ class RunGateTest(unittest.TestCase):
             self.run_quiet("positive", gate, -3, pending=pending)
 
     def test_fired_entries_and_the_ones_that_no_longer_fire(self):
-        pending = {"positive": ("-1 is not positive", "-2 is not positive"), "other": "x"}
+        pending = {"positive": ("-1 is not positive", "-2 is not positive"), "other": ("x",)}
         fired: list[tuple[str, str]] = []
         with contextlib.redirect_stdout(io.StringIO()):
             run_gate("positive", gate, -1, pending=pending, fired=fired)
@@ -88,9 +90,13 @@ class RunGateTest(unittest.TestCase):
         self.assertEqual(fired, [("positive", "-1 is not positive")])
         self.assertEqual(gates.unfired(pending, fired), [("other", "x"), ("positive", "-2 is not positive")])
 
-    def test_the_pending_map_is_a_plain_dict(self):
-        """The one form a build takes: {gate: message} or {gate: (message, ...)}; no wrapper class."""
-        self.assertFalse(hasattr(gates, "ReviewedPending") or hasattr(gates, "pending_map"))
+    def test_a_bare_message_is_refused(self):
+        """Each gate's messages are a tuple: a bare string, which a message would match any part of, is refused."""
+        for pending in ({"positive": "-1 is not positive"}, {"positive": "is not"}):
+            with self.subTest(pending=pending), self.assertRaises(ValidationError):
+                self.run_quiet("positive", gate, -1, pending=pending)
+        with self.assertRaises(ValidationError):
+            gates.unfired({"positive": "x"}, [])
 
 
 class FixtureTextTest(unittest.TestCase):

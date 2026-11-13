@@ -55,8 +55,8 @@ base directory; `components/ops/examples/` in a clone):
    as Open Door's `op.script` calls it): a `Ctx`, a list of `shapes.Beat`, each timed beat in its own branch.
    [references/script-recipes.md](references/script-recipes.md) maps each thing a mission does to the block that
    builds it and the record that proves it, and says how to search stock for the rest. Anything no example uses goes through `warno-stock-precedent` first.
-7. **Write the strings** for exactly the profile's three dictionaries, each token as `{"US": ..., "SC": ...}`, one
-   key per language (a language left out shows the English; `(English, Chinese)` is shorthand). Each language uses
+7. **Write the strings** for exactly the profile's three dictionaries, each token as `Texts(US=..., SC=...)`
+   (`modkit.core.models`), one keyword per language (a language left out shows the English). Each language uses
    only characters its stock text uses ([[chinese-text-stock-glyphs]]), and dialog text carries no live numbers
    ([[dialog-text-takes-no-variables]]). Menu titles stay within 30 UTF-16 units: a toolkit convention, not a game
    limit. Gate 1 holds the tokens in `Content.menu_tokens` to it, so list only the titles there. Open Door and the

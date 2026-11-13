@@ -499,7 +499,7 @@ class CombatBeats(unittest.TestCase):
         (obj,) = [o for o in of(nodes, "GereObjectif") if token(prop(o, "ObjectiveText")) == "od_obj6"]
         self.assertEqual(prop(obj, "ListVariables"), [caught])
         tokens = {t: texts for dic in spike.STRINGS.values() for t, texts in dic.items()}
-        for lang, text in zip(("English", "Chinese"), tokens["od_obj6"]):
+        for lang, text in tokens["od_obj6"].items():
             with self.subTest(token="od_obj6", lang=lang):
                 self.assertIn("%1", text)
 
@@ -608,7 +608,8 @@ class CombatBeats(unittest.TestCase):
 
     def test_air_assault_hint(self):
         """od_h7 is true of both variants: the rifles appear in the helicopter (spike) or beside it (spike_safe)."""
-        en, zh = spike.STRINGS["Scripting/Localization"]["od_h7"]
+        h7 = spike.STRINGS["Scripting/Localization"]["od_h7"]
+        en, zh = h7.US, h7.SC
         for text in ("UH-60A", "AeroRifles", "EDGE N", "LZ MID", "by hand", "30 s"):
             self.assertIn(text, en)
         self.assertNotIn("land", en.lower().replace("lz mid", ""))
@@ -673,10 +674,10 @@ class Strings(unittest.TestCase):
         self.assertEqual([t for t in want if t not in tokens], [])
         self.assertEqual([t for t in ("od_c1x", "od_c2x") if t in tokens], [])  # the buttons use stock INGAME labels
         self.assertEqual(sorted(spike.STRINGS["SCENARIO_DEFINITION"]), sorted(profile.MENU_TOKENS))
-        for lang, text in zip(("English", "Chinese"), tokens["od_start"]):
+        for lang, text in tokens["od_start"].items():
             with self.subTest(token="od_start", lang=lang):
                 self.assertIn("#bold{", text)
-        for lang, text in zip(("English", "Chinese"), tokens["od_obj4"]):
+        for lang, text in tokens["od_obj4"].items():
             with self.subTest(token="od_obj4", lang=lang):
                 self.assertIn("%1", text)
 

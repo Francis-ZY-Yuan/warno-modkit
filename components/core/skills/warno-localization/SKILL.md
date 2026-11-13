@@ -27,17 +27,18 @@ goes wrong in two ways no English play shows:
 
 ## The tables
 
-- **An Operation's text** is its `strings.py` table (`warno-new-operation`), one entry per token:
-  `"ts_name": {"US": "Operation Twin Strike", "SC": "双重突击行动"}`. US is required; a language left out gets the US
-  text. `(English, Chinese)` is shorthand for US and SC.
+- **An Operation's text** is its `strings.py` table (`warno-new-operation`), one `modkit.core.models.Texts` per
+  token: `"ts_name": Texts(US="Operation Twin Strike", SC="双重突击行动")`. US is required; a language left out gets
+  the US text.
 - **The game's own text:** `python -m modkit.core.glossary token <TOKEN> ... [--dic STEM]` and
   `glossary term "<English>"` print the stock rows as a table, one column per language, each row naming its
   dictionary (`MAPS`, `UNITS`, `INTERFACE_OUTGAME`); `--lang SC,FR` picks the columns.
-- **The mod's term table:** each term, its text per language and the source (`TERMS` in an Operation's `strings.py`).
+- **The mod's term table:** each term, its text per language and the source (`TERMS` in an Operation's `strings.py`:
+  `"Front": Term(SC=Rendering("方面军", "doctrine: фронт"))`).
 
-**To add a language:** a column in the op's table (its code as the key) and an attachment `references/<tag>.md` with
-zh-Hans.md's sections: where the game draws the text, the domain register (pattern, term table, sources), style,
-common mistakes. The stock lookup and the gates already cover all eight languages.
+**To add a language:** a column in the op's table (its code as a `Texts` keyword) and an attachment
+`references/<tag>.md` with zh-Hans.md's sections: where the game draws the text, the domain register (pattern, term
+table, sources), style, common mistakes. The stock lookup and the gates already cover all eight languages.
 
 | Language | Game code | Attachment |
 | --- | --- | --- |

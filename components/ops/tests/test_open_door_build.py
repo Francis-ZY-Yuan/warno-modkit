@@ -17,6 +17,7 @@ import unittest
 import uuid
 
 from modkit.core import edat, ndfbin
+from modkit.core.models import Texts
 from modkit.ops import build as ops_build
 from modkit.ops.graph import all_values, decode
 from modkit.ops.rekey import TXN, def_path
@@ -71,7 +72,7 @@ class Identity(unittest.TestCase):
                                                ("name", "order", "headr", "cname", "recap", "vic", "def")))
         self.assertEqual(c.menu_tokens, tuple(dict(c.menu_renames).values()))
         self.assertEqual(sorted(mission.STRINGS["SCENARIO_DEFINITION"]), sorted(c.menu_tokens))
-        self.assertEqual(mission.STRINGS["SCENARIO_DEFINITION"]["o3_name"], ("Operation Open Door", "开门行动"))
+        self.assertEqual(mission.STRINGS["SCENARIO_DEFINITION"]["o3_name"], Texts(US="Operation Open Door", SC="开门行动"))
         self.assertEqual(CONTENTS["op"]().scenario, profile.SCENARIO)
 
     def test_installs_beside_the_probes(self):

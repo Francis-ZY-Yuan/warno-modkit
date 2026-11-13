@@ -29,6 +29,7 @@ from twin_strike_support import (
 )
 from modkit.core import edat, paths, tgv, trad
 from modkit.core.gates import CheckError
+from modkit.core.models import LANGS
 from modkit.ops import INGAME_DIC, gates, leveldesign, menuart
 from modkit.ops import testing as ops_testing
 from modkit.ops.bricks import unit_path
@@ -42,7 +43,6 @@ from modkit.ops.profile import (
 from modkit.ops.rekey import TXN, def_path
 from modkit.ops.script import BRICK_DEFAULT, PRODUCTION_DECK
 from modkit.ops.shapes import GRU_WORLD, TRANSPORTER_SHAPE
-from modkit.ops.strings import LANGS
 from modkit.ops.testing import cmp_of, last, of, prop, remove_out, subs, token
 from modkit.ops.zones import point_in_polygon
 from twinstrike import CONTENTS, forces, map as ts_map, op, profile, strings
@@ -54,7 +54,7 @@ MENU_ELEMENTS = {"ts_name": "MissionName", "ts_cname": "TitreObjectifs", "ts_hea
                  "ts_order": "TextePresentationScenario", "ts_recap": "TexteObjectifs",
                  "ts_vic": "VictoryOperationOutcomeText", "ts_def": "DefeatOperationOutcomeText"}
 MENU_PICTURES = ("MapTexture", "CornerLogo", "MissionCountry", "EndgameBlazon")  # DescriptionTextureElements
-ENGLISH = {dic: {tok: texts["US"] for tok, texts in tokens.items()} for dic, tokens in strings.STRINGS.items()}
+ENGLISH = {dic: {tok: texts.US for tok, texts in tokens.items()} for dic, tokens in strings.STRINGS.items()}
 
 
 def units(text: str) -> int:
@@ -365,8 +365,8 @@ class Strings(unittest.TestCase):
         for dic, tokens in strings.STRINGS.items():
             for tok, texts in tokens.items():
                 with self.subTest(token=tok):
-                    self.assertEqual(set(texts), {"US", "SC"})
-                    self.assertTrue(all(" " <= ch <= "~" or ch == "\n" for ch in texts["US"]), texts["US"])
+                    self.assertEqual([lang for lang, _ in texts.items()], ["SC", "US"])
+                    self.assertTrue(all(" " <= ch <= "~" or ch == "\n" for ch in texts.US), texts.US)
                     trad.token_key(tok)
         self.assertEqual(set(strings.STRINGS), set(profile.DICTIONARIES))
 
@@ -403,7 +403,7 @@ class Strings(unittest.TestCase):
         forms = {"US": (r"^July [0-9]{1,2}, 1989, [0-9]{2}:[0-9]{2} UTC$", r"^Combat Order No\. \S+$"),
                  "SC": (r"^1989年7月[0-9]{1,2}日 [0-9]{2}:[0-9]{2} UTC$", r"^战斗命令第\S+号$")}
         for column, (lang, (date, order)) in enumerate(forms.items()):
-            menu = {tok: texts[lang] for tok, texts in strings.STRINGS["SCENARIO_DEFINITION"].items()}
+            menu = {tok: texts.get(lang) for tok, texts in strings.STRINGS["SCENARIO_DEFINITION"].items()}
             self.assertEqual(set(menu), set(MENU_ELEMENTS))
             for tok in sorted(set(menu) - set(profile.TITLE_TOKENS)):
                 lo, hi = MENU_SPANS[MENU_ELEMENTS[tok]][column]

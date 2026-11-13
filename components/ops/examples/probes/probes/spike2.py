@@ -39,6 +39,7 @@ from typing import Callable
 
 from modkit.core import ndfbin
 from modkit.core.gates import check
+from modkit.core.models import StringTable, Texts
 from modkit.ops import script as ops_script
 from modkit.ops.bricks import (
     c_team, g_and, g_choice, g_cmp, g_collect, g_compete, g_count, g_detect, g_difficulty, g_end_game, g_hint, g_if,
@@ -56,7 +57,6 @@ from modkit.ops.shapes import (
     MINOR_VICTORY, PACT_ALLIANCE, PENETRATION, POLL_S, SUB, TOTAL_VICTORY, TRANSPORTER_SHAPE, Beat, add_card,
     beat_hint, count_ladder, create, dialog_tokens, objective, reveal, seconds_while, set_end, setdeck_block,
 )
-from modkit.ops.strings import Table
 from probes import profile, spike
 from probes.geisa import MAP
 
@@ -589,127 +589,127 @@ BEATS: list[Beat] = [
 
 # --------------------------------------------------------------------------- strings
 
-STRINGS: Table = {
+STRINGS: StringTable = {
     "SCENARIO_DEFINITION": {  # menu tokens (MENU_RENAMES), each text at most 30 UTF-16 units
-        "o2_name": ("Open Door test 2", "开门行动：测试2"),
-        "o2_cname": ("OPEN DOOR TEST 2", "开门行动：测试2"),
-        "o2_headr": ("Open Door test 2 checklist", "开门行动测试2清单"),
-        "o2_order": ("Three short runs.", "三局短测试。"),
-        "o2_recap": ("Capture, objectives, endings", "占领、目标与结局"),
-        "o2_vic": ("Test 2 complete.", "测试2完成。"),
-        "o2_def": ("Test 2 ended.", "测试2结束。"),
+        "o2_name": Texts(US="Open Door test 2", SC="开门行动：测试2"),
+        "o2_cname": Texts(US="OPEN DOOR TEST 2", SC="开门行动：测试2"),
+        "o2_headr": Texts(US="Open Door test 2 checklist", SC="开门行动测试2清单"),
+        "o2_order": Texts(US="Three short runs.", SC="三局短测试。"),
+        "o2_recap": Texts(US="Capture, objectives, endings", SC="占领、目标与结局"),
+        "o2_vic": Texts(US="Test 2 complete.", SC="测试2完成。"),
+        "o2_def": Texts(US="Test 2 ended.", SC="测试2结束。"),
     },
     "Scripting/Dialog": {  # the buttons' own labels are stock INGAME tokens (BUTTON_*), not ours
-        "od_start": ("#bold{OPEN DOOR TEST 2: pick the run.}\n"
-                     "ALL: the full test. At 15:00 a dialog offers VICTORY! or DEFEAT!, and the battle should end "
-                     "that way.\n"
-                     "FAST: the ending race. 30 s after your click, two endings fire at once, in the opposite order on "
-                     "Hard. Note the end screen.",
-                     "#bold{开门行动测试2：选择测试方式。}\n"
-                     "全部：完整测试。15:00时对话窗口会让您选择胜利！或败北！，战斗应随之结束。\n"
-                     "快：结局先后测试。点击30秒后两个结局同时触发，困难难度下顺序相反。请记下结算界面。"),
-        "od_springq": ("#bold{SPRING TEST: spring the trap now?}\n"
-                       "FIRE AT WILL: now. The test stops asking.\n"
-                       "HOLD FIRE: wait. It asks again in 30 s, up to 4 times in all.",
-                       "#bold{发动测试：现在发动伏击？}\n"
-                       "自由射击：现在发动，测试不再提问。\n"
-                       "不射击：等待，30秒后再次提问，最多共4次。"),
-        "od_endq": ("#bold{FULL TEST: the ending.}\n"
-                    "VICTORY!: the battle should end in a total victory. DEFEAT!: in a defeat. Note the end screen.",
-                    "#bold{完整测试：结局。}\n"
-                    "胜利！：战斗应以完全胜利结束。败北！：战斗应以失败结束。请记下结算界面。"),
+        "od_start": Texts(US="#bold{OPEN DOOR TEST 2: pick the run.}\nALL: the full test. At 15:00 a dialog offers "
+                             "VICTORY! or DEFEAT!, and the battle should end that way.\nFAST: the ending race. 30 s "
+                             "after your click, two endings fire at once, in the opposite order on Hard. Note the end "
+                             "screen.",
+                          SC="#bold{开门行动测试2：选择测试方式。}\n"
+                             "全部：完整测试。15:00时对话窗口会让您选择胜利！或败北！，战斗应随之结束。\n"
+                             "快：结局先后测试。点击30秒后两个结局同时触发，困难难度下顺序相反。请记下结算界面。"),
+        "od_springq": Texts(US="#bold{SPRING TEST: spring the trap now?}\n"
+                               "FIRE AT WILL: now. The test stops asking.\n"
+                               "HOLD FIRE: wait. It asks again in 30 s, up to 4 times in all.",
+                            SC="#bold{发动测试：现在发动伏击？}\n"
+                               "自由射击：现在发动，测试不再提问。\n"
+                               "不射击：等待，30秒后再次提问，最多共4次。"),
+        "od_endq": Texts(US="#bold{FULL TEST: the ending.}\nVICTORY!: the battle should end in a total victory. "
+                            "DEFEAT!: in a defeat. Note the end screen.",
+                         SC="#bold{完整测试：结局。}\n"
+                            "胜利！：战斗应以完全胜利结束。败北！：战斗应以失败结束。请记下结算界面。"),
     },
     "Scripting/Localization": {
-        "od_cnato": ("NATO", "北约"),
-        "od_cdecoy": ("NATO decoys", "北约佯动部队"),  # 诱饵 (decoy) is outside the stock SC set
-        "od_cddr": ("NVA", "东德军"),
-        "od_csov": ("Soviet Army", "苏军"),
-        "od_hdep": ("TEST 2: deploy in the west zone (3,000 points). Deck: is there a Rifles in M113A3 card, and an "
-                    "M1 Abrams card at experience 0? Map: are CZ SW, VILLAGE E, TOWN SE and TOWN NE yours (blue)?",
-                    "测试2：在西侧部署区部署（3,000点）。卡组：是否有乘坐M113A3的步兵卡，以及经验为0的M1 Abrams卡？"
-                    "地图：CZ SW、VILLAGE E、TOWN SE和TOWN NE是否归您所有（蓝色）？"),
-        "od_hfull": ("FULL TEST: objectives and counters from 0:05; the end dialog at 15:00.",
-                     "完整测试：0:05起出现目标和计数器；15:00弹出结局对话窗口。"),
-        "od_hquick": ("QUICK RUN: the ending race fires 30 s from now. Note which end screen shows.",
-                      "快速测试：结局先后测试将在30秒后触发。请记下显示的结算界面。"),
-        "od_hdif0": ("DIFFICULTY: the script sees Easy (0).", "难度：脚本读到简单（0）。"),
-        "od_hdif1": ("DIFFICULTY: the script sees Medium (1).", "难度：脚本读到中等（1）。"),
-        "od_hdif2": ("DIFFICULTY: the script sees Hard (2).", "难度：脚本读到困难（2）。"),
-        "od_hobj": ("OBJECTIVES: O1 completes at 1:00 and brings O3, which completes at 2:00; O2 fails at 1:30. "
-                    "Bonus B1: destroy 2 of group X's 3 BRDM-2 (map pin).",
-                    "目标：O1将在1:00完成并带出O3，O3将在2:00完成；O2将在1:30失败。"
-                    "奖励目标B1：摧毁X组3辆BRDM-2中的2辆（见地图标记）。"),
-        "od_o1": ("O1: completes at 1:00, then O3 appears", "O1：将在1:00完成，随后出现O3"),
-        "od_o1l": ("O1", "O1"),
-        "od_o2": ("O2: fails at 1:30", "O2：将在1:30失败"),
-        "od_o2l": ("O2", "O2"),
-        "od_o3": ("O3 (from O1): completes at 2:00", "O3（来自O1）：将在2:00完成"),
-        "od_o3l": ("O3", "O3"),
-        "od_b1": ("BONUS B1: destroy 2 of group X's 3 BRDM-2 (X alive %1, your BRDM kills %2)",
-                  "奖励B1：摧毁X组3辆BRDM-2中的2辆（X组存活%1，您击毁BRDM %2）"),
-        "od_b1l": ("Group X: %1 alive", "X组：存活%1"),
-        "od_hcnt": ("COUNTERS: 3 BRDM-2 in group X (map pin) and 3 in group Y, parked 1.5 to 2 km east of your zone. "
-                    "Kill 1 of Y, then 2 of X: bonus B1 shows X alive and your BRDM kills.",
-                    "计数器：X组3辆BRDM-2（见地图标记）和Y组3辆，停在您部署区以东1.5至2公里处。先消灭Y组1辆，"
-                    "再消灭X组2辆：奖励B1显示X组存活数和您的BRDM击毁数。"),
-        "od_guard": ("Lose every unit and the test ends in defeat. Difficulty the script sees: %1 (0 Easy, 1 Medium, "
-                     "2 Hard, 9 none)",
-                     "失去所有单位，测试即以失败结束。脚本读到的难度：%1（0 简单，1 中等，2 困难，9 无）"),
-        "od_guardl": ("Defeat", "失败"),
+        "od_cnato": Texts(US="NATO", SC="北约"),
+        "od_cdecoy": Texts(US="NATO decoys", SC="北约佯动部队"),  # 诱饵 (decoy) is outside the stock SC set
+        "od_cddr": Texts(US="NVA", SC="东德军"),
+        "od_csov": Texts(US="Soviet Army", SC="苏军"),
+        "od_hdep": Texts(US="TEST 2: deploy in the west zone (3,000 points). Deck: is there a Rifles in M113A3 card, "
+                            "and an M1 Abrams card at experience 0? Map: are CZ SW, VILLAGE E, TOWN SE and TOWN NE "
+                            "yours (blue)?",
+                         SC="测试2：在西侧部署区部署（3,000点）。卡组：是否有乘坐M113A3的步兵卡，以及经验为0的M1 Abrams卡？"
+                            "地图：CZ SW、VILLAGE E、TOWN SE和TOWN NE是否归您所有（蓝色）？"),
+        "od_hfull": Texts(US="FULL TEST: objectives and counters from 0:05; the end dialog at 15:00.",
+                          SC="完整测试：0:05起出现目标和计数器；15:00弹出结局对话窗口。"),
+        "od_hquick": Texts(US="QUICK RUN: the ending race fires 30 s from now. Note which end screen shows.",
+                           SC="快速测试：结局先后测试将在30秒后触发。请记下显示的结算界面。"),
+        "od_hdif0": Texts(US="DIFFICULTY: the script sees Easy (0).", SC="难度：脚本读到简单（0）。"),
+        "od_hdif1": Texts(US="DIFFICULTY: the script sees Medium (1).", SC="难度：脚本读到中等（1）。"),
+        "od_hdif2": Texts(US="DIFFICULTY: the script sees Hard (2).", SC="难度：脚本读到困难（2）。"),
+        "od_hobj": Texts(US="OBJECTIVES: O1 completes at 1:00 and brings O3, which completes at 2:00; O2 fails at "
+                            "1:30. Bonus B1: destroy 2 of group X's 3 BRDM-2 (map pin).",
+                         SC="目标：O1将在1:00完成并带出O3，O3将在2:00完成；O2将在1:30失败。"
+                            "奖励目标B1：摧毁X组3辆BRDM-2中的2辆（见地图标记）。"),
+        "od_o1": Texts(US="O1: completes at 1:00, then O3 appears", SC="O1：将在1:00完成，随后出现O3"),
+        "od_o1l": Texts(US="O1", SC="O1"),
+        "od_o2": Texts(US="O2: fails at 1:30", SC="O2：将在1:30失败"),
+        "od_o2l": Texts(US="O2", SC="O2"),
+        "od_o3": Texts(US="O3 (from O1): completes at 2:00", SC="O3（来自O1）：将在2:00完成"),
+        "od_o3l": Texts(US="O3", SC="O3"),
+        "od_b1": Texts(US="BONUS B1: destroy 2 of group X's 3 BRDM-2 (X alive %1, your BRDM kills %2)",
+                       SC="奖励B1：摧毁X组3辆BRDM-2中的2辆（X组存活%1，您击毁BRDM %2）"),
+        "od_b1l": Texts(US="Group X: %1 alive", SC="X组：存活%1"),
+        "od_hcnt": Texts(US="COUNTERS: 3 BRDM-2 in group X (map pin) and 3 in group Y, parked 1.5 to 2 km east of your "
+                            "zone. Kill 1 of Y, then 2 of X: bonus B1 shows X alive and your BRDM kills.",
+                         SC="计数器：X组3辆BRDM-2（见地图标记）和Y组3辆，停在您部署区以东1.5至2公里处。先消灭Y组1辆，"
+                            "再消灭X组2辆：奖励B1显示X组存活数和您的BRDM击毁数。"),
+        "od_guard": Texts(US="Lose every unit and the test ends in defeat. Difficulty the script sees: %1 (0 Easy, 1 "
+                             "Medium, 2 Hard, 9 none)",
+                          SC="失去所有单位，测试即以失败结束。脚本读到的难度：%1（0 简单，1 中等，2 困难，9 无）"),
+        "od_guardl": Texts(US="Defeat", SC="失败"),
         # 1:00 capture
-        "od_hcap": ("CAPTURE: Soviet command tank A drives from ENTRY E to seize CAP A (Village E); the script removes "
-                    "it once CAP A is Soviet. Command tank B heads for CAP B (Town SE) and is destroyed by script 3 s "
-                    "after it enters. Keep your units out of both.",
-                    "占领：苏军指挥坦克A从ENTRY E出发，夺取CAP A（Village E）；CAP A归苏军所有后，脚本将其移除。"
-                    "指挥坦克B前往CAP B（Town SE），进入3秒后被脚本摧毁。请让您的单位远离这两处。"),
-        "od_hnato": ("CAPTURE: your M1A1 CMD tank is on the road 1 km west of CAP A. Drive it into CAP A and watch CAP "
-                     "A's owner. Once it reads 1, or at 7:45 at the latest, pull the tank 1.5 km south-west, clear of "
-                     "CAP B.",
-                     "占领：您的M1A1指挥坦克位于CAP A以西1公里的道路上。将其开进CAP A，并观察CAP A的归属。"
-                     "归属显示1后（最迟7:45），请将坦克向西南撤出1.5公里，远离CAP B。"),
-        "od_hkillb": ("CAPTURE: tank B entered CAP B and was destroyed by script after 3 s. Watch CAP B's colour on "
-                      "the map.",
-                      "占领：坦克B进入CAP B，3秒后被脚本摧毁。请在地图上观察CAP B的归属。"),
-        "od_capa": ("CAP A owner %1 (0 none, 1 NATO, 2 Soviet), Soviet seconds inside %2",
-                    "CAP A归属%1（0 无，1 北约，2 苏军），苏军在内%2秒"),
-        "od_capal": ("%1 / %2 s", "%1 / %2秒"),
+        "od_hcap": Texts(US="CAPTURE: Soviet command tank A drives from ENTRY E to seize CAP A (Village E); the script "
+                            "removes it once CAP A is Soviet. Command tank B heads for CAP B (Town SE) and is "
+                            "destroyed by script 3 s after it enters. Keep your units out of both.",
+                         SC="占领：苏军指挥坦克A从ENTRY E出发，夺取CAP A（Village E）；CAP A归苏军所有后，脚本将其移除。"
+                            "指挥坦克B前往CAP B（Town SE），进入3秒后被脚本摧毁。请让您的单位远离这两处。"),
+        "od_hnato": Texts(US="CAPTURE: your M1A1 CMD tank is on the road 1 km west of CAP A. Drive it into CAP A and "
+                             "watch CAP A's owner. Once it reads 1, or at 7:45 at the latest, pull the tank 1.5 km "
+                             "south-west, clear of CAP B.",
+                          SC="占领：您的M1A1指挥坦克位于CAP A以西1公里的道路上。将其开进CAP A，并观察CAP A的归属。"
+                             "归属显示1后（最迟7:45），请将坦克向西南撤出1.5公里，远离CAP B。"),
+        "od_hkillb": Texts(US="CAPTURE: tank B entered CAP B and was destroyed by script after 3 s. Watch CAP B's "
+                              "colour on the map.",
+                           SC="占领：坦克B进入CAP B，3秒后被脚本摧毁。请在地图上观察CAP B的归属。"),
+        "od_capa": Texts(US="CAP A owner %1 (0 none, 1 NATO, 2 Soviet), Soviet seconds inside %2",
+                         SC="CAP A归属%1（0 无，1 北约，2 苏军），苏军在内%2秒"),
+        "od_capal": Texts(US="%1 / %2 s", SC="%1 / %2秒"),
         # 2:00 count race
-        "od_hcr": ("COUNT RACE: 4 BMP-2 seize TOWN NE. With 3 or more Soviet units and none of yours in TOWN NE and "
-                   "SHOULDER for 20 s, the script makes TOWN NE Soviet. Keep out of both.",
-                   "数量测试：4辆BMP-2夺取TOWN NE。若TOWN NE和SHOULDER内有3个以上苏军单位且没有您的单位，持续20秒，"
-                   "脚本即将TOWN NE设为苏军所有。请远离这两处。"),
-        "od_hcrown": ("COUNT RACE: held 20 s. The script made TOWN NE Soviet. Is it red on the map?",
-                      "数量测试：已持续20秒。脚本已将TOWN NE设为苏军所有。地图上它是否变为红色？"),
-        "od_cr": ("COUNT RACE (TOWN NE + SHOULDER): Soviet in %1, held %2 s",
-                  "数量测试（TOWN NE + SHOULDER）：苏军%1，已持续%2秒"),
-        "od_crl": ("%1 / %2 s", "%1 / %2秒"),
+        "od_hcr": Texts(US="COUNT RACE: 4 BMP-2 seize TOWN NE. With 3 or more Soviet units and none of yours in TOWN "
+                           "NE and SHOULDER for 20 s, the script makes TOWN NE Soviet. Keep out of both.",
+                        SC="数量测试：4辆BMP-2夺取TOWN NE。若TOWN NE和SHOULDER内有3个以上苏军单位且没有您的单位，持续20秒，"
+                           "脚本即将TOWN NE设为苏军所有。请远离这两处。"),
+        "od_hcrown": Texts(US="COUNT RACE: held 20 s. The script made TOWN NE Soviet. Is it red on the map?",
+                           SC="数量测试：已持续20秒。脚本已将TOWN NE设为苏军所有。地图上它是否变为红色？"),
+        "od_cr": Texts(US="COUNT RACE (TOWN NE + SHOULDER): Soviet in %1, held %2 s",
+                       SC="数量测试（TOWN NE + SHOULDER）：苏军%1，已持续%2秒"),
+        "od_crl": Texts(US="%1 / %2 s", SC="%1 / %2秒"),
         # 3:00 vanish
-        "od_hvan": ("VANISH: 4 BRDM-2 appear at CORNER PACT and are removed by script at once. An objective shows how "
-                    "the Soviet losses and your BRDM kills changed 2 s later.",
-                    "移除：4辆BRDM-2出现在CORNER PACT，随即被脚本移除。一个目标显示2秒后苏军损失和您击毁BRDM数的变化。"),
-        "od_hvana": ("RANDOM: the script picked hint A.", "随机：脚本选中了提示A。"),
-        "od_hvanb": ("RANDOM: the script picked hint B.", "随机：脚本选中了提示B。"),
-        "od_vn": ("VANISH, 2 s after: Soviet losses +%1, your BRDM kills +%2",
-                  "移除后2秒：苏军损失+%1，您击毁BRDM +%2"),
-        "od_vnl": ("+%1 / +%2", "+%1 / +%2"),
+        "od_hvan": Texts(US="VANISH: 4 BRDM-2 appear at CORNER PACT and are removed by script at once. An objective "
+                            "shows how the Soviet losses and your BRDM kills changed 2 s later.",
+                         SC="移除：4辆BRDM-2出现在CORNER PACT，随即被脚本移除。一个目标显示2秒后苏军损失和您击毁BRDM数的变化。"),
+        "od_hvana": Texts(US="RANDOM: the script picked hint A.", SC="随机：脚本选中了提示A。"),
+        "od_hvanb": Texts(US="RANDOM: the script picked hint B.", SC="随机：脚本选中了提示B。"),
+        "od_vn": Texts(US="VANISH, 2 s after: Soviet losses +%1, your BRDM kills +%2",
+                       SC="移除后2秒：苏军损失+%1，您击毁BRDM +%2"),
+        "od_vnl": Texts(US="+%1 / +%2", SC="+%1 / +%2"),
         # 8:00 traffic
-        "od_htr": ("TRAFFIC: 10 T-80BV and 10 BMP-2 drive from ENTRY E by road through NECK MID to SACK MID (the "
-                   "passage exit), engaging on sight. Keep clear of that road.",
-                   "交通：10辆T-80BV和10辆BMP-2从ENTRY E沿道路经NECK MID驶向SACK MID（通道出口），遇敌即交战。"
-                   "请远离这条道路。"),
-        "od_tr": ("PASSAGE: %1 s since the column appeared, %2 of 20 at SACK MID",
-                  "通道：纵队出现后%1秒，%2 / 20辆到达SACK MID"),
-        "od_trl": ("%1 s / %2", "%1秒 / %2"),
+        "od_htr": Texts(US="TRAFFIC: 10 T-80BV and 10 BMP-2 drive from ENTRY E by road through NECK MID to SACK MID "
+                           "(the passage exit), engaging on sight. Keep clear of that road.",
+                        SC="交通：10辆T-80BV和10辆BMP-2从ENTRY E沿道路经NECK MID驶向SACK MID（通道出口），遇敌即交战。"
+                           "请远离这条道路。"),
+        "od_tr": Texts(US="PASSAGE: %1 s since the column appeared, %2 of 20 at SACK MID",
+                       SC="通道：纵队出现后%1秒，%2 / 20辆到达SACK MID"),
+        "od_trl": Texts(US="%1 s / %2", SC="%1秒 / %2"),
         # 5:00 spring dialog
-        "od_hspr": ("SPRING: the spring dialog asks up to 4 times, 30 s apart. Answer HOLD FIRE at least once, then "
-                    "FIRE AT WILL.",
-                    "发动：发动对话窗口最多提问4次，每次间隔30秒。请至少回答一次不射击，然后选择自由射击。"),
-        "od_hnow": ("SPRING: you chose FIRE AT WILL. The test stops asking.", "发动：您选择了自由射击。测试不再提问。"),
-        "od_hwait": ("SPRING: four asks without FIRE AT WILL. The test stops asking.",
-                     "发动：已提问4次，未选择自由射击。测试不再提问。"),
-        "od_spr": ("SPRING: asks %1, last answer %2 (0 FIRE AT WILL, 1 HOLD FIRE, 2 none)",
-                   "发动：已提问%1次，上次回答%2（0 自由射击，1 不射击，2 无）"),
-        "od_sprl": ("%1 / %2", "%1 / %2"),
+        "od_hspr": Texts(US="SPRING: the spring dialog asks up to 4 times, 30 s apart. Answer HOLD FIRE at least once, "
+                            "then FIRE AT WILL.",
+                         SC="发动：发动对话窗口最多提问4次，每次间隔30秒。请至少回答一次不射击，然后选择自由射击。"),
+        "od_hnow": Texts(US="SPRING: you chose FIRE AT WILL. The test stops asking.", SC="发动：您选择了自由射击。测试不再提问。"),
+        "od_hwait": Texts(US="SPRING: four asks without FIRE AT WILL. The test stops asking.",
+                          SC="发动：已提问4次，未选择自由射击。测试不再提问。"),
+        "od_spr": Texts(US="SPRING: asks %1, last answer %2 (0 FIRE AT WILL, 1 HOLD FIRE, 2 none)",
+                        SC="发动：已提问%1次，上次回答%2（0 自由射击，1 不射击，2 无）"),
+        "od_sprl": Texts(US="%1 / %2", SC="%1 / %2"),
     },
 }
 

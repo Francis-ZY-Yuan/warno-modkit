@@ -666,16 +666,16 @@ class Phase1(unittest.TestCase):
         for tok in ("od_hph1", "od_p1", "od_p1l", "od_b1", "od_b1l", "od_hcapt", "od_hopen",
                     *(f"od_hf{k}{s}" for k in ("ne", "ve", "se") for s in ("", "_f"))):
             with self.subTest(token=tok):
-                self.assertTrue(all(loc[tok]))
-                self.assertLessEqual(len(set(re.findall(r"%\d", loc[tok][0]))), 2)
-        self.assertEqual(re.findall(r"%\d", loc["od_p1"][0]), ["%1"])
-        self.assertEqual(re.findall(r"%\d", loc["od_b1"][0]), ["%1", "%2"])
+                self.assertTrue(all(loc[tok].values()))
+                self.assertLessEqual(len(set(re.findall(r"%\d", loc[tok].US))), 2)
+        self.assertEqual(re.findall(r"%\d", loc["od_p1"].US), ["%1"])
+        self.assertEqual(re.findall(r"%\d", loc["od_b1"].US), ["%1", "%2"])
         self.assertFalse({"od_h12", "od_h12_f"} & set(loc))
         for tok in ("od_dheld", "od_dheld_f"):
-            self.assertTrue(all(dialogs[tok]))
-            self.assertNotRegex("".join(dialogs[tok]), r"%\d")
-        self.assertIn("reinforcements no longer arrive", dialogs["od_dheld"][0])
-        self.assertNotIn("reinforcements", dialogs["od_dheld_f"][0])
+            self.assertTrue(all(dialogs[tok].values()))
+            self.assertNotRegex("".join(dialogs[tok].values()), r"%\d")
+        self.assertIn("reinforcements no longer arrive", dialogs["od_dheld"].US)
+        self.assertNotIn("reinforcements", dialogs["od_dheld_f"].US)
 
 
 @SCRIPT_DATA
@@ -1165,17 +1165,17 @@ class Phase2(unittest.TestCase):
         for tok in ("od_hph2", "od_p4", "od_p4l", "od_b6", "od_b6l", "od_hgrn", "od_hgrn_f", "od_hgrs",
                     "od_hgrs_f"):
             with self.subTest(token=tok):
-                self.assertTrue(all(loc[tok]))
+                self.assertTrue(all(loc[tok].values()))
         for tok in ("od_p4", "od_p4l", "od_b6", "od_b6l"):
-            self.assertEqual([re.findall(r"%\d", text) for text in loc[tok]], [["%1", "%2"]] * 2)
-        self.assertIn("reinforcements arrive only at the ANVIL", loc["od_hgrn"][0])
-        self.assertNotIn("reinforcements", loc["od_hgrn_f"][0])
-        self.assertIn("reinforcements arrive only at the anvil", loc["od_hgrs"][0].lower())
-        self.assertNotIn("reinforcements", loc["od_hgrs_f"][0])
+            self.assertEqual([re.findall(r"%\d", text) for text in loc[tok].values()], [["%1", "%2"]] * 2)
+        self.assertIn("reinforcements arrive only at the ANVIL", loc["od_hgrn"].US)
+        self.assertNotIn("reinforcements", loc["od_hgrn_f"].US)
+        self.assertIn("reinforcements arrive only at the anvil", loc["od_hgrs"].US.lower())
+        self.assertNotIn("reinforcements", loc["od_hgrs_f"].US)
         for tok in ("od_dspring", "od_dauto"):
-            self.assertNotRegex("".join(dialogs[tok]), r"%\d")
-        self.assertTrue(all(word in dialogs["od_dspring"][0] for word in ("FIRE AT WILL", "HOLD FIRE")))
-        self.assertTrue(all(word in dialogs["od_dspring"][1] for word in ("自由射击", "不射击")))
+            self.assertNotRegex("".join(dialogs[tok].values()), r"%\d")
+        self.assertTrue(all(word in dialogs["od_dspring"].US for word in ("FIRE AT WILL", "HOLD FIRE")))
+        self.assertTrue(all(word in dialogs["od_dspring"].SC for word in ("自由射击", "不射击")))
 
 
 # Count reads: what reads a unit group's count, the pocket's circles or the battle's tallies.
@@ -1766,23 +1766,23 @@ class Phase34(unittest.TestCase):
         for tok in ("od_hjaw", "od_p5m", "od_p5ml", "od_p5s", "od_p5sl", "od_hsm", "od_hsm_f", "od_hss", "od_hss_f",
                     "od_p6", "od_p6l", "od_catch", "od_catchl"):
             with self.subTest(token=tok):
-                self.assertTrue(all(loc[tok]))
+                self.assertTrue(all(loc[tok].values()))
         for tok in ("od_p5m", "od_p5ml", "od_p5s", "od_p5sl"):
-            self.assertEqual([re.findall(r"%\d", text) for text in loc[tok]], [["%1"]] * 2)
-            self.assertTrue(all(f"%1 / {int(mission.SEAL_HOLD_S)} " in text for text in loc[tok]))
+            self.assertEqual([re.findall(r"%\d", text) for text in loc[tok].values()], [["%1"]] * 2)
+            self.assertTrue(all(f"%1 / {int(mission.SEAL_HOLD_S)} " in text for text in loc[tok].values()))
         for tok in ("od_p6", "od_p6l", "od_catch", "od_catchl"):
-            self.assertEqual([sorted(re.findall(r"%\d", text)) for text in loc[tok]], [["%1", "%2"]] * 2)
-        self.assertIn(f"{int(mission.T_HOLD_S // 60)} min", loc["od_p6"][0])
-        self.assertIn(f"{int(mission.SEAL_HOLD_S)} s", loc["od_hjaw"][0])
-        self.assertIn(f"{int(mission.BACKSTOP_S // 60)} minutes", dialogs["od_dback"][0])
+            self.assertEqual([sorted(re.findall(r"%\d", text)) for text in loc[tok].values()], [["%1", "%2"]] * 2)
+        self.assertIn(f"{int(mission.T_HOLD_S // 60)} min", loc["od_p6"].US)
+        self.assertIn(f"{int(mission.SEAL_HOLD_S)} s", loc["od_hjaw"].US)
+        self.assertIn(f"{int(mission.BACKSTOP_S // 60)} minutes", dialogs["od_dback"].US)
         for tok in ("od_dcode", "od_dback", "od_dmajor", "od_dminor"):
-            self.assertNotRegex("".join(dialogs[tok]), r"%\d")
+            self.assertNotRegex("".join(dialogs[tok].values()), r"%\d")
         for tok in ("od_hsm", "od_hss"):
-            self.assertIn("reinforcements arrive there again", loc[tok][0])
-            self.assertNotIn("reinforcements", loc[f"{tok}_f"][0])
+            self.assertIn("reinforcements arrive there again", loc[tok].US)
+            self.assertNotIn("reinforcements", loc[f"{tok}_f"].US)
         for tok in ("od_dmajor", "od_dminor"):
-            self.assertNotIn("door", dialogs[tok][0].lower())
-        self.assertTrue(all(word in dialogs["od_dcode"][0] for word in ("M1A1HA", "Leopard 2A4", "OH-58D", "A-10")))
+            self.assertNotIn("door", dialogs[tok].US.lower())
+        self.assertTrue(all(word in dialogs["od_dcode"].US for word in ("M1A1HA", "Leopard 2A4", "OH-58D", "A-10")))
 
 
 

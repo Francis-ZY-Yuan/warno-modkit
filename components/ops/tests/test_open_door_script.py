@@ -225,7 +225,8 @@ class Script(unittest.TestCase):
     def test_deploy_hint_names_the_soviet_cards(self):
         """The deploy hint names the captured Soviet cards by unit and count (SOVIET_CARDS), not by factory
         tab (the buy menu opens in Groups mode), in both languages; the deploy-area sentence stays."""
-        en, zh = mission.STRINGS["Scripting/Localization"]["od_hdep"]
+        hdep = mission.STRINGS["Scripting/Localization"]["od_hdep"]
+        en, zh = hdep.US, hdep.SC
         names = {"T80U_SOV": ("T-80U tanks", "辆T-80U坦克"), "Ka_50_SOV": ("Ka-50 helicopters", "架Ka-50直升机"),
                  "TOS1_Buratino_SOV": ("TOS-1 rocket launchers", "辆TOS-1火箭炮")}
         numbers = {2: ("two", "两")}
@@ -460,11 +461,12 @@ class Endings(unittest.TestCase):
                    "od_dheld_f", "od_dspring", "od_dauto", "od_dcode", "od_dback"}
         self.assertEqual(mission.STRINGS["Scripting/Dialog"].keys(), dialogs)
         for tok in dialogs:
-            en, zh = mission.STRINGS["Scripting/Dialog"][tok]
+            texts = mission.STRINGS["Scripting/Dialog"][tok]
+            en, zh = texts.US, texts.SC
             self.assertTrue(en and zh)
             self.assertNotRegex(en + zh, r"%\d")
         for tok in ("od_p2", "od_p2l"):
-            self.assertTrue(all(mission.STRINGS["Scripting/Localization"][tok]))
+            self.assertTrue(all(mission.STRINGS["Scripting/Localization"][tok].values()))
 
 
 

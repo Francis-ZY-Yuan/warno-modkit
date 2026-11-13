@@ -50,6 +50,7 @@ from typing import TYPE_CHECKING, Callable, Iterable, Mapping, NamedTuple, Seque
 
 from modkit.core import dbg, ndfbin, ndfrules, paths, trad, txntag
 from modkit.core.gates import CheckError, check, check_fixture_text
+from modkit.core.models import LANGS, StringTable
 from modkit.core.names import unit_path
 from modkit.core.ndfbin import Value
 from modkit.core.packaging import is_gameplay_file
@@ -60,9 +61,7 @@ from modkit.ops.items import Item
 from modkit.ops.leveldesign import GD_TAG_CLASS, LD_FILE, TAG_ID, ZONE_FILES, LdItem, read_ld_items
 from modkit.ops.rekey import DBG, DEF_EXTS, TAG, TAG_CLASS, TXN, DumpRow, def_entry, def_path
 from modkit.ops.script import BRICK_DEFAULT, BRICK_FORCE_HIDE, PROD_MENU_SWITCH
-from modkit.ops.strings import (
-    LANGS, StringError, Table, check_glyphs, check_parity, check_titles, per_language, stock_chars,
-)
+from modkit.ops.strings import StringError, check_glyphs, check_parity, check_titles, stock_chars
 from modkit.ops.zones import (
     area_bbox, as_f32, camera_paths_graph, heading, ia_grid, ia_grid_subset, ia_zone_graph, path_cache_graph,
     playable_zone_graph, point_in_polygon, polygon_centroid, read_ia_grid, read_playable_polygon, read_zone_areas,
@@ -74,7 +73,7 @@ if TYPE_CHECKING:
 
 # --------------------------------------------------------------------------- strings (gate 1)
 
-def check_strings(name: str, table: Table, dictionaries: Sequence[str], menu_tokens: Iterable[str],
+def check_strings(name: str, table: StringTable, dictionaries: Sequence[str], menu_tokens: Iterable[str],
                   stock: Callable[[str], Sequence[str]]) -> str:
     """Gate 1, every failure at once. The content `name`'s string table holds exactly `dictionaries`
     (modkit.ops.strings.payloads does not check names, and an empty .dic is unproven); then the parity, glyph and title
@@ -86,7 +85,7 @@ def check_strings(name: str, table: Table, dictionaries: Sequence[str], menu_tok
     extra, missing = sorted(names - set(dictionaries)), sorted(set(dictionaries) - names)
     if extra or missing:
         problems.append(f"the table must hold exactly {list(dictionaries)}; unknown {extra}, missing {missing}")
-    used = {lang for tokens in per_language(table).values() for texts in tokens.values() for lang in texts}
+    used = {lang for tokens in table.values() for texts in tokens.values() for lang, _ in texts.items()}
     langs = [lang for lang in LANGS if lang in used]
     dics = {lang: stock(lang) for lang in langs}
     problems += [f"no stock *-{lang}.dic in the extraction: the glyph gate has nothing to hold {lang} text to; "
@@ -1621,10 +1620,10 @@ def dialog_text_violations(roots: Iterable[Node], texts: Mapping[int, Sequence[s
     return len(tokens), bad
 
 
-def check_dialog_text(roots: Iterable[Node], strings: Table) -> int:
+def check_dialog_text(roots: Iterable[Node], strings: StringTable) -> int:
     """Gate 3: dialog_text_violations finds nothing in the content's string table (every language). Returns the
     number of dialog text tokens checked."""
-    texts = {ndfbin.token_hash(tok): tuple(by_lang.values()) for table in per_language(strings).values()
+    texts = {ndfbin.token_hash(tok): tuple(by_lang.values()) for table in strings.values()
              for tok, by_lang in table.items()}
     n, bad = dialog_text_violations(roots, texts)
     check(not bad, f"{len(bad)} dialog texts hold a %1..%9 placeholder, which a dialog shows as is (it takes no "

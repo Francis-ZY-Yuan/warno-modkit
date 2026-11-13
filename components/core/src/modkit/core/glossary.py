@@ -4,13 +4,13 @@
     python -m modkit.core.glossary token TOKEN [TOKEN ...] [--dic STEM] [--lang SC,FR]
 
 ``stock_rows`` reads the stock dictionaries (``stock_dictionaries``) in the shape of an Operation's string table
-(modkit.ops.strings): ``{stem: {token: {lang: text}}}``, the stem being a dictionary's name (``INTERFACE_INGAME``,
-``MAPS``); of a token in several copies of a dictionary, the first copy's text in path order. Both commands print a
-Markdown table, each row naming its dictionary, one column per language (US first; ``--lang`` picks the others):
-``term`` the rows whose US text is the term, then the ``--limit`` shortest that hold it on word boundaries (exit 0);
-``token`` each token's row in the dictionary ``--dic`` (default ``INTERFACE_INGAME``, where dialog button labels are),
-exit 1 when one is not there. With no extraction, or no dictionary in it, one ``FAILED:`` line naming the warno-setup
-skill and exit 2.
+(modkit.core.models.StringTable): ``{stem: {token: AnyTexts}}``, the stem being a dictionary's name
+(``INTERFACE_INGAME``, ``MAPS``); of a token in several copies of a dictionary, the first copy's text in path order.
+Both commands print a Markdown table, each row naming its dictionary, one column per language (US first; ``--lang``
+picks the others): ``term`` the rows whose US text is the term, then the ``--limit`` shortest that hold it on word
+boundaries (exit 0); ``token`` each token's row in the dictionary ``--dic`` (default ``INTERFACE_INGAME``, where dialog
+button labels are), exit 1 when one is not there. With no extraction, or no dictionary in it, one ``FAILED:`` line
+naming the warno-setup skill and exit 2.
 """
 from __future__ import annotations
 
@@ -21,14 +21,24 @@ import re
 import sys
 from typing import Sequence
 
+from pydantic.dataclasses import dataclass
+
 from modkit.core import paths, trad
+from modkit.core.models import LANGS, AnyTexts
 from modkit.core.ndfbin import token_unhash
 from modkit.core.stock import SETUP_FIX
 
-LANGS = ("DEV", "FR", "GER", "POL", "RU", "SC", "SPA", "US")  # the game's dictionary languages
 INGAME = "INTERFACE_INGAME"  # token's default stem: the dictionary the game looks dialog button labels up in
 
-Rows = dict[str, dict[str, dict[str, str]]]  # stem -> token -> lang -> text
+Rows = dict[str, dict[str, AnyTexts]]  # stem -> token -> its texts
+
+
+@dataclass(frozen=True)
+class Row:
+    """One token of a stock dictionary, and its texts."""
+    stem: str
+    token: str
+    texts: AnyTexts
 
 
 class SetupError(RuntimeError):
@@ -45,7 +55,7 @@ def stock_dictionaries(lang: str) -> list[str]:
 def stock_rows(stem: str | None = None) -> Rows:
     """Every stock dictionary's texts (only those named ``stem`` when given), by stem, token and language. Raises
     SetupError when the extraction holds no dictionary, ValueError when none has the stem ``stem``."""
-    rows: Rows = {}
+    rows: dict[str, dict[str, dict[str, str]]] = {}  # as read: stem -> token -> lang -> text
     found = False  # any stock dictionary at all
     for lang in LANGS:
         for path in stock_dictionaries(lang):
@@ -62,31 +72,32 @@ def stock_rows(stem: str | None = None) -> Rows:
         raise SetupError(f"no stock dictionary in the extraction {paths.extracted_root()}; {SETUP_FIX}")
     if not rows:
         raise ValueError(f"no stock {stem}-<lang>.dic in the extraction")
-    return rows
+    return {name: {token: AnyTexts(**texts) for token, texts in tokens.items()} for name, tokens in rows.items()}
 
 
-def term_rows(rows: Rows, term: str, limit: int = 10) -> list[tuple[str, str, dict[str, str]]]:
-    """(stem, token, texts) of the rows whose US text is ``term``, then the ``limit`` shortest that hold it on word
-    boundaries (a space in the term matching any white space)."""
+def term_rows(rows: Rows, term: str, limit: int = 10) -> list[Row]:
+    """The rows whose US text is ``term``, then the ``limit`` shortest that hold it on word boundaries (a space in the
+    term matching any white space)."""
     words = term.split()
     if not words:
         raise ValueError(f"{term!r} is an empty term")
     pattern = re.compile(r"(?<!\w)" + r"\s+".join(map(re.escape, words)) + r"(?!\w)", re.IGNORECASE)
-    flat = [(stem, token, texts) for stem, tokens in rows.items() for token, texts in tokens.items() if "US" in texts]
-    exact = [row for row in flat if pattern.fullmatch(row[2]["US"].strip())]
-    holding = sorted((row for row in flat if row not in exact and pattern.search(row[2]["US"])),
-                     key=lambda row: (len(row[2]["US"]), row[0], row[1]))
+    flat = [Row(stem, token, texts) for stem, tokens in rows.items() for token, texts in tokens.items()
+            if texts.US is not None]
+    exact = [row for row in flat if pattern.fullmatch(row.texts.US.strip())]
+    holding = sorted((row for row in flat if row not in exact and pattern.search(row.texts.US)),
+                     key=lambda row: (len(row.texts.US), row.stem, row.token))
     return exact + holding[:limit]
 
 
-def table(found: list[tuple[str, str, dict[str, str]]], langs: Sequence[str]) -> list[str]:
+def table(found: list[Row], langs: Sequence[str]) -> list[str]:
     """``found`` as a Markdown table: dictionary, token, then one column per language of ``langs``."""
     def cell(text: str) -> str:
         return text.replace("\\", "\\\\").replace("|", "\\|").replace("\n", "\\n").replace("\r", "\\r")
     head = ["dictionary", "token", *langs]
     return ["| " + " | ".join(head) + " |", "|" + " --- |" * len(head)] + [
-        "| " + " | ".join([stem, token, *(cell(texts.get(lang, "")) for lang in langs)]) + " |"
-        for stem, token, texts in found]
+        "| " + " | ".join([row.stem, row.token, *(cell(getattr(row.texts, lang) or "") for lang in langs)]) + " |"
+        for row in found]
 
 
 def _langs(text: str) -> tuple[str, ...]:
@@ -120,7 +131,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             for token in args.tokens:
                 trad.token_key(token)  # a TradError (one FAILED line) for what cannot be a token
                 if token in rows:
-                    found.append((args.dic, token, rows[token]))
+                    found.append(Row(args.dic, token, rows[token]))
                 else:
                     print(f"{token}: not in {args.dic}", file=sys.stderr)
                     status = 1

@@ -11,6 +11,7 @@ from unittest import mock
 
 from modkit.core import paths
 from modkit.core.gates import CheckError
+from modkit.core.models import Texts
 from modkit.ops.bricks import (
     NAME_PROP, c_type, fx_wrapper, g_and, g_cmp, g_compete, g_detect, g_dialog, g_fx, g_hint, g_if, g_or, g_seq,
     g_simul, g_until, g_vanish, g_wait,
@@ -301,10 +302,11 @@ class DialogText(unittest.TestCase):
 
     def test_placeholder_in_a_dialog_fails(self):
         roots = [g_dialog("od_ask")]
-        for pair in (("Spring the trap? %1 in the sack", "现在？"), ("Spring the trap now?", "包围圈内%2")):
-            with self.subTest(pair=pair), self.assertRaisesRegex(
+        for texts in (Texts(US="Spring the trap? %1 in the sack", SC="现在？"),
+                      Texts(US="Spring the trap now?", SC="包围圈内%2")):
+            with self.subTest(texts=texts), self.assertRaisesRegex(
                     CheckError, r"(?s)1 dialog texts hold a %1\.\.%9 placeholder.*\n  od_ask: .*%[12].*ListVariables"):
-                check_dialog_text(roots, {"Scripting/Dialog": {"od_ask": pair}})
+                check_dialog_text(roots, {"Scripting/Dialog": {"od_ask": texts}})
 
 class ZoneTags(unittest.TestCase):
     """Gate 3: a zone tag outside its zone makes the condition false forever, with no error."""

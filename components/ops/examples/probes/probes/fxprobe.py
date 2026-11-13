@@ -31,6 +31,7 @@ import math
 from typing import NamedTuple
 
 from modkit.core import ndfbin
+from modkit.core.models import StringTable, Texts
 from modkit.ops import script as ops_script
 from modkit.ops.bricks import (
     g_ammo, g_camera, g_cmp, g_count, g_fow, g_fx, g_hint, g_if, g_ignored, g_kill, g_modify, g_seq,
@@ -47,7 +48,6 @@ from modkit.ops.shapes import (
     STRICTLY_LESS, STUN, TACTICAL_NUKE_FX, Beat, camp_nodes, create, nuke_wrapper, objective,
 )
 from modkit.ops.shapes import Ctx as ShapesCtx
-from modkit.ops.strings import Table
 from probes import profile, spike
 from probes.geisa import MAP
 
@@ -56,8 +56,8 @@ from probes.geisa import MAP
 NAME, PREFIX = "fxprobe", "fx"
 SCENARIO, MOD_NAME = "challenge_OpenDoorFx", "OpenDoorFx"
 SIDES, PLAYER, TARGET_SIDE = SOVIET_PLAYER_SIDES, "Soviet", "NATO"
-CAMP_NAMES = {"joueur": ("Soviet Army", "苏军"), "Allie": ("Soviet ally", "苏军盟军"), "ordinateur_DDR": ("NATO", "北约"),
-              "ordinateur_SOV": ("NATO", "北约")}
+CAMP_NAMES = {"joueur": Texts(US="Soviet Army", SC="苏军"), "Allie": Texts(US="Soviet ally", SC="苏军盟军"),
+              "ordinateur_DDR": Texts(US="NATO", SC="北约"), "ordinateur_SOV": Texts(US="NATO", SC="北约")}
 CAMP_TOKENS = {name: f"{PREFIX}_camp{k}" for k, name in enumerate(CAMP_NAMES)}
 
 # --------------------------------------------------------------------------- places (Geisa minimap px; 1 px is 11.9 m)
@@ -241,54 +241,55 @@ def wrappers() -> list[Node]:
 # --------------------------------------------------------------------------- strings
 
 
-def strings() -> Table:
+def strings() -> StringTable:
     local = {CAMP_TOKENS[name]: text for name, text in CAMP_NAMES.items()}
     local.update({
-        "fx_hdep": ("Deploy one cheap unit west of the central forest and nothing east of it, then launch the battle. "
-                    "The steps start then; each hint names its step 5 s before it acts.",
-                    "在中央森林以西部署一个便宜的单位，森林以东不要部署，然后发起战斗。各步骤从此开始；每条提示在步骤执行前5秒标明步骤。"),
-        "fx_h1": ("F1 TARGETS: 6 M1A1HA Abrams and 6 M2A2 Bradleys appear at T (pinned), unarmed. You should not see "
-                  "them yet: nothing of yours is near.",
-                  "F1 目标：6辆M1A1HA艾布拉姆斯和6辆M2A2布雷德利出现在T（已标出），没有弹药。你现在应该看不到它们。"),
-        "fx_h2": ("F2 CAMERA: the camera flies to T in 4 s. Escape skips it.",
-                  "F2 镜头：镜头在4秒内飞到T。按Esc可略过。"),
-        "fx_h3": ("F3 FOG OFF: the fog of war is lifted. Do the 12 targets at T show now?",
-                  "F3 关闭战争雾：雾被移除。T处的12个目标现在能看到吗？"),
-        "fx_h3b": ("F3b VISION: 3 BRDM-2 of yours appear 400 m west of T, so you see T even if the fog stayed. Keep "
-                   "them there.",
-                   "F3b 视野：你的3辆BRDM-2出现在T以西400米处，即使雾仍在也能看到T。请让它们留在原地。"),
-        "fx_h4": ("F4 MASSED EFFECTS: 10 mega bombs over T, 50 203 mm impacts, white and black smoke, all at once. "
-                  "How big does it look?",
-                  "F4 大规模特效：T周围10颗超级炸弹、50发203毫米炮弹、白烟和黑烟同时出现。看起来有多大？"),
-        "fx_h5": ("F5 KILL 40%: 4 of the 12 targets are killed with Penetration. Wrecks, or nothing?",
-                  "F5 击杀40%：12个目标中的4个被穿透击杀。留下残骸，还是什么都没有？"),
-        "fx_h6": ("F6 DAMAGE: ChangeStress Physical, 5 of 10 HP, on the survivors. Do they lose health, or die?",
-                  "F6 伤害：对幸存者施加ChangeStress物理伤害，10点生命值中的5点。它们掉血了还是被摧毁了？"),
-        "fx_h7": ("F7 STUN: ChangeStress Stun on the survivors. Are they stunned?",
-                  "F7 Stun：对幸存者施加ChangeStress（Stun）。它们失去行动能力了吗？"),
-        "fx_h8": ("F8 NUKE 1: the game's tactical nuke effect through the script's wrapper, position 0, on T. If the "
-                  "game crashes now, it was this step. Where does it show, and how big?",
-                  "F8 原子弹1：通过脚本封装使用游戏的战术原子弹特效，位置为0，目标T。如果游戏此时崩溃，就是这一步。"
-                  "它出现在哪里，有多大？"),
-        "fx_h9": ("F9 NUKE 2: the same effect at U, its position the tag's own. If the game crashes now, it was this "
-                  "step. Where does it show, and how big?",
-                  "F9 原子弹2：同样的特效在U处，位置为该标记自身的位置。如果游戏此时崩溃，就是这一步。它出现在哪里，有多大？"),
-        "fx_h10": ("F10 FOG ON: the fog of war is back. Probe done: answer the play sheet (README, fxprobe).",
-                   "F10 开启战争雾：雾恢复。测试完成：请回答试玩问卷。"),
-        "fx_ot": ("T: 12 NATO targets (F1 to F8)", "T：12个北约目标（F1至F8）"),
-        "fx_otl": ("T", "T"),
-        "fx_ou": ("U: the second nuke (F9)", "U：第二颗原子弹（F9）"),
-        "fx_oul": ("U", "U"),
+        "fx_hdep": Texts(US="Deploy one cheap unit west of the central forest and nothing east of it, then launch the "
+                            "battle. The steps start then; each hint names its step 5 s before it acts.",
+                         SC="在中央森林以西部署一个便宜的单位，森林以东不要部署，然后发起战斗。各步骤从此开始；每条提示在步骤执行前5秒标明步骤。"),
+        "fx_h1": Texts(US="F1 TARGETS: 6 M1A1HA Abrams and 6 M2A2 Bradleys appear at T (pinned), unarmed. You should "
+                          "not see them yet: nothing of yours is near.",
+                       SC="F1 目标：6辆M1A1HA艾布拉姆斯和6辆M2A2布雷德利出现在T（已标出），没有弹药。你现在应该看不到它们。"),
+        "fx_h2": Texts(US="F2 CAMERA: the camera flies to T in 4 s. Escape skips it.",
+                       SC="F2 镜头：镜头在4秒内飞到T。按Esc可略过。"),
+        "fx_h3": Texts(US="F3 FOG OFF: the fog of war is lifted. Do the 12 targets at T show now?",
+                       SC="F3 关闭战争雾：雾被移除。T处的12个目标现在能看到吗？"),
+        "fx_h3b": Texts(US="F3b VISION: 3 BRDM-2 of yours appear 400 m west of T, so you see T even if the fog stayed. "
+                           "Keep them there.",
+                        SC="F3b 视野：你的3辆BRDM-2出现在T以西400米处，即使雾仍在也能看到T。请让它们留在原地。"),
+        "fx_h4": Texts(US="F4 MASSED EFFECTS: 10 mega bombs over T, 50 203 mm impacts, white and black smoke, all at "
+                          "once. How big does it look?",
+                       SC="F4 大规模特效：T周围10颗超级炸弹、50发203毫米炮弹、白烟和黑烟同时出现。看起来有多大？"),
+        "fx_h5": Texts(US="F5 KILL 40%: 4 of the 12 targets are killed with Penetration. Wrecks, or nothing?",
+                       SC="F5 击杀40%：12个目标中的4个被穿透击杀。留下残骸，还是什么都没有？"),
+        "fx_h6": Texts(US="F6 DAMAGE: ChangeStress Physical, 5 of 10 HP, on the survivors. Do they lose health, or "
+                          "die?",
+                       SC="F6 伤害：对幸存者施加ChangeStress物理伤害，10点生命值中的5点。它们掉血了还是被摧毁了？"),
+        "fx_h7": Texts(US="F7 STUN: ChangeStress Stun on the survivors. Are they stunned?",
+                       SC="F7 Stun：对幸存者施加ChangeStress（Stun）。它们失去行动能力了吗？"),
+        "fx_h8": Texts(US="F8 NUKE 1: the game's tactical nuke effect through the script's wrapper, position 0, on T. "
+                          "If the game crashes now, it was this step. Where does it show, and how big?",
+                       SC="F8 原子弹1：通过脚本封装使用游戏的战术原子弹特效，位置为0，目标T。如果游戏此时崩溃，就是这一步。"
+                          "它出现在哪里，有多大？"),
+        "fx_h9": Texts(US="F9 NUKE 2: the same effect at U, its position the tag's own. If the game crashes now, it "
+                          "was this step. Where does it show, and how big?",
+                       SC="F9 原子弹2：同样的特效在U处，位置为该标记自身的位置。如果游戏此时崩溃，就是这一步。它出现在哪里，有多大？"),
+        "fx_h10": Texts(US="F10 FOG ON: the fog of war is back. Probe done: answer the play sheet (README, fxprobe).",
+                        SC="F10 开启战争雾：雾恢复。测试完成：请回答试玩问卷。"),
+        "fx_ot": Texts(US="T: 12 NATO targets (F1 to F8)", SC="T：12个北约目标（F1至F8）"),
+        "fx_otl": Texts(US="T", SC="T"),
+        "fx_ou": Texts(US="U: the second nuke (F9)", SC="U：第二颗原子弹（F9）"),
+        "fx_oul": Texts(US="U", SC="U"),
     })
     return {
         "SCENARIO_DEFINITION": {  # menu tokens, each text at most 30 UTF-16 units
-            "fx_name": ("Probe: strike effects", "测试：打击特效"),
-            "fx_cname": ("PROBE: STRIKE EFFECTS", "测试：打击特效"),
-            "fx_headr": ("Strike effects play sheet", "打击特效问卷"),
-            "fx_order": ("Each hint names its step.", "每条提示都标明步骤编号。"),
-            "fx_recap": ("Test op: every strike effect", "测试行动：所有打击特效"),
-            "fx_vic": ("Probe complete.", "测试完成。"),
-            "fx_def": ("Probe ended.", "测试结束。"),
+            "fx_name": Texts(US="Probe: strike effects", SC="测试：打击特效"),
+            "fx_cname": Texts(US="PROBE: STRIKE EFFECTS", SC="测试：打击特效"),
+            "fx_headr": Texts(US="Strike effects play sheet", SC="打击特效问卷"),
+            "fx_order": Texts(US="Each hint names its step.", SC="每条提示都标明步骤编号。"),
+            "fx_recap": Texts(US="Test op: every strike effect", SC="测试行动：所有打击特效"),
+            "fx_vic": Texts(US="Probe complete.", SC="测试完成。"),
+            "fx_def": Texts(US="Probe ended.", SC="测试结束。"),
         },
         "Scripting/Dialog": {},
         "Scripting/Localization": local,

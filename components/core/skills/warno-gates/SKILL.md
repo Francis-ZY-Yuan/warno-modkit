@@ -50,8 +50,8 @@ and it passes every stock file ([[prove-each-gate-both-ways]]).
 
 ## A known failure you can't fix yet
 
-Add `{gate name: exact message}` to the mod's own pending map, a plain dict (a gate that runs once per file may map
-to a tuple of messages), and run the gate through `modkit.core.gates.run_gate`. An Operation's map is
+Add `{gate name: (exact message,)}` to the mod's own pending map, a plain dict (a gate that runs once per file may
+hold several messages), and run the gate through `modkit.core.gates.run_gate`. An Operation's map is
 `OpProfile.reviewed_pending`, and its build already runs every gate that way. Never loosen the gate itself.
 
 An entry covers the first failure its gate call raised, word for word, and nothing after it: most gates stop at their
