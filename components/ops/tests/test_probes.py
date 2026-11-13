@@ -30,7 +30,7 @@ from modkit.ops.maps import GEISA
 from modkit.ops.profile import SURVIVORS, Content
 from modkit.ops.rekey import DBG, DEF_EXTS, TXN, def_path
 from modkit.ops.script import BRICK_DEFAULT, PROD_MENU_SWITCH
-from modkit.ops.strings import StringError
+from modkit.ops.strings import StringError, load
 from probes import CONTENTS, empty, profile, spike, spike2
 
 OUT = os.path.join(OUT_ROOT, "empty")
@@ -255,7 +255,7 @@ class Gates(unittest.TestCase):
 
     def test_dialog_text(self):
         """Probe 1's and the empty probe's dialogs take no variables."""
-        self.assertEqual(gates.check_dialog_text(roots_of("spike"), spike.STRINGS), 1)
+        self.assertEqual(gates.check_dialog_text(roots_of("spike"), load(spike.TABLE)), 1)
         self.assertEqual(gates.check_dialog_text(roots_of("empty"), empty.content().strings), 1)
 
     def test_rules(self):

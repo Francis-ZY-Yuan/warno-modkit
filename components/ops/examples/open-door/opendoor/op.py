@@ -52,6 +52,7 @@ from __future__ import annotations
 
 import math
 from collections import Counter
+from pathlib import Path
 from typing import Iterable, NamedTuple
 
 from modkit.core import ndfbin
@@ -76,9 +77,11 @@ from modkit.ops.models import Buttons, Ending, ForceRow, Knobs
 from modkit.ops.profile import Content
 from modkit.ops.script import BRICK_DEFAULT
 from modkit.ops.shapes import Beat, lock_card, objective  # noqa: F401  (lock_card: the deck beat's and the tests')
+from modkit.ops.strings import load
 from opendoor import forces, profile
 from opendoor.map import MAP, POINTS
-from opendoor.strings import STRINGS
+
+TABLE = Path(__file__).with_name("strings.toml")   # every text the mission shows, per token and language (load)
 
 # --------------------------------------------------------------------------- knobs
 
@@ -1107,7 +1110,7 @@ def content(tier_mode: str | None = None) -> Content:
     """The op (its own scenario, mod folder, GUID and menu tokens) in `tier_mode` (TIER_MODE when None); its buy menu
     may switch to the factory tabs (PROD_MENU_SWITCH, which its script's HUD restore writes)."""
     mode = tier_mode or TIER_MODE
-    return Content("op", tuple(items(mode)), lambda tpl: script(tpl, mode), STRINGS, profile.MENU_TOKENS,
+    return Content("op", tuple(items(mode)), lambda tpl: script(tpl, mode), load(TABLE), profile.MENU_TOKENS,
                    extra_shapes=EXTRA_SHAPES, scenario=profile.SCENARIO, mod_name=profile.MOD_NAME,
                    menu_renames=profile.MENU_RENAMES, tiered_arrivals=tiered_arrivals(mode),
                    prod_menu_switch=PROD_MENU_SWITCH)

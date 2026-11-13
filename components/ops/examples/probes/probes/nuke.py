@@ -25,10 +25,10 @@ The play sheet is in README.md (probe 3).
 from __future__ import annotations
 
 from collections.abc import Mapping
+from pathlib import Path
 from typing import NamedTuple
 
 from modkit.core import ndfbin
-from modkit.core.models import StringTable, Texts
 from modkit.ops import script as ops_script
 from modkit.ops.bricks import (
     c_team, g_cmp, g_collect, g_detect, g_fx, g_kill, g_seq, g_set, g_simul, g_wait, unit_path,
@@ -46,6 +46,7 @@ from modkit.ops.shapes import (
     create, lock_card, objective, order, reveal,
 )
 from modkit.ops.shapes import Ctx as ShapesCtx
+from modkit.ops.strings import load
 from probes import profile, spike
 from probes.geisa import MAP
 
@@ -104,12 +105,10 @@ class Variant(NamedTuple):
     scenario: str
     mod_name: str
     victim_unit: str
-    victim_label: str                # for the hints
     victim_side: str                 # the side the victims belong to
     sides: Mapping[str, str]         # side -> camp export name
     player: str                      # the player's side
     camp_rows: tuple[CampRow, ...]   # the four camps, CampList order
-    camp_names: dict[str, Texts]     # camp export name -> its PlayerName
     deck_swap: Mapping[str, str] | None  # MapConfiguration LocalPlayerDeck swap (None: the profile's)
     timeline: tuple = TIMELINE       # the Steps
     ally_side: str | None = None     # the player's ally camp's side (nuke_sov's battery)
@@ -117,29 +116,26 @@ class Variant(NamedTuple):
 
 # nuke: the probes' own camps (profile.CAMP_ROWS), victims in the PACT AI camp
 NUKE = Variant(
-    "nuke", "nk", "challenge_OpenDoorNuke", "OpenDoorNuke", "T80BV_SOV", "T-80BV", "PACT", profile.CAMPS,
-    profile.PLAYER, profile.CAMP_ROWS,
-    {"joueur": Texts(US="NATO", SC="北约"), "Allie": Texts(US="NATO ally", SC="北约盟军"),
-     "ordinateur_DDR": Texts(US="NVA", SC="东德军"), "ordinateur_SOV": Texts(US="Soviet Army", SC="苏军")},
-    None)
+    "nuke", "nk", "challenge_OpenDoorNuke", "OpenDoorNuke", "T80BV_SOV", "PACT", profile.CAMPS,
+    profile.PLAYER, profile.CAMP_ROWS, None)
 
 # nuke_sov: the stock Soviet-player camp shape, modkit.ops.profile's (the player Alliance 0, REDFOR, PACT, on
 # OP_BASE_RJ_Player; the enemies Alliance 1, BLUFOR, NATO) [[soviet-player-camp]]. The camp names are the probe's.
 SOV = Variant(
-    "nuke_sov", "ns", "challenge_OpenDoorNukeSov", "OpenDoorNukeSov", "M1A1HA_Abrams_US", "M1A1HA Abrams", "NATO",
+    "nuke_sov", "ns", "challenge_OpenDoorNukeSov", "OpenDoorNukeSov", "M1A1HA_Abrams_US", "NATO",
     SOVIET_PLAYER_SIDES, "Soviet",
-    SOVIET_PLAYER_CAMP_ROWS,
-    {"joueur": Texts(US="Soviet Army", SC="苏军"), "Allie": Texts(US="Soviet ally", SC="苏军盟军"),
-     "ordinateur_DDR": Texts(US="NATO", SC="北约"), "ordinateur_SOV": Texts(US="NATO", SC="北约")},
-    SOVIET_PLAYER_DECK_SWAP, SOV_TIMELINE, "SovietAlly")
+    SOVIET_PLAYER_CAMP_ROWS, SOVIET_PLAYER_DECK_SWAP, SOV_TIMELINE, "SovietAlly")
 VARIANTS = {v.name: v for v in (NUKE, SOV)}
 EXTRA_SHAPES = (DEATH_CAUSE_SHAPE,)   # N2 kills with Penetration
 SOV_EXTRA_SHAPES = (DEATH_CAUSE_SHAPE, TRANSPORTER_SHAPE)   # and N0's card has a Transporter
 
 
+CAMP_EXPORTS = ("joueur", "Allie", "ordinateur_DDR", "ordinateur_SOV")   # the camps, in their tokens' order
+
+
 def camp_tokens(v: Variant) -> dict[str, str]:
-    """Each camp's PlayerName token (Scripting/Localization)."""
-    return {name: f"{v.prefix}_camp{k}" for k, name in enumerate(v.camp_names)}
+    """Each camp's PlayerName token (Scripting/Localization): <prefix>_camp<k>, its text in the variant's table."""
+    return {name: f"{v.prefix}_camp{k}" for k, name in enumerate(CAMP_EXPORTS)}
 
 
 # --------------------------------------------------------------------------- items
@@ -271,58 +267,9 @@ SOV_BEATS: list[Beat] = [beat(s) for s in SOV_TIMELINE]
 # --------------------------------------------------------------------------- strings
 
 
-def strings(v: Variant) -> StringTable:
-    p, unit = v.prefix, v.victim_label
-    title = "Nuke probe" if v is NUKE else "Nuke probe, Soviet"
-    zh_title = "打击特效测试" if v is NUKE else "打击特效测试：苏军"
-    local = {f"{p}_camp{k}": v.camp_names[name] for k, name in enumerate(v.camp_names)}
-    local.update({
-        f"{p}_hdep": Texts(US="Deploy if you like, then launch. The strike steps run on their own clock from loading.",
-                           SC="可自行部署后发起战斗。打击测试从加载完成起自行计时。"),
-        f"{p}_h1": Texts(US=f"N1 VICTIMS: 2 groups of 5 {unit}, A and B, about 600 m apart, pinned on the map. Find them.",
-                         SC=f"N1 目标：A和B两组各5辆{unit}，相距约600米，已在地图上标出。请找到它们。"),
-        f"{p}_h2": Texts(US="N2 STRIKE A + PENETRATION: the script-only mega bomb effect fx_HE_Mega_Bomb_ForScript on "
-                            "A. 3 s later every unit within 300 m of A is killed with Penetration. Watch A.",
-                         SC="N2 打击A+穿透：在A处使用脚本专用的超级炸弹特效fx_HE_Mega_Bomb_ForScript。3秒后，A周围300米内的"
-                            "单位被穿透击杀。请观察A。"),
-        f"{p}_h3": Texts(US="N3 STRIKE B + VANISHED: the 203 mm barrage and black smoke effects together on B. 3 s "
-                            "later every unit within 300 m of B is removed with Vanished. Watch B.",
-                         SC="N3 打击B+消失：在B处同时使用203毫米炮击和黑烟特效。3秒后，B周围300米内的单位被直接移除。"
-                            "请观察B。"),
-        f"{p}_h4": Texts(US="N4 PROBE DONE: answer the play sheet (README, probe 3).", SC="N4 测试完成：请回答试玩问卷。"),
-        f"{p}_oa": Texts(US=f"A: 5 {unit} (N2)", SC=f"A：5辆{unit}（N2）"),
-        f"{p}_ola": Texts(US="A", SC="A"),
-        f"{p}_ob": Texts(US=f"B: 5 {unit} (N3)", SC=f"B：5辆{unit}（N3）"),
-        f"{p}_olb": Texts(US="B", SC="B"),
-    })
-    if v is SOV:
-        local.update({
-            f"{p}_hdep": Texts(US="N0 DECK: a BMP-2 card carrying motor riflemen, a T-80U card that is locked until "
-                                  "N6, and supply: 4 Ural-4320 trucks and 2 Mi-8TZ helicopters. Deploy and launch if "
-                                  "you like; the steps run on their own clock from loading.",
-                               SC="N0 卡组：一张载有摩托化步兵的BMP-2卡，一张在N6前锁定的T-80U卡，以及补给：4辆Ural-4320卡车和"
-                                  "2架Mi-8TZ直升机。可自行部署并发起战斗；各步骤从加载完成起自行计时。"),
-            f"{p}_h1b": Texts(US="N1b SCRIPT EFFECT: the stock 203 mm artillery effect alone near A, to compare with "
-                                 "N3's barrage and smoke.",
-                              SC="N1b 脚本特效：在A附近单独使用一次游戏自带的203毫米炮击特效，与N3的炮击加黑烟对比。"),
-            f"{p}_h5": Texts(US="N5 ALLIED BATTERY: 2 2S7M of your ally appear at the west edge and fire on the marked "
-                                "empty spot south of A. Do the shells land there?",
-                             SC="N5 友军炮兵：盟军的2辆2S7M出现在西侧边缘，并向A以南的空地开火。炮弹是否落在那里？"),
-            f"{p}_h6": Texts(US="N6: T-80U unlocked, check the buy menu.", SC="N6：T-80U已解锁，请查看购买菜单。"),
-        })
-    return {
-        "SCENARIO_DEFINITION": {  # menu tokens, each text at most 30 UTF-16 units
-            f"{p}_name": Texts(US=title, SC=zh_title),
-            f"{p}_cname": Texts(US=title.upper(), SC=zh_title),
-            f"{p}_headr": Texts(US=f"{title} play sheet", SC=f"{zh_title}问卷"),
-            f"{p}_order": Texts(US="Each hint names its step.", SC="每条提示都标明步骤编号。"),
-            f"{p}_recap": Texts(US="Test op: two strike looks", SC="测试行动：两次打击特效"),
-            f"{p}_vic": Texts(US="Probe complete.", SC="测试完成。"),
-            f"{p}_def": Texts(US="Probe ended.", SC="测试结束。"),
-        },
-        "Scripting/Dialog": {},
-        "Scripting/Localization": local,
-    }
+def table(v: Variant) -> Path:
+    """The variant's string table, <name>.strings.toml beside this file: its texts, per token and language (load)."""
+    return Path(__file__).with_name(f"{v.name}.strings.toml")
 
 
 # --------------------------------------------------------------------------- script and content
@@ -346,6 +293,6 @@ def content(name: str = "nuke") -> Content:
     order, the order derived from its scenario GUID (modkit.ops.leveldesign.derived_menu_order)."""
     v = VARIANTS[name]
     renames = profile.menu_renames(v.prefix)
-    return profile.content(v.name, SOV_ITEMS if v is SOV else ITEMS, lambda tpl: script(tpl, v), strings(v), tuple(renames.values()),
+    return profile.content(v.name, SOV_ITEMS if v is SOV else ITEMS, lambda tpl: script(tpl, v), load(table(v)), tuple(renames.values()),
                            extra_shapes=SOV_EXTRA_SHAPES if v is SOV else EXTRA_SHAPES, scenario=v.scenario, mod_name=v.mod_name, menu_renames=renames,
                            deck_swap=v.deck_swap, menu_order=derived_menu_order(v.scenario, profile.GUID_NAMESPACE))

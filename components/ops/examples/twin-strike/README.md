@@ -41,7 +41,7 @@ Strike its own menu order, `OrderToChainMission` derived from its scenario GUID
 (`modkit.ops.leveldesign.derived_menu_order`) [[content-identity-unique]].
 
 Its Operations menu reads as a stock Operation's: a dated briefing in four numbered points, the forces line, the
-background under the title and the two outcome texts, each in stock's form and length (`twinstrike/strings.py`), under
+background under the title and the two outcome texts, each in stock's form and length (`twinstrike/strings.toml`), under
 the emblems of RedJuggernaut, the 79th Guards Tank Division's stock Operation (`profile.MENU_ART`, the toolkit's
 `OpProfile.menu_art`). The map picture is its own card, generated at build time from Survivors'
 (`modkit.ops.menuart`): retitled TWIN STRIKE, the cut of Twin Cities in place of Survivors' map, and on it the
@@ -233,7 +233,10 @@ left)
   `python -m twinstrike.map overlay OUT.png` draws them on Twin Cities' Preview
 - `twinstrike/forces.py`: the player's deck (start cards, locks, reserve, command units), the force tables, the scale
   knob and the share thresholds
-- `twinstrike/strings.py`: the string table, in English and Simplified Chinese, and the Chinese term table
+- `twinstrike/strings.toml`: the string table, English and Simplified Chinese side by side: one section per token, one
+  key per language (`modkit.ops.strings.load`)
+- `twinstrike/terms.toml`: the Chinese term table, each term's text and its source (`warno-localization`)
+- `twinstrike/strings.py`: where the two tables are, and each dialog's two stock buttons
 - `twinstrike/op.py`: the mission: its items, its beats (the five phases, the losses, the fires, the strike, the
   difficulty and the end funnel), its script (`modkit.ops.mission.script_frame`) and its content
 

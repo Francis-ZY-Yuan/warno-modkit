@@ -1,0 +1,60 @@
+# The empty probe's string table (probes.empty; modkit.ops.strings.load). One section per token,
+# [<dictionary>.<token>], one key per language (US required; any other language optional, packed as the US text
+# where it has none). The order is the order the build writes each .dic's texts in.
+
+# probe 1's menu tokens (probes.profile.MENU_TOKENS), each the same title
+[SCENARIO_DEFINITION.od_name]
+US = "Open Door: empty build"
+SC = "开门行动：空构建"
+
+[SCENARIO_DEFINITION.od_order]
+US = "Open Door: empty build"
+SC = "开门行动：空构建"
+
+[SCENARIO_DEFINITION.od_headr]
+US = "Open Door: empty build"
+SC = "开门行动：空构建"
+
+[SCENARIO_DEFINITION.od_cname]
+US = "Open Door: empty build"
+SC = "开门行动：空构建"
+
+[SCENARIO_DEFINITION.od_recap]
+US = "Open Door: empty build"
+SC = "开门行动：空构建"
+
+[SCENARIO_DEFINITION.od_vic]
+US = "Open Door: empty build"
+SC = "开门行动：空构建"
+
+[SCENARIO_DEFINITION.od_def]
+US = "Open Door: empty build"
+SC = "开门行动：空构建"
+
+["Scripting/Dialog".od_intro]
+US = "Open Door: empty build. One M1A1HA holds NECK MID for 10 minutes."
+SC = "开门行动：空构建。一辆M1A1HA坚守NECK MID十分钟。"
+
+["Scripting/Localization".od_obj]
+US = "PRIMARY: HOLD NECK MID"
+SC = "主要目标：坚守NECK MID"
+
+["Scripting/Localization".od_objl]
+US = "Hold for %1"
+SC = "坚守%1"
+
+["Scripting/Localization".od_cnato]
+US = "NATO"
+SC = "北约"
+
+["Scripting/Localization".od_cdecoy]  # 诱饵 (decoy) is outside the stock SC set
+US = "NATO decoys"
+SC = "北约佯动部队"
+
+["Scripting/Localization".od_cddr]
+US = "NVA"
+SC = "东德军"
+
+["Scripting/Localization".od_csov]
+US = "Soviet Army"
+SC = "苏军"

@@ -21,11 +21,11 @@ Transporter and Group), any of which might stop the whole GDScript loading. It a
 from __future__ import annotations
 
 import functools
+from pathlib import Path
 from typing import Sequence
 
 from modkit.core import ndfbin
 from modkit.core.gates import check
-from modkit.core.models import StringTable, Texts
 from modkit.ops import script as ops_script
 from modkit.ops.bricks import (
     c_any, c_team, c_type, g_ammo, g_choice, g_cmp, g_collect, g_compete, g_count, g_create, g_detect, g_fx, g_hint,
@@ -37,6 +37,7 @@ from modkit.ops.mission import board, hidden_units, script_frame
 from modkit.ops.models import ExtraShape, ForceRow
 from modkit.ops.profile import Content
 from modkit.ops.script import BRICK_FORCE_HIDE
+from modkit.ops.strings import load
 from modkit.ops.leveldesign import LdItem
 from modkit.ops.maps import GEISA_BOXES
 from modkit.ops.shapes import (  # noqa: F401  (GRU_WORLD and the order types are the probe's knobs too)
@@ -438,90 +439,7 @@ BEATS: list[Beat] = [
 
 # --------------------------------------------------------------------------- strings
 
-STRINGS: StringTable = {
-    "SCENARIO_DEFINITION": {  # menu tokens, each text at most 30 UTF-16 units
-        "od_name": Texts(US="Open Door: spike", SC="开门行动：机制测试"),
-        "od_cname": Texts(US="OPEN DOOR: SPIKE", SC="开门行动：机制测试"),
-        "od_headr": Texts(US="Open Door spike checklist", SC="开门行动测试清单"),
-        "od_order": Texts(US="Each hint names its check.", SC="每条提示都标明检查编号。"),
-        "od_recap": Texts(US="Test op: 11 checks in one run", SC="测试行动：一局完成11项检查"),
-        "od_vic": Texts(US="Spike complete.", SC="测试完成。"),
-        "od_def": Texts(US="Spike ended.", SC="测试结束。"),
-    },
-    "Scripting/Dialog": {
-        "od_start": Texts(US="#bold{CHECK 5: choose the stress test scale.}\n"
-                             "EASY: the 10:00 stress wave at 1x. HARD: the same wave at 2x.\n"
-                             "Play once per button. Every later hint names its check number.",
-                          SC="#bold{检查5：选择压力测试规模。}\n"
-                             "简单：10:00的压力测试按1x兵力进行。困难：按2x兵力进行。\n"
-                             "每个按钮各玩一局。之后的每条提示都会标明检查编号。"),
-    },  # the buttons' own labels are stock INGAME tokens (BUTTON_1X, BUTTON_2X), not ours
-    "Scripting/Localization": {
-        "od_cnato": Texts(US="NATO", SC="北约"),
-        "od_cdecoy": Texts(US="NATO decoys", SC="北约佯动部队"),  # 诱饵 (decoy) is outside the stock SC set
-        "od_cddr": Texts(US="NVA", SC="东德军"),
-        "od_csov": Texts(US="Soviet Army", SC="苏军"),
-        "od_h1": Texts(US="CHECK 1: two markers, on TOWN NE and NECK MID. Are they where the map shows those places?",
-                       SC="检查1：TOWN NE和NECK MID上各有一个标记。它们是否位于地图上相应的地点？"),
-        "od_h2": Texts(US="CHECK 1, 2: deploy in the west zone (3,000 points). Deck: is the A-10A [AT] card locked? "
-                          "Are the Leopard 2A4 card and the Rifles in M113A3 card there? Which badge shows?",
-                       SC="检查1、2：在西侧部署区部署（3,000点）。卡组：A-10A [AT]卡是否已锁定？是否有Leopard 2A4卡和乘坐"
-                          "M113A3的步兵卡？显示的是哪个师的标志？"),  # 徽 (badge) was outside the stock SC set of the time
-        "od_h2b": Texts(US="CHECK 2: the A-10A [AT] card should be unlocked now.", SC="检查2：A-10A [AT]卡现在应已解锁。"),
-        "od_h3": Texts(US="CHECK 3: reserves revealed: 4 M1A1HA at RESERVE N and 4 Leopard 2A4 at HIDE S. Can you "
-                          "command them?",
-                       SC="检查3：预备队已出现：RESERVE N有4辆M1A1HA，HIDE S有4辆Leopard 2A4。您能指挥它们吗？"),
-        "od_h4": Texts(US="CHECK 4, 11: 10 T-80BV attack from ENTRY E through VILLAGE E, then seize NECK MID. Do they "
-                          "fight convincingly?",
-                       SC="检查4、11：10辆T-80BV从ENTRY E经VILLAGE E发起进攻，随后夺取NECK MID。它们的战斗表现是否可信？"),
-        "od_h5a": Texts(US="CHECK 5: you chose 1x. The 10:00 stress wave runs at 1x.",
-                        SC="检查5：您选择了1x。10:00的压力测试按1x兵力进行。"),
-        "od_h5b": Texts(US="CHECK 5: you chose 2x. The 10:00 stress wave runs at 2x.",
-                        SC="检查5：您选择了2x。10:00的压力测试按2x兵力进行。"),
-        "od_obj1a": Texts(US="CHECK 1: marker on TOWN NE", SC="检查1：TOWN NE标记"),
-        "od_obj1b": Texts(US="CHECK 1: marker on NECK MID", SC="检查1：NECK MID标记"),
-        "od_lbl1a": Texts(US="TOWN NE", SC="TOWN NE"),
-        "od_lbl1b": Texts(US="NECK MID", SC="NECK MID"),
-        "od_obj4": Texts(US="Destroy %1 / 10 T-80BV", SC="摧毁%1 / 10辆T-80BV"),
-        "od_obj4l": Texts(US="%1 / 10", SC="%1 / 10"),
-        "od_h3c": Texts(US="CHECK 3: a column of 6 BMP-2 drives from ENTRY E down the defile to NECK S. The HIDE S "
-                           "reserves appear at 3:00, with the column nearby.",
-                        SC="检查3：一支由6辆BMP-2组成的纵队从ENTRY E沿山谷驶向NECK S。HIDE S的预备队将在3:00出现，"
-                           "那时纵队就在附近。"),
-        "od_h4p": Texts(US="CHECK 4: a 4-unit recon probe leaves TRACK SE IN on the forest track to HIDE S. Does it "
-                           "stay on the track instead of detouring onto the main roads?",
-                        SC="检查4：一支4个单位的侦察分队从TRACK SE IN沿林间小路前往HIDE S。它是否一直沿小路行进，"
-                           "而没有绕上大路？"),
-        "od_h4r": Texts(US="CHECK 4: a probe unit has stayed in the HIDE S ring for 20 s: the exposure branch fired.",
-                        SC="检查4：一个侦察单位已在HIDE S圈内停留20秒：暴露分支已触发。"),
-        "od_h6a": Texts(US="CHECK 6: WARNING: in 20 s, Soviet artillery in the NE corner fires on BOX MID (NECK MID).",
-                        SC="检查6：警告：20秒后，东北角的苏军炮兵将炮击BOX MID（NECK MID）。"),
-        "od_h6b": Texts(US="CHECK 6: WARNING: NATO strike on BOX S (NECK S) in 20 s. Half the Soviet units in it are "
-                           "destroyed and the rest stunned. Does the objective count them?",
-                        SC="检查6：警告：20秒后，北约将打击BOX S（NECK S）。其中一半苏军单位将被摧毁，其余将被击昏。"
-                           "目标是否统计了它们的数量？"),
-        "od_h7": Texts(US="CHECK 7: a UH-60A with AeroRifles appears at EDGE N and should fly them to LZ MID and "
-                          "unload them there. If the rifles appear outside the helicopter and have not boarded after "
-                          "30 s, board them by hand. Can you command both?",
-                       SC="检查7：一架UH-60A和空降步兵出现在EDGE N，直升机应载着步兵飞往LZ MID并让他们下机。如果步兵出现在"
-                          "直升机外，且30秒后仍未登机，请手动让他们登机。您能指挥两者吗？"),
-        "od_h8": Texts(US="CHECK 8: the stress wave, main body and relief at the scale you chose, attacks from ENTRY N "
-                          "and ENTRY NE towards TOWN SW. Note the frame rate.",
-                       SC="检查8：压力测试波次（主力和增援部队，按您选择的规模）从ENTRY N和ENTRY NE向TOWN SW发起进攻。"
-                          "请记下FPS。"),
-        "od_h9": Texts(US="CHECK 9: 4 decoy M1 (an AI camp) on PL BLUE with broken tracks and no ammunition; 2 of them "
-                          "are emptied again every 30 s. Do they stay put and silent, outside your control and losses?",
-                       SC="检查9：PL BLUE上有4辆佯动M1（AI阵营），无法移动且没有弹药；其中2辆每30秒重新清空弹药。"
-                          "它们是否原地不动、保持沉默，并且不受您控制、不计入您的损失？"),
-        "od_h10": Texts(US="CHECK 10: 2 AH-64A arrive at EDGE W and move to HOLD W. An F-4G card is in your deck. The "
-                           "6 Soviet air-defence vehicles at SACK MID have a quarter of their fuel. Do the F-4G's "
-                           "anti-radar missiles fire on the Osa or Tunguska?",
-                        SC="检查10：2架AH-64A从EDGE W抵达并前往HOLD W。您的卡组中新增了一张F-4G卡。SACK MID的6辆苏军"
-                           "防空车辆只剩四分之一燃料。F-4G的反辐射导弹是否会攻击Osa或Tunguska？"),
-        "od_obj6": Texts(US="Units caught in BOX S: %1", SC="BOX S内被困单位：%1"),
-        "od_obj6l": Texts(US="%1", SC="%1"),
-    },
-}
+TABLE = Path(__file__).with_name("spike.strings.toml")   # its texts, per token and language (load)
 
 
 # --------------------------------------------------------------------------- script and content
@@ -541,7 +459,8 @@ def content(safe: bool = False) -> Content:
     """The spike, or with `safe` spike_safe, whose script leaves out ChangeStress, AddUnitToDeck's Transporter and the
     loaded-helicopter ProductionUnites, and whose shape gate admits none of them."""
     if not safe:
-        return profile.content("spike", ITEMS, script, STRINGS, profile.MENU_TOKENS, extra_shapes=EXTRA_SHAPES)
+        return profile.content("spike", ITEMS, script, load(TABLE), profile.MENU_TOKENS,
+                               extra_shapes=EXTRA_SHAPES)
     shapes = tuple(s for s in EXTRA_SHAPES if not {s.cls, s.target} & set(SAFE_DROPS) and s != TRANSPORTER_SHAPE)
-    return profile.content("spike_safe", ITEMS, functools.partial(script, safe=True), STRINGS, profile.MENU_TOKENS,
+    return profile.content("spike_safe", ITEMS, functools.partial(script, safe=True), load(TABLE), profile.MENU_TOKENS,
                            extra_shapes=shapes)

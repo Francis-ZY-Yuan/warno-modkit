@@ -30,6 +30,7 @@ from modkit.ops.leveldesign import LdItem
 from modkit.ops.maps import GEISA
 from modkit.ops.profile import Content
 from modkit.ops.shapes import camp_nodes
+from modkit.ops.strings import load
 from modkit.ops.testing import (  # noqa: F401
     COMP, SEQ, SIM, hints, last, least_s, of, prop, remove_out, sets, start_s, token, within,
 )
@@ -40,6 +41,7 @@ from probes.geisa import MAP, POINTS, ROWS
 OUT = os.path.join(OUT_ROOT, "spike")
 GD_ITEMS = "$/GDScript/GdItems"
 FOREVER = spike.FOREVER
+STRINGS = load(spike.TABLE)   # the spike's string table
 SCRIPT_DATA = paths.skip_unless_extracted("kreide_op", "challenge_Survivors_Definition")
 STOCK_DATA = paths.skip_unless_extracted("scenarios")
 GAME = paths.skip_unless_game_dir("Mods", "ModData", "base.zip")
@@ -498,7 +500,7 @@ class CombatBeats(unittest.TestCase):
             self.assertGreaterEqual(start_s(root, f) - start_s(root, warn), 15.0)
         (obj,) = [o for o in of(nodes, "GereObjectif") if token(prop(o, "ObjectiveText")) == "od_obj6"]
         self.assertEqual(prop(obj, "ListVariables"), [caught])
-        tokens = {t: texts for dic in spike.STRINGS.values() for t, texts in dic.items()}
+        tokens = {t: texts for dic in STRINGS.values() for t, texts in dic.items()}
         for lang, text in tokens["od_obj6"].items():
             with self.subTest(token="od_obj6", lang=lang):
                 self.assertIn("%1", text)
@@ -608,7 +610,7 @@ class CombatBeats(unittest.TestCase):
 
     def test_air_assault_hint(self):
         """od_h7 is true of both variants: the rifles appear in the helicopter (spike) or beside it (spike_safe)."""
-        h7 = spike.STRINGS["Scripting/Localization"]["od_h7"]
+        h7 = STRINGS["Scripting/Localization"]["od_h7"]
         en, zh = h7.US, h7.SC
         for text in ("UH-60A", "AeroRifles", "EDGE N", "LZ MID", "by hand", "30 s"):
             self.assertIn(text, en)
@@ -668,12 +670,12 @@ class CombatBeats(unittest.TestCase):
 
 class Strings(unittest.TestCase):
     def test_strings_task5(self):
-        tokens = {t: texts for dic in spike.STRINGS.values() for t, texts in dic.items()}
+        tokens = {t: texts for dic in STRINGS.values() for t, texts in dic.items()}
         want = ["od_start", "od_obj4", "od_h1", "od_h2", "od_h2b", "od_h3", "od_h4", "od_h5a",
                 "od_h5b", *profile.MENU_TOKENS]
         self.assertEqual([t for t in want if t not in tokens], [])
         self.assertEqual([t for t in ("od_c1x", "od_c2x") if t in tokens], [])  # the buttons use stock INGAME labels
-        self.assertEqual(sorted(spike.STRINGS["SCENARIO_DEFINITION"]), sorted(profile.MENU_TOKENS))
+        self.assertEqual(sorted(STRINGS["SCENARIO_DEFINITION"]), sorted(profile.MENU_TOKENS))
         for lang, text in tokens["od_start"].items():
             with self.subTest(token="od_start", lang=lang):
                 self.assertIn("#bold{", text)
@@ -682,7 +684,7 @@ class Strings(unittest.TestCase):
                 self.assertIn("%1", text)
 
     def test_strings_task6(self):
-        tokens = {t for dic in spike.STRINGS.values() for t in dic}
+        tokens = {t for dic in STRINGS.values() for t in dic}
         want = ["od_h3c", "od_h4p", "od_h4r", "od_h6a", "od_h6b", "od_h7", "od_h8", "od_h9", "od_h10", "od_obj6"]
         self.assertEqual([t for t in want if t not in tokens], [])
 

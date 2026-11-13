@@ -216,6 +216,9 @@ re-verify the mechanisms on a new game version:
 - `probes/profile.py`: the profile and the identity the probes share
 - `probes/geisa.py`: the named points on Geisa and the force rows the probes create, read from the tables they share
   with Open Door (`modkit.ops.maps.GEISA_POINTS`, `modkit.ops.forces.GEISA_SOVIET_ROWS`)
-- `probes/empty.py`, `probes/spike.py`, `probes/spike2.py`, `probes/nuke.py`: one module per probe (items, beats, strings, script)
+- `probes/empty.py`, `probes/spike.py`, `probes/spike2.py`, `probes/nuke.py`, `probes/fxprobe.py`: one module per
+  probe (items, beats, script)
+- `probes/<content>.strings.toml`: each probe's string table, one section per token and one key per language
+  (`modkit.ops.strings.load`); spike_safe shares spike's, and nuke and nuke_sov have one each
 
 The tests are `components/ops/tests/test_probes.py`, `test_probe_spike.py`, `test_probe_spike2.py` and `test_probe_nuke.py`.

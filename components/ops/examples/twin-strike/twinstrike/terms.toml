@@ -1,0 +1,325 @@
+# Twin Strike's term table (warno-localization, step 2): English term -> its text and source in each language the op
+# is in, one section per term and language, ["<English term>".<language>], with `text` and `source`. "stock
+# <DICTIONARY>" is the game's own text (python -m modkit.core.glossary term / token), "doctrine" PRC military
+# terminology on the Soviet Army (the Russian original beside it), "term sheet" the maintainer's review, "ours" this
+# op's own wording. strings.toml's Chinese uses every term (test_twin_strike_chinese).
+
+# the dialog buttons (strings.BUTTONS): their SC labels, verbatim
+["FIRE AT WILL".SC]
+text = "自由射击"
+source = "stock INTERFACE_INGAME ORD_AIARA"
+["HOLD FIRE".SC]
+text = "不射击"
+source = "stock INTERFACE_INGAME ORD_HOLDF"
+[ROCKET.SC]
+text = "火箭弹"
+source = "stock INTERFACE_INGAME TC_rkt"
+[ARTILLERY.SC]
+text = "炮兵"
+source = "stock INTERFACE_INGAME HPD_ARTT"
+[ALPHA.SC]
+text = "ALPHA"
+source = "stock INTERFACE_INGAME ZONEOTAN_A"
+[BRAVO.SC]
+text = "BRAVO"
+source = "stock INTERFACE_INGAME ZONEOTAN_B"
+[Yes.SC]
+text = "是"
+source = "stock INTERFACE_INGAME UIP_YES"
+[No.SC]
+text = "否"
+source = "stock INTERFACE_INGAME UIP_NO"
+
+# what the game's own screens show
+["TOTAL VICTORY".SC]
+text = "大获全胜"
+source = "stock INTERFACE_INGAME, the end screen"
+["MAJOR VICTORY".SC]
+text = "酣畅大捷"
+source = "stock INTERFACE_INGAME, the end screen"
+["MINOR VICTORY".SC]
+text = "略占上风"
+source = "stock INTERFACE_INGAME, the end screen"
+[DEFEAT.SC]
+text = "败北"
+source = "stock INTERFACE_INGAME, the end screen's DEFEAT!"
+[Easy.SC]
+text = "简单"
+source = "stock INTERFACE_OUTGAME AB_GM_0, the difficulty"
+[Medium.SC]
+text = "标准"
+source = "stock INTERFACE_OUTGAME AB_GM_1, the difficulty"
+[Hard.SC]
+text = "困难"
+source = "stock INTERFACE_OUTGAME AB_GM_2, the difficulty"
+[difficulty.SC]
+text = "难度"
+source = "stock INTERFACE_INGAME, Select difficulty"
+["Twin Cities (the twin towns)".SC]
+text = "双城"
+source = "stock MAPS, the map's name"
+[village.SC]
+text = "村庄"
+source = "stock MAPS"
+["launch (the battle)".SC]
+text = "发起战斗"
+source = "stock INTERFACE_INGAME, LAUNCH BATTLE"
+[deploy.SC]
+text = "部署"
+source = "stock INTERFACE_INGAME, DEPLOYMENT PHASE"
+[phase.SC]
+text = "阶段"
+source = "stock INTERFACE_INGAME, DEPLOYMENT PHASE"
+[objectives.SC]
+text = "目标"
+source = "stock INTERFACE_INGAME, OBJECTIVE"
+["command unit".SC]
+text = "指挥单位"
+source = "stock UNITS"
+[points.SC]
+text = "点"
+source = "stock INTERFACE_INGAME, %1 points"
+[income.SC]
+text = "收入"
+source = "stock INTERFACE_INGAME, INCOME"
+[stunned.SC]
+text = "被压制"
+source = "stock INTERFACE_INGAME, the STUNNED! status"
+[recon.SC]
+text = "侦察"
+source = "stock UNITS"
+[helicopters.SC]
+text = "直升机"
+source = "stock INTERFACE_INGAME"
+[NATO.SC]
+text = "北约"
+source = "stock INTERFACE_INGAME"
+["Soviet Army".SC]
+text = "苏军"
+source = "stock, throughout"
+["West German".SC]
+text = "西德"
+source = "stock, throughout (term sheet C)"
+[US.SC]
+text = "美军"
+source = "stock, throughout"
+[Panzergrenadier.SC]
+text = "装甲掷弹兵"
+source = "stock UNITS"
+
+# military wording: the doctrinal register
+["Operation Twin Strike".SC]
+text = "双重突击行动"
+source = "ours: term sheet A"
+["Comrade commander".SC]
+text = "指挥员同志"
+source = "doctrine: товарищ командир"
+["Combat Order No. 79/014".SC]
+text = "战斗命令第79/014号"
+source = "doctrine: боевой приказ"
+["79th Guards Tank Division".SC]
+text = "近卫坦克第79师"
+source = "doctrine: 近卫, the arm, then 第N"
+["forward detachment (and the division's vanguard)".SC]
+text = "先遣支队"
+source = "doctrine: передовой отряд"
+[Front.SC]
+text = "方面军"
+source = "doctrine: фронт"
+["division artillery (its name, its dialogs)".SC]
+text = "师炮兵群"
+source = "doctrine: ДАГ"
+["the division's guns (briefing prose)".SC]
+text = "师炮兵"
+source = "doctrine: ДАГ, in prose"
+["preparation fire".SC]
+text = "冲击炮火准备"
+source = "doctrine: артподготовка атаки"
+["fire mission".SC]
+text = "射击任务"
+source = "doctrine: огневая задача"
+["division fire plan".SC]
+text = "师炮兵群火力急袭"
+source = "doctrine: огневой налёт"
+[battery.SC]
+text = "炮兵连"
+source = "doctrine: батарея"
+["rocket battery".SC]
+text = "火箭炮连"
+source = "doctrine: реактивная батарея"
+[salvo.SC]
+text = "齐射"
+source = "term sheet"
+[blow.SC]
+text = "突击"
+source = "doctrine: удар"
+["attack (a NATO battalion's)".SC]
+text = "冲击"
+source = "doctrine: атака"
+["the assault (the player's assaulting force)".SC]
+text = "冲击分队"
+source = "doctrine: атака"
+[counter-attack.SC]
+text = "反冲击"
+source = "doctrine: контратака"
+["assembly area".SC]
+text = "集结地域"
+source = "doctrine: район сосредоточения"
+[assemble.SC]
+text = "集结"
+source = "doctrine: сосредоточиваться"
+["tactical nuclear strike".SC]
+text = "战术核突击"
+source = "doctrine: ядерный удар (term sheet: 核)"
+["the strike".SC]
+text = "核突击"
+source = "doctrine: ядерный удар"
+["nuclear release".SC]
+text = "批准使用核武器"
+source = "doctrine, descriptive (term sheet 12)"
+["request release".SC]
+text = "请求批准"
+source = "doctrine, descriptive (term sheet 12)"
+["release withheld (the player declines)".SC]
+text = "不使用核武器"
+source = "term sheet 12"
+["the division's reserve".SC]
+text = "师预备队"
+source = "doctrine: резерв"
+[seize.SC]
+text = "夺取"
+source = "doctrine: захватить"
+[hold.SC]
+text = "扼守"
+source = "doctrine: удерживать"
+["road junction".SC]
+text = "道路枢纽"
+source = "doctrine: узел дорог"
+["opens the road west".SC]
+text = "打通西进道路"
+source = "term sheet 15"
+[screen.SC]
+text = "警戒"
+source = "doctrine: охранение"
+["motor rifles".SC]
+text = "摩步"
+source = "doctrine: мотострелки (摩托化步兵, short 摩步)"
+["a battalion breaks, is broken".SC]
+text = "丧失战斗力"
+source = "doctrine: потерять боеспособность"
+["break off".SC]
+text = "脱离接触"
+source = "ours"
+["survivors (of a beaten unit)".SC]
+text = "残部"
+source = "ours"
+["US armoured task force".SC]
+text = "美军坦克营特遣队"
+source = "term sheet 20"
+["a US armoured battalion; a West German Panzer battalion".SC]
+text = "坦克营"
+source = "term sheet 20"
+["heavy air defence".SC]
+text = "强大的防空火力"
+source = "term sheet 21, descriptive"
+[engineers.SC]
+text = "工兵"
+source = "doctrine: сапёры"
+[scouts.SC]
+text = "侦察兵"
+source = "doctrine: разведчики"
+
+# weapons: a designation in Latin with a class word; a name that is only a nickname in stock's Chinese for it,
+# without its quotes (term sheet: 豹2A4)
+[tanks.SC]
+text = "坦克"
+source = "stock UNITS"
+[IFVs.SC]
+text = "步兵战车"
+source = "stock UNITS"
+["SP howitzers".SC]
+text = "自行榴弹炮"
+source = "stock INTERFACE_INGAME"
+[SPAAGs.SC]
+text = "自行高炮"
+source = "stock UNITS"
+["ATGM teams".SC]
+text = "反坦克小组"
+source = "stock INTERFACE_OUTGAME"
+["air defence".SC]
+text = "防空"
+source = "stock UNITS"
+[Leopard.SC]
+text = "豹"
+source = "stock UNITS, term sheet"
+[Marder.SC]
+text = "黄鼠狼"
+source = "stock UNITS"
+[Milan.SC]
+text = "米兰"
+source = "stock UNITS"
+[Shilka.SC]
+text = "石勒喀"
+source = "stock UNITS"
+[Tunguska.SC]
+text = "通古斯卡"
+source = "stock UNITS"
+[Osa.SC]
+text = "黄蜂"
+source = "stock UNITS"
+[Kub.SC]
+text = "立方"
+source = "stock UNITS"
+[Konkurs-M.SC]
+text = "竞赛-M"
+source = "stock UNITS"
+[Metis.SC]
+text = "混血儿"
+source = "ours: the PRC name; stock has none"
+
+# the op's own coinages
+["BOX W".SC]
+text = "W区"
+source = "ours: term sheet B"
+["BOX C".SC]
+text = "C区"
+source = "ours: term sheet B"
+["fire box".SC]
+text = "火力区"
+source = "ours"
+["the west lane".SC]
+text = "西路"
+source = "ours"
+["the centre lane".SC]
+text = "中路"
+source = "ours"
+["both lanes".SC]
+text = "两路"
+source = "ours"
+["STRIKE ZONE".SC]
+text = "核突击区"
+source = "ours"
+["HOLD ON (P3)".SC]
+text = "坚守"
+source = "ours"
+["BREAK (B1)".SC]
+text = "击溃"
+source = "ours"
+["DEAL WITH (B2)".SC]
+text = "应对"
+source = "ours"
+["FINISH (B2 after a strike)".SC]
+text = "歼灭"
+source = "ours"
+["the first battalion".SC]
+text = "第一个营"
+source = "ours"
+["the second battalion".SC]
+text = "第二个营"
+source = "ours"
+["fighter sweeps".SC]
+text = "战斗机扫荡"
+source = "ours"
+["Intel indicates hostile forces include (the briefing's point 3)".SC]
+text = "敌情"
+source = "ours: an order's heading"

@@ -16,6 +16,7 @@ from modkit.ops.graph import TRUE, Node, decode, i32, walk
 from modkit.ops.maps import GEISA
 from modkit.ops.models import ForceRow, Knobs
 from modkit.ops.profile import SURVIVORS
+from modkit.ops.strings import load
 from modkit.ops.testing import (
     cmp_of, last, of, parent_of, prop, sets, subs, token,
 )
@@ -28,6 +29,7 @@ from opendoor import op as mission
 from opendoor.map import MAP
 
 px_of, radius_px, box_px = MAP.px_of, MAP.radius_px, MAP.box_px
+STRINGS = load(mission.TABLE)   # the op's string table
 
 
 class World:
@@ -664,7 +666,7 @@ class Phase1(unittest.TestCase):
     def test_strings(self):
         """Phase 1's texts in both languages; P1 and B1 hold at most 2 numbers; every hint token has its "fixed"
         twin, and so has P1's dialog, which holds none."""
-        loc, dialogs = mission.STRINGS["Scripting/Localization"], mission.STRINGS["Scripting/Dialog"]
+        loc, dialogs = STRINGS["Scripting/Localization"], STRINGS["Scripting/Dialog"]
         for tok in ("od_hph1", "od_p1", "od_p1l", "od_b1", "od_b1l", "od_hcapt", "od_hopen",
                     *(f"od_hf{k}{s}" for k in ("ne", "ve", "se") for s in ("", "_f"))):
             with self.subTest(token=tok):
@@ -1163,7 +1165,7 @@ class Phase2(unittest.TestCase):
         """Phase 2's texts in both languages: P4 and B6 hold two numbers each; the hand-over hint has its "fixed"
         twin, which promises nothing about reinforcements; the spring's dialogs hold none and name the buttons' stock
         texts."""
-        loc, dialogs = mission.STRINGS["Scripting/Localization"], mission.STRINGS["Scripting/Dialog"]
+        loc, dialogs = STRINGS["Scripting/Localization"], STRINGS["Scripting/Dialog"]
         for tok in ("od_hph2", "od_p4", "od_p4l", "od_b6", "od_b6l", "od_hgrn", "od_hgrn_f", "od_hgrs",
                     "od_hgrs_f"):
             with self.subTest(token=tok):
@@ -1765,7 +1767,7 @@ class Phase34(unittest.TestCase):
         numbers, the dialogs none; the backstop's dialog and P6 name their times; each seal hint has its "fixed" twin,
         which promises nothing about reinforcements; Major and Minor's dialogs claim no shut door (the backstop ends
         with it open)."""
-        loc, dialogs = mission.STRINGS["Scripting/Localization"], mission.STRINGS["Scripting/Dialog"]
+        loc, dialogs = STRINGS["Scripting/Localization"], STRINGS["Scripting/Dialog"]
         for tok in ("od_hjaw", "od_p5m", "od_p5ml", "od_p5s", "od_p5sl", "od_hsm", "od_hsm_f", "od_hss", "od_hss_f",
                     "od_p6", "od_p6l", "od_catch", "od_catchl"):
             with self.subTest(token=tok):

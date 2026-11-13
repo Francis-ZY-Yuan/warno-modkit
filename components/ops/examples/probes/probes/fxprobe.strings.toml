@@ -1,0 +1,130 @@
+# The strike-effects probe's string table (probes.fxprobe; modkit.ops.strings.load). One section per token,
+# [<dictionary>.<token>], one key per language (US required; any other language optional, packed as the US text
+# where it has none). The order is the order the build writes each .dic's texts in.
+
+# menu tokens, each text at most 30 UTF-16 units
+[SCENARIO_DEFINITION.fx_name]
+US = "Probe: strike effects"
+SC = "测试：打击特效"
+
+[SCENARIO_DEFINITION.fx_cname]
+US = "PROBE: STRIKE EFFECTS"
+SC = "测试：打击特效"
+
+[SCENARIO_DEFINITION.fx_headr]
+US = "Strike effects play sheet"
+SC = "打击特效问卷"
+
+[SCENARIO_DEFINITION.fx_order]
+US = "Each hint names its step."
+SC = "每条提示都标明步骤编号。"
+
+[SCENARIO_DEFINITION.fx_recap]
+US = "Test op: every strike effect"
+SC = "测试行动：所有打击特效"
+
+[SCENARIO_DEFINITION.fx_vic]
+US = "Probe complete."
+SC = "测试完成。"
+
+[SCENARIO_DEFINITION.fx_def]
+US = "Probe ended."
+SC = "测试结束。"
+
+# no dialogs: the dictionary ships empty
+["Scripting/Dialog"]
+
+# the camps' PlayerName, <prefix>_camp0..3 in CAMP_EXPORTS order (joueur, Allie, ordinateur_DDR, ordinateur_SOV)
+["Scripting/Localization".fx_camp0]
+US = "Soviet Army"
+SC = "苏军"
+
+["Scripting/Localization".fx_camp1]
+US = "Soviet ally"
+SC = "苏军盟军"
+
+["Scripting/Localization".fx_camp2]
+US = "NATO"
+SC = "北约"
+
+["Scripting/Localization".fx_camp3]
+US = "NATO"
+SC = "北约"
+
+["Scripting/Localization".fx_hdep]
+US = """
+Deploy one cheap unit west of the central forest and nothing east of it, then launch the battle. The steps \
+start then; each hint names its step 5 s before it acts."""
+SC = """
+在中央森林以西部署一个便宜的单位，森林以东不要部署，然后发起战斗。各步骤从此开始；\
+每条提示在步骤执行前5秒标明步骤。"""
+
+["Scripting/Localization".fx_h1]
+US = """
+F1 TARGETS: 6 M1A1HA Abrams and 6 M2A2 Bradleys appear at T (pinned), unarmed. You should not see them yet: \
+nothing of yours is near."""
+SC = "F1 目标：6辆M1A1HA艾布拉姆斯和6辆M2A2布雷德利出现在T（已标出），没有弹药。你现在应该看不到它们。"
+
+["Scripting/Localization".fx_h2]
+US = "F2 CAMERA: the camera flies to T in 4 s. Escape skips it."
+SC = "F2 镜头：镜头在4秒内飞到T。按Esc可略过。"
+
+["Scripting/Localization".fx_h3]
+US = "F3 FOG OFF: the fog of war is lifted. Do the 12 targets at T show now?"
+SC = "F3 关闭战争雾：雾被移除。T处的12个目标现在能看到吗？"
+
+["Scripting/Localization".fx_h3b]
+US = "F3b VISION: 3 BRDM-2 of yours appear 400 m west of T, so you see T even if the fog stayed. Keep them there."
+SC = "F3b 视野：你的3辆BRDM-2出现在T以西400米处，即使雾仍在也能看到T。请让它们留在原地。"
+
+["Scripting/Localization".fx_h4]
+US = """
+F4 MASSED EFFECTS: 10 mega bombs over T, 50 203 mm impacts, white and black smoke, all at once. How big does it \
+look?"""
+SC = "F4 大规模特效：T周围10颗超级炸弹、50发203毫米炮弹、白烟和黑烟同时出现。看起来有多大？"
+
+["Scripting/Localization".fx_h5]
+US = "F5 KILL 40%: 4 of the 12 targets are killed with Penetration. Wrecks, or nothing?"
+SC = "F5 击杀40%：12个目标中的4个被穿透击杀。留下残骸，还是什么都没有？"
+
+["Scripting/Localization".fx_h6]
+US = "F6 DAMAGE: ChangeStress Physical, 5 of 10 HP, on the survivors. Do they lose health, or die?"
+SC = "F6 伤害：对幸存者施加ChangeStress物理伤害，10点生命值中的5点。它们掉血了还是被摧毁了？"
+
+["Scripting/Localization".fx_h7]
+US = "F7 STUN: ChangeStress Stun on the survivors. Are they stunned?"
+SC = "F7 Stun：对幸存者施加ChangeStress（Stun）。它们失去行动能力了吗？"
+
+["Scripting/Localization".fx_h8]
+US = """
+F8 NUKE 1: the game's tactical nuke effect through the script's wrapper, position 0, on T. If the game crashes \
+now, it was this step. Where does it show, and how big?"""
+SC = """
+F8 原子弹1：通过脚本封装使用游戏的战术原子弹特效，位置为0，目标T。如果游戏此时崩溃，就是这一步。它出现在哪里，\
+有多大？"""
+
+["Scripting/Localization".fx_h9]
+US = """
+F9 NUKE 2: the same effect at U, its position the tag's own. If the game crashes now, it was this step. Where \
+does it show, and how big?"""
+SC = "F9 原子弹2：同样的特效在U处，位置为该标记自身的位置。如果游戏此时崩溃，就是这一步。它出现在哪里，有多大？"
+
+["Scripting/Localization".fx_h10]
+US = "F10 FOG ON: the fog of war is back. Probe done: answer the play sheet (README, fxprobe)."
+SC = "F10 开启战争雾：雾恢复。测试完成：请回答试玩问卷。"
+
+["Scripting/Localization".fx_ot]
+US = "T: 12 NATO targets (F1 to F8)"
+SC = "T：12个北约目标（F1至F8）"
+
+["Scripting/Localization".fx_otl]
+US = "T"
+SC = "T"
+
+["Scripting/Localization".fx_ou]
+US = "U: the second nuke (F9)"
+SC = "U：第二颗原子弹（F9）"
+
+["Scripting/Localization".fx_oul]
+US = "U"
+SC = "U"

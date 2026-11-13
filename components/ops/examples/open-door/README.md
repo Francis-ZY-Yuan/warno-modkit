@@ -106,7 +106,8 @@ its own points and rows beside them; the tests check that no shared value is cop
 - `opendoor/map.py`: the named points (the shared ones and Open Door's own); `python -m opendoor.map overlay OUT.png`
   draws them on Geisa's Preview
 - `opendoor/forces.py`: the force table, the scale knob and the share thresholds
-- `opendoor/strings.py`: the English and Simplified Chinese string table
+- `opendoor/strings.toml`: the string table, English and Simplified Chinese side by side: one section per token, one
+  key per language (`modkit.ops.strings.load`)
 - `opendoor/op.py`: the mission: its geometry, beats, script and content. The composed pieces other ops use too
   (the script frame, lanes and waves, boarding, the re-ask loop, the zone race and hand-over, the end funnel, the
   difficulty branches) are `modkit.ops.mission`'s; `op.py` passes them Open Door's names and values

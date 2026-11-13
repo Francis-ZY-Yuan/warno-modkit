@@ -441,7 +441,7 @@ The strategic AI is not used: scripted waves keep the story on rails.
 - **Languages: English and Simplified Chinese.** WARNO has eight dictionary languages; the SC dictionaries get the
   Chinese text and the other seven the English, so no client ever sees a raw token. Everything the op shows is
   translated: the menu entry, dialogs, objectives and hints.
-- **One string table** (`opendoor/strings.py`) holds every token with its English and Chinese text side by side. A
+- **One string table** (`opendoor/strings.toml`) holds every token with its English and Chinese text side by side. A
   native reader should check the Chinese in game before release.
 - **Chinese conventions,** taken from the game's own SC texts: zone code names stay in Latin capitals in both languages
   (PL BLUE, NECK MID, HIDE S), as the game keeps ALPHA and BRAVO; vehicle designations stay in Latin (T-80BV,

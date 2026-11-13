@@ -90,11 +90,12 @@ from modkit.ops.shapes import (
     TRANSPORTER_SHAPE, Beat, add_card, beat_hint, create, lock_card, nuke_wrapper, objective, order, seconds_while,
     set_end,
 )
+from modkit.ops.strings import load
 from modkit.ops.zones import heading
 from twinstrike import forces, profile
 from twinstrike.map import CAMERA, MAP, POINTS, STRIKE_SHOT
 from twinstrike.map import items as map_items
-from twinstrike.strings import BUTTONS, STRINGS
+from twinstrike.strings import BUTTONS, TABLE
 
 # --------------------------------------------------------------------------- knobs
 
@@ -1222,6 +1223,6 @@ def script(tpl: ndfbin.NdfBin) -> tuple[list[Node], list[Node]]:
 def content() -> Content:
     """The op (its own scenario, mod folder, GUID and menu tokens, of which the title check holds the two titles);
     its buy menu may switch to the factory tabs (PROD_MENU_SWITCH, which its script's HUD restore writes)."""
-    return Content("op", tuple(ITEMS), script, STRINGS, profile.TITLE_TOKENS, extra_shapes=extra_shapes(),
+    return Content("op", tuple(ITEMS), script, load(TABLE), profile.TITLE_TOKENS, extra_shapes=extra_shapes(),
                    scenario=profile.SCENARIO, mod_name=profile.MOD_NAME, menu_renames=profile.MENU_RENAMES,
                    prod_menu_switch=PROD_MENU_SWITCH)

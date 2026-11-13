@@ -2,8 +2,14 @@
 
 A ``StringTable`` (modkit.core.models) maps dictionary name -> token -> ``Texts(US=..., SC=...)``, one text per game
 language; an Operation ships three dictionaries, SCENARIO_DEFINITION, Scripting/Dialog and Scripting/Localization.
-``US`` is required; any other language is optional and gets the US text when packed. ``payloads`` turns a table into
-its ``.dic`` files, one per dictionary and language.
+``US`` is required; any other language is optional and gets the US text when packed. An op keeps its table in a TOML
+file, one section per token and one key per language, and ``load`` reads it::
+
+    [SCENARIO_DEFINITION.ts_name]
+    US = "Operation Twin Strike"
+    SC = "双重突击行动"
+
+``payloads`` turns a table into its ``.dic`` files, one per dictionary and language.
 
 The gates catch what no English launch can: a translation that drops a ``%1`` placeholder, a ``#bold{`` markup opener,
 a closing brace or a line break shows raw markup in that language only, and a character no stock text of its language
@@ -14,12 +20,16 @@ violation on its own line: the dictionary, the token, the language and the probl
 from __future__ import annotations
 
 import collections
+import os
 import re
+import tomllib
 from typing import Iterable, Mapping
+
+from pydantic import ValidationError
 
 from modkit.core import trad
 from modkit.core.gates import CheckError
-from modkit.core.models import LANGS, StringTable
+from modkit.core.models import LANGS, StringTable, Texts
 
 TITLE_DICT = "SCENARIO_DEFINITION"
 
@@ -33,14 +43,42 @@ _MATCHED = (
 
 
 class StringError(CheckError, ValueError):
-    """A string-table gate failed; the message names the dictionary, the token and the problem, one line per
-    violation. It is a CheckError, so a profile can hold a reviewed-pending entry for it, and a ValueError, as it always
+    """A string table failed to load or a string-table gate failed; the message names the dictionary, the token and
+    the problem, one line per violation. It is a CheckError, so a profile can hold a reviewed-pending entry for it, and a ValueError, as it always
     was."""
 
 
 def _raise(problems: list[str]) -> None:
     if problems:
         raise StringError("\n".join(problems))
+
+
+def load(path: str | os.PathLike[str]) -> StringTable:
+    """The string table in the TOML file at ``path``: a ``[<dictionary>.<token>]`` section per token, one key per
+    language, each validated into ``Texts`` (US required, the game's languages only). The file's order is kept: it is
+    the order ``payloads`` writes each ``.dic``'s texts in. A dictionary with no token is an empty ``[<dictionary>]``
+    table. Raises one ``StringError`` naming the file and each bad entry, one per line."""
+    with open(path, "rb") as fh:
+        try:
+            data = tomllib.load(fh)
+        except tomllib.TOMLDecodeError as exc:
+            raise StringError(f"{path}: not TOML: {exc}") from None
+    table: StringTable = {}
+    problems = []
+    for dic, tokens in data.items():
+        if not isinstance(tokens, dict):
+            problems.append(f"{path}: {dic}: not a dictionary of tokens (write each token as a [{dic}.<token>] "
+                            "section)")
+            continue
+        table[dic] = {}
+        for token, texts in tokens.items():
+            try:
+                table[dic][token] = Texts.model_validate(texts)
+            except ValidationError as exc:
+                problems += [f"{path}: {dic}.{token}: {'.'.join(map(str, e['loc'])) or 'the entry'}: {e['msg']}"
+                             for e in exc.errors()]
+    _raise(problems)
+    return table
 
 
 def check_parity(table: StringTable) -> None:

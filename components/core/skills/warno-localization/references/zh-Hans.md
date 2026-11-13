@@ -9,7 +9,8 @@ table. Extend the table as mods need more terms, each with its source and confid
   as an empty box ([[chinese-text-stock-glyphs]]). Gate 1 admits every character of every stock SC dictionary:
   menus, maps, units and scenarios. Reword what is outside (诱饵 "decoy" has neither character), and put the natural
   word on the review sheet.
-- An Operation's table holds the text under `SC`; a token without it shows the English.
+- An Operation's TOML string table holds the text under each token's `SC` key; a token without one shows the
+  English.
 
 ## The register: PRC military writing
 

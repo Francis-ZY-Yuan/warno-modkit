@@ -44,7 +44,7 @@ class LazyPaths(unittest.TestCase):
                 from modkit.core import paths
                 paths._code_dirs = lambda: []          # only the working folder (empty) is searched
                 sys.path.insert(0, {str(OPEN_DOOR)!r})
-                import opendoor, opendoor.forces, opendoor.map, opendoor.op, opendoor.profile, opendoor.strings
+                import opendoor, opendoor.forces, opendoor.map, opendoor.op, opendoor.profile
                 sys.argv = ["build.py", "--content", "op", "--out", {out!r}]
                 runpy.run_path({str(OPEN_DOOR / "build.py")!r}, run_name="__main__")
             """)
@@ -71,8 +71,8 @@ class Identity(unittest.TestCase):
         self.assertEqual(c.menu_renames, {f"op13_{k}": f"o3_{k}" for k in
                                           ("name", "order", "headr", "cname", "recap", "vic", "def")})
         self.assertEqual(c.menu_tokens, tuple(c.menu_renames.values()))
-        self.assertEqual(sorted(mission.STRINGS["SCENARIO_DEFINITION"]), sorted(c.menu_tokens))
-        self.assertEqual(mission.STRINGS["SCENARIO_DEFINITION"]["o3_name"], Texts(US="Operation Open Door", SC="开门行动"))
+        self.assertEqual(sorted(c.strings["SCENARIO_DEFINITION"]), sorted(c.menu_tokens))
+        self.assertEqual(c.strings["SCENARIO_DEFINITION"]["o3_name"], Texts(US="Operation Open Door", SC="开门行动"))
         self.assertEqual(CONTENTS["op"]().scenario, profile.SCENARIO)
 
     def test_installs_beside_the_probes(self):

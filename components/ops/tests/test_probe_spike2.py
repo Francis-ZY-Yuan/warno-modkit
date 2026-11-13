@@ -32,6 +32,7 @@ from modkit.ops.maps import GEISA
 from modkit.ops.profile import extracted
 from modkit.ops.rekey import TXN, def_path
 from modkit.ops.shapes import camp_nodes
+from modkit.ops.strings import load
 from modkit.ops.testing import (  # noqa: F401
     cmp_of, end_game, hints, last, objective_named, of, parent_of, prop, remove_out, set_values, sets, start_s, subs,
     token, within,
@@ -42,6 +43,7 @@ from probes.geisa import MAP, POINTS
 
 OUT = os.path.join(OUT_ROOT, "spike2")
 GD_ITEMS = "$/GDScript/GdItems"
+STRINGS = load(spike2.TABLE)   # probe 2's string table
 SEQ, SIM, ITE = "TGDDescriptorSequential", "TGDDescriptorSimultaneous", "TGDDescriptorIfThenElse"
 COMP, WAIT, UNTIL = "TGDDescriptorCompetition", "TGDDescriptorWaitDuration", "TGDDescriptorWaitCondition"
 MODIFY, TEG = "TGDDescriptorModifieVariableInteger", "TGDDescriptorTriggerEndGame"
@@ -703,7 +705,7 @@ class Script(unittest.TestCase):
         self.assertEqual(sorted(token(prop(o, "ObjectiveText")) for o in objectives),
                          sorted(["od_guard", "od_o1", "od_o2", "od_o3", "od_b1", "od_capa", "od_cr", "od_vn", "od_spr",
                                  "od_tr"]))
-        table = {t: texts for d in spike2.STRINGS.values() for t, texts in d.items()}
+        table = {t: texts for d in STRINGS.values() for t, texts in d.items()}
         for o in objectives:
             with self.subTest(objective=token(prop(o, "ObjectiveText"))):
                 for text, numbers in (("ObjectiveText", "ListVariables"),
@@ -731,8 +733,8 @@ class Script(unittest.TestCase):
         self.assertEqual(found, 5)  # counters, capture, count race, vanish, traffic
 
     def test_tokens_are_in_the_table(self):
-        """Every loc token the script uses is in STRINGS, but the dialog buttons (INGAME)."""
-        table = {t for d in spike2.STRINGS.values() for t in d}
+        """Every loc token the script uses is in its string table, but the dialog buttons (INGAME)."""
+        table = {t for d in STRINGS.values() for t in d}
         used = set()
         for nd in self.nodes:
             for key, v in nd.props:
@@ -1006,8 +1008,8 @@ class Identity(unittest.TestCase):
         self.assertEqual(c.menu_renames["op13_name"], "o2_name")
         self.assertEqual(c.menu_tokens, tuple(c.menu_renames.values()))
         self.assertFalse(set(c.menu_tokens) & set(profile.MENU_TOKENS))  # spike 1 keeps its od_* menu tokens
-        self.assertEqual(sorted(spike2.STRINGS["SCENARIO_DEFINITION"]), sorted(c.menu_tokens))
-        self.assertEqual(spike2.STRINGS["SCENARIO_DEFINITION"]["o2_name"].US, "Open Door test 2")
+        self.assertEqual(sorted(STRINGS["SCENARIO_DEFINITION"]), sorted(c.menu_tokens))
+        self.assertEqual(STRINGS["SCENARIO_DEFINITION"]["o2_name"].US, "Open Door test 2")
         ctx = spike2.Ctx()
         it = spike2.item("OD_CZ_CapA")
         self.assertEqual(prop(ctx.tag("OD_CZ_CapA"), leveldesign.TAG_ID).v, ld_guid(it, "challenge_OpenDoorTest"))

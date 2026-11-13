@@ -20,14 +20,15 @@ from modkit.ops.files import read_file
 from modkit.ops.graph import decode, walk
 from modkit.ops.profile import SURVIVORS
 from modkit.ops.shapes import GRU_WORLD
+from modkit.ops.strings import load
 from modkit.ops.testing import last, objective_named, of, parent_of, prop, subs, token
 from twinstrike import forces, profile
 from twinstrike import map as ts_map
 from twinstrike import op
-from twinstrike.strings import BUTTONS, STRINGS
+from twinstrike.strings import BUTTONS, TABLE
 
 GD = "$/GDScript"
-STRINGS_LOC = {tok: texts.US for tok, texts in STRINGS["Scripting/Localization"].items()}
+STRINGS_LOC = {tok: texts.US for tok, texts in load(TABLE)["Scripting/Localization"].items()}
 VILLAGE_CZ = op.VILLAGE_ZONE
 
 

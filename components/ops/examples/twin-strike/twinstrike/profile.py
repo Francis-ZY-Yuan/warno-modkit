@@ -52,7 +52,7 @@ MENU_RENAMES = {"op13_name": "ts_name", "op13_order": "ts_order", "op13_headr": 
 MENU_TOKENS = tuple(MENU_RENAMES.values())
 # The menu's titles (MissionName and TitreObjectifs), the only tokens gate 1's 30-unit title convention holds
 # (Content.menu_tokens). The other five take stock's form and lengths, the briefing over 1,000 units
-# (twinstrike.strings).
+# (strings.toml).
 TITLE_TOKENS = ("ts_name", "ts_cname")
 
 # The sides as Survivors' camps, flipped to the Soviet-player shape: Soviet (joueur, the player), SovietAlly (Allie,

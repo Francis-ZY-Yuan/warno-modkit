@@ -43,6 +43,7 @@ from modkit.ops.profile import (
 from modkit.ops.rekey import TXN, def_path
 from modkit.ops.script import BRICK_DEFAULT, PRODUCTION_DECK
 from modkit.ops.shapes import GRU_WORLD, TRANSPORTER_SHAPE
+from modkit.ops.strings import load
 from modkit.ops.testing import cmp_of, last, of, prop, remove_out, subs, token
 from modkit.ops.zones import point_in_polygon
 from twinstrike import CONTENTS, forces, map as ts_map, op, profile, strings
@@ -54,7 +55,8 @@ MENU_ELEMENTS = {"ts_name": "MissionName", "ts_cname": "TitreObjectifs", "ts_hea
                  "ts_order": "TextePresentationScenario", "ts_recap": "TexteObjectifs",
                  "ts_vic": "VictoryOperationOutcomeText", "ts_def": "DefeatOperationOutcomeText"}
 MENU_PICTURES = ("MapTexture", "CornerLogo", "MissionCountry", "EndgameBlazon")  # DescriptionTextureElements
-ENGLISH = {dic: {tok: texts.US for tok, texts in tokens.items()} for dic, tokens in strings.STRINGS.items()}
+STRINGS = load(strings.TABLE)   # the op's string table
+ENGLISH = {dic: {tok: texts.US for tok, texts in tokens.items()} for dic, tokens in STRINGS.items()}
 
 
 def units(text: str) -> int:
@@ -113,7 +115,7 @@ class Identity(unittest.TestCase):
         self.assertEqual(c.menu_renames, {f"op13_{k}": f"ts_{k}" for k in
                                           ("name", "order", "headr", "cname", "recap", "vic", "def")})
         self.assertEqual(profile.MENU_TOKENS, tuple(c.menu_renames.values()))
-        self.assertEqual(sorted(strings.STRINGS["SCENARIO_DEFINITION"]), sorted(profile.MENU_TOKENS))
+        self.assertEqual(sorted(STRINGS["SCENARIO_DEFINITION"]), sorted(profile.MENU_TOKENS))
         self.assertEqual(c.menu_tokens, profile.TITLE_TOKENS)
         self.assertEqual(profile.TITLE_TOKENS, ("ts_name", "ts_cname"))
         self.assertEqual(ENGLISH["SCENARIO_DEFINITION"]["ts_name"], "Operation Twin Strike")
@@ -362,13 +364,13 @@ class Camera(unittest.TestCase):
 class Strings(unittest.TestCase):
     def test_english_and_simplified_chinese(self):
         """Every token holds US, in plain ASCII (the glyph gate's printable set), and SC (test_twin_strike_chinese)."""
-        for dic, tokens in strings.STRINGS.items():
+        for dic, tokens in STRINGS.items():
             for tok, texts in tokens.items():
                 with self.subTest(token=tok):
                     self.assertEqual([lang for lang, _ in texts.items()], ["SC", "US"])
                     self.assertTrue(all(" " <= ch <= "~" or ch == "\n" for ch in texts.US), texts.US)
                     trad.token_key(tok)
-        self.assertEqual(set(strings.STRINGS), set(profile.DICTIONARIES))
+        self.assertEqual(set(STRINGS), set(profile.DICTIONARIES))
 
     def test_every_token_is_ts_and_unique(self):
         toks = [t for tokens in ENGLISH.values() for t in tokens]
@@ -403,7 +405,7 @@ class Strings(unittest.TestCase):
         forms = {"US": (r"^July [0-9]{1,2}, 1989, [0-9]{2}:[0-9]{2} UTC$", r"^Combat Order No\. \S+$"),
                  "SC": (r"^1989年7月[0-9]{1,2}日 [0-9]{2}:[0-9]{2} UTC$", r"^战斗命令第\S+号$")}
         for column, (lang, (date, order)) in enumerate(forms.items()):
-            menu = {tok: texts.get(lang) for tok, texts in strings.STRINGS["SCENARIO_DEFINITION"].items()}
+            menu = {tok: texts.get(lang) for tok, texts in STRINGS["SCENARIO_DEFINITION"].items()}
             self.assertEqual(set(menu), set(MENU_ELEMENTS))
             for tok in sorted(set(menu) - set(profile.TITLE_TOKENS)):
                 lo, hi = MENU_SPANS[MENU_ELEMENTS[tok]][column]

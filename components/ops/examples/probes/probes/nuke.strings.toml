@@ -1,0 +1,95 @@
+# Probe 3's string table for nuke (probes.nuke, the NUKE variant; modkit.ops.strings.load). nuke_sov's is
+# nuke_sov.strings.toml. One section per token, [<dictionary>.<token>], one key per language (US required; any other
+# language optional, packed as the US text where it has none). The order is the order the build writes each .dic's
+# texts in.
+
+# menu tokens, each text at most 30 UTF-16 units
+[SCENARIO_DEFINITION.nk_name]
+US = "Nuke probe"
+SC = "打击特效测试"
+
+[SCENARIO_DEFINITION.nk_cname]
+US = "NUKE PROBE"
+SC = "打击特效测试"
+
+[SCENARIO_DEFINITION.nk_headr]
+US = "Nuke probe play sheet"
+SC = "打击特效测试问卷"
+
+[SCENARIO_DEFINITION.nk_order]
+US = "Each hint names its step."
+SC = "每条提示都标明步骤编号。"
+
+[SCENARIO_DEFINITION.nk_recap]
+US = "Test op: two strike looks"
+SC = "测试行动：两次打击特效"
+
+[SCENARIO_DEFINITION.nk_vic]
+US = "Probe complete."
+SC = "测试完成。"
+
+[SCENARIO_DEFINITION.nk_def]
+US = "Probe ended."
+SC = "测试结束。"
+
+# no dialogs: the dictionary ships empty
+["Scripting/Dialog"]
+
+# the camps' PlayerName, <prefix>_camp0..3 in CAMP_EXPORTS order (joueur, Allie, ordinateur_DDR, ordinateur_SOV)
+["Scripting/Localization".nk_camp0]
+US = "NATO"
+SC = "北约"
+
+["Scripting/Localization".nk_camp1]
+US = "NATO ally"
+SC = "北约盟军"
+
+["Scripting/Localization".nk_camp2]
+US = "NVA"
+SC = "东德军"
+
+["Scripting/Localization".nk_camp3]
+US = "Soviet Army"
+SC = "苏军"
+
+["Scripting/Localization".nk_hdep]
+US = "Deploy if you like, then launch. The strike steps run on their own clock from loading."
+SC = "可自行部署后发起战斗。打击测试从加载完成起自行计时。"
+
+["Scripting/Localization".nk_h1]
+US = "N1 VICTIMS: 2 groups of 5 T-80BV, A and B, about 600 m apart, pinned on the map. Find them."
+SC = "N1 目标：A和B两组各5辆T-80BV，相距约600米，已在地图上标出。请找到它们。"
+
+["Scripting/Localization".nk_h2]
+US = """
+N2 STRIKE A + PENETRATION: the script-only mega bomb effect fx_HE_Mega_Bomb_ForScript on A. 3 s later every \
+unit within 300 m of A is killed with Penetration. Watch A."""
+SC = """
+N2 打击A+穿透：在A处使用脚本专用的超级炸弹特效fx_HE_Mega_Bomb_ForScript。3秒后，A周围300米内的单位被穿透击杀。\
+请观察A。"""
+
+["Scripting/Localization".nk_h3]
+US = """
+N3 STRIKE B + VANISHED: the 203 mm barrage and black smoke effects together on B. 3 s later every unit within \
+300 m of B is removed with Vanished. Watch B."""
+SC = "N3 打击B+消失：在B处同时使用203毫米炮击和黑烟特效。3秒后，B周围300米内的单位被直接移除。请观察B。"
+
+["Scripting/Localization".nk_h4]
+US = "N4 PROBE DONE: answer the play sheet (README, probe 3)."
+SC = "N4 测试完成：请回答试玩问卷。"
+
+["Scripting/Localization".nk_oa]
+US = "A: 5 T-80BV (N2)"
+SC = "A：5辆T-80BV（N2）"
+
+["Scripting/Localization".nk_ola]
+US = "A"
+SC = "A"
+
+["Scripting/Localization".nk_ob]
+US = "B: 5 T-80BV (N3)"
+SC = "B：5辆T-80BV（N3）"
+
+["Scripting/Localization".nk_olb]
+US = "B"
+SC = "B"

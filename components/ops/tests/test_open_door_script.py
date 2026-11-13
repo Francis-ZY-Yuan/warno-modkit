@@ -12,6 +12,7 @@ from modkit.ops.files import read_file
 from modkit.ops.graph import Node, decode, i32, prop_nodes, walk
 from modkit.ops.models import ForceRow, Knobs
 from modkit.ops.profile import SURVIVORS, Content
+from modkit.ops.strings import load
 from modkit.ops.testing import (
     cmp_of, end_game, last, objective_named, of, parent_of, prop, sets, subs, token,
 )
@@ -24,6 +25,7 @@ from opendoor.map import MAP
 from probes import spike2 as probe2   # the objective limits probe 2 found in play
 
 px_of, radius_px, box_px = MAP.px_of, MAP.radius_px, MAP.box_px
+STRINGS = load(mission.TABLE)   # the op's string table
 
 
 @SCRIPT_DATA
@@ -227,7 +229,7 @@ class Script(unittest.TestCase):
     def test_deploy_hint_names_the_soviet_cards(self):
         """The deploy hint names the captured Soviet cards by unit and count (SOVIET_CARDS), not by factory
         tab (the buy menu opens in Groups mode), in both languages; the deploy-area sentence stays."""
-        hdep = mission.STRINGS["Scripting/Localization"]["od_hdep"]
+        hdep = STRINGS["Scripting/Localization"]["od_hdep"]
         en, zh = hdep.US, hdep.SC
         names = {"T80U_SOV": ("T-80U tanks", "辆T-80U坦克"), "Ka_50_SOV": ("Ka-50 helicopters", "架Ka-50直升机"),
                  "TOS1_Buratino_SOV": ("TOS-1 rocket launchers", "辆TOS-1火箭炮")}
@@ -247,7 +249,7 @@ class Script(unittest.TestCase):
 
     def test_tokens_are_in_the_table(self):
         tokens = {token(v) for n in self.nodes for _, v in n.props if isinstance(v, ndfbin.Value) and v.tag == 0x1D}
-        table = {t for d in mission.STRINGS.values() for t in d}
+        table = {t for d in STRINGS.values() for t in d}
         buttons = {"SI_NEXT", mission.BUTTON_NOW, mission.BUTTON_WAIT}   # stock INGAME buttons (gate 3 reads them)
         self.assertEqual(sorted(tokens - table - buttons), [])
         self.assertEqual((mission.BUTTON_NOW, mission.BUTTON_WAIT), ("ORD_AIARA", "ORD_HOLDF"))
@@ -461,14 +463,14 @@ class Endings(unittest.TestCase):
         and P2's texts in both languages, no placeholder in a dialog (a dialog takes no variables)."""
         dialogs = {"od_dtotal", "od_dmajor", "od_dminor", "od_danvil", "od_drear", "od_dlost", "od_dheld",
                    "od_dheld_f", "od_dspring", "od_dauto", "od_dcode", "od_dback"}
-        self.assertEqual(mission.STRINGS["Scripting/Dialog"].keys(), dialogs)
+        self.assertEqual(STRINGS["Scripting/Dialog"].keys(), dialogs)
         for tok in dialogs:
-            texts = mission.STRINGS["Scripting/Dialog"][tok]
+            texts = STRINGS["Scripting/Dialog"][tok]
             en, zh = texts.US, texts.SC
             self.assertTrue(en and zh)
             self.assertNotRegex(en + zh, r"%\d")
         for tok in ("od_p2", "od_p2l"):
-            self.assertTrue(all(mission.STRINGS["Scripting/Localization"][tok].values()))
+            self.assertTrue(all(STRINGS["Scripting/Localization"][tok].values()))
 
 
 

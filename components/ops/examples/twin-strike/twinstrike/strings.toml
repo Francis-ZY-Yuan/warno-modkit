@@ -1,0 +1,503 @@
+# Twin Strike's string table (modkit.ops.strings.load; twinstrike.op packs it): every text the op shows, per token,
+# in English (US) and Simplified Chinese (SC); the other six languages get the English. One section per token,
+# [<dictionary>.<token>], one key per language (US required; any other language optional, packed as the US text
+# where it has none). The order is the order the build writes each .dic's texts in. The dictionaries are the three
+# the profile packs (twinstrike.profile.DICTIONARIES). A dialog takes no variables, so no dialog text holds %1..%9;
+# hints and objectives may.
+#
+# The menu texts (SCENARIO_DEFINITION, profile.MENU_RENAMES) take the form of the stock Operations' own, and in each
+# language stock's length range for their element (test_twin_strike_frame.Strings): the briefing (ts_order) is the
+# date and time, the order number, a paragraph to the commander and four numbered points; the forces line (ts_headr)
+# is the chain of command on two lines; the text under the title (ts_recap) is three past-tense paragraphs; the
+# outcomes (ts_vic, ts_def) are one paragraph each. No markup. Only the two titles (profile.TITLE_TOKENS) are held
+# to 30 UTF-16 units.
+#
+# The Chinese follows the warno-localization skill, with terms.toml as the op's term table. A native reader reviewed
+# it; no Chinese play has shown it yet. Each dialog's text names its two buttons (twinstrike.strings.BUTTONS, stock
+# in-game tokens) by their labels in its language.
+
+# the menu (profile.MENU_RENAMES), in stock's form (this file's header)
+
+# the titles (profile.TITLE_TOKENS): MissionName and TitreObjectifs, each at most 30 UTF-16 units
+[SCENARIO_DEFINITION.ts_name]
+US = "Operation Twin Strike"
+SC = "双重突击行动"
+
+[SCENARIO_DEFINITION.ts_cname]
+US = "OPERATION TWIN STRIKE"
+SC = "双重突击行动"
+
+# TexteForcesEnPresence: the player's chain of command (design 6.1)
+[SCENARIO_DEFINITION.ts_headr]
+US = """
+Soviet Army
+79th Guards Tank Division - Forward Detachment"""
+SC = """
+苏军
+近卫坦克第79师 - 先遣支队"""
+
+# TextePresentationScenario, the briefing: the story (design 1), the phases (4) and the forces (6.1, 6.3)
+[SCENARIO_DEFINITION.ts_order]
+US = """
+July 4, 1989, 04:30 UTC
+Combat Order No. 79/014
+
+Comrade commander, two weeks into the war, the division's advance hangs on a road-junction village at the \
+western edge of the twin towns. It opens the road west.
+
+1. Seize the village from the north. The division's guns can fire a preparation on it: keep your assault out \
+while they fire.
+
+2. Once the village falls, the division's reserve is yours. Hold it against NATO's two blows: a US armoured \
+battalion up both roads from the south, then a West German Panzer battalion assembling south of the village. \
+Front offers release for one tactical nuclear strike on that assembly area. The decision is yours.
+
+3. Intel indicates hostile forces include:
+- A West German Panzergrenadier company in the village, with Marders, Leopard 1A5s and Milan teams.
+- A US armoured task force of M1A1HA Abrams and M2A2 Bradleys, with recon and heavy air defence.
+- A West German Panzer battalion of Leopard 2A4s and Marders.
+- NATO fighter sweeps.
+
+4. Under your command, the forward detachment of the 79th Guards Tank Division:
+- T-80BV tanks, motor rifles in BMP-2s, Konkurs-M teams in BTR-80s, engineers, scouts, Shilkas, 2S1s and Ka-29s.
+- The division's 2S7M and BM-27 batteries, on call.
+- In reserve: T-80U tanks, Konkurs-M and Metis teams, Ka-50 and Mi-24V helicopters, Tunguska, Osa and Kub air \
+defence."""
+SC = """
+1989年7月4日 04:30 UTC
+战斗命令第79/014号
+
+指挥员同志，开战两周，全师推进系于双城西缘的道路枢纽村庄。夺取该村即可打通西进道路。
+
+1. 从北面夺取该村。师炮兵可实施冲击炮火准备，届时冲击分队须在村外。
+
+2. 夺取该村后，师预备队归您指挥。扼守该村，抗击北约两次突击：美军坦克营由南沿两路北上，\
+西德坦克营随后在村南集结。方面军可批准对该集结地域实施一次战术核突击，由您决定。
+
+3. 敌情：
+- 村内：西德装甲掷弹兵连，有黄鼠狼步兵战车、豹1A5坦克和米兰反坦克小组。
+- 美军坦克营特遣队：M1A1HA坦克和M2A2步兵战车，另有侦察分队和强大的防空火力。
+- 西德坦克营：豹2A4坦克和黄鼠狼步兵战车。
+- 北约战斗机扫荡。
+
+4. 您指挥的近卫坦克第79师先遣支队：
+- T-80BV坦克、乘BMP-2步兵战车的摩步、乘BTR-80的竞赛-M反坦克小组、工兵、侦察兵、石勒喀自行高炮、\
+2S1自行榴弹炮和Ka-29直升机。
+- 师炮兵2S7M炮兵连和BM-27火箭炮连随时待命。
+- 预备队：T-80U坦克，竞赛-M和混血儿反坦克小组，Ka-50和Mi-24V直升机，通古斯卡、黄蜂和立方防空系统。"""
+
+# TexteObjectifs, under the title: the background (design 1), ending on the detachment's orders
+[SCENARIO_DEFINITION.ts_recap]
+US = """
+Two weeks into the war, the Soviet advance was still rolling west. The next bound of the 79th Guards Tank \
+Division hung on one road junction: a small village on the western edge of a pair of towns, whose road led \
+west. The division sent its forward detachment to seize it.
+
+NATO could not let the road go. A US armoured battalion was ordered to counter-attack at once, up both roads \
+from the south, behind a recon screen and under heavy air defence. A West German Panzer battalion was to \
+assemble south of the village for a second, heavier blow.
+
+Soviet doctrine of the time planned nuclear strikes against exactly this: an enemy reserve concentrating to \
+counter-attack. Front command stood ready to release one tactical nuclear strike on the assembly area. The \
+forward detachment was to take the village, hold it against both blows, and decide whether to ask for the strike."""
+SC = """
+开战两周后，苏军仍在向西推进。近卫坦克第79师的下一步推进取决于一个道路枢纽：双城西缘的一个小村庄，\
+村中道路通向西方。该师派出先遣支队前去夺取。
+
+北约不能放弃这条道路。美军一个坦克营奉命立即从南面沿两条道路实施反冲击，以侦察分队担任警戒，\
+并有强大的防空火力掩护。西德一个坦克营则将在村南集结，准备实施第二次、更猛烈的突击。
+
+按照当时的苏军条令，核突击针对的正是这种目标：集结准备反冲击的敌预备队。\
+方面军已准备批准对该集结地域实施一次战术核突击。先遣支队的任务是夺取该村，扼守该村抗击两次突击，\
+并决定是否请求核突击。"""
+
+# VictoryOperationOutcomeText and DefeatOperationOutcomeText: true of every win and every loss (design 4.2, 5.8)
+[SCENARIO_DEFINITION.ts_vic]
+US = """
+Comrade commander, the village is ours. Both NATO counter-attacks failed to retake it, and the road west lies \
+open to the division. Front will remember the forward detachment that held the junction.
+"""
+SC = """
+指挥员同志，村庄已在我军手中。北约的两次反冲击都未能夺回该村，全师西进的道路已经打通。\
+方面军不会忘记扼守这一道路枢纽的先遣支队。
+"""
+
+[SCENARIO_DEFINITION.ts_def]
+US = """
+Comrade commander, we do not hold the village, and the road west stays closed. The forward detachment was spent \
+for nothing. Front will want to know why a Guards tank division's vanguard could not take and hold one village.
+"""
+SC = """
+指挥员同志，村庄不在我军手中，西进道路依然受阻。先遣支队白白消耗殆尽。方面军将追问：一个近卫坦克师的先遣支队，\
+为何连一个村庄都夺不下、守不住。
+"""
+
+# design 5.4: the preparation fire, asked again every 2 minutes until fired or the village falls
+["Scripting/Dialog".ts_dprep]
+US = """
+#bold{DIVISION GUNS: PREPARATION FIRE?}
+The 2S7M battery can put one salvo on the village. Keep the assault out of it while the guns fire.
+FIRE AT WILL: fire now.
+HOLD FIRE: not yet. The guns ask again in 2 minutes."""
+SC = """
+#bold{师炮兵群：实施冲击炮火准备？}
+2S7M炮兵连可对村庄实施一次齐射。射击期间，冲击分队须留在村外。
+自由射击：立即射击。
+不射击：暂不射击。师炮兵群2分钟后再次请示。"""
+
+# design 5.4: a fire mission, asked as two dialogs in turn (a dialog has two buttons): which guns, then where
+["Scripting/Dialog".ts_dfire1]
+US = """
+#bold{FIRE MISSION: WHICH GUNS?}
+ROCKET: the BM-27 battery.
+ARTILLERY: the 2S7M battery."""
+SC = """
+#bold{射击任务：使用哪个炮兵连？}
+火箭弹：BM-27火箭炮连。
+炮兵：2S7M炮兵连。"""
+
+["Scripting/Dialog".ts_dfire2]
+US = """
+#bold{FIRE MISSION: WHERE?}
+ALPHA: BOX W, on the west lane.
+BRAVO: BOX C, on the centre lane."""
+SC = """
+#bold{射击任务：射向何处？}
+ALPHA：W区，在西路。
+BRAVO：C区，在中路。"""
+
+# design 5.4: the division fire plan, once per battle
+["Scripting/Dialog".ts_dplan]
+US = """
+#bold{DIVISION FIRE PLAN}
+Every battery fires together, once, on whichever box holds more NATO vehicles when it fires. There is one fire \
+plan.
+FIRE AT WILL: fire it now.
+HOLD FIRE: hold it for later."""
+SC = """
+#bold{师炮兵群火力急袭}
+所有炮兵连同时射击一次，目标为射击时北约车辆较多的火力区。火力急袭仅此一次。
+自由射击：立即实施。
+不射击：留待以后。"""
+
+# design 5.6: the release dialog
+["Scripting/Dialog".ts_drel]
+US = """
+#bold{FRONT: NUCLEAR RELEASE?}
+A second NATO battalion is assembling south of the village. Front offers one tactical nuclear strike on its \
+assembly area.
+Yes: request release.
+No: fight it conventionally."""
+SC = """
+#bold{方面军：请求批准使用核武器？}
+北约第二个营正在村南集结。方面军可批准对其集结地域实施一次战术核突击。
+是：请求批准。
+否：以常规手段作战。"""
+
+# design 5.8: the endings. A win names its grade and whether the strike was released or withheld.
+["Scripting/Dialog".ts_dtotr]
+US = """
+#bold{TOTAL VICTORY.}
+The village is held and both battalions are broken. The strike was released, and you finished the second \
+battalion."""
+SC = """
+#bold{大获全胜。}
+村庄已守住，敌两个营均已丧失战斗力。已实施核突击，您歼灭了第二个营的残部。"""
+
+["Scripting/Dialog".ts_dtotw]
+US = """
+#bold{TOTAL VICTORY.}
+The village is held and both battalions are broken. The strike was withheld: the second battalion was beaten in \
+the field."""
+SC = """
+#bold{大获全胜。}
+村庄已守住，敌两个营均已丧失战斗力。未实施核突击：第二个营是在战场上被击败的。"""
+
+["Scripting/Dialog".ts_dmajr]
+US = """
+#bold{MAJOR VICTORY.}
+The village is held. The strike was released."""
+SC = """
+#bold{酣畅大捷。}
+村庄已守住。已实施核突击。"""
+
+["Scripting/Dialog".ts_dmajw]
+US = """
+#bold{MAJOR VICTORY.}
+The village is held. The strike was withheld."""
+SC = """
+#bold{酣畅大捷。}
+村庄已守住。未实施核突击。"""
+
+["Scripting/Dialog".ts_dminr]
+US = """
+#bold{MINOR VICTORY.}
+The village is held, at the cost of more than half of your force. The strike was released."""
+SC = """
+#bold{略占上风。}
+村庄已守住，但您损失了一半以上的兵力。已实施核突击。"""
+
+["Scripting/Dialog".ts_dminw]
+US = """
+#bold{MINOR VICTORY.}
+The village is held, at the cost of more than half of your force. The strike was withheld."""
+SC = """
+#bold{略占上风。}
+村庄已守住，但您损失了一半以上的兵力。未实施核突击。"""
+
+# design 4.2: the losses
+["Scripting/Dialog".ts_dfail]
+US = """
+#bold{DEFEAT.}
+The detachment failed to take the village."""
+SC = """
+#bold{败北。}
+先遣支队未能夺取村庄。"""
+
+["Scripting/Dialog".ts_dlost]
+US = """
+#bold{DEFEAT.}
+NATO has retaken the village."""
+SC = """
+#bold{败北。}
+北约已夺回村庄。"""
+
+["Scripting/Dialog".ts_dempty]
+US = """
+#bold{DEFEAT.}
+The village is lost: none of your units is left in it."""
+SC = """
+#bold{败北。}
+村庄失守：村内已没有您的任何单位。"""
+
+# the camps' PlayerName (profile.CAMP_TOKENS)
+["Scripting/Localization".ts_csov]
+US = "Soviet Army"
+SC = "苏军"
+
+["Scripting/Localization".ts_cart]
+US = "Division artillery"
+SC = "师炮兵群"
+
+["Scripting/Localization".ts_cnato]
+US = "NATO"
+SC = "北约"
+
+["Scripting/Localization".ts_cnato2]
+US = "NATO"
+SC = "北约"
+
+# design 7: the start hint, shown until "Launch battle", names the village
+["Scripting/Localization".ts_hdep]
+US = """
+DEPLOY in the north: the forward detachment of the 79th Guards Tank Division. Your objective is the VILLAGE to \
+the south, held by a West German company. Take it within 20 minutes of the launch."""
+SC = "部署于北面：近卫坦克第79师先遣支队。您的目标是南面的村庄，由西德一个连据守。须在发起战斗后20分钟内将其夺取。"
+
+# the difficulty the script read (modkit.ops.mission.difficulty: <hint><level>, <hint>9)
+["Scripting/Localization".ts_hdif0]
+US = "DIFFICULTY: Easy."
+SC = "难度：简单。"
+
+["Scripting/Localization".ts_hdif1]
+US = "DIFFICULTY: Medium."
+SC = "难度：标准。"
+
+["Scripting/Localization".ts_hdif2]
+US = "DIFFICULTY: Hard."
+SC = "难度：困难。"
+
+["Scripting/Localization".ts_hdif9]
+US = "DIFFICULTY: not received, so the battle plays Medium."
+SC = "难度：未收到，本场战斗按标准进行。"
+
+# phase 1 (design 4, 5.1, 5.4)
+["Scripting/Localization".ts_hph1]
+US = """
+PHASE 1: take the VILLAGE. It falls when few of its defenders are left and one of your command units is inside it."""
+SC = "第一阶段：夺取村庄。当村内守军所剩无几，且您的一个指挥单位位于村内时，村庄即被攻占。"
+
+["Scripting/Localization".ts_hprep]
+US = "Division guns standing by. Keep the assault out of the village while the guns fire."
+SC = "师炮兵群已准备就绪。射击期间，冲击分队须留在村外。"
+
+# phase 2 (design 5.2)
+["Scripting/Localization".ts_hfall]
+US = """
+Village taken. Front releases the division's reserve and 8,000 points, with income from now on. NATO recon is \
+moving north."""
+SC = "村庄已夺取。方面军向您调拨师预备队和8,000点，此后持续提供收入。北约侦察分队正在向北移动。"
+
+# phase 3 (design 5.3, 5.4): every fire mission names its box; the fire plan announces its target
+["Scripting/Localization".ts_hph3]
+US = """
+PHASE 3: a US armoured battalion counter-attacks up both lanes, its recon first. Fire missions are ready on BOX \
+W and BOX C."""
+SC = "第三阶段：美军一个坦克营沿两路实施反冲击，侦察分队在前。W区和C区的射击任务已准备就绪。"
+
+["Scripting/Localization".ts_hfirew]
+US = "Fire mission on BOX W."
+SC = "对W区执行射击任务。"
+
+["Scripting/Localization".ts_hfirec]
+US = "Fire mission on BOX C."
+SC = "对C区执行射击任务。"
+
+["Scripting/Localization".ts_hreload]
+US = "The batteries are reloading for the next fire mission."
+SC = "各炮兵连正在为下一次射击任务装填弹药。"
+
+["Scripting/Localization".ts_hplanw]
+US = "Division fire plan on BOX W: every battery fires."
+SC = "对W区实施师炮兵群火力急袭：所有炮兵连同时射击。"
+
+["Scripting/Localization".ts_hplanc]
+US = "Division fire plan on BOX C: every battery fires."
+SC = "对C区实施师炮兵群火力急袭：所有炮兵连同时射击。"
+
+["Scripting/Localization".ts_hbn1]
+US = "The first battalion is broken."
+SC = "第一个营已丧失战斗力。"
+
+["Scripting/Localization".ts_hbreak]
+US = "Time is up for the first battalion: its survivors break off to the south."
+SC = "第一个营的时限已到：其残部向南脱离接触。"
+
+# phase 4 (design 5.5, 5.6)
+["Scripting/Localization".ts_hbn2]
+US = "A second NATO battalion is assembling. It attacks in 05:00."
+SC = "北约第二个营正在集结，05:00后发起冲击。"
+
+["Scripting/Localization".ts_hrel]
+US = "Release granted. Strike in 0:30. Keep clear of the marked zone."
+SC = "已批准使用核武器。0:30后实施核突击。部队须远离标出的区域。"
+
+["Scripting/Localization".ts_hwith]
+US = "Release withheld. Fight the second battalion with what you have."
+SC = "不使用核武器。以现有兵力抗击第二个营。"
+
+["Scripting/Localization".ts_hatk]
+US = "The second battalion is attacking up both lanes."
+SC = "第二个营正沿两路发起冲击。"
+
+["Scripting/Localization".ts_hbn2b]
+US = "The second battalion is broken."
+SC = "第二个营已丧失战斗力。"
+
+# after the strike's cutscene (design 5.6): what the strike left to do
+["Scripting/Localization".ts_hstruck]
+US = "The strike has gutted the second battalion. Its survivors are stunned and damaged: finish it."
+SC = "核突击已重创第二个营。其残部已受损并被压制：将其歼灭。"
+
+# phase 5 (design 5.8): P3 shows the end clock
+["Scripting/Localization".ts_hph5]
+US = """
+PHASE 5: hold the village to the end. HOLD ON, on the village and in the objectives, shows the time left; the \
+battle ends then, or at once when NATO has no ground unit left."""
+SC = """
+第五阶段：扼守村庄直至战斗结束。村庄上和目标列表中的“坚守”显示剩余时间；时间一到战斗即结束，若北约已无地面单位，\
+则立即结束。"""
+
+# the losses' warnings (design 4.2)
+["Scripting/Localization".ts_hnato]
+US = "NATO is in the village. Throw them out within 60 seconds, or the battle is lost."
+SC = "北约部队已进入村庄。须在60秒内将其逐出，否则战斗失败。"
+
+# shown 20 s into an empty streak (op.EMPTY_WARN_S): 2:40 of the 3 minutes are left, and P2 shows the clock
+["Scripting/Localization".ts_hempty]
+US = "No Soviet unit in the village zone. Get one back in within 2:40, or the battle is lost."
+SC = "村庄区域内已无苏军单位。须在2:40内让一个单位重新进入，否则战斗失败。"
+
+# the objectives (design 4.1) and their pinned labels (design 7)
+["Scripting/Localization".ts_p1]
+US = "TAKE THE VILLAGE: %1 enemy left in it"
+SC = "夺取村庄：村内剩余敌军%1"
+
+["Scripting/Localization".ts_p1l]
+US = "Enemy left: %1"
+SC = "剩余敌军：%1"
+
+["Scripting/Localization".ts_p2]
+US = """
+HOLD THE VILLAGE: never let NATO own it for 60 s, nor leave its zone empty for 180 s (NATO hold %1 s, empty %2 s)"""
+SC = "扼守村庄：不得让北约占领60秒，也不得让村庄区域空置180秒（北约占领%1秒，空置%2秒）"
+
+["Scripting/Localization".ts_p2l]
+US = "NATO %1/60 s, empty %2/180 s"
+SC = "北约%1/60秒，空置%2/180秒"
+
+["Scripting/Localization".ts_b1]
+US = "BREAK THE FIRST BATTALION: tanks destroyed %1 / %2. It breaks with 3 in 10 left."
+SC = "击溃第一个营：已摧毁坦克%1 / %2。坦克剩余十分之三时，该营即丧失战斗力。"
+
+["Scripting/Localization".ts_b1l]
+US = "%1 / %2"
+SC = "%1 / %2"
+
+["Scripting/Localization".ts_b2]
+US = "DEAL WITH THE SECOND BATTALION: it attacks in %1 s"
+SC = "应对第二个营：%1秒后发起冲击"
+
+["Scripting/Localization".ts_b2l]
+US = "Attacks in %1 s"
+SC = "%1秒后发起冲击"
+
+["Scripting/Localization".ts_b2n]
+US = "DEAL WITH THE SECOND BATTALION: %1 tanks left. It breaks with 3 in 10 left."
+SC = "应对第二个营：剩余坦克%1辆。坦克剩余十分之三时，该营即丧失战斗力。"
+
+["Scripting/Localization".ts_b2nl]
+US = "%1 tanks left"
+SC = "剩余坦克%1辆"
+
+["Scripting/Localization".ts_b2f]
+US = "FINISH THE SECOND BATTALION: %1 tanks left after the strike. It breaks with 3 in 10 left."
+SC = "歼灭第二个营：核突击后剩余坦克%1辆。坦克剩余十分之三时，该营即丧失战斗力。"
+
+["Scripting/Localization".ts_b2fl]
+US = "%1 tanks left"
+SC = "剩余坦克%1辆"
+
+# P3, phase 5's end clock (op.end_clock): the label's %1 is its running timer (op.END_CLOCK_S after a strike,
+# op.END_CLOCK_WITHHELD_S at most after withholding)
+["Scripting/Localization".ts_p3r]
+US = "HOLD ON FOR 5 MIN: then the battle ends. It ends at once when NATO has no ground unit left."
+SC = "坚守5分钟：随后战斗结束。若北约已无地面单位，战斗立即结束。"
+
+["Scripting/Localization".ts_p3rl]
+US = "Ends in %1"
+SC = "%1后结束"
+
+["Scripting/Localization".ts_p3w]
+US = """
+HOLD ON, 20 MIN AT MOST: the battle ends when the second battalion breaks, or at once when NATO has no ground \
+unit left."""
+SC = "坚守，最多20分钟：第二个营丧失战斗力时战斗结束；若北约已无地面单位，战斗立即结束。"
+
+["Scripting/Localization".ts_p3wl]
+US = "Ends in %1 at most"
+SC = "最多%1后结束"
+
+["Scripting/Localization".ts_obw]
+US = "BOX W: the fire box on the west lane"
+SC = "W区：西路上的火力区"
+
+["Scripting/Localization".ts_obwl]
+US = "BOX W"
+SC = "W区"
+
+["Scripting/Localization".ts_obc]
+US = "BOX C: the fire box on the centre lane"
+SC = "C区：中路上的火力区"
+
+["Scripting/Localization".ts_obcl]
+US = "BOX C"
+SC = "C区"
+
+["Scripting/Localization".ts_ozone]
+US = "STRIKE ZONE: keep clear"
+SC = "核突击区：不要进入"
+
+["Scripting/Localization".ts_ozonel]
+US = "STRIKE ZONE"
+SC = "核突击区"

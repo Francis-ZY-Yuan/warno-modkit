@@ -29,7 +29,8 @@ base directory; `components/ops/examples/` in a clone):
    build/probes/empty` prints a line per gate and exits 0. A `FAILED:` line naming `warno-setup` means the
    extraction or the game folder is not configured.
 2. **Copy the probes example into your project** as your own package: `build.py`, plus a folder holding
-   `__init__.py`, `profile.py`, `geisa.py` and `empty.py` (renamed for your op). Rename the `probes` imports, and cut
+   `__init__.py`, `profile.py`, `geisa.py`, `empty.py` and its string table `empty.strings.toml` (rename both for
+   your op, the table's name in `empty.py`'s `TABLE` too). Rename the `probes` imports, and cut
    `CONTENTS` in the copied `__init__.py` down to your op's one content: it still imports `spike` and `spike2`, which
    you did not copy. The build folder needs no edit: `modkit.core.paths.build_root()` gives it (`build/` beside your
    `modkit.local.toml`, or the toml's `build_dir`, or `MODKIT_BUILD`; see `warno-setup`). `--out` defaults to it,
@@ -55,13 +56,23 @@ base directory; `components/ops/examples/` in a clone):
    as Open Door's `op.script` calls it): a `Ctx`, a list of `shapes.Beat`, each timed beat in its own branch.
    [references/script-recipes.md](references/script-recipes.md) maps each thing a mission does to the block that
    builds it and the record that proves it, and says how to search stock for the rest. Anything no example uses goes through `warno-stock-precedent` first.
-7. **Write the strings** for exactly the profile's three dictionaries, each token as `Texts(US=..., SC=...)`
-   (`modkit.core.models`), one keyword per language (a language left out shows the English). Each language uses
+7. **Write the strings** in the op's TOML string table, which the content loads with `modkit.ops.strings.load`:
+   one section per token, `[<dictionary>.<token>]`, for exactly the profile's three dictionaries, and one key per
+   language, all languages side by side (`US = "..."` required, `SC = "..."`; a language left out shows the English):
+
+   ```toml
+   [SCENARIO_DEFINITION.ts_name]
+   US = "Operation Twin Strike"
+   SC = "双重突击行动"
+   ```
+
+   The file's order is the order the build packs the texts in. Look up the game's own texts with
+   `python -m modkit.core.glossary` (`warno-localization`). Each language uses
    only characters its stock text uses ([[chinese-text-stock-glyphs]]), and dialog text carries no live numbers
    ([[dialog-text-takes-no-variables]]). Menu titles stay within 30 UTF-16 units: a toolkit convention, not a game
    limit. Gate 1 holds the tokens in `Content.menu_tokens` to it, so list only the titles there. Open Door and the
    probes list all seven menu tokens; Twin Strike lists its two titles, and its briefing, forces line, background and
-   outcome texts take stock's form and lengths (the briefing past 1,000 units; `twinstrike/strings.py`). Translate
+   outcome texts take stock's form and lengths (the briefing past 1,000 units; `twinstrike/strings.toml`). Translate
    with `warno-localization`.
 8. **Build:** `python build.py --content <name>`. Read the gate lines. A `FAILED:` line is the game's rule, so fix
    the content, never the gate (`warno-gates`). Then pin each rule the mission relies on in a test, as

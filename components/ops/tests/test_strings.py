@@ -1,19 +1,20 @@
-"""Tests for modkit.ops.strings, the per-language string table and its gates. Most tables hold US and SC; Languages
-holds the others to US.
+"""Tests for modkit.ops.strings, the per-language string table, its TOML file (Load) and its gates. Most tables hold US
+and SC; Languages holds the others to US.
 
-The gates are pure string checks. Only test_stock_chars_real reads files: the stock dictionaries in the extraction
-(skipped without one).
+The gates are pure string checks. Load reads TOML files it writes to a temporary folder; test_stock_chars_real reads
+the stock dictionaries in the extraction (skipped without one).
 """
 from __future__ import annotations
 
 import os
 import tempfile
+import textwrap
 import unittest
 
 from modkit.core import paths, trad
 from modkit.core.glossary import stock_dictionaries
 from modkit.core.models import LANGS, Texts
-from modkit.ops.strings import StringError, check_glyphs, check_parity, check_titles, payloads, stock_chars
+from modkit.ops.strings import StringError, check_glyphs, check_parity, check_titles, load, payloads, stock_chars
 
 DICTS = ("SCENARIO_DEFINITION", "Scripting/Dialog", "Scripting/Localization")
 
@@ -21,6 +22,61 @@ DICTS = ("SCENARIO_DEFINITION", "Scripting/Dialog", "Scripting/Localization")
 def one(text: Texts, token: str = "od_t", dic: str = "Scripting/Localization"):
     """A one-token table."""
     return {dic: {token: text}}
+
+
+class Load(unittest.TestCase):
+    """An op's table file: a [<dictionary>.<token>] section per token, one key per language."""
+
+    def load(self, toml: str):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "strings.toml")
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write(textwrap.dedent(toml))
+            return load(path)
+
+    def test_order_is_the_file_order(self):
+        """Dictionaries and tokens come back in the file's order (the order a .dic's texts are written in), however
+        the sections are spread; an empty [<dictionary>] table is an empty dictionary."""
+        table = self.load('''
+            ["Scripting/Localization".od_z]
+            US = "Z"
+            [SCENARIO_DEFINITION.od_name]
+            SC = "门"
+            US = "Door"
+            ["Scripting/Dialog"]
+            ["Scripting/Localization".od_a]
+            US = """
+            Line one
+            Line two"""
+        ''')
+        self.assertEqual(list(table), ["Scripting/Localization", "SCENARIO_DEFINITION", "Scripting/Dialog"])
+        self.assertEqual(list(table["Scripting/Localization"]), ["od_z", "od_a"])
+        self.assertEqual(table["Scripting/Dialog"], {})
+        self.assertEqual(table["SCENARIO_DEFINITION"]["od_name"], Texts(US="Door", SC="门"))
+        self.assertEqual(table["Scripting/Localization"]["od_a"].US, "Line one\nLine two")
+
+    def test_entry_errors_name_the_file_and_the_token(self):
+        """An unknown language key and a missing US text each fail, every bad entry on its own line of one error."""
+        with self.assertRaises(StringError) as cm:
+            self.load("""
+                [SCENARIO_DEFINITION.od_name]
+                US = "Door"
+                EN = "Door"
+                ["Scripting/Dialog".od_dlg]
+                SC = "门"
+            """)
+        lines = str(cm.exception).splitlines()
+        self.assertEqual(len(lines), 2, lines)
+        self.assertRegex(lines[0], r"strings\.toml: SCENARIO_DEFINITION\.od_name: EN: Extra inputs are not permitted")
+        self.assertRegex(lines[1], r"strings\.toml: Scripting/Dialog\.od_dlg: US: Field required")
+
+    def test_bad_shape(self):
+        """Not TOML, a language key straight under a dictionary (no token section), a key at the top level."""
+        for toml, want in (('[SCENARIO_DEFINITION.od_name\nUS = "Door"', r"strings\.toml: not TOML"),
+                           ('[SCENARIO_DEFINITION]\nUS = "Door"', r"strings\.toml: SCENARIO_DEFINITION\.US: the entry: "),
+                           ('US = "Door"', r"strings\.toml: US: not a dictionary of tokens")):
+            with self.subTest(toml=toml), self.assertRaisesRegex(StringError, want):
+                self.load(toml)
 
 
 class Payloads(unittest.TestCase):
