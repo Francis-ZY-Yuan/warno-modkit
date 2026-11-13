@@ -7,11 +7,11 @@ from __future__ import annotations
 
 import os
 import re
-import tomllib
 import unittest
 
 import twin_strike_support  # noqa: F401  (puts the example on sys.path)
 from modkit.core import paths, trad
+from modkit.core.models import Term
 from modkit.ops import INGAME_DIC
 from modkit.ops.strings import load
 from twinstrike import profile, strings
@@ -19,8 +19,8 @@ from twinstrike import profile, strings
 CJK = re.compile(r"[一-鿿]")
 STRINGS = load(strings.TABLE)   # the op's string table
 SC = {dic: {tok: texts.SC for tok, texts in tokens.items()} for dic, tokens in STRINGS.items()}
-with open(strings.TERM_SHEET, "rb") as fh:
-    TERMS = tomllib.load(fh)   # the op's term table: English term -> language -> text, source
+# the op's term table, English term -> its Term (the groups are headings only)
+TERMS = {english: t for group in load(strings.TERM_SHEET, Term).values() for english, t in group.items()}
 
 
 class Terms(unittest.TestCase):
@@ -39,12 +39,10 @@ class Terms(unittest.TestCase):
         """Every term of the term table (each an SC text and its source) is used by some Chinese text; the titles, the difficulty names and the end grades are
         the table's."""
         texts = [zh for tokens in SC.values() for zh in tokens.values()]
-        term = {english: t["SC"]["text"] for english, t in TERMS.items()}
+        term = {english: t.SC for english, t in TERMS.items()}
         for english, t in TERMS.items():
             with self.subTest(term=english):
-                self.assertEqual(list(t), ["SC"])
-                self.assertEqual(sorted(t["SC"]), ["source", "text"])
-                self.assertTrue(t["SC"]["source"])
+                self.assertEqual((t.US, [lang for lang, _ in t.items()]), (english, ["SC", "US"]))
                 self.assertTrue(any(term[english] in text for text in texts), term[english])
         menu, loc = SC["SCENARIO_DEFINITION"], SC["Scripting/Localization"]
         for tok in profile.TITLE_TOKENS:
@@ -79,7 +77,7 @@ class Buttons(unittest.TestCase):
                 with self.subTest(dialog=dialog, button=button):
                     self.assertIn(f"\n{us}: ", texts.US)
                     self.assertIn(f"\n{sc}：", texts.SC)
-                    self.assertEqual(TERMS[us]["SC"]["text"], sc)
+                    self.assertEqual(TERMS[us].SC, sc)
 
 
 if __name__ == "__main__":

@@ -9,6 +9,9 @@ file, one section per token and one key per language, and ``load`` reads it::
     US = "Operation Twin Strike"
     SC = "双重突击行动"
 
+The op's term table (warno-localization) has the same shape, read by ``load(path, Term)``: a section per English
+term, one key per language, and ``source.<language>`` beside each text that is not US.
+
 ``payloads`` turns a table into its ``.dic`` files, one per dictionary and language.
 
 The gates catch what no English launch can: a translation that drops a ``%1`` placeholder, a ``#bold{`` markup opener,
@@ -53,17 +56,18 @@ def _raise(problems: list[str]) -> None:
         raise StringError("\n".join(problems))
 
 
-def load(path: str | os.PathLike[str]) -> StringTable:
-    """The string table in the TOML file at ``path``: a ``[<dictionary>.<token>]`` section per token, one key per
-    language, each validated into ``Texts`` (US required, the game's languages only). The file's order is kept: it is
-    the order ``payloads`` writes each ``.dic``'s texts in. A dictionary with no token is an empty ``[<dictionary>]``
-    table. Raises one ``StringError`` naming the file and each bad entry, one per line."""
+def load[T: Texts](path: str | os.PathLike[str], model: type[T] = Texts) -> dict[str, dict[str, T]]:
+    """The table in the TOML file at ``path``: a ``[<dictionary>.<token>]`` section per token, one key per language,
+    each validated into ``model``: ``Texts`` (US required, the game's languages only) for a string table
+    (``StringTable``), ``Term`` for a term table (``TermTable``, its groups in place of dictionaries). The file's order
+    is kept: it is the order ``payloads`` writes each ``.dic``'s texts in. A dictionary with no token is an empty
+    ``[<dictionary>]`` table. Raises one ``StringError`` naming the file and each bad entry, one per line."""
     with open(path, "rb") as fh:
         try:
             data = tomllib.load(fh)
         except tomllib.TOMLDecodeError as exc:
             raise StringError(f"{path}: not TOML: {exc}") from None
-    table: StringTable = {}
+    table: dict[str, dict[str, T]] = {}
     problems = []
     for dic, tokens in data.items():
         if not isinstance(tokens, dict):
@@ -73,7 +77,7 @@ def load(path: str | os.PathLike[str]) -> StringTable:
         table[dic] = {}
         for token, texts in tokens.items():
             try:
-                table[dic][token] = Texts.model_validate(texts)
+                table[dic][token] = model.model_validate(texts)
             except ValidationError as exc:
                 problems += [f"{path}: {dic}.{token}: {'.'.join(map(str, e['loc'])) or 'the entry'}: {e['msg']}"
                              for e in exc.errors()]

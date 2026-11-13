@@ -13,7 +13,7 @@ import unittest
 
 from modkit.core import paths, trad
 from modkit.core.glossary import stock_dictionaries
-from modkit.core.models import LANGS, Texts
+from modkit.core.models import LANGS, Term, Texts
 from modkit.ops.strings import StringError, check_glyphs, check_parity, check_titles, load, payloads, stock_chars
 
 DICTS = ("SCENARIO_DEFINITION", "Scripting/Dialog", "Scripting/Localization")
@@ -77,6 +77,23 @@ class Load(unittest.TestCase):
                            ('US = "Door"', r"strings\.toml: US: not a dictionary of tokens")):
             with self.subTest(toml=toml), self.assertRaisesRegex(StringError, want):
                 self.load(toml)
+
+    def test_a_term_table(self):
+        """load(path, Term) reads a term table, the same shape with source.<language> beside each text but US."""
+        front = '[military.Front]\nUS = "Front"\nSC = "方面军"\nsource.SC = "doctrine: фронт"\n'
+        army = '[military.Army]\nUS = "Army"\nSC = "集团军"\n'   # no source for its SC text
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "terms.toml")
+            for toml in (front, front + army):
+                with open(path, "w", encoding="utf-8") as fh:
+                    fh.write(toml)
+                if toml == front:
+                    term = load(path, Term)["military"]["Front"]
+                    self.assertEqual((term.SC, term.source.SC), ("方面军", "doctrine: фронт"))
+                    continue
+                with self.assertRaisesRegex(StringError, r"terms\.toml: military\.Army: the entry: .*source") as cm:
+                    load(path, Term)
+                self.assertNotIn("Front", str(cm.exception))
 
 
 class Payloads(unittest.TestCase):

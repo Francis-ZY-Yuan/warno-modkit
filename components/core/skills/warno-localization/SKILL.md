@@ -41,13 +41,15 @@ goes wrong in two ways no English play shows:
 - **The game's own text:** `python -m modkit.core.glossary token <TOKEN> ... [--dic STEM]` and
   `glossary term "<English>"` print the stock rows as a table, one column per language, each row naming its
   dictionary (`MAPS`, `UNITS`, `INTERFACE_OUTGAME`); `--lang SC,FR` picks the columns.
-- **The mod's term table:** each term, its text per language and the source, in a `terms.toml` beside the string
-  table, one section per term and language (Twin Strike's):
+- **The mod's term table:** a `terms.toml` beside the string table, in its shape: one section per term under a
+  heading group, one key per language (US is the English term), and `source.<language>` saying where each other
+  language's text comes from. `modkit.ops.strings.load(path, Term)` reads it (Twin Strike's):
 
   ```toml
-  [Front.SC]
-  text = "方面军"
-  source = "doctrine: фронт"
+  [military.Front]
+  US = "Front"
+  SC = "方面军"
+  source.SC = "doctrine: фронт"
   ```
 
 **To add a language:** a key in each of the op's token sections (its game code) and an attachment

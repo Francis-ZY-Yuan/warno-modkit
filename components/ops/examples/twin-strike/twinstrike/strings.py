@@ -13,7 +13,7 @@ from pathlib import Path
 from modkit.ops.models import Buttons
 
 TABLE = Path(__file__).with_name("strings.toml")       # the string table: twinstrike.op packs load(TABLE)
-TERM_SHEET = Path(__file__).with_name("terms.toml")    # the term table: English term -> its text and source per language
+TERM_SHEET = Path(__file__).with_name("terms.toml")    # the term table, the same shape: load(TERM_SHEET, Term)
 
 # Each two-button dialog's buttons: stock INTERFACE_INGAME tokens, in all 8 languages (their English labels beside).
 BUTTONS: dict[str, Buttons] = {

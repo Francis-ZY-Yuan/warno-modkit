@@ -2,7 +2,9 @@
 
 ``Texts`` is one text in each of the game's dictionary languages (``LANGS``): an Operation's string table
 (``StringTable``, ``modkit.ops.strings``) holds one per token. ``AnyTexts`` is the same with no language required: a
-stock dictionary row (``modkit.core.glossary``), since some stock tokens have no US text. ``Pending`` is a build's
+stock dictionary row (``modkit.core.glossary``), since some stock tokens have no US text. ``Term`` is a ``Texts``
+that also names, for each language other than US, where its text comes from: a mod's term table (``TermTable``) holds
+one per English term, in the same file shape as the string table. ``Pending`` is a build's
 reviewed-pending map and ``Fired`` the reviews that fired (``modkit.core.gates.run_gate``). ``Dropped`` is a source
 file a build does not ship and why, and ``ManifestRow`` a row of a mod's own in its MANIFEST.tsv
 (``modkit.core.packaging.write_manifest``).
@@ -18,7 +20,7 @@ from __future__ import annotations
 
 from typing import Mapping, NamedTuple
 
-from pydantic import BaseModel, ConfigDict, TypeAdapter
+from pydantic import BaseModel, ConfigDict, TypeAdapter, model_validator
 from pydantic.dataclasses import dataclass
 
 
@@ -77,10 +79,29 @@ class Texts(AnyTexts):
         return self.US if text is None else text
 
 
+class Term(Texts):
+    """A term of a mod's term table: US is the English term, each other language its text there, and ``source`` names
+    where each of those texts comes from (a stock token, doctrine, a review, the mod's own wording). Every language
+    with a text other than US has a source, and only those."""
+
+    source: AnyTexts = AnyTexts()
+
+    @model_validator(mode="after")
+    def _sourced(self) -> Term:
+        texts = {lang for lang, _ in self.items()} - {"US"}
+        sources = {lang for lang, text in self.source.items() if text}
+        if texts != sources:
+            raise ValueError(f"source names {sorted(sources) or 'no language'}, the texts are in "
+                             f"{sorted(texts) or 'no language but US'}")
+        return self
+
+
 LANGS: tuple[str, ...] = tuple(AnyTexts.model_fields)  # the game's dictionary languages: DEV, FR, ..., SPA, US
 
 # dictionary name -> token -> its texts. The order is kept: a .dic's text pool is written in it (trad.build_dic).
 StringTable = dict[str, dict[str, Texts]]
+# group -> English term -> its Term. The groups are headings only (modkit.ops.strings.load reads both tables).
+TermTable = dict[str, dict[str, Term]]
 
 Pending = Mapping[str, tuple[str, ...]]  # gate name -> its reviewed messages, word for word
 Fired = list[tuple[str, str]]  # (gate name, message) of each reviewed failure that fired
