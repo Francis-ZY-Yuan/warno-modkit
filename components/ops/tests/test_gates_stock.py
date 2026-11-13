@@ -130,8 +130,8 @@ class Tiers(unittest.TestCase):
                     x, y = it["EndPosition"][:2]
                     layout = os.path.basename(os.path.dirname(out))
                     found.append((layout, it["Name"], it["addon"], it.get("NumAlliance"),
-                                  sum(point_in_polygon(x, y, p) for _, _, p in cz),
-                                  sum(point_in_polygon(x, y, p) for _, _, p in dz)))
+                                  sum(point_in_polygon(x, y, z.polygon) for z in cz),
+                                  sum(point_in_polygon(x, y, z.polygon) for z in dz)))
         self.assertEqual(len(found), 11)
         self.assertEqual({(f[4], f[5]) for f in found}, {(1, 0)})                       # one CZ, no DZ: tiers.2
         self.assertEqual([f[:2] for f in found if f[3] != -1], [("challenge_Marauders", "AutoName_2")])
@@ -565,8 +565,8 @@ class ZoneLayoutStock(unittest.TestCase):
         for _, folder, _, _ in stock_layouts():
             ld, dz, cz = layout_files(folder)
             for raw in (dz, cz):
-                for poly, center, *_ in read_zone_areas(raw) if raw else []:
-                    centre.append(max(abs(c - k) for c, k in zip(center[:2], polygon_centroid(poly))))
+                for a in read_zone_areas(raw) if raw else []:
+                    centre.append(max(abs(c - k) for c, k in zip(a.center[:2], polygon_centroid(list(a.polygon)))))
             for it in read_ld_items(ld):
                 if it["addon"] in ARRIVALS:
                     start, end = it["StartPosition"][:2], it["EndPosition"][:2]

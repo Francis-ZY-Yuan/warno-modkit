@@ -35,7 +35,7 @@ from modkit.ops.rekey import TXN, def_path
 from modkit.ops.shapes import GRU_WORLD, Minimap
 from modkit.ops.zones import (
     area_name, heading, ia_grid, ia_zone_graph, path_cache_graph, playable_zone_graph, point_in_polygon,
-    polygon_centroid, read_playable_polygon, read_zone_areas, rect_polygon, zone_areas_graph, zone_prop,
+    polygon_centroid, read_playable_polygon, read_zone_areas, rect_polygon, zone_areas_graph,
 )
 
 TWIN_STRIKE = Path(__file__).resolve().parents[1] / "examples" / "twin-strike"
@@ -484,10 +484,10 @@ class TwinStrikeCutTest(unittest.TestCase):
         """The village zone is the layout's command zone AutoName_5 as it ships, inside the cut; the layout's other two
         command zones are not (AutoName_8 crosses the cut's east edge, AutoName_6 lies east of it)."""
         stock = read_zone_areas(read_file(extracted(f"{LAYOUT}/out/CommandZone.ndfbin")))
-        areas = {zone_prop(a, "Name"): a for a in stock}
+        areas = {a.prop("Name"): a for a in stock}
         self.assertEqual(sorted(areas), ["AutoName_5", "AutoName_6", "AutoName_8"])
         village = areas["AutoName_5"]
-        self.assertEqual((tuple(village[0]), village[2], zone_prop(village, "Points")),
+        self.assertEqual((village.polygon, village.addon, village.prop("Points")),
                          (ts_map.VILLAGE_CZ, "TGameDesignAddOn_CommandPoints", ts_map.VILLAGE_CZ_POINTS))
         (item,) = [it for it in read_ld_items(read_file(extracted(f"{LAYOUT}/out/LevelDesign.ndfbin")))
                    if it.get("Name") == "AutoName_5"]
@@ -496,7 +496,7 @@ class TwinStrikeCutTest(unittest.TestCase):
 
         def inside(poly) -> bool:
             return all(x0 <= x <= x1 and y0 <= y <= y1 for x, y in poly)
-        self.assertEqual({name: inside(a[0]) for name, a in areas.items()},
+        self.assertEqual({name: inside(a.polygon) for name, a in areas.items()},
                          {"AutoName_5": True, "AutoName_6": False, "AutoName_8": False})
 
 

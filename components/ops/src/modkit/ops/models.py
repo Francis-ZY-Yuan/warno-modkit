@@ -10,6 +10,13 @@ A profile's and a content's settings: ``AssetRule`` (what a build does with a te
 ``ExtraShape`` (a GDScript shape a content admits, ``profile.Content.extra_shapes``) and ``MenuEntry`` (an Operations
 menu entry: a mod's, read by ``coinstall``, or a stock Operation's, ``gates.stock_operations``).
 
+A map's zones: ``ZoneArea`` is one area of a DeploymentZone or CommandZone Details file as the file holds it
+(``zones.read_zone_areas``, ``zones.zone_areas_graph``, ``leveldesign.zone_area``), and ``Zone`` what a reader wants of
+it (``ZoneArea.zone``): its name, ring, points and side, which the gates read back (``gates.zone_polygons``,
+``gates.ZoneLayout``) and the storyboard draws (``storyboard.Layout``). The zone a content authors is a LevelDesign
+item (``leveldesign.LdItem``): every add-on kind is one, a zone's carrying its ring, and it writes both the LevelDesign
+item and its ZoneArea, so it stays the write side's record.
+
 Rows are frozen pydantic dataclasses, so a table stays positional and terse: ``ForceRow("T80BV_SOV", 4)``. Each field
 is checked against its type when a row is made.
 """
@@ -20,6 +27,9 @@ from typing import Literal
 
 from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
+
+from modkit.core.models import Point
+from modkit.ops.graph import Str
 
 _ROW = ConfigDict(extra="forbid")
 
@@ -106,3 +116,34 @@ class MenuEntry:
     scenario: str
     order: int | None
     guid: bytes | None
+
+
+@dataclass(frozen=True, config=_ROW)
+class Zone:
+    """A deployment or command zone of a map: its `name` (the add-on's Name), its `polygon` (closed: the first vertex
+    is repeated last), a command zone's `points` (None: a deployment zone) and its `alliance` (AllianceNum; absent,
+    as on every command zone: 0)."""
+    name: str
+    polygon: tuple[Point, ...]
+    points: int | None = None
+    alliance: int = 0
+
+
+@dataclass(frozen=True, config=_ROW)
+class ZoneArea:
+    """One TMapArea of a DeploymentZone or CommandZone Details file, world units: its closed `polygon`
+    (BasePolygon2D), its `center` (vec3), its add-on's class (`addon`, TGameDesignAddOn_DeploymentZone or
+    _CommandPoints) and properties (`props`, strings as graph.Str), and its `rotation` (None: the area has none)."""
+    polygon: tuple[Point, ...]
+    center: tuple[float, float, float]
+    addon: str
+    props: list[tuple[str, object]]
+    rotation: float | None = None
+
+    def prop(self, name: str) -> object:
+        """The add-on property `name`'s value (a string's text), None when it has none."""
+        return next((v.text if isinstance(v, Str) else v.v for k, v in self.props if k == name), None)
+
+    def zone(self) -> Zone:
+        """The area as a Zone: its Name, polygon, Points and AllianceNum."""
+        return Zone(self.prop("Name"), self.polygon, self.prop("Points"), self.prop("AllianceNum") or 0)

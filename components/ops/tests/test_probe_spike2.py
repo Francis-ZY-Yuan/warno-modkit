@@ -820,7 +820,7 @@ class Items(unittest.TestCase):
         self.assertEqual(len(zones), 17)
         for point in spike2.TOWN_ZONES.values():
             x, y = GEISA.px_to_world(POINTS[point])
-            self.assertEqual([n for n, _, poly in zones if point_in_polygon(x, y, poly)], [], point)
+            self.assertEqual([z.name for z in zones if point_in_polygon(x, y, z.polygon)], [], point)
 
     def test_town_zones(self):
         """Each town zone is the 60 px square around its point, item at the centre, 2 points, apart from the others."""

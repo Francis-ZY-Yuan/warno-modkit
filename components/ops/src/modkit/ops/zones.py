@@ -9,35 +9,37 @@ from __future__ import annotations
 import math
 
 from modkit.core.gates import check
+from modkit.core.models import Box, Point
 from modkit.core.ndfbin import Value, as_f32  # noqa: F401 - as_f32 is core's, re-exported here
 from modkit.ops.files import read_file
 from modkit.ops.graph import Node, Str, decode, f32
-
-ZoneArea = tuple[list, tuple, str, list, "float | None"]  # (polygon, Center, add-on class, add-on props, Rotation)
+from modkit.ops.models import ZoneArea
 
 # --------------------------------------------------------------------------- geometry
 
 
-def lerp(a: tuple[int, int], b: tuple[int, int], t: float) -> tuple[int, int]:
-    return round(a[0] + (b[0] - a[0]) * t), round(a[1] + (b[1] - a[1]) * t)
+def lerp(a: Point, b: Point, t: float) -> Point:
+    """The point `t` of the way from `a` to `b`, rounded to whole units."""
+    return Point(round(a[0] + (b[0] - a[0]) * t), round(a[1] + (b[1] - a[1]) * t))
 
 
-def rect_polygon(box: tuple[float, float, float, float]) -> tuple[tuple[float, float], ...]:
+def rect_polygon(box: Box) -> tuple[Point, ...]:
+    """The ring of `box`, closed, in Kreide's PlayableZone vertex order."""
     x0, y0, x1, y1 = box
-    return (x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)  # closed, in Kreide's PlayableZone vertex order
+    return Point(x0, y0), Point(x1, y0), Point(x1, y1), Point(x0, y1), Point(x0, y0)
 
 
-def heading(a: tuple[float, float], b: tuple[float, float]) -> float:
+def heading(a: Point, b: Point) -> float:
     return math.atan2(b[1] - a[1], b[0] - a[0])
 
 
-def polygon_centroid(poly: list[tuple[float, float]]) -> tuple[float, float]:
+def polygon_centroid(poly: list[Point]) -> Point:
     """Area centroid of a closed polygon; every non-empty stock zone's Center x/y equals it (float32)."""
     a = cx = cy = 0.0
     for (x0, y0), (x1, y1) in zip(poly, poly[1:]):
         cr = x0 * y1 - x1 * y0
         a, cx, cy = a + cr, cx + (x0 + x1) * cr, cy + (y0 + y1) * cr
-    return cx / (3 * a), cy / (3 * a)
+    return Point(cx / (3 * a), cy / (3 * a))
 
 
 def point_in_polygon(x: float, y: float, poly: list) -> bool:
@@ -63,13 +65,9 @@ def read_zone_areas(raw: bytes) -> list[ZoneArea]:
         addon = nb.objects[d["AddOn"].v.index]
         props = [(nb.pname(pi), Str(nb.strings[v.v].decode("latin-1"), v.tag) if v.tag in (0x07, 0x1C) else v)
                  for pi, v in addon.props]
-        out.append(([x.v for x in d["BasePolygon2D"].v], d["Center"].v, nb.cname(addon.cls), props,
-                    d["Rotation"].v if "Rotation" in d else None))
+        out.append(ZoneArea(tuple(Point(*x.v) for x in d["BasePolygon2D"].v), d["Center"].v, nb.cname(addon.cls),
+                            props, d["Rotation"].v if "Rotation" in d else None))
     return out
-
-
-def zone_prop(area: ZoneArea, name: str) -> object:
-    return next((v.text if isinstance(v, Str) else v.v for k, v in area[3] if k == name), None)
 
 
 def zone_areas_graph(areas: list[ZoneArea]) -> list[Node]:
@@ -77,26 +75,26 @@ def zone_areas_graph(areas: list[ZoneArea]) -> list[Node]:
     BasePolygon2D, its Center (vec3), the zone add-on (Name, Ranking, GUID, AllianceNum | Points ...) and an
     optional Rotation."""
     return [Node("TMapAreaSet", [("Areas", [Node("TMapArea", [
-        ("BasePolygon2D", [Value(0x21, (float(x), float(y))) for x, y in poly]),
-        ("Center", Value(0x0B, tuple(float(c) for c in center))),
-        ("AddOn", Node(cls, addon)),
-        *([("Rotation", f32(rot))] if rot is not None else [])]) for poly, center, cls, addon, rot in areas])])]
+        ("BasePolygon2D", [Value(0x21, (float(x), float(y))) for x, y in a.polygon]),
+        ("Center", Value(0x0B, tuple(float(c) for c in a.center))),
+        ("AddOn", Node(a.addon, a.props)),
+        *([("Rotation", f32(a.rotation))] if a.rotation is not None else [])]) for a in areas])])]
 
 
 # --------------------------------------------------------------------------- playable zone and camera paths
 
-def playable_zone_graph(polygon: list[tuple[float, float]], center: tuple[float, float, float]) -> list[Node]:
+def playable_zone_graph(polygon: list[Point], center: tuple[float, float, float]) -> list[Node]:
     """TMapAreaSet with one TMapArea: a closed BasePolygon2D (float2 list) and its Center (vec3)."""
     return [Node("TMapAreaSet", [("Areas", [Node("TMapArea", [
         ("BasePolygon2D", [Value(0x21, (float(x), float(y))) for x, y in polygon]),
         ("Center", Value(0x0B, tuple(float(c) for c in center)))])])])]
 
 
-def read_playable_polygon(raw: bytes) -> list[tuple[float, float]]:
+def read_playable_polygon(raw: bytes) -> list[Point]:
     """The ring of a PlayableZone file's one area, in world units (closed: the first vertex is repeated last)."""
     nb, _, _ = decode(raw)
     (area,) = [{nb.pname(pi): v for pi, v in ob.props} for ob in nb.objects if nb.cname(ob.cls) == "TMapArea"]
-    return [(float(x), float(y)) for x, y in (v.v for v in area["BasePolygon2D"].v)]
+    return [Point(float(x), float(y)) for x, y in (v.v for v in area["BasePolygon2D"].v)]
 
 
 def camera_paths_graph(paths: list[tuple[str, list, list]]) -> list[Node]:
@@ -165,12 +163,12 @@ def area_name(area) -> str:
     return next(v.text for k, v in area[2] if k == "Name")
 
 
-def area_bbox(area) -> tuple[float, float, float, float]:
+def area_bbox(area) -> Box:
     xs, ys = [pt.v[0] for pt in area[0]], [pt.v[1] for pt in area[0]]
-    return min(xs), min(ys), max(xs), max(ys)
+    return Box(min(xs), min(ys), max(xs), max(ys))
 
 
-def ia_grid_subset(areas: list, entries: list, box: tuple[float, float, float, float]) -> tuple[list, list]:
+def ia_grid_subset(areas: list, entries: list, box: Box) -> tuple[list, list]:
     """The part of a map's AI grid (read_ia_grid's areas and entries) under a rectangular playable zone `box`
     (x0, y0, x1, y1): the areas whose tile lies inside it, and the path-cache entries between two of them, in their
     order. These are the ia_zone_graph and path_cache_graph inputs of a playable zone smaller than the map

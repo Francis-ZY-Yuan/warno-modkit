@@ -39,7 +39,7 @@ from typing import Callable
 
 from modkit.core import ndfbin
 from modkit.core.gates import check
-from modkit.core.models import StringTable, Texts
+from modkit.core.models import Box, StringTable, Texts
 from modkit.ops import script as ops_script
 from modkit.ops.bricks import (
     c_team, g_and, g_choice, g_cmp, g_collect, g_compete, g_count, g_detect, g_difficulty, g_end_game, g_hint, g_if,
@@ -193,10 +193,10 @@ EXTRA_SHAPES = (TRANSPORTER_SHAPE, DEATH_CAUSE_SHAPE)
 
 # --------------------------------------------------------------------------- items (one place for probe 2's geometry)
 
-def town_box(point: str) -> tuple[float, float, float, float]:
+def town_box(point: str) -> Box:
     """The CZ_HALF_PX square around named point `point`, minimap px (x0, y0, x1, y1)."""
     x, y = MAP.points[point]
-    return x - CZ_HALF_PX, y - CZ_HALF_PX, x + CZ_HALF_PX, y + CZ_HALF_PX
+    return Box(x - CZ_HALF_PX, y - CZ_HALF_PX, x + CZ_HALF_PX, y + CZ_HALF_PX)
 
 
 ITEMS: list[LdItem] = [

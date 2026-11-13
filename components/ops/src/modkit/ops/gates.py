@@ -50,7 +50,7 @@ from typing import TYPE_CHECKING, Callable, Iterable, Mapping, NamedTuple, Seque
 
 from modkit.core import dbg, ndfbin, ndfrules, paths, trad, txntag
 from modkit.core.gates import CheckError, check, check_fixture_text
-from modkit.core.models import LANGS, StringTable
+from modkit.core.models import LANGS, Box, Point, StringTable
 from modkit.core.names import unit_path
 from modkit.core.ndfbin import Value
 from modkit.core.packaging import is_gameplay_file
@@ -59,14 +59,14 @@ from modkit.ops.bricks import NAME_PROP
 from modkit.ops.graph import TRUE, Imp, Node, all_values, build_graph, decode, nodes_of, prop_nodes, walk
 from modkit.ops.items import Item
 from modkit.ops.leveldesign import GD_TAG_CLASS, LD_FILE, TAG_ID, ZONE_FILES, LdItem, read_ld_items
-from modkit.ops.models import ForceRow, MenuEntry
+from modkit.ops.models import ForceRow, MenuEntry, Zone
 from modkit.ops.rekey import DBG, DEF_EXTS, TAG, TAG_CLASS, TXN, DumpRow, def_entry, def_path
 from modkit.ops.script import BRICK_DEFAULT, BRICK_FORCE_HIDE, PROD_MENU_SWITCH
 from modkit.ops.strings import StringError, check_glyphs, check_parity, check_titles, stock_chars
 from modkit.ops.zones import (
     area_bbox, as_f32, camera_paths_graph, heading, ia_grid, ia_grid_subset, ia_zone_graph, path_cache_graph,
     playable_zone_graph, point_in_polygon, polygon_centroid, read_ia_grid, read_playable_polygon, read_zone_areas,
-    zone_areas_graph, zone_prop,
+    zone_areas_graph,
 )
 
 if TYPE_CHECKING:
@@ -186,12 +186,12 @@ def check_details_generators(zones: list[str], cams: list[str], grids: list[str]
 GRID_TOLERANCE = 6000.0
 
 
-def _grid_extent(areas: list) -> tuple[float, float, float, float]:
+def _grid_extent(areas: list) -> Box:
     boxes = [area_bbox(a) for a in areas]
-    return (min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes), max(b[3] for b in boxes))
+    return Box(min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes), max(b[3] for b in boxes))
 
 
-def check_grid(areas: list, entries: list, box: tuple[float, float, float, float], *,
+def check_grid(areas: list, entries: list, box: Box, *,
                tolerance: float = GRID_TOLERANCE) -> tuple[int, int]:
     """Stock's rule for a shipped AI strategic grid (read_ia_grid's areas and path-cache entries) under a playable zone
     whose bbox is `box` (x0, y0, x1, y1): the tiles span the zone (the bbox of their union lies within `tolerance` of
@@ -210,7 +210,7 @@ def check_grid(areas: list, entries: list, box: tuple[float, float, float, float
     return len(areas), len(entries)
 
 
-def check_grid_subset(areas: list, entries: list, box: tuple[float, float, float, float], *,
+def check_grid_subset(areas: list, entries: list, box: Box, *,
                       seam: float = 0.0) -> tuple[int, int]:
     """A generator's cut of a map's whole AI grid (read_ia_grid's areas and entries) for a smaller rectangular playable
     zone `box` (x0, y0, x1, y1): zones.ia_grid_subset keeps the tiles inside it and their path costs. The cut is the
@@ -281,13 +281,13 @@ MIDPOINT_TOLERANCE = 0.01
 class ZoneLayout:
     """What check_zone_layout read back from the shipped files, for a mod's own rules on top."""
     items: list[dict]                              # every LevelDesign item (leveldesign.read_ld_items)
-    deployment: dict[int, list[tuple[str, list]]]  # alliance -> its deployment zones' (Name, polygon)
+    deployment: dict[int, list[Zone]]              # alliance -> its deployment zones
     margins: list[tuple[float, str]]               # per zone: how far its bbox lies inside the box, '<add-on>/<Name>'
     arrivals: list[dict]                           # the reinforcement locations and aerial corridors
 
 
 def check_zone_layout(ld_raw: bytes, dz_raw: bytes | None, cz_raw: bytes | None,
-                      box: tuple[float, float, float, float], *, margin: float = 0.0, ground_z: float | None = None,
+                      box: Box, *, margin: float = 0.0, ground_z: float | None = None,
                       sides: Iterable[int] | None = None, exact: bool = False, dz_only: bool = False) -> ZoneLayout:
     """The deployment and command zones and the arrivals, read back from the shipped LevelDesign and zone files (None:
     no such file), under a playable zone whose bbox is `box` (x0, y0, x1, y1). Returns what it read.
@@ -315,21 +315,21 @@ def check_zone_layout(ld_raw: bytes, dz_raw: bytes | None, cz_raw: bytes | None,
       give a side arrivals but no deployment zone)."""
     items = read_ld_items(ld_raw)
     x0, y0, x1, y1 = box
-    deployment: dict[int, list[tuple[str, list]]] = {}
+    deployment: dict[int, list[Zone]] = {}
     margins: list[tuple[float, str]] = []
     for raw, addon, field_ in ((dz_raw, "DeploymentZone", "AllianceNum"), (cz_raw, "CommandPoints", "Points")):
         areas, lds = read_zone_areas(raw) if raw else [], [it for it in items if it["addon"] == addon]
-        check(sorted(it["GUID"] for it in lds) == sorted(zone_prop(a, "GUID") for a in areas),
+        check(sorted(it["GUID"] for it in lds) == sorted(a.prop("GUID") for a in areas),
               f"{addon}: the LevelDesign items and the Details areas differ (by GUID)")
         for a in areas:
-            poly, center, cls, _, rot = a
-            it = next(i for i in lds if i["GUID"] == zone_prop(a, "GUID"))
+            poly, center, cls, rot = a.polygon, a.center, a.addon, a.rotation
+            it = next(i for i in lds if i["GUID"] == a.prop("GUID"))
             where = f"{addon}/{it['Name']}"
             check(cls == f"TGameDesignAddOn_{addon}", f"{where}: area add-on {cls}")
-            check((it["Name"], it["Ranking"]) == (zone_prop(a, "Name"), zone_prop(a, "Ranking")),
+            check((it["Name"], it["Ranking"]) == (a.prop("Name"), a.prop("Ranking")),
                   f"{where}: Name/Ranking differ between the two copies")
             check(it["rot"] == rot, f"{where}: Rotation {it['rot']} in LevelDesign, {rot} in the area")
-            check(it.get(field_) == zone_prop(a, field_), f"{where}: {field_} differs between the two copies")
+            check(it.get(field_) == a.prop(field_), f"{where}: {field_} differs between the two copies")
             check(len(poly) >= 4 and poly[0] == poly[-1], f"{where}: the polygon is not a closed ring")
             check(point_in_polygon(*it["pos"], poly), f"{where}: item Position {it['pos']} lies outside its polygon")
             centroid = polygon_centroid(poly)
@@ -345,7 +345,7 @@ def check_zone_layout(ld_raw: bytes, dz_raw: bytes | None, cz_raw: bytes | None,
             check(margins[-1][0] >= margin,
                   f"{where}: bbox {margins[-1][0]:,.0f} world inside the playable zone, need {margin:,} (margin)")
             if addon == "DeploymentZone":
-                deployment.setdefault(it.get(field_) or 0, []).append((it["Name"], poly))
+                deployment.setdefault(it.get(field_) or 0, []).append(a.zone())
     if sides is not None:
         want = sorted(set(sides))
         check(sorted(deployment) == want, f"deployment zones for alliances {sorted(deployment)}, want one or more for "
@@ -386,15 +386,15 @@ def shipped_details(items: Iterable[Item], inner: str) -> bytes | None:
     return b"".join(hits[0].chunks()) if hits else None
 
 
-def _shipped_playable_box(items: list[Item]) -> tuple[float, float, float, float]:
+def _shipped_playable_box(items: list[Item]) -> Box:
     raw = shipped_details(items, PLAYABLE_FILE)
     check(raw is not None, f"the mod ships no {PLAYABLE_FILE}")
     ring = read_playable_polygon(raw)
     xs, ys = [p[0] for p in ring], [p[1] for p in ring]
-    return min(xs), min(ys), max(xs), max(ys)
+    return Box(min(xs), min(ys), max(xs), max(ys))
 
 
-def _fmt_box(box: tuple[float, float, float, float]) -> str:
+def _fmt_box(box: Box) -> str:
     x0, y0, x1, y1 = box
     return f"({x0:,.0f}, {y0:,.0f})..({x1:,.0f}, {y1:,.0f})"
 
@@ -802,19 +802,19 @@ STOCK_ARRIVALS = ("Every stock player RL/AC End lies in one (83/83: 57 RL and 26
                   "multiplayer layouts); an op whose Ends did not saw nothing bought arrive")
 
 
-def zone_polygons(raw: bytes | None) -> list[tuple[str, int, list]]:
-    """(Name, alliance, polygon) of every area of a shipped DeploymentZone or CommandZone ndfbin (read_zone_areas):
-    the polygons the game's zone managers load and test. The alliance is the AllianceNum (absent: 0)."""
-    return [(zone_prop(a, "Name"), zone_prop(a, "AllianceNum") or 0, a[0]) for a in read_zone_areas(raw)] if raw else []
+def zone_polygons(raw: bytes | None) -> list[Zone]:
+    """Every area of a shipped DeploymentZone or CommandZone ndfbin (read_zone_areas) as a Zone: the polygons the
+    game's zone managers load and test. The alliance is the AllianceNum (absent: 0)."""
+    return [a.zone() for a in read_zone_areas(raw)] if raw else []
 
 
-def nearest_on_polygon(x: float, y: float, poly: Sequence) -> tuple[float, tuple[float, float]]:
+def nearest_on_polygon(x: float, y: float, poly: Sequence) -> tuple[float, Point]:
     """(distance, point) from (x, y) to the nearest point of the ring `poly` (closed: first vertex repeated)."""
-    best = (float("inf"), (x, y))
+    best = (float("inf"), Point(x, y))
     for (ax, ay), (bx, by) in zip(poly, poly[1:]):
         dx, dy = bx - ax, by - ay
         t = max(0.0, min(1.0, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy))) if dx or dy else 0.0
-        q = (ax + t * dx, ay + t * dy)
+        q = Point(ax + t * dx, ay + t * dy)
         best = min(best, (((x - q[0]) ** 2 + (y - q[1]) ** 2) ** 0.5, q))
     return best
 
@@ -844,7 +844,7 @@ def arrival_violations(ld_raw: bytes, dz_raw: bytes | None, cz_raw: bytes | None
     unless the End lies only in other alliances' DZs: the tick update then gives the entry that alliance (55 stock -1
     entries), and it counts as theirs."""
     dz, cz = zone_polygons(dz_raw), zone_polygons(cz_raw) if command_zones else []
-    own_dz = [(name, poly) for name, s, poly in dz if s == side]
+    own_dz = [(z.name, z.polygon) for z in dz if z.alliance == side]
     whose = "player" if side == 0 else f"alliance-{side}"
     counts, bad, skip = dict.fromkeys(ARRIVALS, 0), [], frozenset(skip)
     for it in read_ld_items(ld_raw):
@@ -852,7 +852,7 @@ def arrival_violations(ld_raw: bytes, dz_raw: bytes | None, cz_raw: bytes | None
         if it["addon"] not in ARRIVALS or it["Name"] in skip:
             continue
         x, y = it["EndPosition"][:2]
-        sides = {s for _, s, poly in dz if point_in_polygon(x, y, poly)}
+        sides = {z.alliance for z in dz if point_in_polygon(x, y, z.polygon)}
         if alliance == -1:
             mine = side in sides if sides and 0 not in sides else side == 0
         else:
@@ -860,7 +860,7 @@ def arrival_violations(ld_raw: bytes, dz_raw: bytes | None, cz_raw: bytes | None
         if not mine:
             continue
         counts[it["addon"]] += 1
-        if side in sides or any(point_in_polygon(x, y, poly) for _, _, poly in cz):
+        if side in sides or any(point_in_polygon(x, y, z.polygon) for z in cz):
             continue
         where = (f"{it['Name']}: End ({x:,.0f}, {y:,.0f}) lies in no {whose} deployment zone"
                  + (" and no command zone" if command_zones else ""))
@@ -977,8 +977,8 @@ def tier_violations(tiered: Iterable[str], roots: Iterable[Node], details: Mappi
     dz, cz = (zone_polygons(details.get(ZONE_FILES[k])) for k in ("DeploymentZone", "CommandPoints"))
     by_guid = {it["GUID"]: it for it in items}
 
-    def zones_at(zones: list, x: float, y: float) -> list[tuple[str, int]]:
-        return [(name, side) for name, side, poly in zones if point_in_polygon(x, y, poly)]
+    def zones_at(zones: list[Zone], x: float, y: float) -> list[tuple[str, int]]:
+        return [(z.name, z.alliance) for z in zones if point_in_polygon(x, y, z.polygon)]
 
     def owned(actions: list[Node]) -> set[str]:
         out: set[str] = set()
@@ -1152,7 +1152,7 @@ def zone_tag_violations(roots: Iterable[Node], details: Mapping[str, bytes]) -> 
             bad.append(f"{where}: ZoneType {zone_type} has no zone file here (stock uses 1; 0 = deployment zones)")
             return
         inner, (x, y) = ZONE_TYPE_FILES[zone_type], it["pos"][:2]
-        hits = [zone_prop(a, "Name") for a in areas[inner] if point_in_polygon(x, y, a[0])]
+        hits = [a.prop("Name") for a in areas[inner] if point_in_polygon(x, y, a.polygon)]
         if len(hits) != 1:
             bad.append(f"{where} at ({x:,.0f}, {y:,.0f}) lies in {len(hits)} polygons of {inner}"
                        + (f" ({', '.join(hits)})" if hits else "") + ", not exactly one")
@@ -1180,16 +1180,16 @@ def zone_tag_violations(roots: Iterable[Node], details: Mapping[str, bytes]) -> 
             continue
         counts["zone items"] += 1
         inner = ZONE_ADDONS[it["addon"]]
-        mine = [a for a in areas[inner] if zone_prop(a, "GUID") == it["GUID"]]
+        mine = [a for a in areas[inner] if a.prop("GUID") == it["GUID"]]
         if len(mine) != 1:
             bad.append(f"{it['Ranking']}/{it['Name']}: {len(mine)} areas of {inner} carry its GUID, not one")
-        elif not point_in_polygon(*it["pos"][:2], mine[0][0]):
+        elif not point_in_polygon(*it["pos"][:2], mine[0].polygon):
             bad.append(f"{it['Ranking']}/{it['Name']}: its point ({it['pos'][0]:,.0f}, {it['pos'][1]:,.0f}) lies "
                        f"outside its own polygon")
     zones = areas[ZONE_ADDONS["CommandPoints"]]
     counts["command zones"] = len(zones)
-    bad += [f"command zones {zone_prop(a, 'Name')} and {zone_prop(b, 'Name')} overlap"
-            for k, a in enumerate(zones) for b in zones[k + 1:] if polygons_overlap(a[0], b[0])]
+    bad += [f"command zones {a.prop('Name')} and {b.prop('Name')} overlap"
+            for k, a in enumerate(zones) for b in zones[k + 1:] if polygons_overlap(a.polygon, b.polygon)]
     return counts, bad
 
 
@@ -2310,7 +2310,7 @@ def _bare(unit: str) -> str:
     return unit.removeprefix(UNIT_PREFIX).removeprefix("Descriptor_Unit_")
 
 
-def playable_ring(raw: bytes) -> list[tuple[float, float]] | None:
+def playable_ring(raw: bytes) -> list[Point] | None:
     """The ring of a PlayableZone file's one area (world units, closed), or None when the file holds no area: the
     whole map is then playable (stock: Survivors, RedJuggernaut, Gotterdammerung and ClosingTheTrap ship such a file).
     The game refuses a file with more than one."""
@@ -2320,7 +2320,7 @@ def playable_ring(raw: bytes) -> list[tuple[float, float]] | None:
     return read_playable_polygon(raw) if areas else None
 
 
-def stands_at(at: tuple[float, float], ring: Sequence | None) -> tuple[float, float]:
+def stands_at(at: Point, ring: Sequence | None) -> Point:
     """Where a unit created at `at` (world units) stands: at `at` inside the playable zone `ring` (anywhere when
     `ring` is None, a whole-map zone), else at the zone's point nearest `at` [[created-units-stand-in-zone]]."""
     if ring is None or point_in_polygon(*at, ring):
@@ -2376,8 +2376,8 @@ class FireRange(NamedTuple):
     """What check_fire_range found: the spawn's point and where its batteries stand (world units: the same point
     inside the playable zone), the alliance and each battery camp's export name, and each fire as (battery unit,
     target, distance GRU from where the battery stands, band min, band max)."""
-    at: tuple[float, float]
-    stand: tuple[float, float]
+    at: Point
+    stand: Point
     alliance: int
     camps: tuple[str, ...]
     fires: tuple[tuple[str, str, float, float, float], ...]

@@ -15,6 +15,7 @@ from modkit.ops.leveldesign import (
     GD_TAG_CLASS, MENU_ORDER_BASE, MENU_ORDER_SPAN, TAG_ID, LdItem, derived_menu_order, gd_tags, ld_guid, ld_key,
     ld_position, leveldesign_graph, read_ld_items, scenario_guid, zone_addon_extra, zone_area,
 )
+from modkit.ops.models import Zone
 from modkit.ops.script import ROOT_CLASS
 from modkit.ops.zones import polygon_centroid, read_zone_areas, rect_polygon, zone_areas_graph
 
@@ -213,14 +214,15 @@ class ZoneAreaTest(unittest.TestCase):
     def test_details_copy_of_a_zone_item(self):
         poly = rect_polygon((0, 0, 40, 20))
         it = LdItem("CommandPoints", "Z", 10, 10, "CommandPoints", polygon=poly, points=2, rotation=0.25)
-        ring, center, cls, props, rot = zone_area(it, "challenge_X", "ns", 123.5)
-        self.assertEqual((ring, center, cls, rot), (list(poly), (*polygon_centroid(list(poly)), 123.5),
-                                                    "TGameDesignAddOn_CommandPoints", 0.25))
-        self.assertEqual([name for name, _ in props], ["Name", "Ranking", "GUID", "Points"])
-        self.assertEqual(dict(props)["GUID"].v, ld_guid(it, "challenge_X", "ns"))
-        raw = encode(build_graph(zone_areas_graph([zone_area(it, "challenge_X", "ns", 123.5)]), []), "CZ")
+        area = zone_area(it, "challenge_X", "ns", 123.5)
+        self.assertEqual((area.polygon, area.center, area.addon, area.rotation),
+                         (poly, (*polygon_centroid(list(poly)), 123.5), "TGameDesignAddOn_CommandPoints", 0.25))
+        self.assertEqual([name for name, _ in area.props], ["Name", "Ranking", "GUID", "Points"])
+        self.assertEqual(area.prop("GUID"), ld_guid(it, "challenge_X", "ns"))
+        raw = encode(build_graph(zone_areas_graph([area]), []), "CZ")
         (back,) = read_zone_areas(raw)
-        self.assertEqual(back[2], "TGameDesignAddOn_CommandPoints")
+        self.assertEqual(back.addon, "TGameDesignAddOn_CommandPoints")
+        self.assertEqual(back.zone(), Zone("Z", poly, 2, 0))
 
 
 class GdTagsTest(unittest.TestCase):

@@ -1,5 +1,6 @@
 """Tests for modkit.ops.zones (geometry, Details builders and readers) and the zone gates of modkit.ops.gates
 (check_details_generators, check_grid, check_grid_subset, check_zone_layout, arrival_violations by side)."""
+import dataclasses
 import math
 import os
 import tempfile
@@ -14,10 +15,11 @@ from modkit.ops.gates import (
 )
 from modkit.ops.graph import Node, Str, build_graph, decode, encode, f32
 from modkit.ops.leveldesign import LD_SHARED, LdItem, leveldesign_graph, zone_area
+from modkit.ops.models import Zone, ZoneArea
 from modkit.ops.zones import (
     area_bbox, area_name, as_f32, camera_paths_graph, heading, ia_grid, ia_grid_subset, ia_zone_graph, lerp,
     path_cache_graph, playable_zone_graph, point_in_polygon, polygon_centroid, read_ia_grid, read_playable_polygon,
-    read_zone_areas, rect_polygon, zone_areas_graph, zone_prop,
+    read_zone_areas, rect_polygon, zone_areas_graph,
 )
 from modkit.ops.items import mem_item
 
@@ -52,10 +54,10 @@ class GeometryTest(unittest.TestCase):
 
 def zone_file() -> bytes:
     areas = [
-        (list(SQUARE), (50.0, 50.0, 10.0), "TGameDesignAddOn_DeploymentZone",
-         [("Name", Str("DZ_A")), ("Ranking", Str("DeploymentZone")), ("GUID", Value(0x1A, bytes(16)))], None),
-        (list(rect_polygon((200, 0, 300, 100))), (250.0, 50.0, 10.0), "TGameDesignAddOn_CommandPoints",
-         [("Name", Str("CZ_B")), ("Points", Value(0x02, 3))], 1.5),
+        ZoneArea(SQUARE, (50.0, 50.0, 10.0), "TGameDesignAddOn_DeploymentZone",
+                 [("Name", Str("DZ_A")), ("Ranking", Str("DeploymentZone")), ("GUID", Value(0x1A, bytes(16)))]),
+        ZoneArea(rect_polygon((200, 0, 300, 100)), (250.0, 50.0, 10.0), "TGameDesignAddOn_CommandPoints",
+                 [("Name", Str("CZ_B")), ("Points", Value(0x02, 3))], 1.5),
     ]
     return encode(build_graph(zone_areas_graph(areas), []), "zones")
 
@@ -64,13 +66,15 @@ class ZoneFileTest(unittest.TestCase):
     def test_round_trip(self):
         raw = zone_file()
         areas = read_zone_areas(raw)
-        self.assertEqual([a[2] for a in areas], ["TGameDesignAddOn_DeploymentZone", "TGameDesignAddOn_CommandPoints"])
-        self.assertEqual(zone_prop(areas[0], "Name"), "DZ_A")
-        self.assertEqual(zone_prop(areas[1], "Points"), 3)
-        self.assertIsNone(zone_prop(areas[0], "Points"))
-        self.assertIsNone(areas[0][4])
-        self.assertEqual(areas[1][4], as_f32(1.5)[0])
-        self.assertEqual(areas[0][0][0], (0.0, 0.0))
+        self.assertEqual([a.addon for a in areas],
+                         ["TGameDesignAddOn_DeploymentZone", "TGameDesignAddOn_CommandPoints"])
+        self.assertEqual(areas[0].prop("Name"), "DZ_A")
+        self.assertEqual(areas[1].prop("Points"), 3)
+        self.assertIsNone(areas[0].prop("Points"))
+        self.assertIsNone(areas[0].rotation)
+        self.assertEqual(areas[1].rotation, as_f32(1.5)[0])
+        self.assertEqual(areas[0].polygon[0], (0.0, 0.0))
+        self.assertEqual([a.zone() for a in areas], [Zone("DZ_A", SQUARE, None, 0), Zone("CZ_B", areas[1].polygon, 3, 0)])
         again = encode(build_graph(zone_areas_graph(areas), []), "zones")
         self.assertEqual(decode(again)[2], decode(raw)[2])
 
@@ -159,8 +163,8 @@ class StockTest(unittest.TestCase):
         with open(stock("challenge_HoldUntilRelieved", "out", "DeploymentZone.ndfbin"), "rb") as fh:
             areas = read_zone_areas(fh.read())
         self.assertTrue(areas)
-        for poly, center, *_ in areas:
-            self.assertEqual(tuple(center[:2]), as_f32(*polygon_centroid(poly)))
+        for a in areas:
+            self.assertEqual(tuple(a.center[:2]), as_f32(*polygon_centroid(list(a.polygon))))
 
 
 def grid(n: int = 3, size: float = 10.0, graphs=(None, Value(0x02, 3))):
@@ -273,9 +277,10 @@ def layout_files(items: list[LdItem], ground_z: float = GROUND_Z,
     zone's Center off the exact centroid, as stock's sit."""
     ld = encode(build_graph(leveldesign_graph(items, LAYOUT_SCENARIO, LAYOUT_NS), [], LD_SHARED), "LD")
 
-    def area(it: LdItem):
-        poly, (cx, cy, cz), cls, props, rot = zone_area(it, LAYOUT_SCENARIO, LAYOUT_NS, ground_z)
-        return poly, (cx + nudge[0], cy + nudge[1], cz), cls, props, rot
+    def area(it: LdItem) -> ZoneArea:
+        a = zone_area(it, LAYOUT_SCENARIO, LAYOUT_NS, ground_z)
+        cx, cy, cz = a.center
+        return dataclasses.replace(a, center=(cx + nudge[0], cy + nudge[1], cz))
     zones = [encode(build_graph(zone_areas_graph([area(it) for it in items if it.addon == addon]), []), addon)
              for addon in ("DeploymentZone", "CommandPoints")]
     return ld, zones[0], zones[1]
@@ -295,7 +300,7 @@ class ZoneLayoutTest(unittest.TestCase):
 
     def test_a_generated_layout_passes(self):
         layout = self.strict(layout_items())
-        self.assertEqual({side: [name for name, _ in zones] for side, zones in layout.deployment.items()},
+        self.assertEqual({side: [z.name for z in zones] for side, zones in layout.deployment.items()},
                          {0: ["DZ_P"], 1: ["DZ_E"]})
         self.assertEqual(sorted(name for _, name in layout.margins),
                          ["CommandPoints/CZ", "DeploymentZone/DZ_E", "DeploymentZone/DZ_P"])

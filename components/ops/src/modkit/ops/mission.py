@@ -23,6 +23,7 @@ from typing import NamedTuple
 
 from modkit.core import ndfbin
 from modkit.core.gates import check
+from modkit.core.models import Point
 from modkit.ops import script as ops_script
 from modkit.ops.bricks import (
     c_team, g_and, g_choice, g_cmp, g_collect, g_compete, g_count, g_detect, g_dialog, g_difficulty, g_end_game,
@@ -42,7 +43,7 @@ CHOICE_NONE = 2                       # a choice variable's value before an answ
 
 # --------------------------------------------------------------------------- placed and hidden units
 
-def placed_units(minimap: Minimap, at: tuple[float, float], units: Sequence[tuple[str, str]], spacing_px: float,
+def placed_units(minimap: Minimap, at: Point, units: Sequence[tuple[str, str]], spacing_px: float,
                  cols: int, group: str, *, camp: int = 0, hidden: bool = False,
                  rotation: float | None = None, experience: int | None = None) -> list[LdItem]:
     """Units pre-placed in camp `camp` (its CampList index): one Spawn item per (item name, unit descriptor) of
@@ -56,7 +57,7 @@ def placed_units(minimap: Minimap, at: tuple[float, float], units: Sequence[tupl
             for (name, unit), spot in zip(units, spots)]
 
 
-def hidden_units(minimap: Minimap, at: tuple[float, float], units: Sequence[tuple[str, str]], spacing_px: float,
+def hidden_units(minimap: Minimap, at: Point, units: Sequence[tuple[str, str]], spacing_px: float,
                  cols: int, group: str) -> list[LdItem]:
     """Player (camp 0) units hidden until a SpawnUnits reveals them (bricks.g_spawn): placed_units with
     DisableAutoSpawn, one Spawn item per (item name, unit descriptor) of `units`, all in item group `group`, laid out

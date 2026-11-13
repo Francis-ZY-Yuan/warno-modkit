@@ -99,8 +99,8 @@ def check_end_funnel(roots) -> tuple[int, bool]:
 def zones_holding(details: dict[str, bytes], addon: str, p: tuple[float, float]) -> list[tuple[str, int]]:
     """(Name, alliance) of every area of the shipped `addon` zone file holding minimap point `p`."""
     x, y = GEISA.px_to_world(p)
-    return [(name, side) for name, side, poly in gates.zone_polygons(details.get(ZONE_FILES[addon]))
-            if point_in_polygon(x, y, poly)]
+    return [(z.name, z.alliance) for z in gates.zone_polygons(details.get(ZONE_FILES[addon]))
+            if point_in_polygon(x, y, z.polygon)]
 
 
 def end_px(it: LdItem) -> tuple[float, float]:

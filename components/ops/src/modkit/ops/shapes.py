@@ -22,6 +22,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 
 from modkit.core.gates import check
+from modkit.core.models import Box, Point
 from modkit.core.ndfbin import Value, token_unhash
 from modkit.ops.bricks import (
     NAME_PROP, fx_wrapper, g_cmp, g_compete, g_create, g_hint, g_if, g_modify, g_seq, g_set, g_simul, g_timer, g_until,
@@ -199,36 +200,35 @@ class Ctx:
 class Minimap:
     """LevelDesign items placed by minimap pixels on `map`, by position or by the name of one of `points`."""
     map: StockMap
-    points: Mapping[str, tuple[float, float]]
+    points: Mapping[str, Point]
 
-    def at(self, at: str | tuple[float, float], what: str = "") -> tuple[float, float]:
+    def at(self, at: str | Point, what: str = "") -> Point:
         """`at` in minimap px: a named point's, or `at` itself."""
         if isinstance(at, str):
             check(at in self.points, f"{what}: {at} is not a named point of the map")
             return self.points[at]
         return at
 
-    def item(self, ranking: str, name: str, at: str | tuple[float, float], addon: str, **kw) -> LdItem:
+    def item(self, ranking: str, name: str, at: str | Point, addon: str, **kw) -> LdItem:
         """An item at `at` (a named point or minimap px), in world units."""
         x, y = self.map.px_to_world(self.at(at, f"{ranking}/{name}"))
         return LdItem(ranking, name, x, y, addon, **kw)
 
-    def zone_item(self, ranking: str, name: str, box: tuple[float, float, float, float], addon: str,
-                  **kw) -> LdItem:
+    def zone_item(self, ranking: str, name: str, box: Box, addon: str, **kw) -> LdItem:
         """A deployment or command zone over a minimap-px box (x0, y0, x1, y1): the closed world polygon, the item at
         its centre."""
         x0, y0, x1, y1 = box
-        polygon = rect_polygon((*self.map.px_to_world((x0, y0)), *self.map.px_to_world((x1, y1))))
-        return self.item(ranking, name, ((x0 + x1) / 2, (y0 + y1) / 2), addon, polygon=polygon, **kw)
+        polygon = rect_polygon(Box(*self.map.px_to_world((x0, y0)), *self.map.px_to_world((x1, y1))))
+        return self.item(ranking, name, Point((x0 + x1) / 2, (y0 + y1) / 2), addon, polygon=polygon, **kw)
 
-    def ring_item(self, name: str, point: str | tuple[float, float], radius_px: float) -> LdItem:
+    def ring_item(self, name: str, point: str | Point, radius_px: float) -> LdItem:
         """A CircularZone of `radius_px` minimap px around `point` (RadiusGRU at GRU_WORLD). The game's unit
         detectors read circles only (DetectUnitDansDetecteur)."""
         return self.item("CircularZones", name, point, "CircularZone",
                          radius_gru=radius_px * self.map.world_per_px / GRU_WORLD)
 
-    def arrival_item(self, ranking: str, name: str, start: str | tuple[float, float], end: str | tuple[float, float],
-                     addon: str, **kw) -> LdItem:
+    def arrival_item(self, ranking: str, name: str, start: str | Point, end: str | Point, addon: str,
+                     **kw) -> LdItem:
         """A ReinforcementLocation or AerialCorridor (`addon`) from `start` to `end` (named points or minimap px), laid
         out as stock's entries are: the item at the midpoint of Start and End, Rotation the Start -> End heading
         (gates.check_zone_layout's midpoint and heading clauses)."""
@@ -239,16 +239,16 @@ class Minimap:
 
     # ------------------------------------------------------------------ reading items back
 
-    def px_of(self, it: LdItem) -> tuple[float, float]:
+    def px_of(self, it: LdItem) -> Point:
         return self.map.world_to_px((it.x, it.y))
 
     def radius_px(self, it: LdItem) -> float:
         return it.radius_gru * GRU_WORLD / self.map.world_per_px
 
-    def box_px(self, it: LdItem) -> tuple[float, float, float, float]:
+    def box_px(self, it: LdItem) -> Box:
         """A zone item's polygon bounds in minimap px (x0, y0, x1, y1)."""
         xs, ys = zip(*(self.map.world_to_px(p) for p in it.polygon))
-        return min(xs), min(ys), max(xs), max(ys)
+        return Box(min(xs), min(ys), max(xs), max(ys))
 
 
 # --------------------------------------------------------------------------- blocks

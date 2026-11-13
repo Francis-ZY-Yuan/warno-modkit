@@ -50,7 +50,7 @@ import os
 import re
 import sys
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
@@ -59,12 +59,14 @@ from pydantic import (AfterValidator, BaseModel, BeforeValidator, ConfigDict, Di
 from pydantic_core import ErrorDetails, PydanticCustomError
 
 from modkit.core import paths, tgv
+from modkit.core.models import Box, Point
 from modkit.ops.build import FAILURES, _utf8_streams
 from modkit.ops.files import SETUP_FIX, read_file
 from modkit.ops.gates import UNIT_PREFIX, unit_database
 from modkit.ops.maps import WORLD_PER_MINIMAP_PX, picture_path
+from modkit.ops.models import Zone
 from modkit.ops.profile import extracted
-from modkit.ops.zones import polygon_centroid, read_playable_polygon, read_zone_areas, zone_prop
+from modkit.ops.zones import polygon_centroid, read_playable_polygon, read_zone_areas
 
 VERSION = 1
 PAGE, MINIMAP, SATELLITE = "index.html", "minimap.png", "satellite.png"
@@ -72,8 +74,6 @@ MAX_PAGE = 1024 * 1024              # the page itself; the pictures are publishe
 MAX_PICTURE = 3 * 1024 * 1024       # a satellite crop over this is halved
 SPEC_NAME = "storyboard"            # an op keeps its spec as examples/<op>/docs/storyboard.json
 MARKS = ("arrow", "ring", "units", "label", "arc", "burst")
-
-Point = tuple[float, float]
 
 
 class SpecError(ValueError):
@@ -210,7 +210,7 @@ Chip = Annotated[tuple[Str, Text], _shape(2, "a chip [label, text]")]
 OobUnit = Annotated[tuple[Annotated[int, BeforeValidator(_rule(lambda v: _whole(v) and v >= 0,
                                                               "expected a count (a whole number)"))], Str, Str],
                     BeforeValidator(_unit)]
-Box = Annotated[tuple[Number, Number, Number, Number],
+CropBox = Annotated[tuple[Number, Number, Number, Number],
                 AfterValidator(_rule(lambda b: b[2] > b[0] and b[3] > b[1], "expected x1 > x0 and y1 > y0"))]
 # A tag is the branch of a union a value is read as. Pydantic puts it in an error's location; the JSON path leaves it
 # out. Tags are bracketed names, which no key of a spec is.
@@ -398,7 +398,7 @@ def _zone_kind(v: object) -> str | None:
 CommandZone = Annotated[Annotated[StockZone, _tag("stock zone")] | Annotated[OwnZone, _tag("own zone")],
                         Discriminator(_zone_kind, custom_error_type="spec",
                                       custom_error_message="expected {stock, name?} or {name, area, points}")]
-Crop = Annotated[Annotated[Literal["playable", "full"], _tag("named crop")] | Annotated[Box, _tag("box crop")],
+Crop = Annotated[Annotated[Literal["playable", "full"], _tag("named crop")] | Annotated[CropBox, _tag("box crop")],
                  Discriminator(lambda v: "<named crop>" if isinstance(v, str) else "<box crop>"),
                  BeforeValidator(_rule(lambda v: v in ("playable", "full") or isinstance(v, list) and len(v) == 4,
                                        "expected 'playable', 'full' or a box [x0, y0, x1, y1] in minimap px"))]
@@ -524,7 +524,7 @@ class Picture:
     height: int
     rgb: bytes
 
-    def crop(self, box: tuple[int, int, int, int]) -> Picture:
+    def crop(self, box: Box) -> Picture:
         x0, y0, x1, y1 = box
         stride = self.width * 3
         rows = [self.rgb[y * stride + x0 * 3:y * stride + x1 * 3] for y in range(y0, y1)]
@@ -546,24 +546,20 @@ class Picture:
 
 
 @dataclass(frozen=True)
-class Zone:
-    """A command or deployment zone of a layout, in minimap px."""
-    name: str                       # its stock Name (AutoName_5)
-    polygon: tuple[Point, ...]      # closed: the first vertex is repeated last
-    points: int | None = None       # a command zone's Points
-    alliance: int | None = None     # a deployment zone's AllianceNum (0 when the file leaves it out)
-
-
-@dataclass(frozen=True)
 class Layout:
-    """What the page draws exact from a Details folder's out/ files, in minimap px."""
+    """What the page draws exact from a Details folder's out/ files, in minimap px: the playable zone's ring, and the
+    command and deployment zones (each named by its stock Name, AutoName_5)."""
     playable: tuple[Point, ...]
     command: tuple[Zone, ...]
     deployment: tuple[Zone, ...]
 
 
 def _px(p: Sequence[float]) -> Point:
-    return (p[0] / WORLD_PER_MINIMAP_PX, p[1] / WORLD_PER_MINIMAP_PX)
+    return Point(p[0] / WORLD_PER_MINIMAP_PX, p[1] / WORLD_PER_MINIMAP_PX)
+
+
+def _px_zone(zone: Zone) -> Zone:
+    return replace(zone, polygon=tuple(_px(p) for p in zone.polygon))
 
 
 class StockSource:
@@ -575,10 +571,8 @@ class StockSource:
             return read_zone_areas(read_file(extracted(f"{rel}/out/{name}.ndfbin")))
 
         ring = read_playable_polygon(read_file(extracted(f"{rel}/out/PlayableZone.ndfbin")))
-        command = tuple(Zone(str(zone_prop(a, "Name")), tuple(_px(p) for p in a[0]), points=zone_prop(a, "Points"))
-                        for a in zones("CommandZone"))
-        deployment = tuple(Zone(str(zone_prop(a, "Name")), tuple(_px(p) for p in a[0]),
-                                alliance=zone_prop(a, "AllianceNum") or 0) for a in zones("DeploymentZone"))
+        command = tuple(_px_zone(a.zone()) for a in zones("CommandZone"))
+        deployment = tuple(_px_zone(a.zone()) for a in zones("DeploymentZone"))
         return Layout(tuple(_px(p) for p in ring), command, deployment)
 
     def picture(self, map_name: str, kind: str) -> Picture:
@@ -591,7 +585,7 @@ class StockSource:
         return Picture(hdr.width, hdr.height, tgv.drop_alpha(rgba))
 
 
-def crop_box(crop: object, layout: Layout, width: int, height: int) -> tuple[int, int, int, int]:
+def crop_box(crop: object, layout: Layout, width: int, height: int) -> Box:
     """The crop in whole minimap px, inside the minimap (`width` x `height`): the playable zone's bounding box
     ('playable'), the whole minimap ('full') or a box [x0, y0, x1, y1], each rounded to the nearest pixel."""
     if crop == "full":
@@ -606,7 +600,7 @@ def crop_box(crop: object, layout: Layout, width: int, height: int) -> tuple[int
     y0, y1 = max(0, min(y0, height)), max(0, min(y1, height))
     if x1 <= x0 or y1 <= y0:
         raise SpecError(f"$.map.crop: the box {list(box)} lies outside the {width}x{height} minimap")
-    return x0, y0, x1, y1
+    return Box(x0, y0, x1, y1)
 
 
 # --------------------------------------------------------------------------- the page
@@ -640,7 +634,7 @@ def _label(label: Label | None) -> str:
     return f'<text class="sm" x="{_n(x)}" y="{_n(y)}">{esc(label.text)}</text>'
 
 
-def map_scale(spec: Spec, box: tuple[int, int, int, int]) -> float:
+def map_scale(spec: Spec, box: Box) -> float:
     """How big the map's text, strokes and drawn shapes are: ``map.mark_scale``, else the crop's size against the
     432 x 622 px crop the look was tuned on. Rounded to 3 decimals."""
     given = spec.map.mark_scale
@@ -683,7 +677,7 @@ def mark_svg(mark: Mark, start: str | None, s: float = 1.0) -> str:
 
 
 def _closed(area: Sequence[Sequence[float]]) -> tuple[Point, ...]:
-    poly = tuple((float(x), float(y)) for x, y in area)
+    poly = tuple(Point(float(x), float(y)) for x, y in area)
     return poly if poly[0] == poly[-1] else poly + (poly[0],)
 
 
@@ -742,7 +736,7 @@ def zones_svg(spec: Spec, layout: Layout, s: float = 1.0) -> str:
     return "\n".join(out)
 
 
-def map_svg(spec: Spec, layout: Layout, box: tuple[int, int, int, int]) -> str:
+def map_svg(spec: Spec, layout: Layout, box: Box) -> str:
     """The map: both pictures at the crop box (viewBox), the zones, then the marks."""
     x0, y0, x1, y1 = box
     w, h = x1 - x0, y1 - y0
@@ -856,7 +850,7 @@ def _styles_css(styles: Mapping[str, str]) -> str:
     return f":root {{ --accent: {accent}; }}\n" + "\n".join(rules)
 
 
-def render_page(spec: Spec, layout: Layout, box: tuple[int, int, int, int]) -> str:
+def render_page(spec: Spec, layout: Layout, box: Box) -> str:
     """The page for a spec: one HTML file referring to the two pictures beside it."""
     phases = spec.phases
     picture = spec.map.default_picture
@@ -1129,7 +1123,7 @@ def generate(spec: Spec, out_dir: str | os.PathLike, source: StockSource | None 
     out.mkdir(parents=True, exist_ok=True)
     mini = minimap.crop(box)
     tgv.write_png(str(out / MINIMAP), mini.width, mini.height, mini.rgb, channels=3)
-    sat = preview.crop(tuple(c * k for c in box))
+    sat = preview.crop(Box(*(c * k for c in box)))
     tgv.write_png(str(out / SATELLITE), sat.width, sat.height, sat.rgb, channels=3)
     halved = ""
     if (out / SATELLITE).stat().st_size > MAX_PICTURE:

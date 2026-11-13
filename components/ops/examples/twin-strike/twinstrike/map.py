@@ -36,6 +36,7 @@ from collections.abc import Sequence
 
 from modkit.core import paths
 from modkit.core.gates import CheckError
+from modkit.core.models import Point
 from modkit.ops.leveldesign import LdItem
 from modkit.ops.maps import TWIN_CITIES, CameraKey, CameraShot, Cut, OpeningCamera
 from modkit.ops.shapes import Minimap
@@ -48,7 +49,7 @@ CUT = Cut(TWIN_CITIES, CUT_PX)
 
 # The named places (design section 3), checked on the Minimap (road pixels read 55 and up, fields 40-48, forest below
 # 36) and the Preview. Moves are at most 20 px.
-POINTS: dict[str, tuple[float, float]] = {
+POINTS: dict[str, Point] = {
     # the objective: the village's crossroads, where its north-south road meets the middle street; the centre of the
     # stock village zone (69.1, 376.6)
     "VILLAGE": (69, 377),

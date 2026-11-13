@@ -65,6 +65,7 @@ from typing import Iterable, NamedTuple
 
 from modkit.core import ndfbin
 from modkit.core.gates import check
+from modkit.core.models import Point
 from modkit.ops import mission as ops_mission
 from modkit.ops import script as ops_script
 from modkit.ops import shapes
@@ -471,7 +472,7 @@ class Sweep(NamedTuple):
     count: int
     target: str
     after: float
-    post: tuple[float, float]
+    post: Point
     knob: str | None = None
 
 
@@ -501,7 +502,7 @@ BOX_RING_PX = 20.0
 # (x 20-115, y 350-420 round the crossroads at VILLAGE): each force row stands abreast at its post, `spacing` px
 # apart, facing the Soviet box. Recon forward on the north road, the Milan teams and the Leopards along the north
 # edge, the infantry in the middle street, the Marders and the Gepard behind them.
-GARRISON_POSTS: dict[str, tuple[tuple[float, float], float]] = {
+GARRISON_POSTS: dict[str, tuple[Point, float]] = {
     "Fernspaher_RFA": ((70.0, 346.0), 6.0),
     "ATteam_Milan_2_RFA": ((70.0, 358.0), 30.0),
     "Leopard_1A5_RFA": ((69.0, 364.0), 32.0),

@@ -16,11 +16,13 @@ from dataclasses import dataclass
 from typing import Iterable
 
 from modkit.core.gates import check
+from modkit.core.models import Point
 from modkit.core.names import name_guid
 from modkit.core.ndfbin import Value
 from modkit.ops.bricks import unit_path
 from modkit.ops.graph import TRUE, Node, Str, decode, f32, i32
-from modkit.ops.zones import ZoneArea, polygon_centroid
+from modkit.ops.models import ZoneArea
+from modkit.ops.zones import polygon_centroid
 
 # The generated LevelDesign in the Details pack, and the PROP entries its add-on classes share (stock layout).
 LD_FILE = "out/LevelDesign.ndfbin"
@@ -51,11 +53,11 @@ class LdItem:
     experience: int | None = None    # Spawn: ExperienceLevel (omitted when None)
     group: str = ""                  # free grouping label for the mod's own script (not written)
     rotation: float | None = None    # TGameDesignItem.Rotation (omitted when None); zones: equal to the area's
-    polygon: tuple[tuple[float, float], ...] | None = None  # DeploymentZone/CommandPoints: closed ring (Details file)
+    polygon: tuple[Point, ...] | None = None  # DeploymentZone/CommandPoints: closed ring (Details file)
     alliance: int | None = None      # DeploymentZone AllianceNum (omitted when None = alliance 0)
     points: int | None = None        # CommandPoints Points
-    start: tuple[float, float] | None = None  # ReinforcementLocation/AerialCorridor StartPosition (z 0.0, as in stock)
-    end: tuple[float, float] | None = None    # ReinforcementLocation/AerialCorridor EndPosition
+    start: Point | None = None       # ReinforcementLocation/AerialCorridor StartPosition (z 0.0, as in stock)
+    end: Point | None = None         # ReinforcementLocation/AerialCorridor EndPosition
     camp: int | None = None          # Spawn: Camp (omitted for None and 0, the player's)
     disable_auto_spawn: bool = False  # Spawn: DisableAutoSpawn (hidden until a script's SpawnUnits reveals it)
     num_alliance: int | None = None  # ReinforcementLocation/AerialCorridor NumAlliance (omitted when None, the player's)
@@ -145,8 +147,8 @@ def zone_area(it: LdItem, scenario: str, namespace: str, ground_z: float) -> Zon
     zones)."""
     props = [("Name", Str(it.name)), ("Ranking", Str(it.ranking)),
              ("GUID", Value(0x1A, ld_guid(it, scenario, namespace))), *zone_addon_extra(it)]
-    return (list(it.polygon), (*polygon_centroid(list(it.polygon)), ground_z), f"TGameDesignAddOn_{it.addon}",
-            props, it.rotation)
+    return ZoneArea(it.polygon, (*polygon_centroid(list(it.polygon)), ground_z), f"TGameDesignAddOn_{it.addon}",
+                    props, it.rotation)
 
 
 def gd_tags(items: Iterable[LdItem], scenario: str, namespace: str) -> dict[str, Node]:
@@ -173,6 +175,6 @@ def read_ld_items(raw: bytes) -> list[dict]:
     return out
 
 
-def ld_position(key: str, ld_items: Iterable) -> tuple[float, float]:
+def ld_position(key: str, ld_items: Iterable) -> Point:
     """(x, y) of the item named `key` ('Ranking/Name') among items with ranking, name, x and y fields."""
-    return next((it.x, it.y) for it in ld_items if f"{it.ranking}/{it.name}" == key)
+    return next(Point(it.x, it.y) for it in ld_items if f"{it.ranking}/{it.name}" == key)

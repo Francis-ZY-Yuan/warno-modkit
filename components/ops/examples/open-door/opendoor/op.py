@@ -56,6 +56,7 @@ from typing import Iterable, NamedTuple
 
 from modkit.core import ndfbin
 from modkit.core.gates import check
+from modkit.core.models import Box, Point
 from modkit.ops import mission as ops_mission
 from modkit.ops import shapes
 from modkit.ops.bricks import (
@@ -228,7 +229,7 @@ EXTRA_SHAPES = (shapes.TRANSPORTER_SHAPE,)  # the deck cards with a carrier (sha
 # are read off Geisa's Minimap as probe 2's traffic road was (luminance 55-69 road, 70+ built-up); forest tracks read
 # 43-49, the forest about 30 (the item tests check each). ENTRY_SE and FARM_ROAD, where the captured T-80U waits, are
 # places the probes use too (modkit.ops.maps.GEISA_POINTS).
-POINTS_OP: dict[str, tuple[float, float]] = {
+POINTS_OP: dict[str, Point] = {
     # the east tier's Starts: on a road 40-85 px W of each town (0.5-1 km)
     "START_TOWN_NE": (612.0, 234.0),    # the road into Town NE from the W (y 233-235), 46 px W of TOWN_NE
     "START_VILLAGE_E": (640.0, 491.0),  # the E-W road at y 489-492, 60 px W and 16 px S of VILLAGE_E
@@ -249,16 +250,16 @@ POINTS_OP: dict[str, tuple[float, float]] = {
 }
 
 
-def px(point: str) -> tuple[float, float]:
+def px(point: str) -> Point:
     """A point of opendoor.map.POINTS or POINTS_OP, minimap px."""
     check(point in POINTS or point in POINTS_OP, f"{point} is in neither POINTS nor POINTS_OP")
     return POINTS[point] if point in POINTS else POINTS_OP[point]
 
 
-def square(point: str, half: float) -> tuple[float, float, float, float]:
+def square(point: str, half: float) -> Box:
     """The square `half` px each side of `point`, minimap px (x0, y0, x1, y1)."""
     x, y = px(point)
-    return x - half, y - half, x + half, y + half
+    return Box(x - half, y - half, x + half, y + half)
 
 
 CZ_HALF_PX = 30.0     # 30: probe 2's town squares (they cover each town's buildings on the Preview)
@@ -280,13 +281,13 @@ OWNED_AT_LOAD = (*TOWN_CZ, *NECK_CZ, *ANVIL_CZ)
 REARGUARD_CUT_PX = 12.0
 TOWN_DZ = {"OD_DZ_TownNE": "TOWN_NE", "OD_DZ_VillageE": "VILLAGE_E", "OD_DZ_TownSE": "TOWN_SE"}
 SHOULDER_DZ = square("SHOULDER", CZ_HALF_PX)
-ANVIL_DZ = (13.0, 250.0, 260.0, 800.0)
+ANVIL_DZ = Box(13.0, 250.0, 260.0, 800.0)
 
 
-def rearguard_box(point: str) -> tuple[float, float, float, float]:
+def rearguard_box(point: str) -> Box:
     """A town's rearguard deployment zone: its command zone square minus the west REARGUARD_CUT_PX."""
     x0, y0, x1, y1 = square(point, CZ_HALF_PX)
-    return x0 + REARGUARD_CUT_PX, y0, x1, y1
+    return Box(x0 + REARGUARD_CUT_PX, y0, x1, y1)
 
 
 # The tiers. Each End lies END_INSET_PX inside the edge of its zone that faces the Start, on the zone's centre line: the
@@ -302,15 +303,15 @@ class Tier(NamedTuple):
     name: str                        # the ReinforcementLocation item
     tier: str                        # "east" or "neck"
     cz: str                          # the command zone its End lies in
-    start: tuple[float, float]       # minimap px
-    end: tuple[float, float]
+    start: Point                     # minimap px
+    end: Point
 
 
-def inset_end(point: str, side: str) -> tuple[float, float]:
+def inset_end(point: str, side: str) -> Point:
     """END_INSET_PX inside the `side` edge ("W", "N" or "S") of the CZ_HALF_PX square on `point`, on its centre line."""
     x, y = px(point)
     reach = CZ_HALF_PX - END_INSET_PX
-    return {"W": (x - reach, y), "N": (x, y - reach), "S": (x, y + reach)}[side]
+    return {"W": Point(x - reach, y), "N": Point(x, y - reach), "S": Point(x, y + reach)}[side]
 
 
 TIERS: tuple[Tier, ...] = (

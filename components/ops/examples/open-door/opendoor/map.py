@@ -15,18 +15,19 @@ import sys
 from collections.abc import Sequence
 
 from modkit.core import paths
+from modkit.core.models import Point
 from modkit.ops.maps import GEISA, GEISA_POINTS
 from modkit.ops.shapes import Minimap
 
 # Open Door's own named points: the design's counter-recon screen posts, the anvil's ends and the NATO corner battery.
 # Each sits where the storyline map draws it, checked on the Minimap and Preview and moved at most 20 px where it was
 # off a road or clearing (the reason beside it).
-OWN_POINTS: dict[str, tuple[float, float]] = {
+OWN_POINTS: dict[str, Point] = {
     "SCREEN_N": (440, 177), "SCREEN_C": (470, 326), "SCREEN_SW": (449, 692), "SCREEN_SE": (593, 683),
     "ANVIL_N": (200, 298), "ANVIL_S": (98, 792),
     "CORNER_NATO": (40, 1000),  # on the forest track that runs N-S at x 38..43 here (24 px west was dense forest)
 }
-POINTS: dict[str, tuple[float, float]] = {**GEISA_POINTS, **OWN_POINTS}
+POINTS: dict[str, Point] = {**GEISA_POINTS, **OWN_POINTS}
 MAP = Minimap(GEISA, POINTS)
 
 

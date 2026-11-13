@@ -50,10 +50,8 @@ from dataclasses import dataclass
 
 from modkit.core import paths, tgv
 from modkit.core.gates import CheckError, check
+from modkit.core.models import Box, Point
 from modkit.ops.profile import extracted
-
-Point = tuple[float, float]
-Box = tuple[float, float, float, float]
 
 
 # --------------------------------------------------------------------------- the layout
@@ -349,7 +347,7 @@ def view_box(box: Box, aspect: float, bounds: tuple[int, int]) -> Box:
         w, h = bounds[1] * aspect, bounds[1]
     cx = min(max((x0 + x1) / 2, w / 2), bounds[0] - w / 2)
     cy = min(max((y0 + y1) / 2, h / 2), bounds[1] - h / 2)
-    return cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2
+    return Box(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2)
 
 
 def _map_frame(layout: CardLayout) -> tuple[Point, Point, Point]:

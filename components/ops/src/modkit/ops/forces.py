@@ -17,6 +17,7 @@ import math
 from dataclasses import replace
 from typing import Iterable
 
+from modkit.core.models import Point
 from modkit.ops.models import ForceRow
 
 
@@ -54,14 +55,14 @@ def group_rows(rows: Iterable[ForceRow], group: str, force_scale: float) -> list
     return [r for r in scaled(rows, force_scale) if r.group == group]
 
 
-def formation(anchor: tuple[float, float], n: int, spacing: float, cols: int) -> list[tuple[float, float]]:
+def formation(anchor: Point, n: int, spacing: float, cols: int) -> list[Point]:
     """`n` points of a row-major grid, `spacing` apart, `cols` to a row (the last row may be short), with the grid's
     bounding box centred on `anchor`. Row 0 has the smallest y."""
     if cols < 1:
         raise ValueError(f"cols must be at least 1, got {cols!r}")
     used_cols, rows = min(n, cols), -(-n // cols)
     ax, ay = anchor
-    return [(ax + (i % cols - (used_cols - 1) / 2) * spacing, ay + (i // cols - (rows - 1) / 2) * spacing)
+    return [Point(ax + (i % cols - (used_cols - 1) / 2) * spacing, ay + (i // cols - (rows - 1) / 2) * spacing)
             for i in range(n)]
 
 

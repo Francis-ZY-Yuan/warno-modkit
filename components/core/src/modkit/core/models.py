@@ -7,14 +7,39 @@ reviewed-pending map and ``Fired`` the reviews that fired (``modkit.core.gates.r
 file a build does not ship and why, and ``ManifestRow`` a row of a mod's own in its MANIFEST.tsv
 (``modkit.core.packaging.write_manifest``).
 
+``Point`` (x, y) and ``Box`` (x0, y0, x1, y1) are plane geometry, in whatever units their user works in (world units,
+minimap or picture px). They are named tuples, not models: they sit in pixel and geometry loops, code unpacks them as
+tuples, and they compare equal to the plain tuples they replace. Each prints as that plain tuple, so a message showing
+one reads ``(x, y)``.
+
 The byte codecs (``trad``, ``edat``, ``ndfbin`` and the rest) do not use these: they stay standard library only.
 """
 from __future__ import annotations
 
-from typing import Mapping
+from typing import Mapping, NamedTuple
 
 from pydantic import BaseModel, ConfigDict, TypeAdapter
 from pydantic.dataclasses import dataclass
+
+
+class Point(NamedTuple):
+    """A point of the plane."""
+    x: float
+    y: float
+
+    def __repr__(self) -> str:
+        return tuple.__repr__(self)
+
+
+class Box(NamedTuple):
+    """An axis-aligned box of the plane: its least corner (`x0`, `y0`) and its greatest (`x1`, `y1`)."""
+    x0: float
+    y0: float
+    x1: float
+    y1: float
+
+    def __repr__(self) -> str:
+        return tuple.__repr__(self)
 
 
 class AnyTexts(BaseModel):

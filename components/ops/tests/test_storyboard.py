@@ -20,6 +20,7 @@ from modkit.core.ndfbin import Value
 from modkit.ops import storyboard as sb
 from modkit.ops.graph import Str, build_graph, encode
 from modkit.ops.maps import WORLD_PER_MINIMAP_PX
+from modkit.ops.models import Zone, ZoneArea
 from modkit.ops.zones import playable_zone_graph, rect_polygon, zone_areas_graph
 
 SAMPLE = Path(__file__).resolve().parent / "storyboard_sample.json"
@@ -45,8 +46,8 @@ def spec(**over) -> dict:
     return s
 
 
-def zone(name: str, box, **kw) -> sb.Zone:
-    return sb.Zone(name, tuple(rect_polygon(box)), **kw)
+def zone(name: str, box, **kw) -> Zone:
+    return Zone(name, rect_polygon(box), **kw)
 
 
 TINY = sb.Layout(tuple(rect_polygon(PLAYABLE)), (zone("CZ_A", CZ_A, points=2), zone("CZ_B", CZ_B, points=1)),
@@ -66,7 +67,7 @@ def write_layout(root: Path) -> None:
         return [(x * WORLD_PER_MINIMAP_PX, y * WORLD_PER_MINIMAP_PX) for x, y in rect_polygon(box)]
 
     def areas(*rows):
-        return encode(build_graph(zone_areas_graph([(world(box), (0.0, 0.0, 0.0), cls, props, None)
+        return encode(build_graph(zone_areas_graph([ZoneArea(world(box), (0.0, 0.0, 0.0), cls, props)
                                                     for box, cls, props in rows]), []), "zones")
     (out / "PlayableZone.ndfbin").write_bytes(
         encode(build_graph(playable_zone_graph(world(PLAYABLE), (0.0, 0.0, 0.0)), []), "PlayableZone"))

@@ -50,11 +50,13 @@ from __future__ import annotations
 import math
 import os
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from types import MappingProxyType
+from typing import NamedTuple
 
 from modkit.core import tgv
 from modkit.core.gates import check
+from modkit.core.models import Box, Point
 from modkit.core.ndfbin import encode_image
 from modkit.ops.bricks import g_camera
 from modkit.ops.files import read_file
@@ -68,9 +70,6 @@ from modkit.ops.zones import (
     area_bbox, camera_paths_graph, ia_grid_subset, ia_zone_graph, path_cache_graph, playable_zone_graph,
     read_ia_grid, read_playable_polygon, rect_polygon,
 )
-
-# One player entry: (ranking, name suffix, add-on, position, rotation, start, end), world units.
-Arrival = tuple[str, str, str, tuple[float, float], float, tuple[float, float], tuple[float, float]]
 
 # World units per minimap pixel, on both axes, on every stock map the toolkit reads (Geisa; Twin Cities, whose small
 # layout's playable zone lands on whole pixels with it). A Preview pixel is half that.
@@ -92,19 +91,19 @@ class StockMap:
     ground_z: float                    # Center z of its PlayableZone: the z of generated zone areas
     minimap_px: tuple[int, int]        # the minimap's size in pixels (width, height)
     world_per_px: float                # world units per minimap pixel, both axes
-    west_arrivals: tuple[Arrival, ...] = ()
+    west_arrivals: tuple[LdItem, ...] = ()   # its player entries on the west edge, each named by its name's suffix
     # The widest gap or overlap between neighbouring tiles of the layout's AI grid, in world units: a cut of it
     # (Cut) holds its tiles to gates.check_grid_subset with this seam. 0: not measured (an op ships the grid whole).
     grid_seam: float = 0.0
 
     # ------------------------------------------------------------------ frame
 
-    def px_to_world(self, p: tuple[float, float]) -> tuple[float, float]:
+    def px_to_world(self, p: Point) -> Point:
         """Minimap pixels to world units: both axes scaled by world_per_px, no flip."""
-        return (p[0] * self.world_per_px, p[1] * self.world_per_px)
+        return Point(p[0] * self.world_per_px, p[1] * self.world_per_px)
 
-    def world_to_px(self, w: tuple[float, float]) -> tuple[float, float]:
-        return (w[0] / self.world_per_px, w[1] / self.world_per_px)
+    def world_to_px(self, w: Point) -> Point:
+        return Point(w[0] / self.world_per_px, w[1] / self.world_per_px)
 
     # ------------------------------------------------------------------ files
 
@@ -112,7 +111,7 @@ class StockMap:
         """The map's `kind` picture ('Preview' or 'Minimap'), relative to the extraction."""
         return picture_path(self.name, kind)
 
-    def playable_polygon(self) -> list[tuple[float, float]]:
+    def playable_polygon(self) -> list[Point]:
         """The PlayableZone ring of the map's Details in world units (closed: the first vertex is repeated last)."""
         return read_playable_polygon(read_file(extracted(f"{self.details}/out/PlayableZone.ndfbin")))
 
@@ -122,13 +121,12 @@ class StockMap:
 
     def player_arrivals(self, prefix: str) -> list[LdItem]:
         """west_arrivals as LevelDesign items named `prefix` + suffix (NumAlliance left out: the player's side)."""
-        return [LdItem(ranking, f"{prefix}{suffix}", *pos, addon, rotation=rot, start=start, end=end)
-                for ranking, suffix, addon, pos, rot, start, end in self.west_arrivals]
+        return [replace(it, name=f"{prefix}{it.name}") for it in self.west_arrivals]
 
     # ------------------------------------------------------------------ review picture
 
-    def render_overlay(self, path: str, marks: Mapping[str, tuple[float, float]],
-                       rings: Iterable[Sequence[tuple[float, float]]] = ()) -> str:
+    def render_overlay(self, path: str, marks: Mapping[str, Point],
+                       rings: Iterable[Sequence[Point]] = ()) -> str:
         """Writes `path`, a PNG not shipped: the map's Preview with each mark as a yellow cross-hair and its name,
         and each ring as a white line. Marks and ring vertices are in minimap px. Returns a line for the build log."""
         return render_overlay(extracted(self.picture("Preview")), self.minimap_px[0], path, marks, rings)
@@ -159,14 +157,14 @@ GEISA = StockMap(
     minimap_px=(768, 1024),
     world_per_px=WORLD_PER_MINIMAP_PX,
     west_arrivals=(
-        ("ReinforcementLocations", "_RL_W1", "ReinforcementLocation", (40255.0, 965286.0), 0.14081824,
-         (13809.0, 961541.0), (66701.0, 969031.0)),
-        ("ReinforcementLocations", "_RL_W2", "ReinforcementLocation", (37863.496, 1514708.5), 0.012691067,
-         (11677.0, 1514376.0), (64050.0, 1515041.0)),
-        ("AerialCorridors", "_AC_W1", "AerialCorridor", (41418.996, 941874.5), 0.12718329,
-         (15970.0, 938623.0), (66868.0, 945126.0)),
-        ("AerialCorridors", "_AC_W2", "AerialCorridor", (36551.996, 1540616.0), 0.02010006,
-         (11486.0, 1540112.0), (61618.0, 1541120.0)),
+        LdItem("ReinforcementLocations", "_RL_W1", 40255.0, 965286.0, "ReinforcementLocation", rotation=0.14081824,
+               start=Point(13809.0, 961541.0), end=Point(66701.0, 969031.0)),
+        LdItem("ReinforcementLocations", "_RL_W2", 37863.496, 1514708.5, "ReinforcementLocation",
+               rotation=0.012691067, start=Point(11677.0, 1514376.0), end=Point(64050.0, 1515041.0)),
+        LdItem("AerialCorridors", "_AC_W1", 41418.996, 941874.5, "AerialCorridor", rotation=0.12718329,
+               start=Point(15970.0, 938623.0), end=Point(66868.0, 945126.0)),
+        LdItem("AerialCorridors", "_AC_W2", 36551.996, 1540616.0, "AerialCorridor", rotation=0.02010006,
+               start=Point(11486.0, 1540112.0), end=Point(61618.0, 1541120.0)),
     ),
 )
 
@@ -202,7 +200,7 @@ TWIN_CITIES = StockMap(
 # GEISA.px_to_world gives world units). An op's own places stay with the op; a place two ops use is kept here once,
 # read-only. Each was checked on Geisa's Minimap and Preview, and moved at most 20 px onto a road or into a clearing
 # where it was off one (the reason beside it).
-_POINTS: dict[str, tuple[float, float]] = {
+_POINTS: dict[str, Point] = {
     "TOWN_NE": (658, 232), "VILLAGE_E": (700, 475), "TOWN_SE": (645, 590),
     "SHOULDER": (520, 281), "RESERVE_N": (352, 270),
     "NECK_MID": (395, 402), "LZ_MID": (386, 382), "NECK_S": (468, 600),
@@ -224,9 +222,9 @@ _POINTS: dict[str, tuple[float, float]] = {
     "FARM_ROAD": (616, 488),
 }
 _POINTS["PL_BLUE"] = _POINTS["VILLAGE_E"]   # the phase line through the eastern towns, drawn at Village E
-GEISA_POINTS: Mapping[str, tuple[float, float]] = MappingProxyType(_POINTS)
+GEISA_POINTS: Mapping[str, Point] = MappingProxyType(_POINTS)
 # Named areas on Geisa that more than one example op uses: minimap-px boxes (x0, y0, x1, y1).
-GEISA_BOXES: Mapping[str, tuple[float, float, float, float]] = MappingProxyType({
+GEISA_BOXES: Mapping[str, Box] = MappingProxyType({
     "TOWN_SW": (90, 610, 190, 700),          # over Town SW's buildings: a command zone in the probes and Open Door
 })
 
@@ -249,13 +247,13 @@ class Cut:
     """An op's playable zone on a box of a stock layout: `box_px` (x0, y0, x1, y1), minimap px of `map`, each edge
     naming an edge of the layout's AI tiles (the module docstring)."""
     map: StockMap
-    box_px: tuple[float, float, float, float]
+    box_px: Box
 
     def label(self) -> str:
         x0, y0, x1, y1 = self.box_px
         return f"x {x0:g}..{x1:g}, y {y0:g}..{y1:g} px of {self.map.details}"
 
-    def box(self, areas: list | None = None) -> tuple[float, float, float, float]:
+    def box(self, areas: list | None = None) -> Box:
         """box_px in world units, each edge moved onto the nearest edge of the layout's tiles on its axis (`areas`: the
         layout's grid's, read when None). An edge with no tile edge within SNAP_PX fails."""
         areas = self.map.ia_grid()[0] if areas is None else areas
@@ -268,7 +266,7 @@ class Cut:
                                   f"edge ({edge / wpp:g} px); a cut's edges are tile edges, named to within "
                                   f"{SNAP_PX} px")
             out.append(edge)
-        return out[0], out[1], out[2], out[3]
+        return Box(*out)
 
     def details(self) -> dict[str, bytes]:
         """The cut's Details files (inner path -> bytes): the PlayableZone, the box's ring with its Center at the box's
@@ -302,7 +300,7 @@ class Cut:
         check(raw is not None, f"the mod ships no {PLAYABLE_FILE}")
         ring = read_playable_polygon(raw)
         xs, ys = [p[0] for p in ring], [p[1] for p in ring]
-        box = (min(xs), min(ys), max(xs), max(ys))
+        box = Box(min(xs), min(ys), max(xs), max(ys))
         check(ring == list(rect_polygon(box)), f"the shipped playable zone is not a rectangle: {ring}")
         areas, entries = self.map.ia_grid()
         tiles, costs = check_grid_subset(areas, entries, box, seam=self.map.grid_seam)
@@ -330,15 +328,20 @@ CAMERA_SHAPE_SOURCES: Mapping[str, tuple[str, ...]] = MappingProxyType({
 START_CAMERA_MIN_HEIGHT = 376057.125
 DIRECTION_TOLERANCE = 1e-3   # how far a key's direction may be from unit length (stock's are unit to float32 rounding)
 PATH_PROPS = ["PositionKeyVector", "DirectionKeyVector", "Name"]   # a stock TCameraPath's properties, in order
-Key = tuple[tuple[float, float, float], tuple[float, float, float]]   # (the eye's position, the unit view direction)
+
+
+class Key(NamedTuple):
+    """One key of a camera path, world units: the `eye`'s position and the unit view `direction`."""
+    eye: tuple[float, float, float]
+    direction: tuple[float, float, float]
 
 
 @dataclass(frozen=True)
 class CameraKey:
     """One key of a camera path, by the view it gives: looking down `pitch_deg` at `at_px` (minimap px) from `height`
     world units above the map's ground_z, heading along `facing` (a minimap-px vector: (0, 1) faces south)."""
-    at_px: tuple[float, float]
-    facing: tuple[float, float]
+    at_px: Point
+    facing: Point
     height: float
     pitch_deg: float
 
@@ -353,14 +356,14 @@ class CameraKey:
         check(0 < pitch < math.pi / 2, f"camera key at {self.at_px}: pitch {self.pitch_deg} is not between 0 and 90")
         d = (math.cos(pitch) * fx / norm, math.cos(pitch) * fy / norm, -math.sin(pitch))
         reach = self.height / math.sin(pitch)
-        return (tx - d[0] * reach, ty - d[1] * reach, on.ground_z + self.height), d
+        return Key((tx - d[0] * reach, ty - d[1] * reach, on.ground_z + self.height), d)
 
 
-def view_centre(key: Key, ground_z: float) -> tuple[float, float]:
+def view_centre(key: Key, ground_z: float) -> Point:
     """Where a key's view centre line meets the ground (ground_z), world units. The direction must look down."""
     (x, y, z), (dx, dy, dz) = key
     t = (ground_z - z) / dz
-    return x + t * dx, y + t * dy
+    return Point(x + t * dx, y + t * dy)
 
 
 def read_camera_paths(raw: bytes) -> dict[str, list[Key]]:
@@ -385,14 +388,14 @@ def read_camera_paths(raw: bytes) -> dict[str, list[Key]]:
         check(len(pos) == len(dirs) >= 1, f"camera path {name}: {len(pos)} position and {len(dirs)} direction keys; "
                                           f"stock's are one or more, as many of each")
         check(name not in paths, f"camera path {name} is named twice")
-        paths[name] = list(zip(pos, dirs))
+        paths[name] = [Key(eye, d) for eye, d in zip(pos, dirs)]
     graph = camera_paths_graph([(name, [e for e, _ in keys], [d for _, d in keys]) for name, keys in paths.items()])
     check(encode_image(build_graph(graph, [])) == image, "the camera paths file is not in stock's layout "
                                                          "(zones.camera_paths_graph does not rebuild it)")
     return paths
 
 
-def check_camera_paths(raw: bytes, on: StockMap, box_px: tuple[float, float, float, float], move: str,
+def check_camera_paths(raw: bytes, on: StockMap, box_px: Box, move: str,
                        end: str, shots: Sequence[str] = ()) -> str:
     """The camera gate, on a camera paths file as it ships (the game reads it as the scenario's Details file
     CAMPATHS_FILE) for an opening camera on `on` that flies `move` and then snaps to `end`, with the mid-battle shots
@@ -596,8 +599,8 @@ LABEL_SCALE = 3                                 # canvas px per glyph dot
 MARK_COLOUR, RING_COLOUR = b"\xff\xe0\x00", b"\xff\xff\xff"
 
 
-def render_overlay(preview: str, minimap_width: int, path: str, marks: Mapping[str, tuple[float, float]],
-                   rings: Iterable[Sequence[tuple[float, float]]] = ()) -> str:
+def render_overlay(preview: str, minimap_width: int, path: str, marks: Mapping[str, Point],
+                   rings: Iterable[Sequence[Point]] = ()) -> str:
     """The review picture: the Preview at `preview` (a .tgv, any multiple of the minimap's `minimap_width`) with each
     mark as a yellow cross-hair and its name, and each ring as a white line, written to `path` as a PNG. Marks and
     ring vertices are in minimap px. Returns a line for the build log."""
@@ -616,7 +619,7 @@ def render_overlay(preview: str, minimap_width: int, path: str, marks: Mapping[s
             for xx in range(max(x0, 0), min(x1, w)):
                 img[(yy * w + xx) * 3:(yy * w + xx) * 3 + 3] = col
 
-    def line(a: tuple[float, float], b: tuple[float, float], col: bytes) -> None:
+    def line(a: Point, b: Point, col: bytes) -> None:
         n = int(max(abs(b[0] - a[0]), abs(b[1] - a[1]))) + 1
         for s in range(n + 1):
             put(a[0] + (b[0] - a[0]) * s / n, a[1] + (b[1] - a[1]) * s / n, col)
