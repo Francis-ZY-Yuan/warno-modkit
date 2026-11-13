@@ -12,8 +12,8 @@ line. Any failure prints one ``FAILED:`` line and exits 1. ``--check-units`` als
 key to the game's unit database (``modkit.ops.gates.unit_database``). The pictures are the game's own: the page is a
 private review page, never committed (the warno-op-storyboard skill).
 
-The spec (``version`` 1) is validated before anything is read: an unknown key or a bad value fails with its JSON
-path (``$.marks[2].kind``). Every coordinate is in minimap pixels of the full map (``WORLD_PER_MINIMAP_PX`` world
+The spec (``version`` 1) is read into ``Spec`` (``Spec.read``), its pydantic model, before anything else is read:
+an unknown key or a bad value fails with its JSON path (``$.marks[2].kind``). Every coordinate is in minimap pixels of the full map (``WORLD_PER_MINIMAP_PX`` world
 units each); the SVG's viewBox is the crop box, so a crop never moves a mark. Prose is plain text, HTML-escaped,
 except ``{style:text}`` (``text`` in that style's colour) and ``**bold**``; map text (labels, hover titles) is plain.
 
@@ -42,6 +42,7 @@ Keys (``?`` optional):
 from __future__ import annotations
 
 import argparse
+import functools
 import html
 import json
 import math
@@ -49,8 +50,13 @@ import os
 import re
 import sys
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Annotated, Any, Literal
+
+from pydantic import (AfterValidator, BaseModel, BeforeValidator, ConfigDict, Discriminator, Field, PlainValidator,
+                      StrictBool, StrictStr, Tag, ValidationError, ValidationInfo, field_validator, model_validator)
+from pydantic_core import ErrorDetails, PydanticCustomError
 
 from modkit.core import paths, tgv
 from modkit.ops.build import FAILURES, _utf8_streams
@@ -66,8 +72,6 @@ MAX_PAGE = 1024 * 1024              # the page itself; the pictures are publishe
 MAX_PICTURE = 3 * 1024 * 1024       # a satellite crop over this is halved
 SPEC_NAME = "storyboard"            # an op keeps its spec as examples/<op>/docs/storyboard.json
 MARKS = ("arrow", "ring", "units", "label", "arc", "burst")
-MARK_CELLS = ("ok", "half", "open")
-PICTURES = ("minimap", "satellite")
 
 Point = tuple[float, float]
 
@@ -101,7 +105,7 @@ def text_html(text: str) -> str:
     return "".join(out)
 
 
-# --------------------------------------------------------------------------- the schema
+# --------------------------------------------------------------------------- the spec
 
 _STYLE_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_-]*\Z")
 _COLOUR = re.compile(r"#[0-9A-Fa-f]{6}\Z")
@@ -122,308 +126,385 @@ def _kind(v: object) -> str:
             int: "a number", float: "a number"}.get(type(v), type(v).__name__)
 
 
-Checker = Callable[[object, str], None]
+@dataclass
+class _Refs:
+    """What a value may name, filled in as the spec is read in its fields' order: the styles, then the phases."""
+    styles: set[str] = field(default_factory=set)
+    phases: list[str] = field(default_factory=list)
 
 
-class _Validator:
-    """Checks a spec against the schema; style and phase references against the spec's own lists."""
+def _invalid(why: str, *loc: str | int) -> PydanticCustomError:
+    """A value that breaks the schema, in the words SpecError prints. `loc` continues the value's path: a key of the
+    object that is being read."""
+    return PydanticCustomError("spec", why, {"loc": loc})
 
-    def __init__(self) -> None:
-        self.styles: set[str] = set()
-        self.phases: list[str] = []
 
-    @staticmethod
-    def fail(where: str, why: str):
-        raise SpecError(f"{where}: {why}")
+def _rule(ok: Callable[[Any], object], why: str) -> Callable[[Any], Any]:
+    """A check: the value as it is when ok(value), else it fails with `why`."""
+    def check(v: Any) -> Any:
+        if not ok(v):
+            raise _invalid(why)
+        return v
+    return check
 
-    # ---- shapes
 
-    def obj(self, v: object, where: str, fields: Mapping[str, tuple[bool, Checker]]) -> None:
-        if not isinstance(v, dict):
-            self.fail(where, f"expected an object, got {_kind(v)}")
-        for key in v:
-            if key not in fields:
-                self.fail(_at(where, key), f"unknown key (allowed here: {', '.join(fields)})")
-        for key, (required, check) in fields.items():
-            if key in v:
-                check(v[key], _at(where, key))
-            elif required:
-                self.fail(where, f"missing key {key!r}")
+def _whole(v: object) -> bool:
+    return isinstance(v, int) and not isinstance(v, bool)
 
-    def items(self, check: Checker, *, least: int = 0) -> Checker:
-        def run(v: object, where: str) -> None:
-            if not isinstance(v, list):
-                self.fail(where, f"expected a list, got {_kind(v)}")
-            if len(v) < least:
-                self.fail(where, f"expected at least {least} items, got {len(v)}")
-            for i, item in enumerate(v):
-                check(item, _at(where, i))
-        return run
 
-    def mapping(self, key_ok: Callable[[str], bool], key_what: str, check: Checker) -> Checker:
-        def run(v: object, where: str) -> None:
-            if not isinstance(v, dict):
-                self.fail(where, f"expected an object, got {_kind(v)}")
-            for key, item in v.items():
-                if not key_ok(key):
-                    self.fail(_at(where, key), f"expected {key_what} as the key")
-                check(item, _at(where, key))
-        return run
+def _number(v: object) -> int | float:
+    if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v):
+        raise _invalid(f"expected a number, got {_kind(v)}")
+    return v
 
-    # ---- values
 
-    def string(self, v: object, where: str) -> None:
-        if not isinstance(v, str):
-            self.fail(where, f"expected a string, got {_kind(v)}")
+def _new_phase(v: str, info: ValidationInfo) -> str:
+    if not _PHASE_ID.match(v) or v == "all":
+        raise _invalid("expected a phase id: letters, digits, '.', '-' or '_', not 'all'")
+    if v in info.context.phases:
+        raise _invalid(f"phase {v!r} is listed twice")
+    info.context.phases.append(v)
+    return v
 
-    def text(self, v: object, where: str) -> None:
-        self.string(v, where)
-        for m in _STYLE_REF.finditer(v):
-            if m.group(1) not in self.styles:
-                self.fail(where, f"{{{m.group(1)}:...}} names no style in $.styles")
 
-    def boolean(self, v: object, where: str) -> None:
-        if not isinstance(v, bool):
-            self.fail(where, f"expected true or false, got {_kind(v)}")
+def _style(v: str, info: ValidationInfo) -> str:
+    if v not in info.context.styles:
+        raise _invalid(f"{v!r} names no style in $.styles")
+    return v
 
-    def number(self, v: object, where: str) -> None:
-        if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v):
-            self.fail(where, f"expected a number, got {_kind(v)}")
 
-    def positive(self, v: object, where: str) -> None:
-        self.number(v, where)
-        if v <= 0:
-            self.fail(where, "expected a number above 0")
+def _phase(v: str, info: ValidationInfo) -> str:
+    if v not in info.context.phases:
+        raise _invalid(f"{v!r} names no phase in $.phases")
+    return v
 
-    def count(self, v: object, where: str) -> None:
-        if isinstance(v, bool) or not isinstance(v, int) or not 1 <= v <= 60:
-            self.fail(where, "expected a whole number from 1 to 60")
 
-    def point(self, v: object, where: str) -> None:
-        if not isinstance(v, list) or len(v) != 2:
-            self.fail(where, "expected a point [x, y] in minimap px")
-        for i, c in enumerate(v):
-            self.number(c, _at(where, i))
+def _text(v: str, info: ValidationInfo) -> str:
+    for m in _STYLE_REF.finditer(v):
+        if m.group(1) not in info.context.styles:
+            raise _invalid(f"{{{m.group(1)}:...}} names no style in $.styles")
+    return v
 
-    def one_of(self, *values: str) -> Checker:
-        def run(v: object, where: str) -> None:
-            if v not in values:
-                self.fail(where, f"expected one of {', '.join(values)}")
-        return run
 
-    def style(self, v: object, where: str) -> None:
-        self.string(v, where)
-        if v not in self.styles:
-            self.fail(where, f"{v!r} names no style in $.styles")
+def _unit(v: object) -> object:
+    if not isinstance(v, list) or len(v) not in (2, 3):
+        raise _invalid("expected [count, name, key] (the key may be left out)")
+    return v if len(v) == 3 else [*v, ""]
 
-    def phase(self, v: object, where: str) -> None:
-        self.string(v, where)
-        if v not in self.phases:
-            self.fail(where, f"{v!r} names no phase in $.phases")
 
-    # ---- the spec
+def _shape(size: int, what: str) -> BeforeValidator:
+    """A list of `size` items, else it fails with `expected what`."""
+    return BeforeValidator(_rule(lambda v: isinstance(v, list) and len(v) == size, f"expected {what}"))
 
-    def spec(self, spec: object) -> None:
-        self.obj(spec, "$", {
-            "version": (True, self.version),
-            "title": (True, self.string),
-            "eyebrow": (False, self.string),
-            "styles": (True, self.styles_table),
-            "chips": (False, self.items(self.chip)),
-            "lede": (False, self.text),
-            "map": (True, self.map),
-            "phases": (False, self.phase_list),
-            "start_phase": (False, self.phase),
-            "marks": (False, self.items(self.mark)),
-            "sections": (False, self.items(self.section)),
-            "footer": (False, self.items(self.text)),
-        })
 
-    def version(self, v: object, where: str) -> None:
-        if v != VERSION or isinstance(v, bool):
-            self.fail(where, f"this generator reads version {VERSION}")
+Str = StrictStr
+Number = Annotated[int | float, PlainValidator(_number)]
+Positive = Annotated[Number, AfterValidator(_rule(lambda v: v > 0, "expected a number above 0"))]
+XY = Annotated[tuple[Number, Number], _shape(2, "a point [x, y] in minimap px")]
+Polygon = Annotated[tuple[XY, ...], Field(min_length=3)]
+Text = Annotated[Str, AfterValidator(_text)]                # prose: {style:text} must name a style
+StyleRef = Annotated[Str, AfterValidator(_style)]
+PhaseRef = Annotated[Str, AfterValidator(_phase)]
+Chip = Annotated[tuple[Str, Text], _shape(2, "a chip [label, text]")]
+# [count, name, key]: a key left out reads as "".
+OobUnit = Annotated[tuple[Annotated[int, BeforeValidator(_rule(lambda v: _whole(v) and v >= 0,
+                                                              "expected a count (a whole number)"))], Str, Str],
+                    BeforeValidator(_unit)]
+Box = Annotated[tuple[Number, Number, Number, Number],
+                AfterValidator(_rule(lambda b: b[2] > b[0] and b[3] > b[1], "expected x1 > x0 and y1 > y0"))]
+# A tag is the branch of a union a value is read as. Pydantic puts it in an error's location; the JSON path leaves it
+# out. Tags are bracketed names, which no key of a spec is.
+_TAGS = {f"<{tag}>" for tag in (*MARKS, "named crop", "box crop", "mark cell", "number cell", "text cell",
+                                "stock zone", "own zone")}
 
-    def styles_table(self, v: object, where: str) -> None:
-        def colour(c: object, at: str) -> None:
-            if not isinstance(c, str) or not _COLOUR.match(c):
-                self.fail(at, "expected a colour #rrggbb")
-        self.mapping(lambda k: bool(_STYLE_NAME.match(k)) and k != "none",   # st-none: an alliance with no style
-                     "a style name (a letter, then letters, digits, - or _; not 'none')", colour)(v, where)
-        self.styles = set(v)
 
-    def chip(self, v: object, where: str) -> None:
-        if not isinstance(v, list) or len(v) != 2:
-            self.fail(where, "expected a chip [label, text]")
-        self.string(v[0], _at(where, 0))
-        self.text(v[1], _at(where, 1))
+def _tag(name: str) -> Tag:
+    return Tag(f"<{name}>")
 
-    def map(self, v: object, where: str) -> None:
-        self.obj(v, where, {
-            "name": (True, self.map_name),
-            "layout": (True, self.layout),
-            "crop": (False, self.crop),
-            "deployments": (False, self.mapping(str.isdigit, "an alliance number", lambda d, at: self.obj(d, at, {
-                "style": (True, self.style), "label": (True, self.string),
-                "area": (False, self.polygon)}))),
-            "zone_names": (False, self.mapping(bool, "a stock zone name", self.string)),
-            "command_zones": (False, self.items(self.command_zone, least=1)),
-            "mark_scale": (False, self.positive),
-            "default_picture": (False, self.one_of(*PICTURES)),
-        })
-        if "command_zones" in v and "zone_names" in v:
-            self.fail(_at(where, "zone_names"), "not allowed with command_zones: name a zone with command_zones' "
-                                                "'name' (one source of truth)")
 
-    def polygon(self, v: object, where: str) -> None:
-        self.items(self.point, least=3)(v, where)
+class _Object(BaseModel):
+    """An object of the spec: an unknown key fails, naming the keys allowed there."""
 
-    def command_zone(self, v: object, where: str) -> None:
-        if isinstance(v, dict) and "stock" in v:
-            self.obj(v, where, {"stock": (True, self.string), "name": (False, self.string)})
-        elif isinstance(v, dict) and ("area" in v or "points" in v):
-            self.obj(v, where, {"name": (True, self.string), "area": (True, self.polygon),
-                                "points": (True, self.points)})
-        else:
-            self.fail(where, "expected {stock, name?} or {name, area, points}")
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
-    def points(self, v: object, where: str) -> None:
-        if isinstance(v, bool) or not isinstance(v, int) or v < 0:
-            self.fail(where, "expected a whole number, 0 or more")
-
-    def map_name(self, v: object, where: str) -> None:
-        self.string(v, where)
-        if not _MAP_NAME.match(v):
-            self.fail(where, "expected a map datapack name (letters, digits and _)")
-
-    def layout(self, v: object, where: str) -> None:
-        self.string(v, where)
-        if not all(_PATH_PART.match(p) for p in v.split("/")):
-            self.fail(where, "expected a Details folder below the extraction, '/'-separated (no '..')")
-
-    def crop(self, v: object, where: str) -> None:
-        if v in ("playable", "full"):
-            return
-        if not isinstance(v, list) or len(v) != 4:
-            self.fail(where, "expected 'playable', 'full' or a box [x0, y0, x1, y1] in minimap px")
-        for i, c in enumerate(v):
-            self.number(c, _at(where, i))
-        if not (v[2] > v[0] and v[3] > v[1]):
-            self.fail(where, "expected x1 > x0 and y1 > y0")
-
-    def phase_list(self, v: object, where: str) -> None:
-        self.items(lambda p, at: self.obj(p, at, {
-            "id": (True, self.phase_id),
-            "name": (True, self.string),
-            "time": (False, self.string),
-            "summary": (False, self.text),
-            "details": (False, self.items(self.text)),
-        }))(v, where)
-
-    def phase_id(self, v: object, where: str) -> None:
-        self.string(v, where)
-        if not _PHASE_ID.match(v) or v == "all":
-            self.fail(where, "expected a phase id: letters, digits, '.', '-' or '_', not 'all'")
-        if v in self.phases:
-            self.fail(where, f"phase {v!r} is listed twice")
-        self.phases.append(v)
-
-    def label(self, v: object, where: str) -> None:
-        if v is not None:
-            self.obj(v, where, {"text": (True, self.string), "at": (True, self.point)})
-
-    def mark(self, v: object, where: str) -> None:
-        if not isinstance(v, dict):
-            self.fail(where, f"expected an object, got {_kind(v)}")
-        kind = v.get("kind")
-        if kind not in MARKS:
-            self.fail(_at(where, "kind"), f"expected one of {', '.join(MARKS)}")
-        common = {"kind": (True, self.string), "style": (True, self.style),
-                  "phases": (False, self.items(self.phase)), "title": (False, self.string)}
-        own = {
-            "arrow": {"points": (True, self.items(self.point, least=2)), "dashed": (False, self.boolean),
-                      "label": (False, self.label)},
-            "ring": {"at": (True, self.point), "r": (True, self.positive), "dashed": (False, self.boolean),
-                     "label": (False, self.label)},
-            "units": {"at": (True, self.point), "count": (True, self.count), "label": (False, self.label)},
-            "label": {"at": (True, self.point), "text": (True, self.string),
-                      "size": (False, self.one_of("small", "large"))},
-            "arc": {"from": (True, self.point), "to": (True, self.point), "bend": (True, self.point),
-                    "label": (False, self.label)},
-            "burst": {"at": (True, self.point), "label": (False, self.label)},
-        }[kind]
-        self.obj(v, where, {**common, **own})
-
-    def section(self, v: object, where: str) -> None:
-        self.obj(v, where, {
-            "heading": (True, self.string),
-            "intro": (False, self.text),
-            "tables": (False, self.items(self.table)),
-            "oob": (False, self.items(self.side)),
-        })
-
-    def table(self, v: object, where: str) -> None:
-        width = len(v["columns"]) if isinstance(v, dict) and isinstance(v.get("columns"), list) else 0
-
-        def row(r: object, at: str) -> None:   # run after the columns passed (obj checks keys in this order)
-            self.items(self.cell)(r, at)
-            if len(r) != width:
-                self.fail(at, f"expected {width} cells, one per column, got {len(r)}")
-        self.obj(v, where, {"columns": (True, self.items(self.string, least=1)), "rows": (True, self.items(row))})
-
-    def cell(self, v: object, where: str) -> None:
+    @model_validator(mode="before")
+    @classmethod
+    def _known_keys(cls, v: object) -> object:
         if isinstance(v, dict):
-            self.obj(v, where, {"mark": (True, self.one_of(*MARK_CELLS)), "text": (True, self.text)})
-        elif isinstance(v, (int, float)) and not isinstance(v, bool):
-            self.number(v, where)
-        else:
-            self.text(v, where)
-
-    def side(self, v: object, where: str) -> None:
-        self.obj(v, where, {
-            "title": (True, self.string),
-            "tag": (False, self.string),
-            "style": (False, self.style),
-            "groups": (True, self.items(self.group)),
-        })
-
-    def group(self, v: object, where: str) -> None:
-        self.obj(v, where, {
-            "name": (True, self.string),
-            "when": (False, self.string),
-            "note": (False, self.text),
-            "units": (True, self.items(self.unit)),
-        })
-
-    def unit(self, v: object, where: str) -> None:
-        if not isinstance(v, list) or len(v) not in (2, 3):
-            self.fail(where, "expected [count, name, key] (the key may be left out)")
-        if isinstance(v[0], bool) or not isinstance(v[0], int) or v[0] < 0:
-            self.fail(_at(where, 0), "expected a count (a whole number)")
-        for i in range(1, len(v)):
-            self.string(v[i], _at(where, i))
+            allowed = [f.alias or name for name, f in cls.model_fields.items()]
+            for key in v:
+                if key not in allowed:
+                    raise _invalid(f"unknown key (allowed here: {', '.join(allowed)})", key)
+        return v
 
 
-def validate(spec: object) -> None:
-    """Raises SpecError naming the JSON path of the first value that breaks the schema."""
-    _Validator().spec(spec)
+class Label(_Object):
+    """A mark's label."""
+    text: Str
+    at: XY
 
 
-def unknown_units(spec: Mapping, known: set[str]) -> list[tuple[str, str]]:
+class _Mark(_Object):
+    kind: str
+    style: StyleRef
+    phases: list[PhaseRef] = []     # none: every phase
+    title: Str = ""                 # the hover title
+
+
+class ArrowMark(_Mark):
+    kind: Literal["arrow"]
+    points: list[XY] = Field(min_length=2)
+    dashed: StrictBool = False
+    label: Label | None = None
+
+
+class RingMark(_Mark):
+    kind: Literal["ring"]
+    at: XY
+    r: Positive
+    dashed: StrictBool = False
+    label: Label | None = None
+
+
+class UnitsMark(_Mark):
+    kind: Literal["units"]
+    at: XY
+    count: Annotated[int, BeforeValidator(_rule(lambda v: _whole(v) and 1 <= v <= 60,
+                                                "expected a whole number from 1 to 60"))]
+    label: Label | None = None
+
+
+class LabelMark(_Mark):
+    kind: Literal["label"]
+    at: XY
+    text: Str
+    size: Literal["small", "large"] = "small"
+
+
+class ArcMark(_Mark):
+    kind: Literal["arc"]
+    from_: XY = Field(alias="from")
+    to: XY
+    bend: XY
+    label: Label | None = None
+
+
+class BurstMark(_Mark):
+    kind: Literal["burst"]
+    at: XY
+    label: Label | None = None
+
+
+def _mark_kind(v: object) -> str | None:
+    if not isinstance(v, dict):
+        return "<arrow>"        # read as an object, so it fails as not one
+    return f"<{v['kind']}>" if v.get("kind") in MARKS else None
+
+
+Mark = Annotated[Annotated[ArrowMark, _tag("arrow")] | Annotated[RingMark, _tag("ring")]
+                 | Annotated[UnitsMark, _tag("units")] | Annotated[LabelMark, _tag("label")]
+                 | Annotated[ArcMark, _tag("arc")] | Annotated[BurstMark, _tag("burst")],
+                 Discriminator(_mark_kind, custom_error_type="spec",
+                               custom_error_message=f"expected one of {', '.join(MARKS)}",
+                               custom_error_context={"loc": ("kind",)})]
+
+
+class MarkCell(_Object):
+    mark: Literal["ok", "half", "open"]     # played; stock or built; not yet tested
+    text: Text
+
+
+def _cell_kind(v: object) -> str:
+    if isinstance(v, dict):
+        return "<mark cell>"
+    return "<number cell>" if isinstance(v, (int, float)) and not isinstance(v, bool) else "<text cell>"
+
+
+Cell = Annotated[Annotated[MarkCell, _tag("mark cell")] | Annotated[Number, _tag("number cell")]
+                 | Annotated[Text, _tag("text cell")], Discriminator(_cell_kind)]
+
+
+class Table(_Object):
+    columns: list[Str] = Field(min_length=1)
+    rows: list[list[Cell]]
+
+    @model_validator(mode="after")
+    def _one_cell_per_column(self) -> Table:
+        for i, row in enumerate(self.rows):
+            if len(row) != len(self.columns):
+                raise _invalid(f"expected {len(self.columns)} cells, one per column, got {len(row)}", "rows", i)
+        return self
+
+
+class Group(_Object):
+    name: Str
+    when: Str = ""
+    note: Text = ""
+    units: list[OobUnit]
+
+
+class Side(_Object):
+    title: Str
+    tag: Str = ""
+    style: StyleRef = ""
+    groups: list[Group]
+
+
+class Section(_Object):
+    heading: Str
+    intro: Text = ""
+    tables: list[Table] = []
+    oob: list[Side] = []
+
+
+class Phase(_Object):
+    id: Annotated[Str, AfterValidator(_new_phase)]
+    name: Str
+    time: Str = ""
+    summary: Text = ""
+    details: list[Text] = []
+
+
+class Deployment(_Object):
+    style: StyleRef
+    label: Str
+    area: Polygon = ()      # drawn instead of the layout's zone of its alliance
+
+
+class StockZone(_Object):
+    """A command zone of the layout, by its stock Name."""
+    stock: Str
+    name: Str = ""
+
+    @property
+    def shown(self) -> str:
+        """The name it is drawn with: its own name, if given, else its stock one."""
+        return self.name if "name" in self.model_fields_set else self.stock
+
+
+class OwnZone(_Object):
+    """A command zone of the op's own."""
+    name: Str
+    area: Polygon
+    points: Annotated[int, BeforeValidator(_rule(lambda v: _whole(v) and v >= 0, "expected a whole number, 0 or more"))]
+
+
+def _zone_kind(v: object) -> str | None:
+    if isinstance(v, dict) and "stock" in v:
+        return "<stock zone>"
+    return "<own zone>" if isinstance(v, dict) and ("area" in v or "points" in v) else None
+
+
+CommandZone = Annotated[Annotated[StockZone, _tag("stock zone")] | Annotated[OwnZone, _tag("own zone")],
+                        Discriminator(_zone_kind, custom_error_type="spec",
+                                      custom_error_message="expected {stock, name?} or {name, area, points}")]
+Crop = Annotated[Annotated[Literal["playable", "full"], _tag("named crop")] | Annotated[Box, _tag("box crop")],
+                 Discriminator(lambda v: "<named crop>" if isinstance(v, str) else "<box crop>"),
+                 BeforeValidator(_rule(lambda v: v in ("playable", "full") or isinstance(v, list) and len(v) == 4,
+                                       "expected 'playable', 'full' or a box [x0, y0, x1, y1] in minimap px"))]
+
+
+class Map(_Object):
+    name: Annotated[Str, AfterValidator(_rule(_MAP_NAME.match, "expected a map datapack name (letters, digits and _)"))]
+    layout: Annotated[Str, AfterValidator(_rule(lambda v: all(_PATH_PART.match(p) for p in v.split("/")),
+                                                "expected a Details folder below the extraction, '/'-separated "
+                                                "(no '..')"))]
+    crop: Crop = "playable"
+    deployments: dict[Annotated[str, AfterValidator(_rule(str.isdigit, "expected an alliance number as the key"))],
+                      Deployment] = {}
+    zone_names: dict[Annotated[str, AfterValidator(_rule(bool, "expected a stock zone name as the key"))], Str] = {}
+    command_zones: list[CommandZone] = Field([], min_length=1)    # none: every zone of the layout
+    mark_scale: Positive = 0        # 0: from the crop (map_scale)
+    default_picture: Literal["minimap", "satellite"] = "minimap"
+
+    @model_validator(mode="after")
+    def _one_source_of_names(self) -> Map:
+        if {"command_zones", "zone_names"} <= self.model_fields_set:
+            raise _invalid("not allowed with command_zones: name a zone with command_zones' 'name' (one source of "
+                           "truth)", "zone_names")
+        return self
+
+
+StyleName = Annotated[str, AfterValidator(_rule(lambda k: _STYLE_NAME.match(k) and k != "none",   # st-none: an
+                                                "expected a style name (a letter, then letters, digits, - or _; "
+                                                "not 'none') as the key"))]                         # unstyled alliance
+Colour = Annotated[str, BeforeValidator(_rule(lambda c: isinstance(c, str) and _COLOUR.match(c),
+                                              "expected a colour #rrggbb"))]
+
+
+class Spec(_Object):
+    """A storyboard spec (the module's docstring), read with ``Spec.read``. Its fields are read in this order: a
+    style or phase is named only after ``styles`` and ``phases``."""
+    version: Annotated[int, BeforeValidator(_rule(lambda v: v == VERSION and not isinstance(v, bool),
+                                                  f"this generator reads version {VERSION}"))]
+    title: Str
+    eyebrow: Str = ""
+    styles: dict[StyleName, Colour]
+    chips: list[Chip] = []
+    lede: Text = ""
+    map: Map
+    phases: list[Phase] = []
+    start_phase: PhaseRef = ""      # none: the first phase
+    marks: list[Mark] = []
+    sections: list[Section] = []
+    footer: list[Text] = []
+
+    @field_validator("styles")
+    @classmethod
+    def _styles(cls, styles: dict[str, str], info: ValidationInfo) -> dict[str, str]:
+        info.context.styles = set(styles)
+        return styles
+
+    @classmethod
+    def read(cls, raw: object) -> Spec:
+        """`raw` (a parsed JSON spec) validated. SpecError names the JSON path of the first value that breaks the
+        schema."""
+        try:
+            return cls.model_validate(raw, context=_Refs())
+        except ValidationError as exc:
+            raise SpecError(_message(exc.errors()[0])) from None
+
+
+def _message(error: ErrorDetails) -> str:
+    """A validation error as '<JSON path>: <why>'."""
+    kind, v, ctx = error["type"], error["input"], error.get("ctx", {})
+    loc = [p for p in error["loc"] if p not in _TAGS and p != "[key]"] + list(ctx.get("loc", ()))
+    if kind == "missing":
+        why = f"missing key {loc.pop()!r}"
+    elif kind in ("model_type", "dict_type"):
+        why = f"expected an object, got {_kind(v)}"
+    elif kind in ("list_type", "tuple_type"):
+        why = f"expected a list, got {_kind(v)}"
+    elif kind == "too_short":
+        why = f"expected at least {ctx['min_length']} items, got {ctx['actual_length']}"
+    elif kind == "string_type":
+        why = f"expected a string, got {_kind(v)}"
+    elif kind == "bool_type":
+        why = f"expected true or false, got {_kind(v)}"
+    elif kind == "literal_error":
+        why = f"expected one of {', '.join(re.findall(r"'([^']*)'", ctx['expected']))}"
+    else:
+        why = error["msg"]      # the schema's own words (_invalid)
+    return f"{functools.reduce(_at, loc, '$')}: {why}"
+
+
+def unknown_units(spec: Spec, known: set[str]) -> list[tuple[str, str]]:
     """(JSON path, key) of every order-of-battle unit key (a unit's third item; keys may be joined by '·') whose
     descriptor is not in `known` (modkit.ops.gates.unit_database: every unit the game's unit database exports)."""
     out = []
-    for i, s in enumerate(spec.get("sections", [])):
-        for j, side in enumerate(s.get("oob", [])):
-            for k, g in enumerate(side["groups"]):
-                for n, u in enumerate(g["units"]):
-                    for key in (p.strip() for p in (u[2] if len(u) > 2 else "").split("·")):
+    for i, s in enumerate(spec.sections):
+        for j, side in enumerate(s.oob):
+            for k, g in enumerate(side.groups):
+                for n, u in enumerate(g.units):
+                    for key in (p.strip() for p in u[2].split("·")):
                         if key and f"{UNIT_PREFIX}Descriptor_Unit_{key}" not in known:
                             out.append((f"$.sections[{i}].oob[{j}].groups[{k}].units[{n}][2]", key))
     return out
 
 
 def load_spec(path: str | os.PathLike) -> dict:
-    """The spec at `path`, parsed (not yet validated). A file that is not UTF-8 JSON raises SpecError."""
+    """The spec at `path`, parsed (not yet validated: ``Spec.read``). A file that is not UTF-8 JSON raises
+    SpecError."""
     with open(path, "rb") as fh:
         raw = fh.read()
     try:
@@ -552,53 +633,53 @@ def _phase_attrs(classes: str, phases: Sequence[str], start: str | None) -> str:
     return f'class="{classes}{off}" data-ph="{esc(",".join(phases))}"'
 
 
-def _label(label: Mapping | None) -> str:
+def _label(label: Label | None) -> str:
     if not label:
         return ""
-    x, y = label["at"]
-    return f'<text class="sm" x="{_n(x)}" y="{_n(y)}">{esc(label["text"])}</text>'
+    x, y = label.at
+    return f'<text class="sm" x="{_n(x)}" y="{_n(y)}">{esc(label.text)}</text>'
 
 
-def map_scale(spec: Mapping, box: tuple[int, int, int, int]) -> float:
+def map_scale(spec: Spec, box: tuple[int, int, int, int]) -> float:
     """How big the map's text, strokes and drawn shapes are: ``map.mark_scale``, else the crop's size against the
     432 x 622 px crop the look was tuned on. Rounded to 3 decimals."""
-    given = spec["map"].get("mark_scale")
-    return round(float(given if given is not None else max((box[2] - box[0]) / 432, (box[3] - box[1]) / 622)), 3)
+    given = spec.map.mark_scale
+    return round(float(given or max((box[2] - box[0]) / 432, (box[3] - box[1]) / 622)), 3)
 
 
-def mark_svg(mark: Mapping, start: str | None, s: float = 1.0) -> str:
+def mark_svg(mark: Mark, start: str | None, s: float = 1.0) -> str:
     """One mark as an SVG group in its style, with its label and its hover title. `s` (map_scale) sizes its drawn
     shapes."""
-    kind, style = mark["kind"], mark["style"]
-    dashed = " dashed" if mark.get("dashed") else ""
-    if kind == "arrow":
-        d = " L".join(f"{_n(x)},{_n(y)}" for x, y in mark["points"])
+    kind, style = mark.kind, mark.style
+    dashed = " dashed" if getattr(mark, "dashed", False) else ""     # arrows and rings
+    if isinstance(mark, ArrowMark):
+        d = " L".join(f"{_n(x)},{_n(y)}" for x, y in mark.points)
         body = f'<path class="arrow{dashed}" d="M{d}" marker-end="url(#ah-{style})"/>'
-    elif kind == "ring":
-        (x, y), r = mark["at"], mark["r"]
+    elif isinstance(mark, RingMark):
+        (x, y), r = mark.at, mark.r
         body = f'<circle class="ring{dashed}" cx="{_n(x)}" cy="{_n(y)}" r="{_n(r)}"/>'
-    elif kind == "units":
-        (x, y), n = mark["at"], mark["count"]
+    elif isinstance(mark, UnitsMark):
+        (x, y), n = mark.at, mark.count
         cols = min(n, 4)
         rows = -(-n // cols)
         x0, y0 = x - (cols * 14 - 4) * s / 2, y - (rows * 12 - 4) * s / 2
         body = "".join(f'<rect class="unit" x="{_n(x0 + i % cols * 14 * s)}" y="{_n(y0 + i // cols * 12 * s)}" '
                        f'width="{_n(10 * s)}" height="{_n(8 * s)}"/>' for i in range(n))
-    elif kind == "label":
-        x, y = mark["at"]
-        size = "lbl" if mark.get("size") == "large" else "sm"
-        body = f'<text class="{size}" x="{_n(x)}" y="{_n(y)}">{esc(mark["text"])}</text>'
-    elif kind == "arc":
-        (fx, fy), (bx, by), (tx, ty) = mark["from"], mark["bend"], mark["to"]
+    elif isinstance(mark, LabelMark):
+        x, y = mark.at
+        size = "lbl" if mark.size == "large" else "sm"
+        body = f'<text class="{size}" x="{_n(x)}" y="{_n(y)}">{esc(mark.text)}</text>'
+    elif isinstance(mark, ArcMark):
+        (fx, fy), (bx, by), (tx, ty) = mark.from_, mark.bend, mark.to
         body = f'<path class="arc" d="M{_n(fx)},{_n(fy)} Q{_n(bx)},{_n(by)} {_n(tx)},{_n(ty)}"/>'
     else:  # burst: a cloud on its stem, the stem's foot at `at`
-        x, y = mark["at"]
+        x, y = mark.at
         body = (f'<rect class="burst" x="{_n(x - 5 * s)}" y="{_n(y - 22 * s)}" width="{_n(10 * s)}" '
                 f'height="{_n(22 * s)}"/><circle class="burst" cx="{_n(x)}" cy="{_n(y - 38 * s)}" r="{_n(20 * s)}"/>')
-    body += _label(mark.get("label"))
-    if mark.get("title"):
-        body += f"<title>{esc(mark['title'])}</title>"
-    return f'<g {_phase_attrs(f"mark k-{kind} st-{style}", mark.get("phases") or [], start)}>{body}</g>'
+    body += _label(getattr(mark, "label", None))     # a label mark is its own label
+    if mark.title:
+        body += f"<title>{esc(mark.title)}</title>"
+    return f'<g {_phase_attrs(f"mark k-{kind} st-{style}", mark.phases, start)}>{body}</g>'
 
 
 def _closed(area: Sequence[Sequence[float]]) -> tuple[Point, ...]:
@@ -606,32 +687,31 @@ def _closed(area: Sequence[Sequence[float]]) -> tuple[Point, ...]:
     return poly if poly[0] == poly[-1] else poly + (poly[0],)
 
 
-def command_zones(spec: Mapping, layout: Layout) -> list[tuple[str, Zone, str | None]]:
+def command_zones(spec: Spec, layout: Layout) -> list[tuple[str, Zone, str | None]]:
     """The command zones to draw as (display name, zone, stock name or None for an op's own zone). With
     ``map.command_zones``, exactly those in order; else every zone of the layout, named by ``zone_names``."""
-    m = spec["map"]
-    if "command_zones" not in m:
-        names = m.get("zone_names", {})
-        return [(names.get(z.name, z.name), z, z.name) for z in layout.command]
+    m = spec.map
+    if not m.command_zones:
+        return [(m.zone_names.get(z.name, z.name), z, z.name) for z in layout.command]
     stock = {z.name: z for z in layout.command}
     out = []
-    for i, item in enumerate(m["command_zones"]):
-        if "stock" in item:
-            if item["stock"] not in stock:
-                raise SpecError(f"$.map.command_zones[{i}].stock: the layout {m['layout']} has no command zone "
-                                f"{item['stock']!r} (it has: {', '.join(stock) or 'none'})")
-            out.append((item.get("name", item["stock"]), stock[item["stock"]], item["stock"]))
+    for i, item in enumerate(m.command_zones):
+        if isinstance(item, StockZone):
+            if item.stock not in stock:
+                raise SpecError(f"$.map.command_zones[{i}].stock: the layout {m.layout} has no command zone "
+                                f"{item.stock!r} (it has: {', '.join(stock) or 'none'})")
+            out.append((item.shown, stock[item.stock], item.stock))
         else:
-            out.append((item["name"], Zone(item["name"], _closed(item["area"]), points=item["points"]), None))
+            out.append((item.name, Zone(item.name, _closed(item.area), points=item.points), None))
     return out
 
 
-def zones_svg(spec: Mapping, layout: Layout, s: float = 1.0) -> str:
+def zones_svg(spec: Spec, layout: Layout, s: float = 1.0) -> str:
     """The layout's deployment zones (dashed, in their alliance's style) and command zones (outline, name, points).
     A deployment's ``area`` replaces the layout's zone of its alliance (or is drawn alone when there is none); the
     command zones are those of ``command_zones`` when the spec has it. `s` (map_scale) offsets the command zone
     labels."""
-    deployments = spec["map"].get("deployments", {})
+    deployments = spec.map.deployments
     out, drawn = [], set()
 
     def deployment(poly: Sequence[Point], style: str, label: str, title: str) -> None:
@@ -642,18 +722,16 @@ def zones_svg(spec: Mapping, layout: Layout, s: float = 1.0) -> str:
 
     for z in layout.deployment:
         d = deployments.get(str(z.alliance))
-        if d and "area" in d:
+        if d and d.area:
             if z.alliance not in drawn:
                 drawn.add(z.alliance)
-                deployment(_closed(d["area"]), d["style"], d["label"],
-                           f"Deployment zone, alliance {z.alliance}: {d['label']}")
+                deployment(_closed(d.area), d.style, d.label, f"Deployment zone, alliance {z.alliance}: {d.label}")
             continue
-        style, label = (d["style"], d["label"]) if d else ("none", f"Deployment · alliance {z.alliance}")
+        style, label = (d.style, d.label) if d else ("none", f"Deployment · alliance {z.alliance}")
         deployment(z.polygon, style, label, f"Deployment zone {z.name}, alliance {z.alliance}: {label}")
     for alliance, d in sorted(deployments.items(), key=lambda kv: int(kv[0])):
-        if "area" in d and int(alliance) not in drawn:
-            deployment(_closed(d["area"]), d["style"], d["label"],
-                       f"Deployment zone, alliance {int(alliance)}: {d['label']}")
+        if d.area and int(alliance) not in drawn:
+            deployment(_closed(d.area), d.style, d.label, f"Deployment zone, alliance {int(alliance)}: {d.label}")
     for name, z, stock in command_zones(spec, layout):   # the name sits inside the zone's top, clear of the marks
         cx, top = polygon_centroid(list(z.polygon))[0], min(p[1] for p in z.polygon)
         title = f"Command zone {stock}" if stock else f"Command zone {name}"
@@ -664,21 +742,21 @@ def zones_svg(spec: Mapping, layout: Layout, s: float = 1.0) -> str:
     return "\n".join(out)
 
 
-def map_svg(spec: Mapping, layout: Layout, box: tuple[int, int, int, int]) -> str:
+def map_svg(spec: Spec, layout: Layout, box: tuple[int, int, int, int]) -> str:
     """The map: both pictures at the crop box (viewBox), the zones, then the marks."""
     x0, y0, x1, y1 = box
     w, h = x1 - x0, y1 - y0
-    marks = spec.get("marks", [])
+    marks = spec.marks
     start = start_phase(spec)
-    arrows = list(dict.fromkeys(mk["style"] for mk in marks if mk["kind"] == "arrow"))
+    arrows = list(dict.fromkeys(mk.style for mk in marks if mk.kind == "arrow"))
     defs = "".join(f'<marker id="ah-{s}" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" '
-                   f'orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="{spec["styles"][s]}"/></marker>' for s in arrows)
-    picture = spec["map"].get("default_picture", "minimap")
+                   f'orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="{spec.styles[s]}"/></marker>' for s in arrows)
+    picture = spec.map.default_picture
     k = map_scale(spec, box)
     at = f'x="{x0}" y="{y0}" width="{w}" height="{h}"'
     return "\n".join([
         f'<svg id="map" viewBox="{x0} {y0} {w} {h}" role="img" data-pic="{picture}" style="--s: {k:g}" '
-        f'aria-label="{esc(spec["title"])}: {esc(spec["map"]["name"])}, the zones of the stock layout and the plan '
+        f'aria-label="{esc(spec.title)}: {esc(spec.map.name)}, the zones of the stock layout and the plan '
         f'for the selected phase">',
         f"<defs>{defs}</defs>",
         f'<rect class="ground" {at}/>',
@@ -691,83 +769,82 @@ def map_svg(spec: Mapping, layout: Layout, box: tuple[int, int, int, int]) -> st
     ])
 
 
-def start_phase(spec: Mapping) -> str | None:
-    phases = spec.get("phases", [])
-    return spec.get("start_phase", phases[0]["id"] if phases else None)
+def start_phase(spec: Spec) -> str | None:
+    return spec.start_phase or (spec.phases[0].id if spec.phases else None)
 
 
-def _phases_html(spec: Mapping) -> str:
+def _phases_html(spec: Spec) -> str:
     start = start_phase(spec)
     out = ['<div class="phases" id="phases">',
            '<button type="button" class="allbtn" id="v-all" aria-pressed="false">Show every phase</button>']
-    for p in spec.get("phases", []):
-        time = f'<span class="ph-time">{esc(p["time"])}</span>' if p.get("time") else ""
-        summary = f'<span class="ph-sum">{text_html(p["summary"])}</span>' if p.get("summary") else ""
-        details = "".join(f'<span class="ph-li">{text_html(d)}</span>' for d in p.get("details", []))
+    for p in spec.phases:
+        time = f'<span class="ph-time">{esc(p.time)}</span>' if p.time else ""
+        summary = f'<span class="ph-sum">{text_html(p.summary)}</span>' if p.summary else ""
+        details = "".join(f'<span class="ph-li">{text_html(d)}</span>' for d in p.details)
         details = f'<span class="ph-det">{details}</span>' if details else ""
-        out.append(f'<button type="button" class="phase" data-p="{esc(p["id"])}" '
-                   f'aria-current="{str(p["id"] == start).lower()}">'
-                   f'<span class="ph-head"><span class="ph-name">{esc(p["id"])} · {esc(p["name"])}</span>{time}</span>'
+        out.append(f'<button type="button" class="phase" data-p="{esc(p.id)}" '
+                   f'aria-current="{str(p.id == start).lower()}">'
+                   f'<span class="ph-head"><span class="ph-name">{esc(p.id)} · {esc(p.name)}</span>{time}</span>'
                    f'{summary}{details}</button>')
     out.append("</div>")
     return "\n".join(out)
 
 
-def _legend_html(spec: Mapping) -> str:
-    items = [f'<span class="st-{esc(d["style"])}"><i class="sw d"></i>{esc(d["label"])}</span>'
-             for _, d in sorted(spec["map"].get("deployments", {}).items(), key=lambda kv: int(kv[0]))]
+def _legend_html(spec: Spec) -> str:
+    items = [f'<span class="st-{esc(d.style)}"><i class="sw d"></i>{esc(d.label)}</span>'
+             for _, d in sorted(spec.map.deployments.items(), key=lambda kv: int(kv[0]))]
     items.append('<span><i class="sw cz"></i>command zone (name · points)</span>')
     return '<div class="legend" aria-label="Legend">' + "".join(items) + "</div>"
 
 
-def _cell(c: object) -> str:
-    if isinstance(c, dict):
-        return f'<td><span class="mk {c["mark"]}">{text_html(c["text"])}</span></td>'
+def _cell(c: MarkCell | int | float | str) -> str:
+    if isinstance(c, MarkCell):
+        return f'<td><span class="mk {c.mark}">{text_html(c.text)}</span></td>'
     if isinstance(c, (int, float)):
         return f'<td class="n">{_n(c) if isinstance(c, float) else c}</td>'
     return f"<td>{text_html(c)}</td>"
 
 
-def _table_html(t: Mapping) -> str:
-    head = "".join(f"<th>{esc(c)}</th>" for c in t["columns"])
-    rows = "".join("<tr>" + "".join(_cell(c) for c in r) + "</tr>" for r in t["rows"])
+def _table_html(t: Table) -> str:
+    head = "".join(f"<th>{esc(c)}</th>" for c in t.columns)
+    rows = "".join("<tr>" + "".join(_cell(c) for c in r) + "</tr>" for r in t.rows)
     return (f'<div class="tablewrap"><table><thead><tr>{head}</tr></thead>'
             f"<tbody>{rows}</tbody></table></div>")
 
 
-def _oob_html(sides: Sequence[Mapping]) -> str:
+def _oob_html(sides: Sequence[Side]) -> str:
     out = ['<div class="oob">']
     for s in sides:
-        tag = f' <span class="tag">{esc(s["tag"])}</span>' if s.get("tag") else ""
-        cls = f"side st-{s['style']}" if s.get("style") else "side"
-        out.append(f'<div class="{cls}"><h3>{esc(s["title"])}{tag}</h3>')
-        for g in s["groups"]:
-            when = f'<span>{esc(g["when"])}</span>' if g.get("when") else ""
-            note = f'<div class="gn">{text_html(g["note"])}</div>' if g.get("note") else ""
+        tag = f' <span class="tag">{esc(s.tag)}</span>' if s.tag else ""
+        cls = f"side st-{s.style}" if s.style else "side"
+        out.append(f'<div class="{cls}"><h3>{esc(s.title)}{tag}</h3>')
+        for g in s.groups:
+            when = f'<span>{esc(g.when)}</span>' if g.when else ""
+            note = f'<div class="gn">{text_html(g.note)}</div>' if g.note else ""
             units = "".join(
-                f'<li><span class="q">{u[0]}</span><span class="nm">{esc(u[1])}'
-                + (f' <span class="key">{esc(u[2])}</span>' if len(u) > 2 and u[2] else "") + "</span></li>"
-                for u in g["units"])
-            out.append(f'<div class="grp"><div class="gh"><b>{esc(g["name"])}</b>{when}</div>{note}'
+                f'<li><span class="q">{count}</span><span class="nm">{esc(name)}'
+                + (f' <span class="key">{esc(key)}</span>' if key else "") + "</span></li>"
+                for count, name, key in g.units)
+            out.append(f'<div class="grp"><div class="gh"><b>{esc(g.name)}</b>{when}</div>{note}'
                        f'<ul class="unitlist">{units}</ul></div>')
         out.append("</div>")
     out.append("</div>")
     return "\n".join(out)
 
 
-def _sections_html(spec: Mapping) -> str:
+def _sections_html(spec: Spec) -> str:
     out = []
-    for i, s in enumerate(spec.get("sections", []), 1):
-        part = [f'<section class="block" aria-labelledby="s{i}-h">', f'<h2 id="s{i}-h">{esc(s["heading"])}</h2>']
-        if s.get("intro"):
-            part.append(f"<p>{text_html(s['intro'])}</p>")
-        tables = [_table_html(t) for t in s.get("tables", [])]
+    for i, s in enumerate(spec.sections, 1):
+        part = [f'<section class="block" aria-labelledby="s{i}-h">', f'<h2 id="s{i}-h">{esc(s.heading)}</h2>']
+        if s.intro:
+            part.append(f"<p>{text_html(s.intro)}</p>")
+        tables = [_table_html(t) for t in s.tables]
         if len(tables) > 1:
             part.append('<div class="cols2">' + "".join(tables) + "</div>")
         else:
             part += tables
-        if s.get("oob"):
-            part.append(_oob_html(s["oob"]))
+        if s.oob:
+            part.append(_oob_html(s.oob))
         part.append("</section>")
         out.append("\n".join(part))
     return "\n".join(out)
@@ -779,18 +856,18 @@ def _styles_css(styles: Mapping[str, str]) -> str:
     return f":root {{ --accent: {accent}; }}\n" + "\n".join(rules)
 
 
-def render_page(spec: Mapping, layout: Layout, box: tuple[int, int, int, int]) -> str:
-    """The page for a validated spec: one HTML file referring to the two pictures beside it."""
-    phases = spec.get("phases", [])
-    picture = spec["map"].get("default_picture", "minimap")
-    chips = "".join(f'<span class="chip">{esc(k)} <b>{text_html(v)}</b></span>' for k, v in spec.get("chips", []))
-    header = [f'<div class="eyebrow">{esc(spec["eyebrow"])}</div>' if spec.get("eyebrow") else "",
-              f"<h1>{esc(spec['title'])}</h1>",
+def render_page(spec: Spec, layout: Layout, box: tuple[int, int, int, int]) -> str:
+    """The page for a spec: one HTML file referring to the two pictures beside it."""
+    phases = spec.phases
+    picture = spec.map.default_picture
+    chips = "".join(f'<span class="chip">{esc(k)} <b>{text_html(v)}</b></span>' for k, v in spec.chips)
+    header = [f'<div class="eyebrow">{esc(spec.eyebrow)}</div>' if spec.eyebrow else "",
+              f"<h1>{esc(spec.title)}</h1>",
               f'<div class="status">{chips}</div>' if chips else "",
-              f'<p class="lede">{text_html(spec["lede"])}</p>' if spec.get("lede") else ""]
+              f'<p class="lede">{text_html(spec.lede)}</p>' if spec.lede else ""]
     switch = "".join(f'<button type="button" id="{bid}" data-pic="{p}" aria-pressed="{str(p == picture).lower()}">'
                      f"{p.capitalize()}</button>" for bid, p in (("b-mini", "minimap"), ("b-sat", "satellite")))
-    footer = "".join(f"<div>{text_html(line)}</div>" for line in spec.get("footer", []))
+    footer = "".join(f"<div>{text_html(line)}</div>" for line in spec.footer)
     body = "\n".join([
         '<div class="wrap">',
         "<header>" + "".join(header) + "</header>",
@@ -808,7 +885,7 @@ def render_page(spec: Mapping, layout: Layout, box: tuple[int, int, int, int]) -
         "</div>",
     ])
     script = _SCRIPT.replace("START_PHASE", json.dumps(start_phase(spec) or "all"))
-    return "\n".join([_HEAD.replace("PAGE_TITLE", esc(spec["title"])), "<style>", _CSS, _styles_css(spec["styles"]),
+    return "\n".join([_HEAD.replace("PAGE_TITLE", esc(spec.title)), "<style>", _CSS, _styles_css(spec.styles),
                       "</style>", body, "<script>", script, "</script>", ""])
 
 
@@ -1025,13 +1102,12 @@ def _size(n: int) -> str:
     return f"{n / 1024 / 1024:.2f} MB" if n >= 1024 * 1024 else f"{n / 1024:.1f} KB"
 
 
-def generate(spec: Mapping, out_dir: str | os.PathLike, source: StockSource | None = None, *,
+def generate(spec: Spec, out_dir: str | os.PathLike, source: StockSource | None = None, *,
              units: set[str] | None = None) -> list[str]:
-    """Validates `spec`, reads its map from `source` (the stock extraction by default) and writes the page and its two
+    """Reads the map of `spec` from `source` (the stock extraction by default) and writes the page and its two
     pictures into `out_dir`. With `units` (unit_database()), every order-of-battle unit key must name one of them.
     Returns the lines to print: one per file, then the Artifact publish line. Nothing is written unless every check
     passes."""
-    validate(spec)
     checked = []
     if units is not None:
         bad = unknown_units(spec, units)
@@ -1039,12 +1115,12 @@ def generate(spec: Mapping, out_dir: str | os.PathLike, source: StockSource | No
             raise SpecError(f"{bad[0][0]}: not in the game's unit database: {', '.join(k for _, k in bad)}")
         checked = ["unit keys: every one is in the game's unit database"]
     source = source or StockSource()
-    m = spec["map"]
-    layout = source.layout(m["layout"])
+    m = spec.map
+    layout = source.layout(m.layout)
     command_zones(spec, layout)     # a stock name the layout lacks fails before anything is written
-    minimap, preview = source.picture(m["name"], "Minimap"), source.picture(m["name"], "Preview")
+    minimap, preview = source.picture(m.name, "Minimap"), source.picture(m.name, "Preview")
     k = _scale(minimap, preview)
-    box = crop_box(m.get("crop", "playable"), layout, minimap.width, minimap.height)
+    box = crop_box(m.crop, layout, minimap.width, minimap.height)
     page = render_page(spec, layout, box).encode("utf-8")
     if len(page) > MAX_PAGE:
         raise ValueError(f"{PAGE} would be {_size(len(page))}, over the {_size(MAX_PAGE)} a page may be: "
@@ -1062,7 +1138,7 @@ def generate(spec: Mapping, out_dir: str | os.PathLike, source: StockSource | No
         tgv.write_png(str(out / SATELLITE), sat.width, sat.height, sat.rgb, channels=3)
     (out / PAGE).write_bytes(page)
     where = {name: (out / name).absolute().as_posix() for name in (PAGE, MINIMAP, SATELLITE)}
-    marks, phases = len(spec.get("marks", [])), len(spec.get("phases", []))
+    marks, phases = len(spec.marks), len(spec.phases)
     return [
         *checked,
         f"{where[PAGE]}: {_size(len(page))}; {len(layout.command)} command zones, {len(layout.deployment)} "
@@ -1095,9 +1171,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                          "game install)")
     args = ap.parse_args(argv)
     try:
-        spec = load_spec(args.spec)
+        raw = load_spec(args.spec)
         out = Path(args.out) if args.out else default_out(args.spec)
-        lines = generate(spec, out, units=unit_database() if args.check_units else None)
+        lines = generate(Spec.read(raw), out, units=unit_database() if args.check_units else None)
     except SpecError as exc:
         print(f"FAILED: {args.spec}: {exc}", file=sys.stderr)
         return 1

@@ -5,7 +5,6 @@ codes, the default output folder, and (with the extraction) the sample spec on T
 The synthetic map is a 64 x 64 minimap with its 128 x 128 Preview, stubbed (no TGV), over a layout written into a
 temporary extraction with the toolkit's own zone builders."""
 import contextlib
-import copy
 import io
 import json
 import os
@@ -55,9 +54,7 @@ TINY = sb.Layout(tuple(rect_polygon(PLAYABLE)), (zone("CZ_A", CZ_A, points=2), z
 
 
 def page(s: dict | None = None, box=PLAYABLE) -> str:
-    s = s or spec()
-    sb.validate(s)
-    return sb.render_page(s, TINY, box)
+    return sb.render_page(sb.Spec.read(s or spec()), TINY, box)
 
 
 def write_layout(root: Path) -> None:
@@ -105,14 +102,14 @@ def mark_group(html: str, title: str) -> str:
 class ValidationTest(unittest.TestCase):
     def fails(self, s, where: str, why: str = ""):
         with self.assertRaises(sb.SpecError) as cm:
-            sb.validate(s)
+            sb.Spec.read(s)
         msg = str(cm.exception)
         self.assertTrue(msg.startswith(where + ": "), msg)
         self.assertIn(why, msg)
 
     def test_a_good_spec_and_the_sample_pass(self):
-        sb.validate(spec())
-        sb.validate(sb.load_spec(SAMPLE))
+        sb.Spec.read(spec())
+        sb.Spec.read(sb.load_spec(SAMPLE))
 
     def test_unknown_keys_fail_with_their_path(self):
         self.fails(spec(colour="red"), "$.colour", "unknown key")
@@ -187,7 +184,7 @@ def own_zones(**map_over) -> dict:
 class OwnZonesValidationTest(unittest.TestCase):
     def fails(self, s, where: str, why: str = ""):
         with self.assertRaises(sb.SpecError) as cm:
-            sb.validate(s)
+            sb.Spec.read(s)
         msg = str(cm.exception)
         self.assertTrue(msg.startswith(where + ": "), msg)
         self.assertIn(why, msg)
@@ -198,8 +195,8 @@ class OwnZonesValidationTest(unittest.TestCase):
         self.fails(s, where, why)
 
     def test_good_own_zones_pass(self):
-        sb.validate(own_zones())
-        sb.validate(own_zones(deployments={"0": {"style": "sov", "label": "x", "area": [[1, 1], [5, 1], [5, 4]]}}))
+        sb.Spec.read(own_zones())
+        sb.Spec.read(own_zones(deployments={"0": {"style": "sov", "label": "x", "area": [[1, 1], [5, 1], [5, 4]]}}))
 
     def test_zone_names_with_command_zones_fails_at_zone_names(self):
         self.fails(own_zones(zone_names={"CZ_A": "Village"}), "$.map.zone_names", "command_zones")
@@ -227,13 +224,13 @@ class OwnZonesValidationTest(unittest.TestCase):
 class ScaleTest(unittest.TestCase):
     def test_the_scale_follows_the_crop_and_mark_scale_overrides_it(self):
         s = spec()
-        self.assertEqual(sb.map_scale(s, (0, 0, 432, 622)), 1)
-        self.assertEqual(sb.map_scale(s, (0, 146, 216, 524)), 0.608)
+        self.assertEqual(sb.map_scale(sb.Spec.read(s), (0, 0, 432, 622)), 1)
+        self.assertEqual(sb.map_scale(sb.Spec.read(s), (0, 146, 216, 524)), 0.608)
         s["map"]["mark_scale"] = 1.5
-        self.assertEqual(sb.map_scale(s, (0, 146, 216, 524)), 1.5)
+        self.assertEqual(sb.map_scale(sb.Spec.read(s), (0, 146, 216, 524)), 1.5)
         s["map"]["mark_scale"] = 0
         with self.assertRaises(sb.SpecError) as cm:
-            sb.validate(s)
+            sb.Spec.read(s)
         self.assertTrue(str(cm.exception).startswith("$.map.mark_scale: "))
 
     def test_the_svg_carries_s_and_the_map_css_uses_it(self):
@@ -244,7 +241,7 @@ class ScaleTest(unittest.TestCase):
         self.assertIn('style="--s: 1"', page(box=(0, 0, 432, 622)))
 
     def test_drawn_shapes_follow_s(self):
-        mark = {"kind": "units", "style": "nato", "at": [30, 30], "count": 1}
+        (mark,) = sb.Spec.read(spec(marks=[{"kind": "units", "style": "nato", "at": [30, 30], "count": 1}])).marks
         self.assertIn('width="10" height="8"', sb.mark_svg(mark, None))
         self.assertIn('width="5" height="4"', sb.mark_svg(mark, None, 0.5))
         s = own_zones(mark_scale=0.5)
@@ -291,7 +288,7 @@ class OwnZonesTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             with mock.patch.object(sb.StockSource, "layout", lambda self, rel: TINY):
                 with self.assertRaises(sb.SpecError) as cm:
-                    sb.generate(s, Path(tmp) / "out")
+                    sb.generate(sb.Spec.read(s), Path(tmp) / "out")
             self.assertFalse((Path(tmp) / "out").exists())
         self.assertTrue(str(cm.exception).startswith("$.map.command_zones[0].stock: "), str(cm.exception))
 
@@ -400,9 +397,7 @@ class ZoneTest(unittest.TestCase):
 
 class PageTest(unittest.TestCase):
     def test_one_dark_page_with_google_fonts_only(self):
-        s = sb.load_spec(SAMPLE)
-        sb.validate(s)
-        html = sb.render_page(s, TINY, PLAYABLE)
+        html = sb.render_page(sb.Spec.read(sb.load_spec(SAMPLE)), TINY, PLAYABLE)
         self.assertLess(len(html.encode()), sb.MAX_PAGE)
         self.assertIn("color-scheme: dark;", html)
         self.assertIn('<meta name="claude:viewport-fit-sides" content="cover">', html)
@@ -420,7 +415,7 @@ class PageTest(unittest.TestCase):
         self.assertNotIn("@import", html)
 
     def test_mark_cells_tables_and_the_order_of_battle(self):
-        html = sb.render_page(sb.load_spec(SAMPLE), TINY, PLAYABLE)
+        html = sb.render_page(sb.Spec.read(sb.load_spec(SAMPLE)), TINY, PLAYABLE)
         for mark, text in (("ok", "tested"), ("half", "built"), ("open", "open")):
             self.assertIn(f'<td><span class="mk {mark}">{text}</span></td>', html)
         self.assertIn('<td class="n">31</td>', html)
@@ -546,9 +541,9 @@ class UnitKeyTest(unittest.TestCase):
     KNOWN = {"$/GFX/Unit/Descriptor_Unit_T80BV_SOV", "$/GFX/Unit/Descriptor_Unit_BMP_2_SOV",
              "$/GFX/Unit/Descriptor_Unit_MotRifles_SOV"}
 
-    def oob(self, *keys: str) -> dict:
-        return spec(sections=[{"heading": "OOB", "oob": [{"title": "x", "groups": [
-            {"name": "g", "units": [[1, "unit", k] for k in keys] + [[2, "no key"]]}]}]}])
+    def oob(self, *keys: str) -> sb.Spec:
+        return sb.Spec.read(spec(sections=[{"heading": "OOB", "oob": [{"title": "x", "groups": [
+            {"name": "g", "units": [[1, "unit", k] for k in keys] + [[2, "no key"]]}]}]}]))
 
     def test_unknown_keys_are_listed_with_their_path(self):
         self.assertEqual(sb.unknown_units(self.oob("T80BV_SOV", "BMP_2_SOV · MotRifles_SOV"), self.KNOWN), [])
@@ -564,7 +559,7 @@ class UnitKeyTest(unittest.TestCase):
     @paths.skip_unless_game_dir("Mods", "ModData", "base.zip")
     def test_the_samples_keys_are_stock_units(self):
         from modkit.ops.gates import unit_database
-        self.assertEqual(sb.unknown_units(sb.load_spec(SAMPLE), unit_database()), [])
+        self.assertEqual(sb.unknown_units(sb.Spec.read(sb.load_spec(SAMPLE)), unit_database()), [])
 
 
 class DefaultOutTest(unittest.TestCase):
@@ -596,9 +591,9 @@ class TwinCitiesSampleTest(unittest.TestCase):
     """The two-phase sample spec on the real stock small layout of Twin Cities (playable x 0-432, y 146-768)."""
 
     def test_the_sample_renders_on_the_stock_layout(self):
-        s = sb.load_spec(SAMPLE)
+        s = sb.Spec.read(sb.load_spec(SAMPLE))
         with tempfile.TemporaryDirectory() as tmp:
-            sb.generate(copy.deepcopy(s), tmp)
+            sb.generate(s, tmp)
             html = Path(tmp, sb.PAGE).read_text(encoding="utf-8")
             self.assertEqual(png_size(Path(tmp, sb.MINIMAP)), (432, 622))
             self.assertIn(png_size(Path(tmp, sb.SATELLITE)), ((864, 1244), (432, 622)))
