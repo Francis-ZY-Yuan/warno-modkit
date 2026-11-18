@@ -13,7 +13,7 @@ import sys
 
 from modkit.core import paths
 
-VERIFIED_BUILDS: tuple[str, ...] = ("201602", "210942")
+VERIFIED_BUILDS: tuple[str, ...] = ("201602", "210942", "211352")
 
 
 def installed_build() -> str | None:

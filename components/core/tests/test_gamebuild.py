@@ -54,8 +54,9 @@ class InstalledBuild(Env):
 
 class Verified(unittest.TestCase):
     def test_the_verified_builds_newest_last(self):
-        """201602, then 210942 once Twin Strike played on it (2026-11-12-twin-strike-210942-play1)."""
-        self.assertEqual(gamebuild.VERIFIED_BUILDS, ("201602", "210942"))
+        """201602, then 210942 and 211352 once Twin Strike played on each (2026-11-12-twin-strike-210942-play1,
+        2026-11-18-twin-strike-211352-play4)."""
+        self.assertEqual(gamebuild.VERIFIED_BUILDS, ("201602", "210942", "211352"))
         self.assertEqual(list(gamebuild.VERIFIED_BUILDS), sorted(gamebuild.VERIFIED_BUILDS, key=int))
 
 
@@ -77,7 +78,8 @@ class Warning(Env):
     def test_other_build_warns_in_one_line(self):
         self.install("999999")
         line = gamebuild.build_warning()
-        self.assertTrue(line.startswith("GAME BUILD: installed 999999; this toolkit was verified on 201602, 210942."))
+        self.assertTrue(line.startswith(
+            "GAME BUILD: installed 999999; this toolkit was verified on 201602, 210942, 211352."))
         self.assertIn("knowledge/builds.md", line)
         self.assertIn("knowledge/topics/game-updates.md", line)
         self.assertNotIn("\n", line)
@@ -108,11 +110,11 @@ class Cli(Env):
         self.assertIn("warno-setup", text)
 
     def test_verified_exits_0_without_warning(self):
-        self.install("201602", "210942")
+        self.install("201602", "210942", "211352")
         code, text = self.run_main()
         self.assertEqual(code, 0)
-        self.assertIn("installed build: 210942", text)
-        self.assertIn("verified builds: 201602, 210942\n", text)
+        self.assertIn("installed build: 211352", text)
+        self.assertIn("verified builds: 201602, 210942, 211352\n", text)
         self.assertNotIn("GAME BUILD", text)
 
     def test_other_build_exits_0_with_warning(self):
