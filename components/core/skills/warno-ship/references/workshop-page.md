@@ -28,7 +28,7 @@ listed in its README.
 | `mod_name` | `Config.ini`'s `Name`, the folder name. Every upload resets the title to it |
 | `title` | the page title, 128 characters at most |
 | `description`, `preview`, `gallery` | paths relative to `item.toml`, or from the repository root when they start with `/` |
-| `vars` | the placeholders the description uses, written `{{name}}` |
+| `vars` | the placeholders the description uses, written `{{name}}`; the changelog's (below) are built in |
 | `changes` | optional: the change notes' file (below) |
 
 Anything personal in the description, such as your GitHub user name in a link, is a placeholder: its value goes in
@@ -38,7 +38,14 @@ your git-ignored `modkit.local.toml`, under `[workshop.vars]` (`repo = "github.c
 `changes.toml` holds one table per upload, newest first, each with `note`, the text (BBCode works; keep it short,
 for players). A table is named by the id of its note on the item's Change Notes page (the update's Unix time, which
 `check` names), such as `[1794521820]`; the next upload's is `[next]`, at the top. `python -m modkit.core.workshop
-note workshop/item.toml` prints the newest one's note, ready to paste.
+note workshop/item.toml` prints the newest one's note, ready to paste. Beside `note`, a table may hold the same note
+in another language, `note_<lang>` (`note_zh`); `note` stays the text for the Change Notes page.
+
+**The changelog on the page.** `{{changes}}` in the description renders the uploaded releases, newest first, as a
+list: each one's date (its id, UTC, `YYYY-MM-DD`) in bold, then its `note`. `{{changes_<lang>}}` renders each one's
+`note_<lang>` instead (`{{changes_zh}}` for a Chinese half), so every release then needs that note, `[next]` too, and
+the check fails on one without it: a half never falls back to English. Neither goes in `vars`. `[next]` is not
+shown: it has no date until its upload, and you paste the description after the upload, once `[next]` has its id.
 
 ## What sets each part
 
@@ -60,6 +67,7 @@ to Steam, when asked; the modder can also paste the files' text themselves.
    published inside `Config.ini`). Set `PreviewImagePath = <that path>` in the installed `Config.ini`, with forward
    slashes, and upload again.
 3. **Title and description:** on "Edit title & description", the title from `item.toml` and the `render` output.
+   When the description shows the changelog, do step 5 first: a release shows only once `[next]` has its id.
 4. **Gallery:** on "Add/edit images & videos", each image in order.
 5. **Change note:** on the Change Notes page, the `note` output over the game's default; then rename `[next]` in
    `changes.toml` to the note's id.
@@ -73,13 +81,16 @@ to Steam, when asked; the modder can also paste the files' text themselves.
   the main image is not known.
 - **Before:** add the upload's note at the top of `changes.toml`, as `[next]`.
 - **After:** set the title again, paste the note over the default on the Change Notes page, rename `[next]` to the
-  id the check names, then run the check.
+  id the check names, paste the `render` output again when the description shows the changelog, then run the check.
 - **Changing the page:** change the files first, then the page, then run the check, and commit the files.
 
 ## Writing it
 
 - **Say:** unofficial, not affiliated with or endorsed by Eugen Systems; contains modified Eugen game data;
   single-player; the game build it was made for; may break after game updates. No donation links.
+- **Size:** Steam keeps at most 8000 bytes of description ([[workshop-item-page]]): UTF-8, so a Chinese character
+  counts three, and each line break two. `check` measures the rendered description with `[next]` counted as
+  uploaded, so it fails before the upload that would not fit.
 - **Claims such as "the first":** make only one you have checked against the Workshop, keep "to our knowledge" in
   the description, and use the short form in the title and the image.
 - **Links to other sites** put the item on hold for Steam's content check for a few minutes after each save.

@@ -14,11 +14,22 @@ main image, visibility and counts, not the gallery. What sets each part of the p
 
 An upload adds a change note (not every one: [[workshop-item-page]]), and WARNO's upload writes the same one,
 ``Game Version = <build>`` and ``Mod Version = <Config.ini's Version>`` (``DEFAULT_NOTE``); the item's owner replaces
-it on the item's Change Notes page. The ``changes`` file (TOML) keeps the real notes, one table per upload, newest first, each holding ``note``
-(the text, Steam BBCode allowed) and named by its ``update``, the id of its note on the Change Notes page (the
-update's Unix time), once the upload is done: ``[1794521820]``. The next upload's is ``[next]`` (at the top).
-``check`` reads the public Change Notes page and compares each note with its release, and fails on a note newer than
-every release.
+it on the item's Change Notes page. The ``changes`` file (TOML) keeps the real notes, one table per upload, newest
+first, each holding ``note`` (the text for the Change Notes page, Steam BBCode allowed) and optionally ``note_<lang>``
+(the same note in another language, such as ``note_zh``), and named by its ``update``, the id of its note on the
+Change Notes page (the update's Unix time), once the upload is done: ``[1794521820]``. The next upload's is
+``[next]`` (at the top). ``check`` reads the public Change Notes page and compares each ``note`` with its release, and
+fails on a note newer than every release.
+
+The description can carry the changelog through built-in placeholders, filled from the ``changes`` file and never
+listed in ``vars``: ``{{changes}}`` renders the uploaded releases, newest first, as a BBCode list, each item its date
+(its ``update`` in UTC, ``YYYY-MM-DD``) in bold, then its ``note`` with its line breaks kept; ``{{changes_<lang>}}``
+renders each release's ``note_<lang>`` instead (``{{changes_zh}}``: ``note_zh``), so a language's half never shows
+English, and every release then needs that note, ``[next]`` included. ``[next]`` is left out: it has no date before
+its upload, and the description is pasted after the upload, once ``[next]`` is renamed to its id, so the live page and
+the files match before and after. Steam keeps a description of at most ``MAX_DESCRIPTION`` bytes; ``check`` counts
+the rendered description as ``description_size`` does, with ``[next]`` counted as uploaded, so it fails before the
+upload whose description would not fit.
 
   python -m modkit.core.workshop check <item.toml> [--offline]   validate, then compare with the live page
   python -m modkit.core.workshop render <item.toml>              the filled description, to paste (UTF-8)
@@ -38,7 +49,7 @@ import sys
 import tomllib
 import urllib.parse
 import urllib.request
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -49,6 +60,9 @@ CHANGELOG_URL = "https://steamcommunity.com/sharedfiles/filedetails/changelog/{i
 USER_AGENT = "warno-modkit"
 # Steam's limits on an item's page.
 MAX_TITLE = 128
+# Steamworks' k_cchPublishedDocumentDescriptionMax, "the maximum size in bytes that a Workshop item description can
+# be" (partner.steamgames.com/doc/api/ISteamRemoteStorage, constants). Steam keeps the description with CRLF line
+# breaks, as GetPublishedFileDetails returns it: description_size counts it so.
 MAX_DESCRIPTION = 8000
 MAX_PREVIEW_BYTES = 1048576
 PREVIEW_SUFFIXES = (".jpg", ".jpeg", ".png", ".gif")
@@ -66,6 +80,10 @@ _FIELDS = {"id": int, "mod_name": str, "title": str, "description": str, "previe
            "vars": list}
 _OPTIONAL = {"changes": str}
 NEXT = "next"  # the changes file's table for the next upload's note
+# The built-in placeholders, filled from the changes file: {{changes}} (each release's note) and {{changes_<lang>}}
+# (its note_<lang>); group 1 is the language, None for note.
+CHANGES_PLACEHOLDER = re.compile(r"changes(?:_(\w+))?")
+_NOTE_KEY = re.compile(r"note(?:_(\w+))?")  # a release's keys: note and note_<lang>
 # The change note WARNO's upload writes, as the Change Notes page shows it: the game build and Config.ini's Version.
 DEFAULT_NOTE = re.compile(r"Game Version = \d+\nMod Version = \d+")
 # A note on the Change Notes page: <p id="<update>">text</p>, newest first.
@@ -78,11 +96,21 @@ class FetchError(RuntimeError):
     """Steam's answer is not the expected JSON."""
 
 
+class MissingVars(ValueError):
+    """``render`` found placeholders that ``[workshop.vars]`` of ``modkit.local.toml`` gives no value."""
+
+
 @dataclass(frozen=True)
 class Release:
-    """One upload's change note: ``update`` is its note's id on the Change Notes page, None until it is uploaded."""
+    """One upload's change note: ``note`` is its text for the Change Notes page, ``update`` its note's id there (None
+    until it is uploaded) and ``translations`` its ``note_<lang>`` texts, as (lang, text) pairs in the file's order."""
     note: str
     update: int | None = None
+    translations: tuple[tuple[str, str], ...] = ()
+
+    def text(self, lang: str | None = None) -> str | None:
+        """``note``, or with ``lang`` its ``note_<lang>``; None when the release has no such note."""
+        return self.note if lang is None else dict(self.translations).get(lang)
 
 
 @dataclass(frozen=True)
@@ -160,9 +188,10 @@ def load_item(path) -> Item:
 
 def load_changes(path) -> tuple[Release, ...]:
     """The releases of a changes file, newest first: one table per release, named by its ``update`` (``[1794521820]``)
-    or ``[next]`` for the next upload's, each holding ``note``. Raises ``ValueError`` naming the file and the first
-    problem: not TOML, a section that is not a table holding only ``note``, an empty note, a name that is neither
-    ``next`` nor a positive integer, ``next`` below the first, or updates not newest first."""
+    or ``[next]`` for the next upload's, each holding ``note`` and any ``note_<lang>``. Raises ``ValueError`` naming
+    the file and the first problem: not TOML, a section that is not a table holding ``note`` and nothing but
+    ``note_<lang>`` beside it, an empty note, a name that is neither ``next`` nor a positive integer, ``next`` below
+    the first, or updates not newest first."""
     path = Path(path)
     try:
         with open(path, "rb") as fh:
@@ -172,11 +201,11 @@ def load_changes(path) -> tuple[Release, ...]:
     out, last = [], None
     for n, (name, r) in enumerate(raw.items(), 1):
         where = f"{path.name}: [{name}]"
-        if not isinstance(r, dict) or set(r) != {"note"}:
-            raise ValueError(f"{where}: write each release as a table holding only note")
-        note = r["note"]
-        if not isinstance(note, str) or not note.strip():
-            raise ValueError(f"{where}: note must be a non-empty string")
+        if not isinstance(r, dict) or "note" not in r or not all(_NOTE_KEY.fullmatch(k) for k in r):
+            raise ValueError(f"{where}: write each release as a table holding note and any note_<lang>")
+        for key, text in r.items():
+            if not isinstance(text, str) or not text.strip():
+                raise ValueError(f"{where}: {key} must be a non-empty string")
         if name == NEXT:
             if n != 1:
                 raise ValueError(f"{where}: only the first release may be [{NEXT}]")
@@ -188,7 +217,8 @@ def load_changes(path) -> tuple[Release, ...]:
             if last is not None and update >= last:
                 raise ValueError(f"{where}: not older than the release above it ([{last}])")
             last = update
-        out.append(Release(note.strip("\r\n"), update))
+        langs = tuple((_NOTE_KEY.fullmatch(k).group(1), v.strip("\r\n")) for k, v in r.items() if k != "note")
+        out.append(Release(r["note"].strip("\r\n"), update, langs))
     return tuple(out)
 
 
@@ -216,8 +246,8 @@ def validate(item: Item) -> list[str]:
         out.append(f"title: {len(item.title)} characters, over Steam's {MAX_TITLE}")
     if not item.description.is_file():
         out.append(f"description: {_rel(item, item.description)} not found")
-    elif len(item.template) > MAX_DESCRIPTION:
-        out.append(f"description: {len(item.template)} characters, over Steam's {MAX_DESCRIPTION}")
+    elif description_size(item.template) > MAX_DESCRIPTION:
+        out.append(f"description: {description_size(item.template)} bytes, over Steam's {MAX_DESCRIPTION}")
     if not item.preview.is_file():
         out.append(f"preview: {_rel(item, item.preview)} not found")
     else:
@@ -230,16 +260,29 @@ def validate(item: Item) -> list[str]:
         if not g.is_file():
             out.append(f"gallery: {_rel(item, g)} not found")
     used = PLACEHOLDER.findall(item.template)
+    builtin = sorted({n for n in used if CHANGES_PLACEHOLDER.fullmatch(n)})
     for bad in BRACES.findall(item.template):
         if not PLACEHOLDER.fullmatch(bad):
             out.append(f"description: {bad} is not a placeholder (write {{{{name}}}})")
-    for name in sorted(set(used) - set(item.vars)):
+    for name in sorted(set(used) - set(item.vars) - set(builtin)):
         out.append(f"description: {{{{{name}}}}} is not in vars")
     for name in item.vars:
-        if name not in used:
+        if CHANGES_PLACEHOLDER.fullmatch(name):
+            out.append(f"vars: {name!r} is built in (the changelog, from the changes file), not a var")
+        elif name not in used:
             out.append(f"vars: {name!r} is not used in the description")
-    if item.changes is not None and not item.changes.is_file():
+    if item.changes is None:
+        for name in builtin:
+            out.append(f"description: {{{{{name}}}}} renders the change notes, but {item.path.name} names no "
+                       f"changes file")
+    elif not item.changes.is_file():
         out.append(f"changes: {_rel(item, item.changes)} not found")
+    for name in builtin:
+        lang = CHANGES_PLACEHOLDER.fullmatch(name).group(1)
+        for r in item.releases:
+            if lang is not None and r.text(lang) is None:
+                out.append(f"changes: [{NEXT if r.update is None else r.update}] has no note_{lang}, which "
+                           f"{{{{{name}}}}} shows")
     return out
 
 
@@ -251,13 +294,54 @@ def local_vars() -> dict[str, str]:
     return dict(table)
 
 
+def changelog(item: Item, lang: str | None = None) -> str:
+    """The uploaded releases, newest first, as a Steam BBCode list: one item per release, its date (its ``update`` in
+    UTC, ``YYYY-MM-DD``) in bold, then its note (``note_<lang>`` with ``lang``), line breaks kept. ``[next]`` is left
+    out; "" when no release is uploaded. Raises ``ValueError`` naming a release without the language's note."""
+    rows = []
+    for r in item.releases:
+        if r.update is None:
+            continue
+        text = r.text(lang)
+        if text is None:
+            raise ValueError(f"[{r.update}] of {item.changes.name} has no note_{lang}")
+        rows.append(f"[*][b]{_when(r.update)[:10]}[/b] {text}")
+    return "[list]\n" + "\n".join(rows) + "\n[/list]" if rows else ""
+
+
 def render(item: Item, values: dict[str, str]) -> str:
-    """The description with every placeholder filled, without trailing newlines (the live page has none). Raises
-    ``ValueError`` naming each placeholder that has no value."""
-    missing = sorted({n for n in PLACEHOLDER.findall(item.template) if n not in values})
+    """The description with every placeholder filled, without trailing newlines (the live page has none): the
+    built-in ``{{changes}}`` and ``{{changes_<lang>}}`` by ``changelog``, the others from ``values``. Raises
+    ``MissingVars`` naming each placeholder that has no value, and ``ValueError`` when a changelog cannot be rendered
+    (no changes file, or a release without the language's note)."""
+    used = set(PLACEHOLDER.findall(item.template))
+    filled = {}
+    for name in sorted(used):
+        m = CHANGES_PLACEHOLDER.fullmatch(name)
+        if m is None:
+            continue
+        if item.changes is None or not item.changes.is_file():
+            raise ValueError(f"{{{{{name}}}}} renders the change notes, but there is no changes file")
+        filled[name] = changelog(item, m.group(1))
+    missing = sorted(n for n in used - set(filled) if n not in values)
     if missing:
-        raise ValueError("no value for " + ", ".join(f"{{{{{n}}}}}" for n in missing))
-    return PLACEHOLDER.sub(lambda m: values[m.group(1)], item.template).rstrip("\r\n")
+        raise MissingVars("no value for " + ", ".join(f"{{{{{n}}}}}" for n in missing))
+    filled = {**values, **filled}
+    return PLACEHOLDER.sub(lambda m: filled[m.group(1)], item.template).rstrip("\r\n")
+
+
+def description_size(text: str) -> int:
+    """``text``'s size as Steam holds it against ``MAX_DESCRIPTION``: UTF-8 bytes, each line break as CRLF."""
+    return len(text.replace("\r\n", "\n").replace("\n", "\r\n").encode("utf-8"))
+
+
+def uploaded(item: Item) -> Item:
+    """The item as it renders after its next upload: ``[next]`` given an id one second after the newest release's.
+    The date of any id is ten characters, so the rendered size is the one the upload's description will have."""
+    if not item.releases or item.releases[0].update is not None:
+        return item
+    newest = next((r.update for r in item.releases if r.update is not None), 0)
+    return replace(item, releases=(replace(item.releases[0], update=newest + 1), *item.releases[1:]))
 
 
 def _request(url: str, data: bytes | None = None) -> urllib.request.Request:
@@ -406,7 +490,9 @@ def compare(item: Item, live: dict, description: str | None, preview_bytes: byte
 
 def _advice(item: Item, diff: Diff, render_error: Exception | None) -> str:
     if diff.field == "description" and render_error is not None:
-        return f"{render_error}: add it under {VARS_TABLE} in {paths.CONFIG_NAME}"
+        if isinstance(render_error, MissingVars):
+            return f"{render_error}: add it under {VARS_TABLE} in {paths.CONFIG_NAME}"
+        return str(render_error)
     if diff.field in ("title", "description"):
         return (f"re-apply it on the item's \"Edit title & description\" page (every upload resets the title to "
                 f"mod_name, {item.mod_name!r})")
@@ -449,16 +535,28 @@ def _check(args, opener) -> int:
     except ValueError as exc:
         problems.append(str(exc))
         values = {}
-    for p in problems:
-        print(f"FAIL  {p}")
     try:
         description, render_error = render(item, values), None
     except ValueError as exc:
         description, render_error = None, exc
+    size = None
+    if description is not None:
+        try:
+            size = description_size(render(uploaded(item), values))
+        except ValueError:  # [next] lacks a language's note: validate names it
+            size = description_size(description)
+        ahead = " once [next] is uploaded" if size != description_size(description) else ""
+        if size > MAX_DESCRIPTION:
+            problems.append(f"size: the description is {size} bytes{ahead}, over Steam's {MAX_DESCRIPTION} (UTF-8, "
+                            f"line breaks as CRLF)")
+    for p in problems:
+        print(f"FAIL  {p}")
+    if size is not None and size <= MAX_DESCRIPTION:
+        print(f"ok    size: the description is {size} bytes{ahead}, of Steam's {MAX_DESCRIPTION}")
     if args.offline:
         if not problems:
             print(f"ok    offline: {len(item.vars)} var(s), {len(item.gallery)} gallery image(s), every file present")
-        if render_error is not None:
+        if isinstance(render_error, MissingVars):
             print(f"info  vars: {render_error}: add it under {VARS_TABLE} in {paths.CONFIG_NAME} to render or check "
                   f"online")
         return 1 if problems else 0
@@ -494,8 +592,11 @@ def _render(args) -> int:
         return 1
     try:
         text = render(item, values)
-    except ValueError as exc:
+    except MissingVars as exc:
         print(f"error: {exc}: add it under {VARS_TABLE} in {paths.CONFIG_NAME}", file=sys.stderr)
+        return 1
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
         return 1
     return _write(text)
 

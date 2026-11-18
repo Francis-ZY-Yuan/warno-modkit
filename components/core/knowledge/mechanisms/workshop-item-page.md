@@ -14,6 +14,12 @@ trials: [2026-11-12-twin-strike-workshop-page]
 - **Title:** every upload sets it back to `Config.ini`'s `Name`, even an upload that changed nothing but the image.
   Set it again on the item's "Edit title & description" page after each upload.
 - **Description:** "Edit title & description" (one text per language; English is the default). An upload leaves it.
+  It holds at most 8000 bytes: Steamworks' `k_cchPublishedDocumentDescriptionMax`, "the maximum size in bytes that a
+  Workshop item description can be" (partner.steamgames.com/doc/api/ISteamRemoteStorage, constants; `SetItemDescription`
+  in ISteamUGC limits it to that length). Steam keeps it with CRLF line breaks: Twin Strike's, read through
+  `GetPublishedFileDetails` on 2026-11-17, was 4598 characters and 6212 bytes in UTF-8, with 84 CRLF breaks. So a
+  Chinese character counts three bytes and a line break two. The same page gives the title's,
+  `k_cchPublishedDocumentTitleMax`, as 128 + 1 bytes.
 - **Gallery:** "Add/edit images & videos", which adds images beside the main one and cannot replace it. An upload
   leaves the gallery.
 - **Change notes:** WARNO's upload writes each note as `Game Version = <build>` and

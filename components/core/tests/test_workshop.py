@@ -189,8 +189,12 @@ class Validate(Env):
 
     def test_description_present_and_short_enough(self):
         self.assertEqual(workshop.validate(self.item(template="x" * workshop.MAX_DESCRIPTION, vars=[])), [])
-        self.assertIn("description: 8001 characters, over Steam's 8000",
+        self.assertIn("description: 8001 bytes, over Steam's 8000",
                       workshop.validate(self.item(template="x" * 8001, vars=[])))
+        # Bytes, not characters: a CJK character is three in UTF-8, a line break two (CRLF, as Steam keeps it).
+        self.assertEqual(workshop.validate(self.item(template="中" * 2666 + "\n", vars=[])), [])
+        self.assertIn("description: 8003 bytes, over Steam's 8000",
+                      workshop.validate(self.item(template="中" * 2667 + "\n", vars=[])))
         item = self.item(description="other.bbcode", vars=[])
         self.assertEqual(item.template, "")
         self.assertEqual(workshop.validate(item), ["description: other.bbcode not found"])
@@ -462,7 +466,11 @@ class Changes(Env):
 
     def test_bad_files(self):
         for text, want in (("[next", "not TOML"),
-                           ('note = "x"', r"\[note\]: write each release as a table holding only note"),
+                           ('note = "x"', r"\[note\]: write each release as a table holding note and any "
+                                          r"note_<lang>"),
+                           ('[9]\nnote_zh = "x"', r"\[9\]: write each release as a table"),
+                           ('[9]\nnote = "x"\nnote_ = "y"', r"\[9\]: write each release as a table"),
+                           ('[9]\nnote = "x"\nnote_zh = " "', r"\[9\]: note_zh must be a non-empty string"),
                            ('[9]\nnote = "x"\ndate = 1', r"\[9\]: write each release as a table"),
                            ('[next]\nnote = " "', r"\[next\]: note must be a non-empty string"),
                            ('[0]\nnote = "x"', r"\[0\]: name a release by its note's id"),
@@ -529,6 +537,104 @@ class Changes(Env):
         with contextlib.redirect_stdout(io.StringIO()):
             workshop.main(["check", str(make_item(self.root / "item"))], opener=opener)
         self.assertNotIn(CHANGELOG, [r.full_url for r, _ in opener.requests])
+
+
+class ChangelogPlaceholders(Env):
+    """The description's changelog: {{changes}} and {{changes_<lang>}}, filled from the changes file."""
+
+    NOTES = ('[next]\nnote = "Next"\nnote_zh = "下一个"\n'
+             '[1762992000]\nnote = """\n[b]Two[/b]\nlines\n"""\nnote_zh = "二"\n'
+             '[1762905600]\nnote = "One"\nnote_zh = "一"\n')
+    TEMPLATE = "[h2]Changelog[/h2]\n{{changes}}\n\n[h2]更新日志[/h2]\n{{changes_zh}}\n"
+    EN = "[list]\n[*][b]2025-11-13[/b] [b]Two[/b]\nlines\n[*][b]2025-11-12[/b] One\n[/list]"
+    ZH = "[list]\n[*][b]2025-11-13[/b] 二\n[*][b]2025-11-12[/b] 一\n[/list]"
+
+    def toml(self, notes: str | None = NOTES, template: str = TEMPLATE, vars=(), **kw) -> Path:
+        root = self.root / "item"
+        toml = make_item(root, template=template, vars=list(vars), changes=None if notes is None else "changes.toml",
+                         **kw)
+        if notes is not None:
+            (root / "changes.toml").write_text(notes, encoding="utf-8")
+        return toml
+
+    def item(self, **kw) -> workshop.Item:
+        return workshop.load_item(self.toml(**kw))
+
+    def run_main(self, *argv) -> tuple[int, str, str]:
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = workshop.main(list(argv), opener=FakeOpener(error=AssertionError("no network")))
+        return code, out.getvalue(), err.getvalue()
+
+    def test_a_release_holds_its_notes_per_language(self):
+        item = self.item()
+        self.assertEqual(item.releases[0], workshop.Release("Next", None, (("zh", "下一个"),)))
+        self.assertEqual((item.releases[1].text(), item.releases[1].text("zh"), item.releases[1].text("de")),
+                         ("[b]Two[/b]\nlines", "二", None))
+
+    def test_the_changelog_lists_the_uploaded_releases_newest_first(self):
+        item = self.item()
+        self.assertEqual(workshop.changelog(item), self.EN)
+        self.assertEqual(workshop.changelog(item, "zh"), self.ZH)
+        self.assertEqual(workshop.changelog(self.item(notes='[next]\nnote = "Next"\nnote_zh = "下"\n')), "")
+
+    def test_render_fills_both_halves_and_no_var_overrides_them(self):
+        want = f"[h2]Changelog[/h2]\n{self.EN}\n\n[h2]更新日志[/h2]\n{self.ZH}"
+        self.assertEqual(workshop.render(self.item(), {}), want)
+        self.assertEqual(workshop.render(self.item(), {"changes": "x", "changes_zh": "y"}), want)
+        self.assertEqual(workshop.validate(self.item()), [])
+
+    def test_a_changelog_needs_a_changes_file(self):
+        item = self.item(notes=None)
+        self.assertEqual(workshop.validate(item), [
+            "description: {{changes}} renders the change notes, but item.toml names no changes file",
+            "description: {{changes_zh}} renders the change notes, but item.toml names no changes file"])
+        with self.assertRaisesRegex(ValueError, r"\{\{changes\}\} renders the change notes, but there is no "
+                                                r"changes file") as cm:
+            workshop.render(item, {})
+        self.assertNotIsInstance(cm.exception, workshop.MissingVars)
+
+    def test_a_language_needs_its_note_on_every_release(self):
+        notes = '[next]\nnote = "Next"\n[1762905600]\nnote = "One"\n'
+        self.assertEqual(workshop.validate(self.item(notes=notes)), [
+            "changes: [next] has no note_zh, which {{changes_zh}} shows",
+            "changes: [1762905600] has no note_zh, which {{changes_zh}} shows"])
+        self.assertEqual(workshop.validate(self.item(notes=notes, template="{{changes}}")), [])
+        with self.assertRaisesRegex(ValueError, r"\[1762905600\] of changes.toml has no note_zh"):
+            workshop.render(self.item(notes=notes), {})
+        code, out, err = self.run_main("render", str(self.toml(notes=notes)))
+        self.assertEqual((code, out), (1, ""))
+        self.assertIn("has no note_zh", err)
+        self.assertNotIn("workshop.vars", err)
+
+    def test_the_changelog_names_are_not_vars(self):
+        self.assertEqual(workshop.validate(self.item(vars=["changes"])), [
+            "vars: 'changes' is built in (the changelog, from the changes file), not a var"])
+
+    def test_uploaded_gives_next_an_id(self):
+        item = self.item()
+        self.assertEqual([r.update for r in workshop.uploaded(item).releases], [1762992001, 1762992000, 1762905600])
+        done = self.item(notes='[1762905600]\nnote = "One"\nnote_zh = "一"\n')
+        self.assertIs(workshop.uploaded(done), done)
+
+    def test_check_counts_the_size_with_next_uploaded(self):
+        item = self.item()
+        now = workshop.description_size(workshop.render(item, {}))
+        ahead = workshop.description_size(workshop.render(workshop.uploaded(item), {}))
+        self.assertGreater(ahead, now)
+        pad = "x" * (workshop.MAX_DESCRIPTION - ahead)
+        code, out, _ = self.run_main("check", str(self.toml(template=pad + self.TEMPLATE)), "--offline")
+        self.assertEqual(code, 0, out)
+        self.assertIn(f"ok    size: the description is {workshop.MAX_DESCRIPTION} bytes once [next] is uploaded, of "
+                      f"Steam's {workshop.MAX_DESCRIPTION}", out)
+        code, out, _ = self.run_main("check", str(self.toml(template=pad + "x" + self.TEMPLATE)), "--offline")
+        self.assertEqual(code, 1, out)
+        self.assertIn(f"FAIL  size: the description is {workshop.MAX_DESCRIPTION + 1} bytes once [next] is uploaded, "
+                      f"over Steam's {workshop.MAX_DESCRIPTION} (UTF-8, line breaks as CRLF)", out)
+        code, out, _ = self.run_main("check", str(self.toml(template="{{changes}}")), "--offline")
+        self.assertRegex(out, r"ok    size: the description is \d+ bytes once \[next\] is uploaded, of Steam's 8000")
+        code, out, _ = self.run_main("check", str(self.toml(template="x")), "--offline")
+        self.assertIn("ok    size: the description is 1 bytes, of Steam's 8000", out)
 
 
 if __name__ == "__main__":

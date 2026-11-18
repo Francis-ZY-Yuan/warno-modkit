@@ -58,12 +58,15 @@ The modder runs the upload, never Claude. Full checklist:
 7. **Write the change note:** the upload writes only `Game Version = <build>` / `Mod Version = <Version>`. Keep each
    upload's real note in `workshop/changes.toml` (item.toml's `changes`; one table per upload, newest first, the
    coming one `[next]`), paste it over the default on the item's Change Notes page (`python -m modkit.core.workshop
-   note workshop/item.toml` prints it), then rename `[next]` to the note's id, which the check names.
+   note workshop/item.toml` prints it), then rename `[next]` to the note's id, which the check names. The
+   description can show the uploaded notes, newest first, with `{{changes}}` (`{{changes_<lang>}}` for a translated
+   half, from each note's `note_<lang>`); render and paste it again after the rename.
 8. **Check the live page:** `python -m modkit.core.workshop check workshop/item.toml`.
 
 **Every later upload** resets the title to `Config.ini`'s `Name` and may add a default change note
 ([[workshop-item-page]]): write its note as `[next]` in `changes.toml` before uploading, then set the title, paste the
-note and run the check. After a reinstall, set `PreviewImagePath` again before uploading.
+note, rename `[next]`, paste the description again if it shows the changelog, and run the check. After a reinstall,
+set `PreviewImagePath` again before uploading.
 
 ## After a game update
 
