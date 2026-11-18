@@ -11,6 +11,7 @@ A fact holds for the build it was last verified on. After a game update, a recor
 
 ### Trials run on it
 
+- 2026-11-17 [2026-11-17-twin-strike-211352-play3](../components/ops/knowledge/trials/2026-11-17-twin-strike-211352-play3.md) (ops): play, fail
 - 2026-11-17 [2026-11-17-build-211352-port](../components/core/knowledge/trials/2026-11-17-build-211352-port.md) (core): survey, pass
 
 ## 210942

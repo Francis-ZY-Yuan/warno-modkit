@@ -5,9 +5,9 @@ status: PLAYED
 last_verified: 201602 2026-11-06
 source: exe-analysis
 topics: [zones-and-map]
-gates: [modkit.ops.gates.check_zone_tags]
+gates: [modkit.ops.gates.check_zone_tags, modkit.ops.gates.check_fall_zone]
 shapes: [modkit.ops.bricks.g_detect, modkit.ops.shapes.Minimap.ring_item, modkit.ops.mission.ring_round]
-trials: [2026-11-04-zone-capture-survey, 2026-11-02-kreide-op-playtest-1, 2026-11-11-twin-strike-play1]
+trials: [2026-11-04-zone-capture-survey, 2026-11-02-kreide-op-playtest-1, 2026-11-11-twin-strike-play1, 2026-11-17-twin-strike-211352-play3]
 stock_precedent: 159/159 stock uses name a circular zone
 ---
 **What the game does.** `ConditionDetectUnitDansDetecteur` reads a centre and a radius from its tag, so it works
@@ -27,13 +27,18 @@ warning showed while the player's units fought in the zone's outer strips and th
 ([[2026-11-11-twin-strike-play1]]). When the rule is about the zone the player sees, count the zone itself
 (`ConditionUnitDansZone`, ZoneType 1, as the toolkit's zone race does).
 
+The same holds for a capture: a test of what the game captures reads the command zone. Twin Strike's fall counted
+its command unit in the same circle, and in a play on build 211352 the village turned the player's with none of the
+fall's consequences, that circle the likely cause ([[2026-11-17-twin-strike-211352-play3]],
+[[zone-capture-command-units]]). The fall-zone gate fails a circle test that counts command units.
+
 <!-- referenced-by:start -->
 ## Referenced by
 
-- Trials: [2026-11-02-kreide-op-playtest-1](../trials/2026-11-02-kreide-op-playtest-1.md), [2026-11-04-zone-capture-survey](../trials/2026-11-04-zone-capture-survey.md), [2026-11-11-twin-strike-play1](../trials/2026-11-11-twin-strike-play1.md)
-- Gates: [`modkit.ops.gates.check_zone_tags`](../../src/modkit/ops/gates.py)
+- Trials: [2026-11-02-kreide-op-playtest-1](../trials/2026-11-02-kreide-op-playtest-1.md), [2026-11-04-zone-capture-survey](../trials/2026-11-04-zone-capture-survey.md), [2026-11-11-twin-strike-play1](../trials/2026-11-11-twin-strike-play1.md), [2026-11-17-twin-strike-211352-play3](../trials/2026-11-17-twin-strike-211352-play3.md)
+- Gates: [`modkit.ops.gates.check_zone_tags`](../../src/modkit/ops/gates.py), [`modkit.ops.gates.check_fall_zone`](../../src/modkit/ops/gates.py)
 - Shapes: [`modkit.ops.bricks.g_detect`](../../src/modkit/ops/bricks.py), [`modkit.ops.shapes.Minimap.ring_item`](../../src/modkit/ops/shapes.py), [`modkit.ops.mission.ring_round`](../../src/modkit/ops/mission.py)
 - Skills: [`components/ops/skills/warno-new-operation/references/script-recipes.md`](../../skills/warno-new-operation/references/script-recipes.md)
 - Examples: [`components/ops/examples/open-door/README.md`](../../examples/open-door/README.md), [`components/ops/examples/open-door/docs/design.md`](../../examples/open-door/docs/design.md), [`components/ops/examples/open-door/opendoor/op.py`](../../examples/open-door/opendoor/op.py), [`components/ops/examples/probes/README.md`](../../examples/probes/README.md), [`components/ops/examples/twin-strike/README.md`](../../examples/twin-strike/README.md), [`components/ops/examples/twin-strike/docs/design.md`](../../examples/twin-strike/docs/design.md), [`components/ops/examples/twin-strike/twinstrike/op.py`](../../examples/twin-strike/twinstrike/op.py)
-- Records: [2026-11-11-twin-strike-play1](../trials/2026-11-11-twin-strike-play1.md), [scripted-nuke-effect](scripted-nuke-effect.md)
+- Records: [2026-11-11-twin-strike-play1](../trials/2026-11-11-twin-strike-play1.md), [2026-11-17-twin-strike-211352-play3](../trials/2026-11-17-twin-strike-211352-play3.md), [scripted-nuke-effect](scripted-nuke-effect.md)
 <!-- referenced-by:end -->

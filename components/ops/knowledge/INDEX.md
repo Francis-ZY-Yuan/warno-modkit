@@ -151,7 +151,7 @@ The game's own words in this component's trials, the mechanism behind them, and 
 | The division's batteries showed as blue units on the playable zone's north edge beside the player's deployment, and the player's Ka-50s killed them; their shells landed on the target | [created-units-stand-in-zone](mechanisms/created-units-stand-in-zone.md) | `modkit.ops.gates.check_created_in_zone` |
 | The division's batteries showed as blue units on the playable zone's north edge beside the player's deployment, and the player's Ka-50s killed them; their shells landed on the target | [scripted-fires](mechanisms/scripted-fires.md) | `modkit.ops.gates.check_fire_range` |
 | The division's guns drove toward the front and died; the release dialog never showed after the fire plan was fired | [add-unit-to-deck](mechanisms/add-unit-to-deck.md) | none yet |
-| The division's guns drove toward the front and died; the release dialog never showed after the fire plan was fired | [detector-circles-only](mechanisms/detector-circles-only.md) | `modkit.ops.gates.check_zone_tags` |
+| The division's guns drove toward the front and died; the release dialog never showed after the fire plan was fired | [detector-circles-only](mechanisms/detector-circles-only.md) | `modkit.ops.gates.check_zone_tags`, `modkit.ops.gates.check_fall_zone` |
 | The division's guns drove toward the front and died; the release dialog never showed after the fire plan was fired | [dialog-reask-loop](mechanisms/dialog-reask-loop.md) | none yet |
 | The division's guns drove toward the front and died; the release dialog never showed after the fire plan was fired | [garrison-roe-and-hold](mechanisms/garrison-roe-and-hold.md) | none yet |
 | The division's guns drove toward the front and died; the release dialog never showed after the fire plan was fired | [scripted-economy](mechanisms/scripted-economy.md) | none yet |
@@ -177,12 +177,15 @@ The game's own words in this component's trials, the mechanism behind them, and 
 | The opening camera was off, and the whole map was playable | [start-camera-before-loading-done](mechanisms/start-camera-before-loading-done.md) | `modkit.ops.maps.check_camera_paths` |
 | The SEAD aircraft card added at 8:00 was not seen in the buy menu | [add-unit-to-deck](mechanisms/add-unit-to-deck.md) | none yet |
 | The Soviet player found no supply trucks or supply helicopters to buy | [soviet-player-camp](mechanisms/soviet-player-camp.md) | none yet |
+| The village turns ours but nothing follows | [detector-circles-only](mechanisms/detector-circles-only.md) | `modkit.ops.gates.check_zone_tags`, `modkit.ops.gates.check_fall_zone` |
+| The village turns ours but nothing follows | [zone-capture-command-units](mechanisms/zone-capture-command-units.md) | `modkit.ops.gates.check_fall_zone` |
 | WARNO has stopped working, right after Launch battle | [dialog-button-ingame-dictionary](mechanisms/dialog-button-ingame-dictionary.md) | `modkit.ops.gates.check_tokens` |
 | WARNO has stopped working, right after Launch battle | [start-camera-before-loading-done](mechanisms/start-camera-before-loading-done.md) | `modkit.ops.maps.check_camera_paths` |
 | WARNO has stopped working, right after Launch battle | `crash-dump-names-the-error` (core) | `modkit.core.crashdump.in_flight` |
 
 ## Trials, newest first
 
+- 2026-11-17 [2026-11-17-twin-strike-211352-play3](trials/2026-11-17-twin-strike-211352-play3.md): play, fail. The village turns ours but nothing follows
 - 2026-11-13 [2026-11-13-twin-strike-210942-play2](trials/2026-11-13-twin-strike-210942-play2.md): play, pass
 - 2026-11-12 [2026-11-12-twin-strike-launch-config-hash](trials/2026-11-12-twin-strike-launch-config-hash.md): launch, fail. NDF parsing error. Retry? @file:ScenariosData:/challenge_OperationTwinStrike/Scenario.ndf@(0:0): File not found : 'ScenariosData:/challenge_OperationTwinStrike/Scenario.ndf'
 - 2026-11-12 [2026-11-12-twin-strike-210942-play1](trials/2026-11-12-twin-strike-210942-play1.md): play, mixed. It is largely working. Only thing is very slow after nuking, and nuking didn't reveal enemy, so the effect was under represented

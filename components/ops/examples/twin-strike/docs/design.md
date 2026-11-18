@@ -201,9 +201,9 @@ still left NATO well ahead in the next smoke play; the balance (6.5) sets the va
   Soviet command unit, one of the player's units with the commander module the game's capture counts (6.1), is in the
   zone too: the test reads what the game captures by [[zone-capture-command-units]]. The build of 13 Nov read the
   40 px circle at the village's centre, 44 % of the zone; in a play on build 211352 the zone turned the player's and
-  none of the fall's consequences followed, that circle the likely cause [[detector-circles-only]]. The toolkit's
-  `fall-zone` gate now fails any test of command units on a circle. All 14 of the garrison start inside both, so the
-  thresholds (5, 4 and 2 left) are unchanged.
+  none of the fall's consequences followed, that circle the likely cause [[detector-circles-only]]
+  [[2026-11-17-twin-strike-211352-play3]]. The toolkit's `fall-zone` gate now fails any test of command units on a
+  circle. All 14 of the garrison start inside both, so the thresholds (5, 4 and 2 left) are unchanged.
 - **On the fall**, the script forces the village's owner to the player, so the map shows it ✓
   [[count-race-forced-owner]] [[zone-capture-command-units]].
 

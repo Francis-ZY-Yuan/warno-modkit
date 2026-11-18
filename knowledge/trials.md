@@ -3,6 +3,7 @@
 
 Every attempt, with its kind and outcome. Back to [the map](README.md).
 
+- 2026-11-17 [2026-11-17-twin-strike-211352-play3](../components/ops/knowledge/trials/2026-11-17-twin-strike-211352-play3.md) (ops): play, fail
 - 2026-11-17 [2026-11-17-build-211352-port](../components/core/knowledge/trials/2026-11-17-build-211352-port.md) (core): survey, pass
 - 2026-11-13 [2026-11-13-twin-strike-210942-play2](../components/ops/knowledge/trials/2026-11-13-twin-strike-210942-play2.md) (ops): play, pass
 - 2026-11-12 [2026-11-12-twin-strike-workshop-upload](../components/core/knowledge/trials/2026-11-12-twin-strike-workshop-upload.md) (core): launch, pass
