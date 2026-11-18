@@ -14,8 +14,10 @@ import unittest
 from unittest import mock
 from collections import Counter
 
-from twin_strike_support import JOUEUR, NATO, SCRIPT_DATA, Model, World, beats_root
+from twin_strike_support import GAME, JOUEUR, NATO, SCRIPT_DATA, Model, World, beats_root
 from modkit.ops import gates, models, shapes
+from modkit.ops.bricks import c_any, c_type, g_detect, g_units_in_zones, g_until
+from modkit.ops.build import details_files
 from modkit.ops.files import read_file
 from modkit.ops.graph import decode, walk
 from modkit.ops.profile import SURVIVORS
@@ -335,6 +337,34 @@ class Shapes(unittest.TestCase):
         self.assertEqual(rings, [])
         owners = [n for n in of(self.nodes, "SetCommandZoneOwner") if last(prop(n, "Camp")) == JOUEUR]
         self.assertEqual([[last(z) for z in prop(n, "Positions")] for n in owners], [[VILLAGE_CZ]])
+
+    @GAME
+    def test_the_fall_zone_gate(self):
+        """Gate fall-zone on the built script: its tests of what the game captures, the fall's command unit (one per
+        command type), read the village's command zone and list commander-module units only. The 13 Nov build's
+        shape, the circle at the village's centre counting the six command types it named, fails it in the game's
+        terms; so does the fixed test with a type that lacks the module."""
+        c = op.content()
+        details = details_files(profile.profile(), c.items, c.scenario)
+        counts, bad = gates.fall_zone_violations(self.roots, details, gates.commander_units)
+        n = len(forces.COMMAND_UNITS)
+        self.assertEqual((counts, bad), ({"typed place tests": n, "command tests": n}, []))
+        ctx = op.Ctx()
+        nov13 = ("T80BV_CMD_SOV", "BMP_2_CMD_SOV", "T80B_CMD_SOV", "BMP_1_CMD_SOV", "DShV_CMD_SOV", "T80U_CMD_SOV")
+        ring = g_until(g_detect(ctx.tag(op.VILLAGE_RING), c_any(*map(c_type, nov13)), 1, shapes.GE))
+        _, bad = gates.fall_zone_violations([ring], details, gates.commander_units)
+        self.assertEqual(bad, [
+            f"DetectUnitDansDetecteur on the circle CircularZones/{op.VILLAGE_RING} counts command units "
+            f"({', '.join(nov13[:4])}, ...): the game captures by the command zone {VILLAGE_CZ}, which holds the "
+            f"circle's centre, counting a commander-module unit anywhere in it, so the zone can turn the player's while "
+            f"this test never holds; read {VILLAGE_CZ} with UnitDansZone ZoneType 1"])
+        fall = [z for z in walk(self.roots) if z.cls == "TGDConditionUnitDansZone" and any(
+            k.cls == "TGDContrainteOnUnitType" for k in walk([prop(z, "Contrainte")]))][0]
+        types = [c_type(u) for u in forces.COMMAND_UNITS] + [c_type("T80BV_SOV")]
+        wrong = g_until(g_units_in_zones(prop(fall, "Detecteurs"), c_any(*types), 1, shapes.GE))
+        _, bad = gates.fall_zone_violations([wrong], details, gates.commander_units)
+        self.assertEqual(bad, [f"UnitDansZone on CommandPoints/{VILLAGE_CZ} counts command units and also 1 types "
+                               f"without the commander module, which the game's capture never counts: T80BV_SOV"])
 
     def test_objectives(self):
         """P1 and P2 pinned on the village (their counters the garrison left and NATO's hold), the boxes' labels on

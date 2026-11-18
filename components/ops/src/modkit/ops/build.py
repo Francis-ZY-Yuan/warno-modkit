@@ -288,6 +288,7 @@ def check_script(profile: OpProfile, content: Content, p: Plan, run: GateRun | N
     ends, funnel = g("end-funnel", gates.check_end_funnel, roots, profile.end_exports, pending=(PENDING, True))
     guarded = g("empty-group-guard", gates.check_empty_group_guard, roots) if deploy else None
     zone = g("zone-tags", gates.check_zone_tags, roots, details, pending=defaultdict(lambda: PENDING))
+    fall = g("fall-zone", gates.check_fall_zone, roots, details, pending=defaultdict(lambda: PENDING))
     decks = g("decks", gates.check_decks, payload(gd), scenario, pending=defaultdict(lambda: PENDING))
     lines.append(
         f"{ends} TriggerEndGame, "
@@ -298,7 +299,9 @@ def check_script(profile: OpProfile, content: Content, p: Plan, run: GateRun | N
         f"{g('rules', gates.check_rules, roots)} game rules without {', '.join(gates.RULES_OMITTED)}; "
         f"{zone['zone lookups']} zone lookups each in exactly one shipped polygon, {zone['detectors']} detectors on "
         f"circles, {zone['zone items']} zone items inside their own polygon, {zone['command zones']} command zones "
-        f"apart; {g('smart-orders', gates.check_smart_orders, roots)} smart-ordered groups, none ordered again after "
+        f"apart; {fall['command tests']} of {fall['typed place tests']} type-filtered place tests count command "
+        f"units, each on a command zone (ZoneType 1) with commander-module types only; "
+        f"{g('smart-orders', gates.check_smart_orders, roots)} smart-ordered groups, none ordered again after "
         f"its smart order in a Sequential; {g('prod-menu-switch', gates.check_prod_menu_switch, content, roots)} HUD "
         f"restores with the buy-menu switch "
         f"{'Default' if content.prod_menu_switch == BRICK_DEFAULT else 'ForceHide'} (Content.prod_menu_switch); "

@@ -360,6 +360,19 @@ class Units(unittest.TestCase):
         names |= set(forces.COMMAND_UNITS) | set(forces.NATO_INFANTRY)
         self.assertEqual(sorted(names - known), [])
 
+    def test_command_units_carry_the_commander_module(self):
+        """The fall's command units (design 5.1) are exactly the units the player can field that carry the commander
+        module in the game's unit database (gates.commander_units), the units the game captures a zone with: the
+        deck's cards and their transports, and the player's scripted rows [[zone-capture-command-units]]. On 211352:
+        the T-80BV, BMP-2 and MT-LB command vehicles of the start and the reserve's T-80U command tank."""
+        cards = [c for page in forces.DECK_PAGES for p in page.platoons for c in p.cards]
+        player = op.PLAYER
+        fieldable = ({c.unit for c in cards} | {c.transport for c in cards if c.transport}
+                     | {r.unit for r in forces.ROWS if r.camp == player}
+                     | {r.transport for r in forces.ROWS if r.camp == player and r.transport})
+        commanders = {u.removeprefix(gates.UNIT_PREFIX + "Descriptor_Unit_") for u in gates.commander_units()}
+        self.assertEqual(sorted(fieldable & commanders), sorted(forces.COMMAND_UNITS))
+
 
 if __name__ == "__main__":
     unittest.main()

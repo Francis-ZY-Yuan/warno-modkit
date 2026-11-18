@@ -11,10 +11,12 @@ reviewed-pending entry for one:
    name lists included),
    ``check_references``, the arrivals and tiers (``check_arrivals``, ``check_tiers``), ``check_objective_pins``,
    ``check_never_finishing``, ``check_end_funnel``, ``check_empty_group_guard``, ``check_dialog_text``,
-   ``check_rules``, ``check_zone_tags``, ``check_smart_orders``, ``check_prod_menu_switch``, ``check_script_effects``
-   (every effect the script launches is a self-contained GameFx effect), ``check_created_in_zone`` (every unit the
-   script creates stands inside the playable zone), ``check_decks`` (every SetDeck names a deck the game will have
-   registered; a deck the script exports passes the game's load checks and the op's deck rules);
+   ``check_rules``, ``check_zone_tags``, ``check_fall_zone`` (a test of what the game captures reads the command
+   zone, and counts commander-module units only), ``check_smart_orders``, ``check_prod_menu_switch``,
+   ``check_script_effects`` (every effect the script launches is a self-contained GameFx effect),
+   ``check_created_in_zone`` (every unit the script creates stands inside the playable zone), ``check_decks``
+   (every SetDeck names a deck the game will have registered; a deck the script exports passes the game's load
+   checks and the op's deck rules);
 4. every re-keyed file differs from stock only by its dump rows: ``check_dump_diff``;
 5. the package is scenario-only and ships no Gameplay file: ``check_package``; the Definition pack is in build
    210942's layout, every .txn with its .txn.tag and a .dbg of one line per object (``check_definition_layout``),
@@ -1304,6 +1306,104 @@ def check_zone_tags(roots: Iterable[Node], details: Mapping[str, bytes]) -> dict
     check(not bad, f"{len(bad)} zone tags or zones the game would look up wrong, silently:\n  " + "\n  ".join(bad)
           + "\nPut each tag inside exactly one zone polygon (at its centre, say), use CircularZone items as "
           "detectors, and keep command zones apart.")
+    return counts
+
+
+# The script tests that count units in a place: a detector circle (DetectUnitDansDetecteur's Detecteur) or a zone
+# (UnitDansZone's Detecteurs; ZoneType 1, the command zones). Stock's other filtered conditions (UnitGroupWithFilter,
+# UnitCampWithFilter) count a group or a camp, not a place.
+PLACE_TESTS = ("TGDConditionDetectUnitDansDetecteur", "TGDConditionUnitDansZone")
+COMMAND_ZONE_TYPE = 1
+NO_CONSTRAINT = "TGDContrainteOnUnitNoContrainte"   # its types are the ones a filter leaves out
+
+
+def filter_types(contrainte: object) -> list[str]:
+    """The unit paths a filter counts: every OnUnitType's TypeUnit under it, outside a NoContrainte (whose types it
+    leaves out)."""
+    out = []
+    for nd in prop_nodes(contrainte):
+        if nd.cls == "TGDContrainteOnUnitType":
+            unit = dict(nd.props).get("TypeUnit")
+            out += [unit.path] if isinstance(unit, Imp) else []
+        elif nd.cls != NO_CONSTRAINT:
+            out += [t for _, spec in nd.props for t in filter_types(spec)]
+    return out
+
+
+def fall_zone_violations(roots: Iterable[Node], details: Mapping[str, bytes],
+                         commanders: Callable[[], Iterable[str]]) -> tuple[dict[str, int], list[str]]:
+    """({check: cases}, one line per violation) of the script's place tests on command units: a place test
+    (PLACE_TESTS) whose filter counts unit types (filter_types), most of them carrying the commander module
+    (`commanders()`: their unit paths, commander_units by default; read only when the script holds a type-filtered
+    place test). Such a test tests what the game captures, and the game captures by the command zone, counting a
+    commander-module unit anywhere in it [[zone-capture-command-units]]. So:
+      - it is a UnitDansZone with ZoneType 1 (the command zones), not a DetectUnitDansDetecteur: a detector circle
+        inside the zone sees part of it only, so the zone can turn the player's while the test never holds
+        [[detector-circles-only]]. The line names the command zone that holds the circle's centre (point-in-polygon on
+        the shipped command zones, as the game looks a zone up [[zone-lookup-by-point]]): the one to read instead;
+      - every type of its filter carries the commander module: the game's capture never counts the others, so a test
+        that lists one holds where the game captures nothing.
+    A filter with fewer commander types than others counts a force, not a capture (Open Door's defeat circle: six
+    main-body vehicles of seven types, two of them command vehicles). `details`: inner path -> bytes, the shipped
+    LevelDesign and zone files (only a circle's line reads them). Stock (211352): none of the 35 stock scripts holds
+    one; 64 of their place tests count named types (63 circles and 1 zone, in 2 scripts), strategic pawns and units,
+    none with the commander module (10 more name types only to leave them out)."""
+    typed = [(nd, types) for nd in walk(roots) if nd.cls in PLACE_TESTS
+             for types in [filter_types(dict(nd.props).get("Contrainte"))] if types]
+    counts, bad = {"typed place tests": len(typed), "command tests": 0}, []
+    if not typed:
+        return counts, bad
+    cmd = frozenset(commanders())
+    items = {it["GUID"]: it for it in read_ld_items(details[LD_FILE])} if details.get(LD_FILE) else {}
+    inner = ZONE_TYPE_FILES[COMMAND_ZONE_TYPE]
+    zones = read_zone_areas(details[inner]) if details.get(inner) else []
+
+    def bare(units: Sequence[str], most: int) -> str:
+        return ", ".join(u.removeprefix(UNIT_PREFIX + "Descriptor_Unit_") for u in units[:most]) \
+            + (", ..." if len(units) > most else "")
+
+    def place(tag: object) -> str:
+        it = items.get(tag_guid(tag))
+        return f"{it['Ranking']}/{it['Name']}" if it else str(getattr(tag, "export", None) or tag)
+
+    for nd, types in typed:
+        others = [t for t in types if t not in cmd]
+        if 2 * len(others) >= len(types):
+            continue
+        counts["command tests"] += 1
+        props = dict(nd.props)
+        if nd.cls == "TGDConditionDetectUnitDansDetecteur":
+            where, it = place(props.get("Detecteur")), items.get(tag_guid(props.get("Detecteur")))
+            held = [] if it is None else [a.prop("Name") for a in zones if point_in_polygon(*it["pos"][:2], a.polygon)]
+            zone = (f"the command zone {held[0]}, which holds the circle's centre" if len(held) == 1 else
+                    f"a command zone, and {len(held)} hold the circle's centre")
+            bad.append(f"DetectUnitDansDetecteur on the circle {where} counts command units ({bare(types, 4)}): the "
+                       f"game captures by {zone}, counting a commander-module unit anywhere in it, so the zone can "
+                       f"turn the player's while this test never holds; read "
+                       f"{held[0] if len(held) == 1 else 'the zone'} with UnitDansZone ZoneType {COMMAND_ZONE_TYPE}")
+        else:
+            zone_type = props.get("ZoneType")
+            zone_type = zone_type.v if isinstance(zone_type, Value) else 0
+            where = ", ".join(place(tag) for tag in prop_nodes(props.get("Detecteurs")))
+            if zone_type != COMMAND_ZONE_TYPE:
+                bad.append(f"UnitDansZone ZoneType {zone_type} on {where} counts command units ({bare(types, 4)}): "
+                           f"the game captures by the command zones, ZoneType {COMMAND_ZONE_TYPE}")
+        if others:
+            bad.append(f"{nd.cls.removeprefix('TGDCondition')} on {where} counts command units and also "
+                       f"{len(others)} types without the commander module, which the game's capture never counts: "
+                       f"{bare(others, 6)}")
+    return counts, bad
+
+
+def check_fall_zone(roots: Iterable[Node], details: Mapping[str, bytes],
+                    commanders: Callable[[], Iterable[str]] | None = None) -> dict[str, int]:
+    """Gate 3: fall_zone_violations finds nothing (`commanders`: commander_units over the game's unit database by
+    default). Returns its counts."""
+    counts, bad = fall_zone_violations(roots, details, commanders or commander_units)
+    check(not bad, f"{len(bad)} script tests of what the game captures that read another place or count other "
+                   f"units:\n  " + "\n  ".join(bad)
+          + "\nA test of what the game captures reads the command zone with UnitDansZone ZoneType 1, and its filter "
+            "lists commander-module units only.")
     return counts
 
 
@@ -2668,6 +2768,25 @@ def top_blocks(text: str) -> Iterable[tuple[str, str]]:
     heads = list(_HEAD.finditer(text))
     for head, after in zip(heads, [*heads[1:], None]):
         yield head.group(1), text[head.start():after.start() if after else len(text)]
+
+
+COMMANDER_MODULE = "TCommanderModuleDescriptor"
+
+
+def commander_units(archive: str | None = None) -> frozenset[str]:
+    """{unit path}: the units of the unit database (UNIT_DATABASE[0] in `archive`, by default the game's) that carry
+    the commander module (a COMMANDER_MODULE among their modules), the units the game's zone capture counts
+    [[zone-capture-command-units]]. Build 211352: 357 of its units, among them helicopters the "Commandant" search tag
+    leaves out (that tag marks 337), so the module, not the tag, is the test."""
+    return _commander_units(unit_archive(archive))
+
+
+@functools.cache
+def _commander_units(archive: str) -> frozenset[str]:
+    out = frozenset(UNIT_PREFIX + name for name, body in top_blocks(database_text(archive, UNIT_DATABASE[0]))
+                    if name.startswith("Descriptor_Unit_") and COMMANDER_MODULE in body)
+    check(bool(out), f"{archive}: no unit carries {COMMANDER_MODULE}; the unit database was not read right")
+    return out
 
 
 def shoot_on_position_bands(archive: str | None = None) -> dict[str, tuple[float, float]]:
