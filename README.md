@@ -78,12 +78,13 @@ In a session, Claude picks a skill by what you ask; you can also call one by nam
 
 ## Game version
 
-This toolkit was verified on WARNO builds **201602** and **210942**. Its core (stock paths, the load-time rules reader,
-packaging) has moved to 210942, and Twin Strike played on it
-([2026-11-12-twin-strike-210942-play1](components/ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md)). To see your own, run
-`python -m modkit.core.gamebuild`: it prints the installed build and the verified ones, and a `GAME BUILD:` warning
-when yours is another. The build driver prints the same warning when it starts. It is a warning only: nothing fails
-and no output changes.
+This toolkit was verified on WARNO builds **201602** and **210942**. Its core (stock paths, the load-time rules reader)
+has moved to 210942, and Twin Strike played on it
+([2026-11-12-twin-strike-210942-play1](components/ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md)).
+Packaging stamps mods with the next build, 211352, which joins the verified builds after a clean play. To see your
+own, run `python -m modkit.core.gamebuild`: it prints the installed build and the verified ones, and a
+`GAME BUILD:` warning when yours is another. The build driver prints the same warning when it starts. It is a
+warning only: nothing fails and no output changes.
 
 Eugen's game updates often change how mods are built and loaded. What changed for mods at 210942, found in
 [2026-11-12-build-210942-port](components/core/knowledge/trials/2026-11-12-build-210942-port.md):

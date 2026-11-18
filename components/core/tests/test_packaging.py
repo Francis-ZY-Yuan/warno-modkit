@@ -17,10 +17,10 @@ class ConstantsTest(unittest.TestCase):
         self.assertTrue(text.endswith("[Config] ; Used for mod compatibility check, do not modify\n"))
         self.assertNotIn("\r", text)
         self.assertIn("\nDescription = \n", text)  # empty values keep the space after '='
-        self.assertIn("\nModGenVersion = 210942 ;", text)
+        self.assertIn("\nModGenVersion = 211352 ;", text)
 
     def test_version_ndf(self):
-        self.assertEqual(packaging.VERSION_NDF, b"version is '210942'\n")
+        self.assertEqual(packaging.VERSION_NDF, b"version is '211352'\n")
 
     def test_gameplay_files(self):
         self.assertEqual(len(packaging.GAMEPLAY_FILES), 16)
