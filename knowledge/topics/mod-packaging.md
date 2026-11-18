@@ -16,7 +16,7 @@ Topic `mod-packaging`, declared by core. Back to [the map](../README.md).
 ### PROBED
 
 - [workshop-item-page](../../components/core/knowledge/mechanisms/workshop-item-page.md): The upload sets a Workshop item's main image and resets its title; the item's own pages set its text and gallery (core, verified 210942)
-- [workshop-upload-folder](../../components/core/knowledge/mechanisms/workshop-upload-folder.md): The Workshop upload sends the mod folder as it is; a scenario mod needs no generate step (core, verified 210942)
+- [workshop-upload-folder](../../components/core/knowledge/mechanisms/workshop-upload-folder.md): The Workshop upload sends the mod folder as it is; a scenario mod needs no generate step (core, verified 212400)
 
 ## Lessons
 
@@ -31,6 +31,7 @@ Taught by the trials of these mechanisms.
 
 ## Trials, newest first
 
+- 2026-11-18 [2026-11-18-twin-strike-workshop-update](../../components/core/knowledge/trials/2026-11-18-twin-strike-workshop-update.md) (core): launch, pass
 - 2026-11-18 [2026-11-18-twin-strike-211352-play4](../../components/ops/knowledge/trials/2026-11-18-twin-strike-211352-play4.md) (ops): play, pass
 - 2026-11-17 [2026-11-17-build-211352-port](../../components/core/knowledge/trials/2026-11-17-build-211352-port.md) (core): survey, pass
 - 2026-11-12 [2026-11-12-twin-strike-workshop-upload](../../components/core/knowledge/trials/2026-11-12-twin-strike-workshop-upload.md) (core): launch, pass

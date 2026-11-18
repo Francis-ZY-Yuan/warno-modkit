@@ -3,6 +3,16 @@
 
 A fact holds for the build it was last verified on. After a game update, a record still on an older build is unconfirmed until re-verified. Start with [topics/game-updates.md](topics/game-updates.md). Back to [the map](README.md).
 
+## 212400
+
+### Mechanisms last verified on it
+
+- [workshop-upload-folder](../components/core/knowledge/mechanisms/workshop-upload-folder.md) (core): The Workshop upload sends the mod folder as it is; a scenario mod needs no generate step (PROBED, 2026-11-18)
+
+### Trials run on it
+
+- 2026-11-18 [2026-11-18-twin-strike-workshop-update](../components/core/knowledge/trials/2026-11-18-twin-strike-workshop-update.md) (core): launch, pass
+
 ## 211352
 
 ### Mechanisms last verified on it
@@ -39,7 +49,6 @@ A fact holds for the build it was last verified on. After a game update, a recor
 - [script-effects-self-contained](../components/ops/knowledge/mechanisms/script-effects-self-contained.md) (ops): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (PLAYED, 2026-11-12)
 - [scripted-nuke-effect](../components/ops/knowledge/mechanisms/scripted-nuke-effect.md) (ops): A script plays the tactical-nuke impact effect only through a wrapper of its own that binds its parameters; a direct launch crashes the game (PLAYED, 2026-11-12)
 - [workshop-item-page](../components/core/knowledge/mechanisms/workshop-item-page.md) (core): The upload sets a Workshop item's main image and resets its title; the item's own pages set its text and gallery (PROBED, 2026-11-12)
-- [workshop-upload-folder](../components/core/knowledge/mechanisms/workshop-upload-folder.md) (core): The Workshop upload sends the mod folder as it is; a scenario mod needs no generate step (PROBED, 2026-11-12)
 
 ### Trials run on it
 

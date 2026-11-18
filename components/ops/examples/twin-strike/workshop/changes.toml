@@ -7,7 +7,7 @@
 # ({{changes}}), its 更新日志 each note_zh ({{changes_zh}}), so render and paste the description again after the
 # rename. The Chinese notes are not yet reviewed by a native reader.
 
-[next]
+[1795010309]
 note = """
 Rebuilt for WARNO build 211352.
 Simplified Chinese: every text of the Operation, in the game's own terms. A native reader reviewed it, except the deck's names and the latest texts.

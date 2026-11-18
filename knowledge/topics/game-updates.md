@@ -19,7 +19,7 @@ Topic `game-updates`, declared by core. Back to [the map](../README.md).
 
 ### PROBED
 
-- [workshop-upload-folder](../../components/core/knowledge/mechanisms/workshop-upload-folder.md): The Workshop upload sends the mod folder as it is; a scenario mod needs no generate step (core, verified 210942)
+- [workshop-upload-folder](../../components/core/knowledge/mechanisms/workshop-upload-folder.md): The Workshop upload sends the mod folder as it is; a scenario mod needs no generate step (core, verified 212400)
 
 ### RE
 
@@ -50,6 +50,7 @@ Taught by the trials of these mechanisms.
 
 ## Trials, newest first
 
+- 2026-11-18 [2026-11-18-twin-strike-workshop-update](../../components/core/knowledge/trials/2026-11-18-twin-strike-workshop-update.md) (core): launch, pass
 - 2026-11-18 [2026-11-18-twin-strike-211352-play4](../../components/ops/knowledge/trials/2026-11-18-twin-strike-211352-play4.md) (ops): play, pass
 - 2026-11-17 [2026-11-17-build-211352-port](../../components/core/knowledge/trials/2026-11-17-build-211352-port.md) (core): survey, pass
 - 2026-11-13 [2026-11-13-twin-strike-210942-play2](../../components/ops/knowledge/trials/2026-11-13-twin-strike-210942-play2.md) (ops): play, pass
