@@ -1,5 +1,6 @@
 """Tests for Twin Strike's Workshop page files (examples/twin-strike/workshop): the item.toml loads, passes
-modkit.core.workshop's offline checks, and names the item and the mod its profile does. No network."""
+modkit.core.workshop's offline checks, names the item and the mod its profile does, shows each half its own
+changelog and fits Steam's description limit. No network."""
 from __future__ import annotations
 
 import unittest
@@ -24,6 +25,20 @@ class Item(unittest.TestCase):
 
     def test_one_placeholder_filled_locally(self):
         self.assertEqual(self.item.vars, ("repo",))
+
+    def test_each_half_shows_its_changelog(self):
+        text = workshop.render(workshop.uploaded(self.item), {"repo": "example.invalid/warno-modkit"})
+        english, chinese = text.split("[hr][/hr]")
+        for r in self.item.releases:
+            self.assertIn(r.note, english)
+            self.assertIn(r.text("zh"), chinese)
+            self.assertNotIn(r.note, chinese)
+
+    def test_the_page_fits_once_next_is_uploaded(self):
+        # the longest path the repo can have: github.com/, a 39-character user name, /warno-modkit
+        values = {"repo": "github.com/" + "x" * 39 + "/warno-modkit"}
+        size = workshop.description_size(workshop.render(workshop.uploaded(self.item), values))
+        self.assertLessEqual(size, workshop.MAX_DESCRIPTION)
 
 
 if __name__ == "__main__":

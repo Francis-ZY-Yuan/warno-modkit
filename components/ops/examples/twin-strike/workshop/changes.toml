@@ -3,22 +3,32 @@
 # its note as [next]; after it, paste the note over the default on the item's Change Notes page
 # (python -m modkit.core.workshop note item.toml prints it), then rename [next] to the note's id, which
 # `workshop check` names (the update's Unix time). Steam BBCode works in a note; keep a note short, for players.
+# Each note_zh is its release's note in Simplified Chinese: the description's Changelog shows each uploaded note
+# ({{changes}}), its 更新日志 each note_zh ({{changes_zh}}), so render and paste the description again after the
+# rename. The Chinese notes are not yet reviewed by a native reader.
 
 [next]
 note = """
-Simplified Chinese: set the game to Simplified Chinese and every text of the operation (the menu, the briefing, \
-hints, objectives and dialogs) is in Chinese, in the game's own terms. A native reader reviewed it.
-Its own deck: the buy menu shows the Operation's five named pages, the reserve's two locked until the village \
-falls, and no RedJuggernaut card.
-The village's fall counts its whole zone, the one the game captures, not a circle at its centre: with its garrison \
-down and one of your command units anywhere in the zone, the village falls.
+Rebuilt for WARNO build 211352.
+Simplified Chinese: every text of the Operation, in the game's own terms. A native reader reviewed it, except the deck's names and the latest texts.
+Its own deck: five named pages, the reserve's two locked until the village falls, and no Red Juggernaut card.
+The village falls once its garrison is down and one of your command units is anywhere in its zone.
+"""
+note_zh = """
+为WARNO 211352版本重新构建。
+简体中文：本行动的所有文本，使用游戏自身的术语。母语读者已审阅，但卡组的名称及最新的文本尚未审阅。
+本行动自己的卡组：五个命名页面，预备队的两页在攻占村庄前锁定，没有红色巨兽的卡牌。
+村内守军所剩无几，且您的一个指挥单位位于村庄区域内任意位置时，村庄即被攻占。
 """
 
 [1794521820]
 note = "A new main image."
+note_zh = "新的主图。"
 
 [1794508361]
 note = "The main image, title, description and screenshots of this page."
+note_zh = "本页面的主图、标题、说明和截图。"
 
 [1794506683]
 note = "First release (work in progress, v0.1)."
+note_zh = "首次发布（开发中，v0.1）。"
