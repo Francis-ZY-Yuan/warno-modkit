@@ -1346,7 +1346,7 @@ def fall_zone_violations(roots: Iterable[Node], details: Mapping[str, bytes],
     A filter with fewer commander types than others counts a force, not a capture (Open Door's defeat circle: six
     main-body vehicles of seven types, two of them command vehicles). `details`: inner path -> bytes, the shipped
     LevelDesign and zone files (only a circle's line reads them). Stock (211352): none of the 35 stock scripts holds
-    one; 64 of their place tests count named types (63 circles and 1 zone, in 2 scripts), strategic pawns and units,
+    one; 102 of their place tests count named types (101 circles and 1 zone, in 2 scripts), strategic pawns and units,
     none with the commander module (10 more name types only to leave them out)."""
     typed = [(nd, types) for nd in walk(roots) if nd.cls in PLACE_TESTS
              for types in [filter_types(dict(nd.props).get("Contrainte"))] if types]
