@@ -359,20 +359,26 @@ def check_dump_rows(profile: OpProfile, content: Content, items: list[Item], run
 
 def check_definition(profile: OpProfile, content: Content, items: list[Item], run: GateRun | None = None) -> str:
     """Gate 5's game-build checks: the Definition pack in build 210942's layout (gates.check_definition_layout), every
-    tag holding the ConfigHash the game computes (gates.check_config_hashes), and every class and property of every
-    CNDF entry the build ships in stock's (gates.check_stock_classes; the content's admitted shapes pass too)."""
+    tag holding the ConfigHash the game computes (gates.check_config_hashes) and current for the configured game's
+    stock scenario tags (gates.check_tag_sources; not run, and said so, when the game folder holds no stock scenario
+    packs), and every class and property of every CNDF entry the build ships in stock's (gates.check_stock_classes;
+    the content's admitted shapes pass too)."""
     g = run or GateRun(profile)
     definition = {it.path: payload(it) for it in items if it.pack == "Definition"}
     kinds = g("definition-layout", gates.check_definition_layout, definition, content.scenario)
     tags = g("config-hash", gates.check_config_hashes, definition, content.scenario, gates.stock_scans())
+    current = gates.stock_tags()
+    sources = (f"{g('tag-sources', gates.check_tag_sources, definition, current)} current for {current.name} "
+               f"scenario tags" if current is not None else
+               "not checked against stock's scenario tags (the game folder holds no Data/PC/<build>/Scenarios)")
     stock = gates.stock_classes()
     admitted = {(s.cls, s.prop) for s in content.extra_shapes}
     shipped = [(f"{it.pack}:{it.path}", payload(it)) for it in items]
     read = g("stock-classes", gates.check_stock_classes, shipped, stock, admitted, pending=(PENDING, PENDING))
     files, objects = read
     return (f"{kinds} kinds in NDF/Scenarios/{content.scenario}/, each .txn with its .txn.tag and a .dbg of one line "
-            f"per object; {tags} tags with the ConfigHash the game computes; every class and property of {files} files "
-            f"({objects} objects) is in the {stock.files} stock files'"
+            f"per object; {tags} tags with the ConfigHash the game computes, {sources}; every class and property of "
+            f"{files} files ({objects} objects) is in the {stock.files} stock files'"
             + (f" or among {len(admitted)} admitted" if admitted else ""))
 
 

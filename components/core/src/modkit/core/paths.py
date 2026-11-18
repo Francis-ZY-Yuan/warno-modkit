@@ -138,12 +138,32 @@ def game_build() -> str | None:
     """The current game build, read only from the install: the newest numeric folder under ``Data/PC`` (the
     data packs are named by build number). None when the install is not configured or holds no such folder;
     this never raises, so a check that wants the version can skip itself."""
+    builds = _pc_builds()
+    return builds[-1].name if builds else None
+
+
+def stock_scenarios_dir() -> Path | None:
+    """The stock scenario packs the game runs: ``Data/PC/<build>/Scenarios`` of the newest numeric build folder that
+    holds a ``*_Definition.dat`` there (an update ships every stock scenario pack whole, in its own build's folder).
+    None when the install is not configured or holds none; this never raises."""
+    for build in reversed(_pc_builds()):
+        folder = build / "Scenarios"
+        try:
+            if any(folder.glob("*_Definition.dat")):
+                return folder
+        except OSError:
+            continue
+    return None
+
+
+def _pc_builds() -> list[Path]:
+    """The numeric folders under the install's ``Data/PC``, oldest first; empty when there are none or the install is
+    not configured."""
     try:
         folder = game_dir() / "Data" / "PC"
-        builds = [p.name for p in folder.iterdir() if p.is_dir() and p.name.isdigit()]
+        return sorted((p for p in folder.iterdir() if p.is_dir() and p.name.isdigit()), key=lambda p: int(p.name))
     except (NotConfigured, OSError):
-        return None
-    return max(builds, key=int) if builds else None
+        return []
 
 
 def data_dir() -> Path:

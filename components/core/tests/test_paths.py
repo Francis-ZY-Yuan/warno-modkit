@@ -122,6 +122,23 @@ class PathsTest(unittest.TestCase):
         os.environ["MODKIT_GAME_DIR"] = str(self.tmp / "game")
         self.assertEqual(paths.build_root(), sub / "build")
 
+    def test_game_build_and_stock_scenarios_are_the_newest_build_folders(self):
+        """The build is the newest numeric Data/PC folder; the stock scenarios are the newest one holding a
+        *_Definition.dat in its Scenarios folder. Neither raises when the install is not configured."""
+        os.chdir(self.tmp)
+        self.assertIsNone(paths.game_build())
+        self.assertIsNone(paths.stock_scenarios_dir())
+        os.environ["MODKIT_GAME_DIR"] = str(self.tmp / "game")
+        pc = self.tmp / "game" / "Data" / "PC"
+        for name in ("99", "200", "1000", "imgui"):
+            (pc / name / "Scenarios").mkdir(parents=True)
+        (pc / "99" / "Scenarios" / "a_Definition.dat").write_bytes(b"x")
+        (pc / "1000" / "Scenarios" / "a_Details.dat").write_bytes(b"x")
+        self.assertEqual(paths.game_build(), "1000")
+        self.assertEqual(paths.stock_scenarios_dir(), pc / "99" / "Scenarios")
+        (pc / "200" / "Scenarios" / "b_Definition.dat").write_bytes(b"x")
+        self.assertEqual(paths.stock_scenarios_dir(), pc / "200" / "Scenarios")
+
     def test_rel_source_keeps_extracted_prefix(self):
         root = self.tmp / "ex"
         os.environ["MODKIT_EXTRACTED"] = str(root)

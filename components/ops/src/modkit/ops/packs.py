@@ -1,12 +1,15 @@
 """Writing and reading back a build: a scenario's packs, the read-back gate over them, and loose files under the mod
 folder; and the game-build check of a mod folder already built.
 
-    python -m modkit.ops.packs check DIR [DIR ...] [--admit CLASS.PROPERTY ...]
+    python -m modkit.ops.packs check DIR [DIR ...] [--admit CLASS.PROPERTY ...] [--stock SCENARIOS_DIR]
 
 reads each mod folder's scenario packs (Scenarios/<scenario>_Definition.dat and _Details.dat) and runs the game-build
 gates on them, as a build runs them on its own output: the Definition layout (modkit.ops.gates.check_definition_layout)
-then each tag's ConfigHash (modkit.ops.gates.check_config_hashes), and every class and property against stock's
-(modkit.ops.gates.check_stock_classes). A content's admitted shapes
+then each tag's ConfigHash (modkit.ops.gates.check_config_hashes) and its sources against the installed game's stock
+tags (modkit.ops.gates.check_tag_sources), and every class and property against stock's
+(modkit.ops.gates.check_stock_classes). The stock tags are the configured game's newest
+``Data/PC/<build>/Scenarios``; ``--stock`` names another such folder (an older build's, to see which game a mod was
+built for). A content's admitted shapes
 (Content.extra_shapes) are not in a mod folder: pass each as ``--admit CLASS.PROPERTY``. One line per scenario; a
 failure prints one ``FAILED:`` line naming each failed gate and gives exit code 1. Use it on a mod built before a game
 update, or one built elsewhere; nothing is written.
@@ -97,14 +100,18 @@ def mod_scenarios(mod_root: str | Path) -> dict[str, dict[str, list[tuple[str, b
     return out
 
 
-def check_mod(mod_root: str | Path, stock: gates.StockClasses, admitted: Iterable[tuple[str, str]] = ()) -> list[str]:
+def check_mod(mod_root: str | Path, stock: gates.StockClasses, admitted: Iterable[tuple[str, str]] = (),
+              current: gates.StockTags | None = None) -> list[str]:
     """The game-build gates on a built mod folder, one line per scenario: its Definition in this build's layout
-    (gates.check_definition_layout), and every class and property of its Definition and Details in `stock` or
-    `admitted` (gates.check_stock_classes). Both run on every scenario; any failure raises one CheckError naming each
+    (gates.check_definition_layout), its tags with the ConfigHash the game computes (gates.check_config_hashes) and
+    current for `current`'s stock tags (gates.check_tag_sources; default the configured game's, gates.stock_tags(); the
+    line says when there are none), and every class and property of its Definition and Details in `stock` or
+    `admitted` (gates.check_stock_classes). All run on every scenario; any failure raises one CheckError naming each
     failed gate."""
     found = mod_scenarios(mod_root)
     check(bool(found), f"{mod_root}: no Scenarios/<scenario>_Definition.dat or _Details.dat")
     admitted = tuple(admitted)
+    current = current if current is not None else gates.stock_tags()
     lines, failed = [], []
     for scenario, packs in sorted(found.items()):
         definition = dict(packs.get("Definition", []))
@@ -121,6 +128,16 @@ def check_mod(mod_root: str | Path, stock: gates.StockClasses, admitted: Iterabl
             except CheckError as exc:
                 failed.append(f"{scenario}: config-hash: {exc}")
                 layout = None
+            if current is None:
+                layout = layout and layout + (", not checked against stock's scenario tags (the game folder holds no "
+                                              "Data/PC/<build>/Scenarios)")
+            else:
+                try:
+                    tags = gates.check_tag_sources(definition, current)
+                    layout = layout and layout + f", {tags} current for {current.name} scenario tags"
+                except CheckError as exc:
+                    failed.append(f"{scenario}: tag-sources: {exc}")
+                    layout = None
         shipped = [(f"{kind}:{inner}", raw) for kind in ("Definition", "Details") for inner, raw in packs.get(kind, [])]
         try:
             files, objects = gates.check_stock_classes(shipped, stock, admitted)
@@ -142,6 +159,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     p.add_argument("mods", nargs="+", metavar="DIR")
     p.add_argument("--admit", action="append", default=[], metavar="CLASS.PROPERTY",
                    help="a shape the content admits on purpose (its Content.extra_shapes), repeatable")
+    p.add_argument("--stock", metavar="SCENARIOS_DIR",
+                   help="the stock tags to check against: a Data/PC/<build>/Scenarios folder (default: the configured "
+                        "game's newest)")
     args = ap.parse_args(argv)
     for stream in (sys.stdout, sys.stderr):
         try:
@@ -155,12 +175,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     status = 0
     try:
         stock = gates.stock_classes()
-    except (CheckError, paths.NotConfigured, OSError) as exc:
+        current = gates.read_stock_tags(args.stock) if args.stock else None
+    except (CheckError, paths.NotConfigured, OSError, edat.EdatError, ValueError) as exc:
         print(f"FAILED: {exc}", file=sys.stderr)
         return 1
     for folder in args.mods:
         try:
-            for line in check_mod(folder, stock, admitted):
+            for line in check_mod(folder, stock, admitted, current):
                 print(f"{folder}: {line}")
         except (CheckError, edat.EdatError, OSError, ValueError) as exc:
             print(f"FAILED: {folder}: {exc}", file=sys.stderr)

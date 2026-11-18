@@ -6,6 +6,7 @@ import io
 import os
 import tempfile
 import unittest
+from pathlib import Path
 from unittest import mock
 
 from modkit.core import edat, txntag
@@ -16,6 +17,7 @@ from modkit.ops.graph import Node, Str, build_graph, encode
 from modkit.ops.items import Item, details_copy, mem_item, payload, read_provenance
 from modkit.ops.packs import check_mod, verify_packs, write_loose, write_packs
 from modkit.ops.rekey import DBG, TAG, TAG_CLASS, TXN, def_path, generated_dbg
+from test_tag_sources import tag_file, write_stock
 
 
 def write_pack(path: str, items: list[Item]) -> None:
@@ -119,16 +121,17 @@ SCANS = {f"{kind}.txn": txntag.Scan("Scenarios", f"{kind}.txn", kind, ("CommonDa
                                     "S.ndf") for kind in ("MapConfiguration", "ScenarioInfo", "GDScript")}
 
 
-def definition(scenario: str, kinds=("MapConfiguration", "ScenarioInfo"), cls: str = "TRoot", config_hash=None
-               ) -> list[tuple[str, bytes]]:
+def definition(scenario: str, kinds=("MapConfiguration", "ScenarioInfo"), cls: str = "TRoot", config_hash=None,
+               sources: tuple[tuple[str, int], ...] = ()) -> list[tuple[str, bytes]]:
     """A Definition pack's entries in build 210942's layout: each kind's .txn (one `cls` object), its .txn.tag (one
-    TNDFTagFile, with the ConfigHash the game computes from SCANS, or `config_hash`) and its .dbg (one line per
-    object)."""
+    TNDFTagFile, with the ConfigHash the game computes from SCANS, or `config_hash`, and SourceFileHashes `sources`
+    when given) and its .dbg (one line per object)."""
     out = []
     for kind in kinds:
         h = txntag.config_hash(txntag.scan_transaction(SCANS[f"{kind}.txn"], scenario)) if config_hash is None \
             else config_hash
-        tag = encode(build_graph([Node(TAG_CLASS, [("ConfigHash", Value(0x13, h))])], []), "tag")
+        tag = tag_file(scenario, sources, h) if sources else \
+            encode(build_graph([Node(TAG_CLASS, [("ConfigHash", Value(0x13, h))])], []), "tag")
         raw = encode(build_graph([Node(cls, [("Name", Str(scenario))])], []), kind)
         out += [(def_path(kind, TXN, scenario), raw), (def_path(kind, TAG, scenario), tag),
                 (def_path(kind, DBG, scenario), generated_dbg(raw, scenario, f"ScenariosData:/{scenario}/S.ndf"))]
@@ -140,7 +143,8 @@ class CheckModTest(unittest.TestCase):
     scenario, the Definition in build 210942's layout, and every class and property in stock's or admitted."""
 
     STOCK = gates.StockClasses(frozenset({"TRoot", TAG_CLASS}),
-                               frozenset({("TRoot", "Name"), (TAG_CLASS, "ConfigHash")}), 2)
+                               frozenset({("TRoot", "Name"), (TAG_CLASS, "ConfigHash"),
+                                          (TAG_CLASS, "SourceFileHashes")}), 2)
     OLD = "TGDDescriptorLaunchEffetStandard"   # build 201602's script root, which 210942 does not have
 
     def setUp(self):
@@ -150,6 +154,9 @@ class CheckModTest(unittest.TestCase):
         scans = mock.patch.object(gates, "stock_scans", return_value=SCANS)
         scans.start()
         self.addCleanup(scans.stop)
+        no_stock = mock.patch.object(gates, "stock_tags", return_value=None)  # no game folder: the line says so
+        no_stock.start()
+        self.addCleanup(no_stock.stop)
 
     def mod(self, name: str, scenario: str, definition_entries: list[tuple[str, bytes]]) -> str:
         """A mod folder holding `scenario`'s Definition pack and a Details pack of one stock-shaped file."""
@@ -170,7 +177,29 @@ class CheckModTest(unittest.TestCase):
         """4 CNDF files of 4 objects in Definition (the .dbg are not CNDF) and 1 in Details."""
         self.assertEqual(check_mod(self.mod("New", "challenge_A", definition("challenge_A")), self.STOCK),
                          ["challenge_A: 2 Definition kinds in this build's layout, 2 tags with the ConfigHash the "
-                          "game computes; every class and property of 5 files (5 objects) is in the 2 stock files'"])
+                          "game computes, not checked against stock's scenario tags (the game folder holds no "
+                          "Data/PC/<build>/Scenarios); every class and property of 5 files (5 objects) is in the 2 "
+                          "stock files'"])
+
+    def test_tags_current_for_the_given_stock_pass_and_stale_ones_fail(self):
+        """Against stock tags listing the fixtures' one source: its hash passes, another build's fails tag-sources
+        alone."""
+        stock = gates.StockTags("build 300's stock", {k: ("CommonData:/x.ndf",) for k in ("MapConfiguration",
+                                                                                         "ScenarioInfo")},
+                                {"CommonData:/x.ndf": 5}, 2)
+        folder = self.mod("New", "challenge_A", definition("challenge_A", sources=(("CommonData:/x.ndf", 5),)))
+        self.assertEqual(check_mod(folder, self.STOCK, current=stock),
+                         ["challenge_A: 2 Definition kinds in this build's layout, 2 tags with the ConfigHash the "
+                          "game computes, 2 current for build 300's stock scenario tags; every class and property of "
+                          "5 files (5 objects) is in the 2 stock files'"])
+        folder = self.mod("Old", "challenge_A", definition("challenge_A", sources=(("CommonData:/x.ndf", 4),)))
+        with self.assertRaises(CheckError) as cm:
+            check_mod(folder, self.STOCK, current=stock)
+        self.assertRegex(str(cm.exception), r"^challenge_A: tag-sources: 2 of 2 tags are not current for build 300's "
+                                            r"stock: the game finds each \.txn stale .*\n  Definition:NDF/Scenarios/"
+                                            r"challenge_A/MapConfiguration\.txn\.tag: SourceFileHashes holds 4 for "
+                                            r"'CommonData:/x\.ndf', but build 300's stock tags hold 5 ")
+        self.assertNotIn("config-hash", str(cm.exception))
 
     def test_a_tag_with_another_config_hash_fails(self):
         """A tag holding another ConfigHash (a template's, kept by a re-keying) fails with the game's words: it would
@@ -206,8 +235,9 @@ class CheckModTest(unittest.TestCase):
         self.assertNotIn("definition-layout", str(cm.exception))
         self.assertEqual(check_mod(folder, self.STOCK, [(self.OLD, "Name")]),
                          ["challenge_A: 3 Definition kinds in this build's layout, 3 tags with the ConfigHash the "
-                          "game computes; every class and property of 7 files (7 objects) is in the 2 stock files' or "
-                          "among 1 admitted"])
+                          "game computes, not checked against stock's scenario tags (the game folder holds no "
+                          "Data/PC/<build>/Scenarios); every class and property of 7 files (7 objects) is in the 2 "
+                          "stock files' or among 1 admitted"])
 
     def test_a_folder_without_scenario_packs_fails(self):
         os.makedirs(os.path.join(self.tmp, "Empty"))
@@ -224,13 +254,36 @@ class CheckModTest(unittest.TestCase):
             self.assertEqual(packs.main(["check", good, old]), 1)
             self.assertEqual(packs.main(["check", good, "--admit", "NoProperty"]), 1)
         self.assertEqual(out.getvalue().splitlines(), [f"{good}: challenge_A: 2 Definition kinds in this build's "
-                                                       f"layout, 2 tags with the ConfigHash the game computes; every "
-                                                       f"class and property of 5 files (5 objects) is in the 2 stock "
-                                                       f"files'"] * 2)
+                                                       f"layout, 2 tags with the ConfigHash the game computes, not "
+                                                       f"checked against stock's scenario tags (the game folder holds "
+                                                       f"no Data/PC/<build>/Scenarios); every class and property of 5 "
+                                                       f"files (5 objects) is in the 2 stock files'"] * 2)
         failed = [line for line in err.getvalue().splitlines() if line.startswith("FAILED: ")]
         self.assertEqual(len(failed), 2)
         self.assertTrue(failed[0].startswith(f"FAILED: {old}: challenge_O: definition-layout: "), failed[0])
         self.assertEqual(failed[1], "FAILED: --admit takes CLASS.PROPERTY")
+
+    def test_the_command_line_with_a_stock_folder(self):
+        """--stock reads the stock tags of a Data/PC/<build>/Scenarios folder; a folder holding none fails."""
+        sources = {k: (("CommonData:/x.ndf", 5),) for k in ("MapConfiguration", "ScenarioInfo")}
+        stock = write_stock(Path(self.tmp, "Data", "PC", "300", "Scenarios"), sources=sources)
+        good = self.mod("New", "challenge_A", definition("challenge_A", sources=(("CommonData:/x.ndf", 5),)))
+        old = self.mod("Old", "challenge_A", definition("challenge_A", sources=(("CommonData:/x.ndf", 4),)))
+        out, err = io.StringIO(), io.StringIO()
+        with mock.patch.object(gates, "stock_classes", return_value=self.STOCK), contextlib.redirect_stdout(out), \
+                contextlib.redirect_stderr(err):
+            self.assertEqual(packs.main(["check", good, "--stock", str(stock)]), 0)
+            self.assertEqual(packs.main(["check", old, "--stock", str(stock)]), 1)
+            self.assertEqual(packs.main(["check", good, "--stock", self.tmp]), 1)
+        self.assertEqual(out.getvalue().splitlines(), [f"{good}: challenge_A: 2 Definition kinds in this build's "
+                                                       f"layout, 2 tags with the ConfigHash the game computes, 2 "
+                                                       f"current for build 300's stock scenario tags; every class and "
+                                                       f"property of 5 files (5 objects) is in the 2 stock files'"])
+        failed = [line for line in err.getvalue().splitlines() if line.startswith("FAILED: ")]
+        self.assertEqual(len(failed), 2)
+        self.assertTrue(failed[0].startswith(f"FAILED: {old}: challenge_A: tag-sources: 2 of 2 tags are not current "
+                                             f"for build 300's stock: "), failed[0])
+        self.assertIn("no stock scenario tag", failed[1])
 
 
 if __name__ == "__main__":

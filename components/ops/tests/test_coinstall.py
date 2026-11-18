@@ -22,13 +22,14 @@ from probe_support import OUT_ROOT, quiet_build
 from modkit.core import edat, paths, trad
 from modkit.core.ndfbin import Value
 from modkit.ops import coinstall
-from modkit.ops.gates import MENU_PACK, stock_operations
+from modkit.ops.gates import MENU_PACK, OWN_FOLDER, stock_operations
 from modkit.ops.graph import Imp, Node, build_graph, encode, u32
 from modkit.ops.leveldesign import derived_menu_order
 from modkit.ops.models import MenuEntry
 from modkit.ops.rekey import TXN, def_path
 from probes import empty
 from probes import profile as probe_profile
+from test_tag_sources import CONSTANTS, LOADER, SOURCES, tags, write_stock
 
 GUID_A, GUID_B, GUID_STOCK = bytes(range(16)), bytes(range(1, 17)), bytes(range(2, 18))
 STOCK = (MenuEntry("challenge_Stock", 130, GUID_STOCK),)
@@ -45,18 +46,20 @@ def map_config(order: int | None, guid: bytes, pack: str = MENU_PACK) -> bytes:
 
 
 def write_mod(folder: Path, scenario: str, order: int | None, guid: bytes, tokens: tuple[str, ...] = (),
-              name: str | None = None, mod_id: int = 0, clusters: bool = False, old_layout: bool = False) -> Path:
+              name: str | None = None, mod_id: int = 0, clusters: bool = False, old_layout: bool = False,
+              tags: dict[str, bytes] | None = None) -> Path:
     """A mod folder: its Config.ini (Name, ID, and a cluster line under [Config] when `clusters`), a Definition pack
     holding the scenario's MapConfiguration (NDF/Scenarios/<scenario>/MapConfiguration.txn, build 210942's layout;
-    `old_layout`: NDF/Scenarios/MapConfiguration/<scenario>.ndfbin, build 201602's) and an Assets pack holding one
-    dictionary of `tokens`."""
+    `old_layout`: NDF/Scenarios/MapConfiguration/<scenario>.ndfbin, build 201602's) and the entries `tags`, and an
+    Assets pack holding one dictionary of `tokens`."""
     (folder / "Scenarios").mkdir(parents=True)
     (folder / "Config.ini").write_text(f"[Properties]\nName = {name or folder.name}\nID = {mod_id}\n\n[Config]\n"
                                        + ("GFX/Unit=0123456789abcdef0123456789abcdef\n" if clusters else ""),
                                        encoding="utf-8")
     inner = (f"NDF/Scenarios/MapConfiguration/{scenario}.ndfbin" if old_layout
              else def_path("MapConfiguration", TXN, scenario))
-    edat.write_edat(str(folder / "Scenarios" / f"{scenario}_Definition.dat"), [(inner, map_config(order, guid))])
+    edat.write_edat(str(folder / "Scenarios" / f"{scenario}_Definition.dat"),
+                    [(inner, map_config(order, guid)), *sorted((tags or {}).items())])
     edat.write_edat(str(folder / "Scenarios" / f"{scenario}_Assets.dat"),
                     [(f"Localisation/{scenario}/Scripting/Localization-US.dic",
                       trad.build_dic({t: t.upper() for t in tokens} or {"x_none": "x"}))])
@@ -198,10 +201,13 @@ class Which(Base):
 
 
 class Cli(Base):
-    def run_check(self, *builds: Path, every: bool = False, stock=STOCK) -> tuple[int, str]:
+    def run_check(self, *builds: Path, every: bool = False, stock=STOCK, tags: Path | None = None) -> tuple[int, str]:
+        """The check with the synthetic stock Operations, against the stock scenario tags in `tags` (a Scenarios
+        folder; default none, as a game folder without Data/PC/<build>/Scenarios)."""
         out = io.StringIO()
-        with mock.patch.object(coinstall, "stock_operations", return_value=stock), contextlib.redirect_stdout(out):
-            code = coinstall.run(self.root, self.workshop, every, list(builds))
+        with mock.patch.object(coinstall, "stock_operations", return_value=stock), \
+                mock.patch.object(coinstall, "stock_tags", return_value=None), contextlib.redirect_stdout(out):
+            code = coinstall.run(self.root, self.workshop, every, list(builds), tags)
         return code, out.getvalue()
 
     def test_a_clash_fails_and_nothing_is_written(self):
@@ -231,6 +237,39 @@ class Cli(Base):
             self.assertEqual(coinstall.run(self.root, self.workshop, False, []), 1)
         self.assertIn("FAILED: the stock Operations could not be read: not configured: run the warno-setup skill",
                       out.getvalue())
+
+    def test_a_stale_mod_fails_naming_its_scenario_and_tag_and_a_current_one_passes(self):
+        """After a game update: a subscribed mod whose tags hold another build's template hash fails, naming the
+        mod, the scenario and the tag; the same mod built for this build passes. Without stock scenario packs, a
+        warning says nothing was checked."""
+        stock = write_stock(self.tmp / "Data" / "PC" / "300" / "Scenarios")
+        old = dict(SOURCES, ScenarioLoader=((OWN_FOLDER + "Scenario.ndf", 0), (LOADER, 99), (CONSTANTS, 12)))
+        write_mod(self.workshop / "88", "challenge_W", 1001, GUID_B, name="Far", mod_id=88,
+                  tags=tags("challenge_W", old))
+        build = write_mod(self.tmp / "build" / "B", "challenge_B", 1002, GUID_A, tags=tags("challenge_B"))
+        self.activate("88")
+        before = tree(self.root, self.workshop, stock)
+        code, out = self.run_check(build, tags=stock)
+        self.assertEqual(code, 1, out)
+        self.assertIn("FAILED: Far (workshop 88): challenge_W is stale: 1 of 2 tags are not current for build 300's "
+                      "stock: the game finds each .txn stale and recompiles the scenario from sources the mod does "
+                      "not ship, stopping with \"NDF parsing error. Retry?\"; rebuild the mod against this game build:"
+                      "\n  Definition:NDF/Scenarios/challenge_W/ScenarioLoader.txn.tag: SourceFileHashes holds 99 for "
+                      "'CommonData:/T/Loader.ndf', but build 300's stock tags hold 11", out)
+        self.assertNotIn("challenge_B is stale", out)
+        self.assertEqual(tree(self.root, self.workshop, stock), before)
+        self.activate()
+        code, out = self.run_check(build, tags=stock)
+        self.assertEqual(code, 0, out)
+        self.assertTrue(out.splitlines()[-1].endswith("; their 2 scenario tags are current for build 300's stock"),
+                        out)
+        code, out = self.run_check(build)
+        self.assertEqual(code, 0, out)
+        self.assertIn("WARNING: the game folder holds no Data/PC/<build>/Scenarios: no mod's compiled scenario "
+                      "transactions were checked against the installed game", out)
+        code, out = self.run_check(build, tags=self.tmp / "content")
+        self.assertEqual(code, 1, out)
+        self.assertIn("FAILED: the stock scenario tags could not be read: ", out)
 
 
 @paths.skip_unless_extracted("scenarios")

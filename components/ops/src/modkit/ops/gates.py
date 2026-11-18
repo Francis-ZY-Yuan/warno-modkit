@@ -20,8 +20,9 @@ reviewed-pending entry for one:
 4. every re-keyed file differs from stock only by its dump rows: ``check_dump_diff``;
 5. the package is scenario-only and ships no Gameplay file: ``check_package``; the Definition pack is in build
    210942's layout, every .txn with its .txn.tag and a .dbg of one line per object (``check_definition_layout``),
-   every tag holding the ConfigHash the game computes for its transaction (``check_config_hashes``); and
-   every class and property the build ships is one the stock files of its kind hold (``check_stock_classes``);
+   every tag holding the ConfigHash the game computes for its transaction (``check_config_hashes``) and the source
+   list and hashes of the installed game's stock tags (``check_tag_sources`` over ``stock_tags``); and every class
+   and property the build ships is one the stock files of its kind hold (``check_stock_classes``);
 6. every written pack reads back (``modkit.ops.packs.verify_packs``).
 
 A profile's extra gates (``modkit.ops.profile.ExtraGate``) hold what only some ops generate; the driver runs none of
@@ -52,7 +53,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Callable, Iterable, Mapping, NamedTuple, Sequence
 
-from modkit.core import dbg, ndfbin, ndfrules, paths, trad, txntag
+from modkit.core import dbg, mods, ndfbin, ndfrules, paths, trad, txntag
 from modkit.core.gates import CheckError, check, check_fixture_text
 from modkit.core.models import LANGS, Box, Point, StringTable
 from modkit.core.names import unit_path
@@ -2253,6 +2254,118 @@ def check_config_hashes(entries: Mapping[str, bytes], scenario: str, scans: Mapp
                             f"transaction from sources the mod does not ship and stop with \"NDF parsing error. "
                             f"Retry?\" and \"File not found : '{t.files[0] if t.files else t.base_name}'\"")
         tags += 1
+    return tags
+
+
+# A .txn.tag's SourceFileHashes list every source its transaction was compiled from, each with the hash it had then:
+# the scenario's own (ScenariosData:/<scenario>/..., which a mod does not ship) and the template's
+# (CommonData:/Map/Template/ScenarioLoader.ndf, ...). Before the game loads a .txn it checks the tag lists every source
+# of the transaction, and that each source the install holds still has the hash the tag holds; a source the install
+# does not hold (a scenario's own) is not compared. A game update that re-ships a template file, or changes a
+# transaction's list, makes every scenario compiled before it stale: the game recompiles it from its sources and a mod,
+# which ships none, stops with "NDF parsing error. Retry?" and "File not found" for its first source. Every stock tag
+# of one build holds one source list per kind (the scenario's own folder aside; GDScript also lists its own scripts)
+# and one hash per template source.
+
+OWN_FOLDER = "ScenariosData:/<scenario>/"   # a scenario's own folder in a source list, as stock's lists are compared
+
+
+@dataclass(frozen=True)
+class StockTags:
+    """What one build's stock scenario tags hold (read_stock_tags): per kind, the source list of every tag of that
+    kind (tag_sources), and per source outside a scenario's own folder, its hash. `name` says whose they are, for
+    messages ("build 212400's stock")."""
+    name: str
+    lists: Mapping[str, tuple[str, ...]]
+    hashes: Mapping[str, int]
+    tags: int
+
+
+def tag_sources(raw: bytes, scenario: str, kind: str) -> tuple[tuple[str, ...], dict[str, int]]:
+    """A .txn.tag's sources as stock's are compared: its source list with the scenario's own folder written OWN_FOLDER
+    (GDScript's own-folder entries, its scripts, left out), and {source: hash} of every source outside that folder."""
+    own = f"ScenariosData:/{scenario}/"
+    sources = txntag.read_tag(raw)[1]
+    listed = tuple(OWN_FOLDER + p.removeprefix(own) if p.startswith(own) else p for p, _ in sources
+                   if not (kind == "GDScript" and p.startswith(own)))
+    return listed, {p: h for p, h in sources if not p.startswith(own)}
+
+
+def read_stock_tags(folder: str | os.PathLike) -> StockTags:
+    """The stock scenario tags of a build's Scenarios folder (`folder`: Data/PC/<build>/Scenarios): every .txn.tag of
+    every *_Definition.dat there, read only. Fails when the folder holds no tag, or when two tags of one kind hold two
+    source lists, or two tags two hashes of one source: then the folder is not one build's stock."""
+    lists: dict[str, Counter] = {}
+    hashes: dict[str, Counter] = {}
+    tags = 0
+    for pack in sorted(glob.glob(os.path.join(folder, "*_Definition.dat"))):
+        for inner, raw in mods.read_pack(pack, lambda p: p.endswith(f".{TAG}")):
+            entry = def_entry(inner)
+            if entry is None or entry[2] != TAG:
+                continue
+            listed, held = tag_sources(raw, entry[0], entry[1])
+            lists.setdefault(entry[1], Counter())[listed] += 1
+            for source, h in held.items():
+                hashes.setdefault(source, Counter())[h] += 1
+            tags += 1
+    check(tags > 0, f"{folder}: no stock scenario tag (NDF/Scenarios/<scenario>/<Kind>.{TAG} in a *_Definition.dat)")
+    split = sorted(k for k, c in lists.items() if len(c) > 1)
+    check(not split, f"{folder}: stock's {', '.join(split)} tags hold more than one source list: not one build's stock")
+    split = sorted(s for s, c in hashes.items() if len(c) > 1)
+    check(not split, f"{folder}: stock's tags hold more than one hash of {', '.join(split[:5])}"
+                     f"{' ...' if len(split) > 5 else ''}: not one build's stock")
+    build = os.path.basename(os.path.dirname(os.path.abspath(folder)))
+    return StockTags(f"build {build}'s stock" if build.isdigit() else "the given stock",
+                     {k: next(iter(c)) for k, c in lists.items()}, {s: next(iter(c)) for s, c in hashes.items()}, tags)
+
+
+def stock_tags() -> StockTags | None:
+    """The stock scenario tags of the game the configured install runs (read_stock_tags of
+    paths.stock_scenarios_dir(): the newest Data/PC/<build>/Scenarios holding the stock scenario packs). None when the
+    install holds none (not configured, or a folder without Data/PC), so a caller can say the check did not run."""
+    folder = paths.stock_scenarios_dir()
+    return None if folder is None else _stock_tags(str(folder))
+
+
+@functools.cache
+def _stock_tags(folder: str) -> StockTags:
+    return read_stock_tags(folder)
+
+
+def check_tag_sources(entries: Mapping[str, bytes], stock: StockTags) -> int:
+    """Gate 5: every .txn.tag of the Definition `entries` is current for `stock` (stock_tags()): its source list
+    (tag_sources) is stock's for its kind, and every source stock's tags hold carries stock's hash. A tag built for
+    another game build fails: the game finds its .txn stale and recompiles the scenario from sources the mod does not
+    ship. Every tag is checked; one failure names each stale tag, the source or list entry, and both values. Returns
+    the number of tags."""
+    stale, tags = [], 0
+    for inner, raw in entries.items():
+        entry = def_entry(inner)
+        if entry is None or entry[2] != TAG:
+            continue
+        tags += 1
+        scenario, kind, _ = entry
+        want = stock.lists.get(kind)
+        if want is None:
+            stale.append(f"Definition:{inner}: {stock.name} scenario packs hold no {kind}.{TAG} to compare it with")
+            continue
+        listed, held = tag_sources(raw, scenario, kind)
+        own = f"ScenariosData:/{scenario}/"
+        why = [f"SourceFileHashes lacks '{p.replace(OWN_FOLDER, own)}', which {stock.name} {kind} tags list"
+               for p in want if p not in listed]
+        why += [f"SourceFileHashes lists '{p.replace(OWN_FOLDER, own)}', which {stock.name} {kind} tags do not"
+                for p in listed if p not in want]
+        if not why and listed != want:
+            why.append(f"SourceFileHashes lists the {kind} sources of {stock.name} tags in another order")
+        why += [f"SourceFileHashes holds {h} for '{p}', but {stock.name} tags hold {stock.hashes[p]}"
+                for p, h in held.items() if p in stock.hashes and h != stock.hashes[p]]
+        if why:
+            first = want[0].replace(OWN_FOLDER, own) if want else own
+            stale.append(f"Definition:{inner}: {'; '.join(why)} (the game would stop on \"File not found : "
+                         f"'{first}'\")")
+    check(not stale, f"{len(stale)} of {tags} tags are not current for {stock.name}: the game finds each .txn stale "
+                     f"and recompiles the scenario from sources the mod does not ship, stopping with \"NDF parsing "
+                     f"error. Retry?\"; rebuild the mod against this game build:\n  " + "\n  ".join(stale))
     return tags
 
 
