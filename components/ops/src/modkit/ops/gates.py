@@ -1566,8 +1566,9 @@ def empty_group_violations(roots: Iterable[Node]) -> tuple[int, list[str]]:
     before it in an ancestor Sequential, on every path from the roots (an objective's actions and the other
     containers pass the guards down; only a Sequential adds them). The hold skeleton (modkit.ops.script.hold_script)
     has that shape: Sequential[..., WaitCondition(Groupe_Joueur >= 1), StartTimer, Simultaneous[objective]]. Stock
-    has no such guard: its 16 tests (7 challenges) count groups filled before the objective starts, such as
-    BlackHorsesLastStand's LevelDesign spawn group P0_C0_M577_US_1, so the gate is the toolkit's own."""
+    has no such guard: its 17 tests (7 challenges and Invasion_of_Cuba) count groups filled before the objective
+    starts, such as BlackHorsesLastStand's LevelDesign spawn group P0_C0_M577_US_1, so the gate is the toolkit's
+    own."""
     found, bad, seen = set(), {}, set()
     stack: list[tuple[Node, frozenset[int]]] = [(nd, frozenset()) for nd in roots]
     while stack:

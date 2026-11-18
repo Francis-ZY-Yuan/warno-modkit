@@ -300,13 +300,15 @@ class EmptyGroupGuard(unittest.TestCase):
 
     @paths.skip_unless_extracted("scenarios")
     def test_stock_tests_are_listed(self):
-        """Stock never guards this way; its 16 tests count groups filled before the objective starts (a LevelDesign
+        """Stock never guards this way; its 17 tests count groups filled before the objective starts (a LevelDesign
         spawn's group, or one the script fills). Listed by name, reviewed: the gate is the toolkit's own (content with a
-        deployment phase)."""
+        deployment phase). Build 211352 added CampagneStrat_Invasion_of_Cuba's: an unnamed group that an
+        AddUnitGroupListToUnitGroup fills in an earlier step of the same Sequential."""
         found, line = [], re.compile(r"GereObjectif\((\w+)\): its ConditionEchec holds while (\w+) is empty")
         for stem, nodes in stock_scripts():
             found += [f"{stem}: {'/'.join(line.match(b).groups())}" for b in empty_group_violations(nodes)[1]]
         self.assertEqual(sorted(found), [
+            "CampagneStrat_Invasion_of_Cuba: v2YXaQNQLL/TGDVariableUnitGroup",
             "challenge_BlackHorsesLastStand: rTipsaGFpu/P0_C0_M577_US_1",
             "challenge_Marauders: 5uxOnWsweH/EventA2", "challenge_Marauders: gr0V2bOWmx/EventA1",
             "challenge_RedJuggernaut: 6vDLeFwkEj/IA_Supply_Units",
@@ -402,9 +404,10 @@ class SmartOrders(unittest.TestCase):
     @paths.skip_unless_extracted("scenarios")
     def test_stock_passes(self):
         """The 36 stock GDScripts (35 distinct): 44 smart orders on 44 groups (all in 9 challenges), none ordered again
-        after its smart order in a Sequential, through 2,839 union edges (201602's 2,776 and the 63 of
-        CampagneStrat_Invasion_of_Cuba). One stock group gets an order elsewhere: Marauders' artillery Event_Art_POL
-        (Seize in Simultaneous #517, 201602's #515; ShootOnPosition fire orders in another branch)."""
+        after its smart order in a Sequential, through 2,845 union edges (201602's 2,776 and the 69 of
+        CampagneStrat_Invasion_of_Cuba, which had 63 on 210942). One stock group gets an order elsewhere: Marauders'
+        artillery Event_Art_POL (Seize in Simultaneous #517, 201602's #515; ShootOnPosition fire orders in another
+        branch)."""
         smart, bad, unions, elsewhere = 0, [], 0, []
         for stem, nodes in stock_scripts():
             n, why = smart_order_violations(nodes)
@@ -416,7 +419,7 @@ class SmartOrders(unittest.TestCase):
                            getattr(dict(nd.props).get("OrderType"), "v", None))
                           for nd in nodes if nd.cls in ("TGDDescriptorGiveOrderStandard", "TGDDescriptorMoveUnitGroup")
                           and id(dict(nd.props).get("Group")) in ordered]
-        self.assertEqual((smart, bad, unions), (44, [], 2839))
+        self.assertEqual((smart, bad, unions), (44, [], 2845))
         self.assertEqual(elsewhere, [("challenge_Marauders", "Event_Art_POL", 31)] * 3)
 
 
