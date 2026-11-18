@@ -2,12 +2,12 @@
 id: edat-revision-chain
 title: Game data is a chain of edat archives, read newest revision first
 status: RE
-last_verified: 210942 2026-11-12
+last_verified: 211352 2026-11-17
 source: stock-data
 topics: [files-and-formats, game-updates]
 gates: [modkit.core.edat.verify_entry]
-trials: [2026-11-02-edat-inventory, 2026-11-12-build-210942-port]
-stock_precedent: 13,947 version-2 and 1,434 version-3 archives in the 201602 install; 5,937 archives (146,031 entries) in the 210942 install, all read
+trials: [2026-11-02-edat-inventory, 2026-11-12-build-210942-port, 2026-11-17-build-211352-port]
+stock_precedent: 13,947 version-2 and 1,434 version-3 archives in the 201602 install; 5,937 archives (146,031 entries) in the 210942 install and 7,710 (154,167 entries) in the 211352 install, all read
 ---
 **What the game does.** The install's `Data/PC` folder holds edat archives per revision. The oldest revision folder
 is the full base install. Each `<previous>/<revision>/` folder holds delta archives with only the inner files that
@@ -25,6 +25,10 @@ revisions held are gone (a map's own `<map>.dat` among them). It also moved the 
 `.txn.tag` and a `.dbg`. The `_Definition` packs of scenarios and maps ship `.txn` files too, one folder per scenario
 or map (`NDF/Maps/<map>/MapLoader.txn`).
 
+Build 211352 did not rebase the chain: it added a fifth revision, a `210942/211352/` delta folder and a
+top-level `211352/` folder holding a full copy of every map, scenario and decor set `_Definition` pack
+([[2026-11-17-build-211352-port]]).
+
 **Gotchas.**
 - On 210942, `Glad.dat` is still installed (build 201602's copy), but the game no longer loads it: read the game's
   NDF from `Transactions.dat` ([[2026-11-12-build-210942-port]]).
@@ -35,7 +39,7 @@ or map (`NDF/Maps/<map>/MapLoader.txn`).
 <!-- referenced-by:start -->
 ## Referenced by
 
-- Trials: [2026-11-02-edat-inventory](../trials/2026-11-02-edat-inventory.md), [2026-11-12-build-210942-port](../trials/2026-11-12-build-210942-port.md)
+- Trials: [2026-11-02-edat-inventory](../trials/2026-11-02-edat-inventory.md), [2026-11-12-build-210942-port](../trials/2026-11-12-build-210942-port.md), [2026-11-17-build-211352-port](../trials/2026-11-17-build-211352-port.md)
 - Gates: [`modkit.core.edat.verify_entry`](../../src/modkit/core/edat.py)
 - Skills: [`components/core/skills/warno-setup/references/stock-corpus.md`](../../skills/warno-setup/references/stock-corpus.md)
 <!-- referenced-by:end -->

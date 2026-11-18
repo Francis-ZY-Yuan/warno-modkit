@@ -31,6 +31,7 @@ Taught by the trials of these mechanisms.
 
 ## Trials, newest first
 
+- 2026-11-17 [2026-11-17-build-211352-port](../../components/core/knowledge/trials/2026-11-17-build-211352-port.md) (core): survey, pass
 - 2026-11-12 [2026-11-12-twin-strike-workshop-upload](../../components/core/knowledge/trials/2026-11-12-twin-strike-workshop-upload.md) (core): launch, pass
 - 2026-11-12 [2026-11-12-twin-strike-workshop-page](../../components/core/knowledge/trials/2026-11-12-twin-strike-workshop-page.md) (core): launch, pass
 - 2026-11-12 [2026-11-12-twin-strike-210942-play1](../../components/ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md) (ops): play, mixed

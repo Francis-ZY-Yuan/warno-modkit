@@ -3,6 +3,16 @@
 
 A fact holds for the build it was last verified on. After a game update, a record still on an older build is unconfirmed until re-verified. Start with [topics/game-updates.md](topics/game-updates.md). Back to [the map](README.md).
 
+## 211352
+
+### Mechanisms last verified on it
+
+- [edat-revision-chain](../components/core/knowledge/mechanisms/edat-revision-chain.md) (core): Game data is a chain of edat archives, read newest revision first (RE, 2026-11-17)
+
+### Trials run on it
+
+- 2026-11-17 [2026-11-17-build-211352-port](../components/core/knowledge/trials/2026-11-17-build-211352-port.md) (core): survey, pass
+
 ## 210942
 
 ### Mechanisms last verified on it
@@ -10,7 +20,6 @@ A fact holds for the build it was last verified on. After a game update, a recor
 - [changestress-damagetype-zero](../components/ops/knowledge/mechanisms/changestress-damagetype-zero.md) (ops): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load (PLAYED, 2026-11-12)
 - [chinese-text-stock-glyphs](../components/ops/knowledge/mechanisms/chinese-text-stock-glyphs.md) (ops): Simplified Chinese text must stay within the characters stock text already uses (PROBED, 2026-11-12)
 - [custom-operation-from-stock-parts](../components/ops/knowledge/mechanisms/custom-operation-from-stock-parts.md) (ops): A custom Operation can be built entirely from cloned stock files plus a generated LevelDesign and GDScript (PLAYED, 2026-11-13)
-- [edat-revision-chain](../components/core/knowledge/mechanisms/edat-revision-chain.md) (core): Game data is a chain of edat archives, read newest revision first (RE, 2026-11-12)
 - [game-build-classes](../components/ops/knowledge/mechanisms/game-build-classes.md) (ops): A game update removes and renames classes and properties; a mod's files may hold only those the installed build's stock holds (STOCK, 2026-11-12)
 - [gdscript-is-what-loads](../components/ops/knowledge/mechanisms/gdscript-is-what-loads.md) (ops): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (PLAYED, 2026-11-13)
 - [leveldesign-guid-binding](../components/ops/knowledge/mechanisms/leveldesign-guid-binding.md) (ops): A script names a map item by the item's GUID in LevelDesign (210942 one GUID value, 201602 four words) (PLAYED, 2026-11-12)
