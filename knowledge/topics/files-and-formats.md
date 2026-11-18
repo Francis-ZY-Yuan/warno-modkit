@@ -9,14 +9,14 @@ Topic `files-and-formats`, declared by core. Back to [the map](../README.md).
 
 ### PLAYED
 
-- [gdscript-is-what-loads](../../components/ops/knowledge/mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (ops, verified 210942)
+- [gdscript-is-what-loads](../../components/ops/knowledge/mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (ops, verified 211352)
 - [localisation-tokens-packed](../../components/core/knowledge/mechanisms/localisation-tokens-packed.md): Localisation keys are tokens of up to 10 characters, packed 6 bits each (core, verified 201602)
 - [ndfbin-round-trip](../../components/core/knowledge/mechanisms/ndfbin-round-trip.md): Compiled NDF (CNDF ndfbin) decodes and re-encodes byte for byte (core, verified 201602)
 
 ### RE
 
 - [edat-revision-chain](../../components/core/knowledge/mechanisms/edat-revision-chain.md): Game data is a chain of edat archives, read newest revision first (core, verified 211352)
-- [txn-tag-config-hash](../../components/ops/knowledge/mechanisms/txn-tag-config-hash.md): Build 210942 loads a compiled .txn only when its .txn.tag holds the ConfigHash the game computes for the transaction; any other makes it compile the sources (ops, verified 210942)
+- [txn-tag-config-hash](../../components/ops/knowledge/mechanisms/txn-tag-config-hash.md): Build 210942 loads a compiled .txn only when its .txn.tag holds the ConfigHash the game computes for the transaction; any other makes it compile the sources (ops, verified 211352)
 
 ## Lessons
 
@@ -28,6 +28,7 @@ Taught by the trials of these mechanisms.
 
 ## Trials, newest first
 
+- 2026-11-18 [2026-11-18-twin-strike-211352-play4](../../components/ops/knowledge/trials/2026-11-18-twin-strike-211352-play4.md) (ops): play, pass
 - 2026-11-17 [2026-11-17-build-211352-port](../../components/core/knowledge/trials/2026-11-17-build-211352-port.md) (core): survey, pass
 - 2026-11-13 [2026-11-13-twin-strike-210942-play2](../../components/ops/knowledge/trials/2026-11-13-twin-strike-210942-play2.md) (ops): play, pass
 - 2026-11-12 [2026-11-12-twin-strike-launch-config-hash](../../components/ops/knowledge/trials/2026-11-12-twin-strike-launch-config-hash.md) (ops): launch, fail

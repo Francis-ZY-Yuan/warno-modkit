@@ -2,11 +2,11 @@
 id: zone-capture-command-units
 title: Only command units capture a zone, and an enemy command unit inside makes it neutral at once
 status: PLAYED
-last_verified: 201602 2026-11-06
+last_verified: 211352 2026-11-18
 source: exe-analysis
 topics: [zones-and-map]
 gates: [modkit.ops.gates.check_fall_zone]
-trials: [2026-11-04-zone-capture-survey, 2026-11-06-probe2-play-run-a, 2026-11-17-twin-strike-211352-play3]
+trials: [2026-11-04-zone-capture-survey, 2026-11-06-probe2-play-run-a, 2026-11-17-twin-strike-211352-play3, 2026-11-18-twin-strike-211352-play4]
 stock_precedent: every stock "AI controls zone" test belongs to a camp that also runs the skirmish AI (62 nodes in 11 Operations)
 ---
 **What the game does.** In the Command phase, each tick, a command zone's owner is updated from the units inside it.
@@ -31,7 +31,8 @@ back, and a capturer killed mid-capture left its zone neutral for good.
   own tag, counting commander-module units only. A detector circle inside the zone sees part of it, so the zone can
   turn while the test never holds: Twin Strike's fall read a circle at the village's centre, and in a play the
   village turned the player's with none of the fall's consequences, that circle the likely cause
-  ([[2026-11-17-twin-strike-211352-play3]]). Derive the type list from the module, not from the "Commandant"
+  ([[2026-11-17-twin-strike-211352-play3]]). Read on the command zone, the fall followed the capture in the next
+  play ([[2026-11-18-twin-strike-211352-play4]]). Derive the type list from the module, not from the "Commandant"
   search tag, which leaves some command units out. No stock `ConditionUnitDansZone` filters by an `AnyContrainte`,
   and no stock `AllContrainte` holds one, so several types are an `Or` of one `And[ConditionUnitDansZone]` per type,
   each filtered by `AllContrainte[Team, Type]` (the shape gate fails a single any-of filter). The fall-zone gate fails
@@ -41,9 +42,9 @@ back, and a capturer killed mid-capture left its zone neutral for good.
 <!-- referenced-by:start -->
 ## Referenced by
 
-- Trials: [2026-11-04-zone-capture-survey](../trials/2026-11-04-zone-capture-survey.md), [2026-11-06-probe2-play-run-a](../trials/2026-11-06-probe2-play-run-a.md), [2026-11-17-twin-strike-211352-play3](../trials/2026-11-17-twin-strike-211352-play3.md)
+- Trials: [2026-11-04-zone-capture-survey](../trials/2026-11-04-zone-capture-survey.md), [2026-11-06-probe2-play-run-a](../trials/2026-11-06-probe2-play-run-a.md), [2026-11-17-twin-strike-211352-play3](../trials/2026-11-17-twin-strike-211352-play3.md), [2026-11-18-twin-strike-211352-play4](../trials/2026-11-18-twin-strike-211352-play4.md)
 - Gates: [`modkit.ops.gates.check_fall_zone`](../../src/modkit/ops/gates.py)
 - Skills: [`components/ops/skills/warno-new-operation/references/script-recipes.md`](../../skills/warno-new-operation/references/script-recipes.md)
 - Examples: [`components/ops/examples/open-door/README.md`](../../examples/open-door/README.md), [`components/ops/examples/open-door/docs/design.md`](../../examples/open-door/docs/design.md), [`components/ops/examples/open-door/opendoor/op.py`](../../examples/open-door/opendoor/op.py), [`components/ops/examples/probes/README.md`](../../examples/probes/README.md), [`components/ops/examples/twin-strike/README.md`](../../examples/twin-strike/README.md), [`components/ops/examples/twin-strike/docs/design.md`](../../examples/twin-strike/docs/design.md), [`components/ops/examples/twin-strike/twinstrike/forces.py`](../../examples/twin-strike/twinstrike/forces.py), [`components/ops/examples/twin-strike/twinstrike/op.py`](../../examples/twin-strike/twinstrike/op.py)
-- Records: [2026-11-17-twin-strike-211352-play3](../trials/2026-11-17-twin-strike-211352-play3.md), [detector-circles-only](detector-circles-only.md)
+- Records: [2026-11-17-twin-strike-211352-play3](../trials/2026-11-17-twin-strike-211352-play3.md), [2026-11-18-twin-strike-211352-play4](../trials/2026-11-18-twin-strike-211352-play4.md), [detector-circles-only](detector-circles-only.md)
 <!-- referenced-by:end -->

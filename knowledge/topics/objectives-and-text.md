@@ -9,6 +9,7 @@ Topic `objectives-and-text`, declared by ops. Back to [the map](../README.md).
 
 ### PLAYED
 
+- [deck-names-from-op-dictionaries](../../components/ops/knowledge/mechanisms/deck-names-from-op-dictionaries.md): A deck's page and platoon names resolve in the game's COMPANIES and PLATOONS lists, to which an Operation can append its own dictionaries (ops, verified 211352)
 - [dialog-button-ingame-dictionary](../../components/ops/knowledge/mechanisms/dialog-button-ingame-dictionary.md): Dialog button labels resolve only in the game's in-game interface dictionary (ops, verified 201602)
 - [dialog-reask-loop](../../components/ops/knowledge/mechanisms/dialog-reask-loop.md): A multiple-choice dialog can be asked again in a loop if the choice is reset before each ask (ops, verified 201602)
 - [objective-counters](../../components/ops/knowledge/mechanisms/objective-counters.md): Objective text shows live counters from a variable list (ops, verified 201602)
@@ -22,10 +23,6 @@ Topic `objectives-and-text`, declared by ops. Back to [the map](../README.md).
 
 - [dialog-text-takes-no-variables](../../components/ops/knowledge/mechanisms/dialog-text-takes-no-variables.md): Dialog text cannot show live numbers; counts go in an objective counter or a hint (ops, verified 201602)
 - [objective-label-needs-position](../../components/ops/knowledge/mechanisms/objective-label-needs-position.md): An objective's map label needs a position, or it pins the map corner (ops, verified 201602)
-
-### UNTESTED
-
-- [deck-names-from-op-dictionaries](../../components/ops/knowledge/mechanisms/deck-names-from-op-dictionaries.md): A deck's page and platoon names resolve in the game's COMPANIES and PLATOONS lists, to which an Operation can append its own dictionaries (ops)
 
 ## Lessons
 
@@ -42,6 +39,7 @@ Taught by the trials of these mechanisms.
 
 ## Trials, newest first
 
+- 2026-11-18 [2026-11-18-twin-strike-211352-play4](../../components/ops/knowledge/trials/2026-11-18-twin-strike-211352-play4.md) (ops): play, pass
 - 2026-11-12 [2026-11-12-sc-glyph-every-dictionary](../../components/ops/knowledge/trials/2026-11-12-sc-glyph-every-dictionary.md) (ops): survey, pass
 - 2026-11-12 [2026-11-12-deck-gate-stock-survey](../../components/ops/knowledge/trials/2026-11-12-deck-gate-stock-survey.md) (ops): survey, pass
 - 2026-11-12 [2026-11-12-deck-gate-bad-builds](../../components/ops/knowledge/trials/2026-11-12-deck-gate-bad-builds.md) (ops): survey, fail

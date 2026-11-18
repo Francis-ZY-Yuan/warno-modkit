@@ -1,10 +1,12 @@
 ---
 id: deck-names-from-op-dictionaries
 title: A deck's page and platoon names resolve in the game's COMPANIES and PLATOONS lists, to which an Operation can append its own dictionaries
-status: UNTESTED
+status: PLAYED
+last_verified: 211352 2026-11-18
 source: exe-analysis
 topics: [objectives-and-text, units-and-orders]
 gates: [modkit.ops.gates.check_tokens]
+trials: [2026-11-18-twin-strike-211352-play4]
 shapes: [modkit.ops.rekey.append_dico_resources, modkit.ops.profile.OpProfile.dictionary_lists, modkit.ops.profile.Content.list_tokens]
 stock_precedent: every name token of the game's decks resolves in UNITS (127 deck names), COMPANIES (43 page names) or PLATOONS (79 platoon names); 13 stock MapConfigurations append their own file to the MAPS list; none appends to COMPANIES or PLATOONS
 ---
@@ -29,17 +31,21 @@ every file a shipped MapConfiguration appends to that list, in every language; a
 language fails. Each declared stock token is held to the game's own dictionary of its list, in every language
 (`modkit.ops.LIST_DICS`, read from the extraction), so a wrong declaration fails the build, not the first SetDeck.
 
-**Not yet seen in play:** a scenario file appending to COMPANIES or PLATOONS (no stock scenario does). If it fails,
-the first `SetDeck` in battle shows the dictionary error naming a page or platoon token; the stock-names fallback is a
-rebuild.
+**Seen in play** on build 211352 ([[2026-11-18-twin-strike-211352-play4]]): Twin Strike's MapConfiguration appends its
+own dictionaries to COMPANIES and PLATOONS, the first scenario file to do so, and the battle raised no dictionary error.
+The buy menu showed the five pages by their own names ("Forward Detachment HQ" to "Reserve: Support"), and the HQ page
+its platoons by theirs ("Command", "Recon Platoon" and the rest).
+
+**Not yet seen in play:** the names in another language. If a later build fails the lookup, the first `SetDeck` in
+battle shows the dictionary error naming a page or platoon token; the stock-names fallback is a rebuild.
 
 <!-- referenced-by:start -->
 ## Referenced by
 
-- Trials: [2026-11-12-deck-gate-bad-builds](../trials/2026-11-12-deck-gate-bad-builds.md), [2026-11-12-deck-gate-stock-survey](../trials/2026-11-12-deck-gate-stock-survey.md)
+- Trials: [2026-11-12-deck-gate-bad-builds](../trials/2026-11-12-deck-gate-bad-builds.md), [2026-11-12-deck-gate-stock-survey](../trials/2026-11-12-deck-gate-stock-survey.md), [2026-11-18-twin-strike-211352-play4](../trials/2026-11-18-twin-strike-211352-play4.md)
 - Gates: [`modkit.ops.gates.check_tokens`](../../src/modkit/ops/gates.py)
 - Shapes: [`modkit.ops.rekey.append_dico_resources`](../../src/modkit/ops/rekey.py), [`modkit.ops.profile.OpProfile.dictionary_lists`](../../src/modkit/ops/profile.py), [`modkit.ops.profile.Content.list_tokens`](../../src/modkit/ops/profile.py)
 - Skills: [`components/core/skills/warno-launch-triage/SKILL.md`](../../../core/skills/warno-launch-triage/SKILL.md), [`components/ops/skills/warno-new-operation/references/op-anatomy.md`](../../skills/warno-new-operation/references/op-anatomy.md)
 - Examples: [`components/ops/examples/twin-strike/README.md`](../../examples/twin-strike/README.md), [`components/ops/examples/twin-strike/docs/design.md`](../../examples/twin-strike/docs/design.md), [`components/ops/examples/twin-strike/twinstrike/forces.py`](../../examples/twin-strike/twinstrike/forces.py), [`components/ops/examples/twin-strike/twinstrike/profile.py`](../../examples/twin-strike/twinstrike/profile.py), [`components/ops/examples/twin-strike/twinstrike/strings.py`](../../examples/twin-strike/twinstrike/strings.py)
-- Records: [2026-11-12-deck-gate-bad-builds](../trials/2026-11-12-deck-gate-bad-builds.md), [2026-11-12-deck-gate-stock-survey](../trials/2026-11-12-deck-gate-stock-survey.md), [op-exported-deck](op-exported-deck.md)
+- Records: [2026-11-12-deck-gate-bad-builds](../trials/2026-11-12-deck-gate-bad-builds.md), [2026-11-12-deck-gate-stock-survey](../trials/2026-11-12-deck-gate-stock-survey.md), [2026-11-18-twin-strike-211352-play4](../trials/2026-11-18-twin-strike-211352-play4.md), [op-exported-deck](op-exported-deck.md)
 <!-- referenced-by:end -->

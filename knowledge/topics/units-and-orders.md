@@ -11,8 +11,12 @@ Topic `units-and-orders`, declared by ops. Back to [the map](../README.md).
 
 - [add-unit-to-deck](../../components/ops/knowledge/mechanisms/add-unit-to-deck.md): AddUnitToDeck adds a card at load or mid-battle, a transport card included; added cards show in the battlegroup view (ops, verified 201602)
 - [changestress-damagetype-zero](../../components/ops/knowledge/mechanisms/changestress-damagetype-zero.md): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load (ops, verified 210942)
+- [deck-names-from-op-dictionaries](../../components/ops/knowledge/mechanisms/deck-names-from-op-dictionaries.md): A deck's page and platoon names resolve in the game's COMPANIES and PLATOONS lists, to which an Operation can append its own dictionaries (ops, verified 211352)
+- [deck-page-lock](../../components/ops/knowledge/mechanisms/deck-page-lock.md): LockCombatGroup locks a page of a camp's deck while it runs; stock holds the buy menu in its GROUPS view with the view switch hidden (ops, verified 211352)
 - [fast-move-and-attack-keeps-roads](../../components/ops/knowledge/mechanisms/fast-move-and-attack-keeps-roads.md): MoveAndAttack goes cross-country; FastMoveAndAttack and ForceRoad moves keep to roads (ops, verified 201602)
 - [kill-counts-by-type](../../components/ops/knowledge/mechanisms/kill-counts-by-type.md): Kill counts are by unit type, not by group; count a group's survivors instead (ops, verified 201602)
+- [menu-deck-until-setdeck](../../components/ops/knowledge/mechanisms/menu-deck-until-setdeck.md): The out-game screens show the menu's deck (LocalPlayerDeck) until SetDeck runs; the battle uses SetDeck's deck (ops, verified 211352)
+- [op-exported-deck](../../components/ops/knowledge/mechanisms/op-exported-deck.md): An Operation can export its own deck from its script and give it to a camp with SetDeck (ops, verified 211352)
 - [script-effects-self-contained](../../components/ops/knowledge/mechanisms/script-effects-self-contained.md): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (ops, verified 210942)
 - [scripted-fires](../../components/ops/knowledge/mechanisms/scripted-fires.md): A battery created just before its ShootOnPosition fires; created where the player's units can reach, it must be in their alliance (ops, verified 201602)
 - [scripted-nuke-effect](../../components/ops/knowledge/mechanisms/scripted-nuke-effect.md): A script plays the tactical-nuke impact effect only through a wrapper of its own that binds its parameters; a direct launch crashes the game (ops, verified 210942)
@@ -23,7 +27,6 @@ Topic `units-and-orders`, declared by ops. Back to [the map](../README.md).
 ### STOCK
 
 - [arrival-end-in-zone](../../components/ops/knowledge/mechanisms/arrival-end-in-zone.md): Every player arrival entry must end inside a deployment zone of its side or a command zone (ops, verified 201602)
-- [deck-page-lock](../../components/ops/knowledge/mechanisms/deck-page-lock.md): LockCombatGroup locks a page of a camp's deck while it runs; stock holds the buy menu in its GROUPS view with the view switch hidden (ops, verified 210942)
 - [garrison-roe-and-hold](../../components/ops/knowledge/mechanisms/garrison-roe-and-hold.md): A garrison in a camp with no AI holds its ground only with the ROE and smart orders the script gives it (ops, verified 201602)
 - [scripted-air-sweep](../../components/ops/knowledge/mechanisms/scripted-air-sweep.md): Hidden aircraft revealed, sent over a circle and sent home once spent give an AI-less camp air sweeps (ops, verified 201602)
 - [wave-ends-with-attack](../../components/ops/knowledge/mechanisms/wave-ends-with-attack.md): An AI-less wave stops at its last waypoint unless its route ends with an Attack on the player's units (ops, verified 201602)
@@ -33,11 +36,6 @@ Topic `units-and-orders`, declared by ops. Back to [the map](../README.md).
 
 - [created-units-stand-in-zone](../../components/ops/knowledge/mechanisms/created-units-stand-in-zone.md): A script cannot hide a unit outside the playable zone; a unit created there stands on the zone's edge, where the player's units see and engage it (ops, verified 201602)
 - [helicopter-boarding](../../components/ops/knowledge/mechanisms/helicopter-boarding.md): Scripted infantry boarding of a helicopter does not work (ops, verified 201602)
-
-### UNTESTED
-
-- [deck-names-from-op-dictionaries](../../components/ops/knowledge/mechanisms/deck-names-from-op-dictionaries.md): A deck's page and platoon names resolve in the game's COMPANIES and PLATOONS lists, to which an Operation can append its own dictionaries (ops)
-- [op-exported-deck](../../components/ops/knowledge/mechanisms/op-exported-deck.md): An Operation can export its own deck from its script and give it to a camp with SetDeck (ops)
 
 ## Lessons
 
@@ -61,6 +59,8 @@ Taught by the trials of these mechanisms.
 
 ## Trials, newest first
 
+- 2026-11-18 [2026-11-18-twin-strike-211352-play4-loading-screen-deck](../../components/ops/knowledge/trials/2026-11-18-twin-strike-211352-play4-loading-screen-deck.md) (ops): play, pass
+- 2026-11-18 [2026-11-18-twin-strike-211352-play4](../../components/ops/knowledge/trials/2026-11-18-twin-strike-211352-play4.md) (ops): play, pass
 - 2026-11-12 [2026-11-12-twin-strike-210942-play1](../../components/ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md) (ops): play, mixed
 - 2026-11-12 [2026-11-12-port-210942-survey](../../components/ops/knowledge/trials/2026-11-12-port-210942-survey.md) (ops): survey, pass
 - 2026-11-12 [2026-11-12-deck-gate-stock-survey](../../components/ops/knowledge/trials/2026-11-12-deck-gate-stock-survey.md) (ops): survey, pass

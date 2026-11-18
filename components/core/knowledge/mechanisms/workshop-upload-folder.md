@@ -5,7 +5,7 @@ status: PROBED
 last_verified: 210942 2026-11-12
 source: stock-data
 topics: [mod-packaging, game-updates]
-trials: [2026-11-02-workshop-publishing-survey, 2026-11-12-twin-strike-workshop-upload, 2026-11-12-twin-strike-workshop-page]
+trials: [2026-11-02-workshop-publishing-survey, 2026-11-12-twin-strike-workshop-upload, 2026-11-12-twin-strike-workshop-page, 2026-11-18-twin-strike-211352-play4]
 ---
 **What the game does.** The official upload (`WARNO.exe -uploadmod <Name>`) uploads your Saved Games
 `mod\<Name>\` folder, the same folder a local install fills. A scenario mod made of `Config.ini`,
@@ -26,6 +26,9 @@ The extra files the official generate step writes matter only to mods that repla
 - Do a dry run (everything short of the upload) and a first upload as private or hidden.
 - None of the Workshop items surveyed shipped an Operation. Twin Strike (item 3838528915) does; installing it from a
   subscription is untested.
+- A local copy and a subscribed copy of the same ID: seen once, on build 211352, the local copy in the Saved Games
+  `mod` folder loaded while the subscribed Workshop item, an older build, was active
+  ([[2026-11-18-twin-strike-211352-play4]]). One sighting: not yet a rule.
 
 **On build 210942: the first upload** ([[2026-11-12-twin-strike-workshop-upload]]). Twin Strike was uploaded with
 210942's own `UploadMod.bat` line, `WARNO.exe -headless -datapackonly -uploadmod "<Name>"
@@ -40,8 +43,8 @@ Open: whether the game still lists a mod with no `[Config]` section. Packaging k
 <!-- referenced-by:start -->
 ## Referenced by
 
-- Trials: [2026-11-02-workshop-publishing-survey](../trials/2026-11-02-workshop-publishing-survey.md), [2026-11-12-twin-strike-workshop-page](../trials/2026-11-12-twin-strike-workshop-page.md), [2026-11-12-twin-strike-workshop-upload](../trials/2026-11-12-twin-strike-workshop-upload.md)
+- Trials: [2026-11-02-workshop-publishing-survey](../trials/2026-11-02-workshop-publishing-survey.md), [2026-11-12-twin-strike-workshop-page](../trials/2026-11-12-twin-strike-workshop-page.md), [2026-11-12-twin-strike-workshop-upload](../trials/2026-11-12-twin-strike-workshop-upload.md), [2026-11-18-twin-strike-211352-play4](../../../ops/knowledge/trials/2026-11-18-twin-strike-211352-play4.md)
 - Skills: [`components/core/skills/warno-ship/SKILL.md`](../../skills/warno-ship/SKILL.md), [`components/core/skills/warno-ship/references/workshop-publishing.md`](../../skills/warno-ship/references/workshop-publishing.md)
 - Examples: [`components/ops/examples/twin-strike/README.md`](../../../ops/examples/twin-strike/README.md)
-- Records: [2026-11-12-twin-strike-workshop-upload](../trials/2026-11-12-twin-strike-workshop-upload.md)
+- Records: [2026-11-12-twin-strike-workshop-upload](../trials/2026-11-12-twin-strike-workshop-upload.md), [2026-11-18-twin-strike-211352-play4](../../../ops/knowledge/trials/2026-11-18-twin-strike-211352-play4.md)
 <!-- referenced-by:end -->

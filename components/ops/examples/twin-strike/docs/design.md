@@ -196,21 +196,22 @@ still left NATO well ahead in the next smoke play; the balance (6.5) sets the va
   [[spawn-and-create-units]]. Its camp has no AI, so at load the script gives it stock's orders, last after its group
   is filled: HOLD POSITION when idle and Aggressive when fired on, then a Hold smart order at the village
   (RedJuggernaut's village defenders) ◐ [[garrison-roe-and-hold]]. In the first play, with none, it stood idle.
-- **The fall.** The script counts the NATO units in the village's command zone (`ConditionUnitDansZone`, ZoneType 1),
-  as the losses do (4.2). The village falls when that count is at or below the garrison's threshold (6.4) and a
-  Soviet command unit, one of the player's units with the commander module the game's capture counts (6.1), is in the
-  zone too: the test reads what the game captures by [[zone-capture-command-units]]. The build of 13 Nov read the
-  40 px circle at the village's centre, 44 % of the zone; in a play on build 211352 the zone turned the player's and
-  none of the fall's consequences followed, that circle the likely cause [[detector-circles-only]]
-  [[2026-11-17-twin-strike-211352-play3]]. The toolkit's `fall-zone` gate now fails any test of command units on a
-  circle. All 14 of the garrison start inside both, so the thresholds (5, 4 and 2 left) are unchanged.
+- **The fall.** The script counts the NATO units in the village's command zone (`ConditionUnitDansZone`, ZoneType 1), as
+  the losses do (4.2). The village falls when that count is at or below the garrison's threshold (6.4) and a Soviet
+  command unit, one of the player's units with the commander module the game's capture counts (6.1), is in the zone too:
+  the test reads what the game captures by [[zone-capture-command-units]]. The build of 13 Nov read the 40 px circle at
+  the village's centre, 44 % of the zone; in a play on build 211352 the zone turned the player's and none of the fall's
+  consequences followed, that circle the likely cause [[detector-circles-only]] [[2026-11-17-twin-strike-211352-play3]].
+  The toolkit's `fall-zone` gate now fails any test of command units on a circle. All 14 of the garrison start inside
+  both, so the thresholds (5, 4 and 2 left) are unchanged. Read on the zone, the village fell in the next play on
+  211352, and the reserve unlocked ✓ [[2026-11-18-twin-strike-211352-play4]].
 - **On the fall**, the script forces the village's owner to the player, so the map shows it ✓
   [[count-race-forced-owner]] [[zone-capture-command-units]].
 
 ### 5.2 The unlock
 
 - **The cards.** The division's reserve is in the deck from the start, on two pages of its own (6.1), locked with
-  `LockCombatGroup` until the village falls, then unlocked: no card is added ◐ [[deck-page-lock]].
+  `LockCombatGroup` until the village falls, then unlocked: no card is added ✓ [[deck-page-lock]].
 - **The points.** 8,000 at once and an income from then on (4.3).
 - **The hint.** "Village taken. Front releases the division's reserve, its two pages of the buy menu now unlocked,
   and 8,000 points, with income from now on. NATO recon is moving north."
@@ -410,14 +411,16 @@ All units are vanilla. Every name below is in the game's DeckPacks. Each build's
 
 ### 6.1 Player deck
 
-**The deck is the op's own** ? [[op-exported-deck]]. The script exports it (`op.player_deck_export`, from
+**The deck is the op's own** ✓ [[op-exported-deck]]. The script exports it (`op.player_deck_export`, from
 `forces.DECK_PAGES`) and the player camp's `SetDeck` names it by its own identifier, hash-derived (`TS_<hash>_Player`)
 so no stock deck or other mod's has it. The buy menu offers exactly the order of battle, on the op's own pages: no
 RedJuggernaut card shows.
 - **What stays stock.** The menu's deck (`LocalPlayerDeck`) stays RedJuggernaut's `OP_BASE_RJ_Player`, because the
-  out-game screens resolve it before the op's script loads; `SetDeck` replaces it at the load
-  [[soviet-player-camp]]. The deck's division is RedJuggernaut's (the 79th Guards Tank Division's Operation
-  division), its `DeckName` the division's own name. The NATO2 camp keeps `OP_BASE_RJ_IA`.
+  out-game screens resolve it before the op's script loads; `SetDeck` replaces it at the load [[soviet-player-camp]]. So
+  the loading screen shows RedJuggernaut's groups, while the battle's buy menu is the op's own ✓
+  [[menu-deck-until-setdeck]]: kept for now. The other route, untried, is a stock deck of the same division with no
+  groups as the menu's deck (`OP_BASE_SH_Ally_L`). The deck's division is RedJuggernaut's (the 79th Guards Tank
+  Division's Operation division), its `DeckName` the division's own name. The NATO2 camp keeps `OP_BASE_RJ_IA`.
 - **One source.** `forces.DECK_PAGES` holds the pages, their platoons and every card (unit, count, carrier,
   experience). The deck's packs are derived from it: one pack per card key (unit, carrier, experience), its count the
   sum over its platoons, so every card is on a page, once. The game pools a deck's cards by that key.
@@ -436,7 +439,7 @@ RedJuggernaut card shows.
   BRM-1, Strela-10 and 2S1. Every other card is at 0, but the reserve's Konkurs-M teams: at 1 they are a card key of
   their own, which the start's teams at 0 cannot sell.
 - **The lock.** Pages 3 and 4 are locked from the start until the village falls, one `LockCombatGroup` per page in a
-  Competition with a WaitCondition on the fall, as RunningTheGauntlet locks its two pages ◐ [[deck-page-lock]]. The
+  Competition with a WaitCondition on the fall, as RunningTheGauntlet locks its two pages ✓ [[deck-page-lock]]. The
   decks gate holds that no card key is on a locked page and an open one, so the lock holds every reserve card back.
 - **The buy menu is held in its GROUPS view,** the deck's pages, with the view switch hidden, as stock does wherever
   it locks a page (Marauders #107, #108, #162): `ChangeProductionType` Groups, the hide-all with the switch hidden,
@@ -479,8 +482,8 @@ RedJuggernaut card shows.
 - **What the player no longer has** against the first plays: RedJuggernaut's cards outside the order of battle,
   among them its T-80Bs, its Su-25s (napalm) and its MiG-23s. With the MiG-23s gone the player has no fighter at all
   against NATO's fighter sweeps, only air defence.
-- **Proof.** A transport card played ✓ [[add-unit-to-deck]]; the own deck, its names and the page lock are not yet
-  played ?.
+- **Proof.** A transport card played ✓ [[add-unit-to-deck]]; the own deck, its names and the page lock played on
+  build 211352 ✓ [[2026-11-18-twin-strike-211352-play4]]. A mission restart is not yet played ?.
 
 ### 6.2 Soviet units not in the deck
 
@@ -674,3 +677,4 @@ Its answers set R (5.6), the death cause, and the deck bases (6.1, 6.3).
 | Two battalions and the player's force in a 216 × 378 px box | Columns jam; frame rate | The scale knob; stagger the waves |
 | Transport cards (infantry in BMPs) | Infantry cannot be bought mounted | Separate infantry and vehicle cards |
 | A pre-placed FOB in the player's camp, under a Soviet player | No FOB at the start | Create both by script at launch, with `CreateUnitOnPosition` ✓ [[spawn-and-create-units]] |
+| The menu's deck must be one of the game's | The loading screen shows RedJuggernaut's groups, not the op's own deck | Seen on 211352 and kept: the battle's buy menu is the op's own ✓ [[menu-deck-until-setdeck]]. Untried: a stock deck of the same division with no groups (`OP_BASE_SH_Ally_L`) as the menu's deck |

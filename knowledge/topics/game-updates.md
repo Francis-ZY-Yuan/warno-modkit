@@ -10,11 +10,11 @@ Topic `game-updates`, declared by core. Back to [the map](../README.md).
 ### PLAYED
 
 - [changestress-damagetype-zero](../../components/ops/knowledge/mechanisms/changestress-damagetype-zero.md): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load (ops, verified 210942)
-- [gdscript-is-what-loads](../../components/ops/knowledge/mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (ops, verified 210942)
+- [gdscript-is-what-loads](../../components/ops/knowledge/mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (ops, verified 211352)
 - [leveldesign-guid-binding](../../components/ops/knowledge/mechanisms/leveldesign-guid-binding.md): A script names a map item by the item's GUID in LevelDesign (210942 one GUID value, 201602 four words) (ops, verified 210942)
-- [load-time-validation-rules](../../components/core/knowledge/mechanisms/load-time-validation-rules.md): Every object is validated at load, and the first broken rule stops the load (core, verified 210942)
-- [mod-version-and-config-lines](../../components/core/knowledge/mechanisms/mod-version-and-config-lines.md): A mod is active only with Gen/Version.ndf, and its [Config] hashes mark it outdated after an update (core, verified 210942)
-- [operation-menu-registration](../../components/ops/knowledge/mechanisms/operation-menu-registration.md): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden (ops, verified 210942)
+- [load-time-validation-rules](../../components/core/knowledge/mechanisms/load-time-validation-rules.md): Every object is validated at load, and the first broken rule stops the load (core, verified 211352)
+- [mod-version-and-config-lines](../../components/core/knowledge/mechanisms/mod-version-and-config-lines.md): A mod is active only with Gen/Version.ndf, and its [Config] hashes mark it outdated after an update (core, verified 211352)
+- [operation-menu-registration](../../components/ops/knowledge/mechanisms/operation-menu-registration.md): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden (ops, verified 211352)
 - [script-effects-self-contained](../../components/ops/knowledge/mechanisms/script-effects-self-contained.md): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (ops, verified 210942)
 
 ### PROBED
@@ -24,12 +24,12 @@ Topic `game-updates`, declared by core. Back to [the map](../README.md).
 ### RE
 
 - [edat-revision-chain](../../components/core/knowledge/mechanisms/edat-revision-chain.md): Game data is a chain of edat archives, read newest revision first (core, verified 211352)
-- [txn-tag-config-hash](../../components/ops/knowledge/mechanisms/txn-tag-config-hash.md): Build 210942 loads a compiled .txn only when its .txn.tag holds the ConfigHash the game computes for the transaction; any other makes it compile the sources (ops, verified 210942)
+- [txn-tag-config-hash](../../components/ops/knowledge/mechanisms/txn-tag-config-hash.md): Build 210942 loads a compiled .txn only when its .txn.tag holds the ConfigHash the game computes for the transaction; any other makes it compile the sources (ops, verified 211352)
 
 ### STOCK
 
 - [game-build-classes](../../components/ops/knowledge/mechanisms/game-build-classes.md): A game update removes and renames classes and properties; a mod's files may hold only those the installed build's stock holds (ops, verified 210942)
-- [scenario-definition-layout](../../components/ops/knowledge/mechanisms/scenario-definition-layout.md): Build 210942 reads a scenario's Definition files as NDF/Scenarios/<scenario>/<Kind>.txn, each beside its .txn.tag and .dbg (ops, verified 210942)
+- [scenario-definition-layout](../../components/ops/knowledge/mechanisms/scenario-definition-layout.md): Build 210942 reads a scenario's Definition files as NDF/Scenarios/<scenario>/<Kind>.txn, each beside its .txn.tag and .dbg (ops, verified 211352)
 
 ## Lessons
 
@@ -50,6 +50,7 @@ Taught by the trials of these mechanisms.
 
 ## Trials, newest first
 
+- 2026-11-18 [2026-11-18-twin-strike-211352-play4](../../components/ops/knowledge/trials/2026-11-18-twin-strike-211352-play4.md) (ops): play, pass
 - 2026-11-17 [2026-11-17-build-211352-port](../../components/core/knowledge/trials/2026-11-17-build-211352-port.md) (core): survey, pass
 - 2026-11-13 [2026-11-13-twin-strike-210942-play2](../../components/ops/knowledge/trials/2026-11-13-twin-strike-210942-play2.md) (ops): play, pass
 - 2026-11-12 [2026-11-12-twin-strike-workshop-upload](../../components/core/knowledge/trials/2026-11-12-twin-strike-workshop-upload.md) (core): launch, pass

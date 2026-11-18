@@ -10,10 +10,12 @@ Topic `operation-setup`, declared by ops. Back to [the map](../README.md).
 ### PLAYED
 
 - [content-identity-unique](../../components/ops/knowledge/mechanisms/content-identity-unique.md): Two mods cloned from one template must not share an identity (ops, verified 201602)
-- [custom-operation-from-stock-parts](../../components/ops/knowledge/mechanisms/custom-operation-from-stock-parts.md): A custom Operation can be built entirely from cloned stock files plus a generated LevelDesign and GDScript (ops, verified 210942)
+- [custom-operation-from-stock-parts](../../components/ops/knowledge/mechanisms/custom-operation-from-stock-parts.md): A custom Operation can be built entirely from cloned stock files plus a generated LevelDesign and GDScript (ops, verified 211352)
 - [deployment-phase-recipe](../../components/ops/knowledge/mechanisms/deployment-phase-recipe.md): A deployment phase needs six parts, and buying after the launch needs player arrival entries (ops, verified 201602)
 - [gameplay-mod-relaunch](../../components/ops/knowledge/mechanisms/gameplay-mod-relaunch.md): Operations and Gameplay mods don't mix; an Operation mod must ship none of the 16 Gameplay files (ops, verified 201602)
-- [operation-menu-registration](../../components/ops/knowledge/mechanisms/operation-menu-registration.md): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden (ops, verified 210942)
+- [menu-deck-until-setdeck](../../components/ops/knowledge/mechanisms/menu-deck-until-setdeck.md): The out-game screens show the menu's deck (LocalPlayerDeck) until SetDeck runs; the battle uses SetDeck's deck (ops, verified 211352)
+- [op-exported-deck](../../components/ops/knowledge/mechanisms/op-exported-deck.md): An Operation can export its own deck from its script and give it to a camp with SetDeck (ops, verified 211352)
+- [operation-menu-registration](../../components/ops/knowledge/mechanisms/operation-menu-registration.md): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden (ops, verified 211352)
 
 ### PROBED
 
@@ -22,12 +24,8 @@ Topic `operation-setup`, declared by ops. Back to [the map](../README.md).
 ### STOCK
 
 - [game-build-classes](../../components/ops/knowledge/mechanisms/game-build-classes.md): A game update removes and renames classes and properties; a mod's files may hold only those the installed build's stock holds (ops, verified 210942)
-- [scenario-definition-layout](../../components/ops/knowledge/mechanisms/scenario-definition-layout.md): Build 210942 reads a scenario's Definition files as NDF/Scenarios/<scenario>/<Kind>.txn, each beside its .txn.tag and .dbg (ops, verified 210942)
+- [scenario-definition-layout](../../components/ops/knowledge/mechanisms/scenario-definition-layout.md): Build 210942 reads a scenario's Definition files as NDF/Scenarios/<scenario>/<Kind>.txn, each beside its .txn.tag and .dbg (ops, verified 211352)
 - [scripted-economy](../../components/ops/knowledge/mechanisms/scripted-economy.md): A script sets the player's points, a zero income, one-time grants and a later income in stock's own nodes (ops, verified 201602)
-
-### UNTESTED
-
-- [op-exported-deck](../../components/ops/knowledge/mechanisms/op-exported-deck.md): An Operation can export its own deck from its script and give it to a camp with SetDeck (ops)
 
 ## Lessons
 
@@ -47,6 +45,8 @@ Taught by the trials of these mechanisms.
 
 ## Trials, newest first
 
+- 2026-11-18 [2026-11-18-twin-strike-211352-play4-loading-screen-deck](../../components/ops/knowledge/trials/2026-11-18-twin-strike-211352-play4-loading-screen-deck.md) (ops): play, pass
+- 2026-11-18 [2026-11-18-twin-strike-211352-play4](../../components/ops/knowledge/trials/2026-11-18-twin-strike-211352-play4.md) (ops): play, pass
 - 2026-11-13 [2026-11-13-twin-strike-210942-play2](../../components/ops/knowledge/trials/2026-11-13-twin-strike-210942-play2.md) (ops): play, pass
 - 2026-11-12 [2026-11-12-twin-strike-launch-config-hash](../../components/ops/knowledge/trials/2026-11-12-twin-strike-launch-config-hash.md) (ops): launch, fail
 - 2026-11-12 [2026-11-12-twin-strike-210942-play1](../../components/ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md) (ops): play, mixed

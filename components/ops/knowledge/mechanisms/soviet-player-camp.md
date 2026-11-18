@@ -40,11 +40,12 @@ played well past the deploy phase with the player's camp Soviet: the player's ca
 script adds, were bought and deployed, and the battle against the NATO camps ran on to the second counter-attack
 ([[2026-11-11-twin-strike-play1]]).
 
-**The player's own deck.** Twin Strike's player row now names a deck the op's script exports, not RedJuggernaut's:
-its rows are `SOVIET_PLAYER_CAMP_ROWS` with the player's `SetDeck` replaced (`modkit.ops.shapes.with_deck`), every
-other row the shared one, the NATO2 camp's `OP_BASE_RJ_IA` among them. The menu's deck (`LocalPlayerDeck`) stays
-RedJuggernaut's: the out-game screens resolve it before the op's script loads, and the camp's `SetDeck` replaces it at
-the load [[op-exported-deck]]. Not yet played.
+**The player's own deck.** Twin Strike's player row now names a deck the op's script exports, not RedJuggernaut's: its
+rows are `SOVIET_PLAYER_CAMP_ROWS` with the player's `SetDeck` replaced (`modkit.ops.shapes.with_deck`), every other row
+the shared one, the NATO2 camp's `OP_BASE_RJ_IA` among them. The menu's deck (`LocalPlayerDeck`) stays RedJuggernaut's:
+the out-game screens resolve it before the op's script loads, and the camp's `SetDeck` replaces it at the load
+[[op-exported-deck]]. Played on build 211352 ([[2026-11-18-twin-strike-211352-play4]]): the battle used the op's own
+deck, and the loading screen showed RedJuggernaut's [[menu-deck-until-setdeck]].
 
 **The stock deck's supply.** `OP_BASE_RJ_Player` has no supply helicopter. Its only supply unit is the Ural-4320
 truck, and the buy menu offers it only in the HQ groups of its two tank battalions (battlegroups 2 and 3); its recon,

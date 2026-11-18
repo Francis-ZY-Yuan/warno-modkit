@@ -1,10 +1,12 @@
 ---
 id: op-exported-deck
 title: An Operation can export its own deck from its script and give it to a camp with SetDeck
-status: UNTESTED
+status: PLAYED
+last_verified: 211352 2026-11-18
 source: exe-analysis
 topics: [units-and-orders, operation-setup]
 gates: [modkit.ops.gates.check_decks]
+trials: [2026-11-18-twin-strike-211352-play4]
 shapes: [modkit.ops.shapes.player_deck, modkit.ops.shapes.DECK_SHAPE_SOURCES, modkit.ops.forces.deck_packs, modkit.ops.leveldesign.derived_deck_identifier]
 stock_precedent: none: every stock scenario's SetDeck names a deck of the game's own deck file; the deck's shape is that file's
 ---
@@ -20,7 +22,8 @@ the script loads before it launches, and a scenario file is not a Gameplay file.
   be carried (a transportable module), its carrier is a transport (a transporter module), and the two share a tag (the
   unit's tags and the tags the carrier takes). A pack with a carrier and no unit crashes.
 - **The menu's deck** (`MapConfiguration`'s `LocalPlayerDeck`) is resolved before the script loads, so it must stay a
-  deck of the game's; the camp's `SetDeck` replaces it at the load.
+  deck of the game's; the camp's `SetDeck` replaces it at the load. Until then the out-game screens, the loading
+  screen among them, show the menu's deck [[menu-deck-until-setdeck]].
 - **The buy menu pools cards by (unit, carrier, experience):** a pack's count joins every card of its key, whichever
   page or pack holds it. A key on a locked page and an open one is sold by the open one [[deck-page-lock]].
 
@@ -38,16 +41,20 @@ identifier no stock deck has, every pack drawn exactly by its platoons, page loc
 a locked page and an open one. Every one of the game's 2,486 decks passes the game's checks; most of its Operation
 decks draw their packs unevenly, which only the op's rule refuses.
 
-**Not yet seen in play:** the first launch, a mission restart (whether the old deck is gone before the new one
-registers), and whether a platoon is bought whole or unit by unit. Twin Strike is the first content to use it.
+**Seen in play** on build 211352 ([[2026-11-18-twin-strike-211352-play4]]): Twin Strike, the first content to use it,
+launched with no deck error, and in battle the buy menu showed its own deck, five pages by their own names; its cards
+were bought.
+
+**Not yet seen in play:** a mission restart (whether the old deck is gone before the new one registers), and
+whether a platoon is bought whole or unit by unit.
 
 <!-- referenced-by:start -->
 ## Referenced by
 
-- Trials: [2026-11-12-deck-gate-bad-builds](../trials/2026-11-12-deck-gate-bad-builds.md), [2026-11-12-deck-gate-stock-survey](../trials/2026-11-12-deck-gate-stock-survey.md)
+- Trials: [2026-11-12-deck-gate-bad-builds](../trials/2026-11-12-deck-gate-bad-builds.md), [2026-11-12-deck-gate-stock-survey](../trials/2026-11-12-deck-gate-stock-survey.md), [2026-11-18-twin-strike-211352-play4](../trials/2026-11-18-twin-strike-211352-play4.md)
 - Gates: [`modkit.ops.gates.check_decks`](../../src/modkit/ops/gates.py)
 - Shapes: [`modkit.ops.shapes.player_deck`](../../src/modkit/ops/shapes.py), [`modkit.ops.shapes.DECK_SHAPE_SOURCES`](../../src/modkit/ops/shapes.py), [`modkit.ops.forces.deck_packs`](../../src/modkit/ops/forces.py), [`modkit.ops.leveldesign.derived_deck_identifier`](../../src/modkit/ops/leveldesign.py)
 - Skills: [`components/core/skills/warno-launch-triage/SKILL.md`](../../../core/skills/warno-launch-triage/SKILL.md), [`components/ops/skills/warno-new-operation/references/op-anatomy.md`](../../skills/warno-new-operation/references/op-anatomy.md)
 - Examples: [`components/ops/examples/twin-strike/README.md`](../../examples/twin-strike/README.md), [`components/ops/examples/twin-strike/docs/design.md`](../../examples/twin-strike/docs/design.md), [`components/ops/examples/twin-strike/twinstrike/forces.py`](../../examples/twin-strike/twinstrike/forces.py), [`components/ops/examples/twin-strike/twinstrike/op.py`](../../examples/twin-strike/twinstrike/op.py), [`components/ops/examples/twin-strike/twinstrike/profile.py`](../../examples/twin-strike/twinstrike/profile.py)
-- Records: [2026-11-12-deck-gate-bad-builds](../trials/2026-11-12-deck-gate-bad-builds.md), [2026-11-12-deck-gate-stock-survey](../trials/2026-11-12-deck-gate-stock-survey.md), [add-unit-to-deck](add-unit-to-deck.md), [deck-page-lock](deck-page-lock.md), [soviet-player-camp](soviet-player-camp.md)
+- Records: [2026-11-12-deck-gate-bad-builds](../trials/2026-11-12-deck-gate-bad-builds.md), [2026-11-12-deck-gate-stock-survey](../trials/2026-11-12-deck-gate-stock-survey.md), [2026-11-18-twin-strike-211352-play4](../trials/2026-11-18-twin-strike-211352-play4.md), [add-unit-to-deck](add-unit-to-deck.md), [deck-page-lock](deck-page-lock.md), [menu-deck-until-setdeck](menu-deck-until-setdeck.md), [soviet-player-camp](soviet-player-camp.md)
 <!-- referenced-by:end -->

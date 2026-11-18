@@ -2,11 +2,11 @@
 id: mod-version-and-config-lines
 title: A mod is active only with Gen/Version.ndf, and its [Config] hashes mark it outdated after an update
 status: PLAYED
-last_verified: 210942 2026-11-12
+last_verified: 211352 2026-11-18
 source: play
 topics: [mod-packaging, game-updates]
 shapes: [modkit.core.packaging.VERSION_NDF, modkit.core.packaging.CONFIG_INI]
-trials: [2026-11-02-same-name-pack-override, 2026-11-02-new-scenario-id-loads, 2026-11-02-workshop-publishing-survey, 2026-11-06-probe2-play-run-a, 2026-11-12-build-210942-port, 2026-11-12-twin-strike-210942-play1, 2026-11-12-twin-strike-workshop-upload, 2026-11-17-build-211352-port]
+trials: [2026-11-02-same-name-pack-override, 2026-11-02-new-scenario-id-loads, 2026-11-02-workshop-publishing-survey, 2026-11-06-probe2-play-run-a, 2026-11-12-build-210942-port, 2026-11-12-twin-strike-210942-play1, 2026-11-12-twin-strike-workshop-upload, 2026-11-17-build-211352-port, 2026-11-18-twin-strike-211352-play4]
 stock_precedent: every current (201602) Workshop mod ships the same one-line Gen/Version.ndf
 ---
 **What the game does.** The Mod Center lists a mod folder that holds only `Config.ini` and `Scenarios/` as
@@ -35,8 +35,8 @@ outdated until it is rebuilt.
 <!-- referenced-by:start -->
 ## Referenced by
 
-- Trials: [2026-11-02-new-scenario-id-loads](../../../ops/knowledge/trials/2026-11-02-new-scenario-id-loads.md), [2026-11-02-same-name-pack-override](../trials/2026-11-02-same-name-pack-override.md), [2026-11-02-workshop-publishing-survey](../trials/2026-11-02-workshop-publishing-survey.md), [2026-11-06-probe2-play-run-a](../../../ops/knowledge/trials/2026-11-06-probe2-play-run-a.md), [2026-11-12-build-210942-port](../trials/2026-11-12-build-210942-port.md), [2026-11-12-twin-strike-210942-play1](../../../ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md), [2026-11-12-twin-strike-workshop-upload](../trials/2026-11-12-twin-strike-workshop-upload.md), [2026-11-17-build-211352-port](../trials/2026-11-17-build-211352-port.md)
+- Trials: [2026-11-02-new-scenario-id-loads](../../../ops/knowledge/trials/2026-11-02-new-scenario-id-loads.md), [2026-11-02-same-name-pack-override](../trials/2026-11-02-same-name-pack-override.md), [2026-11-02-workshop-publishing-survey](../trials/2026-11-02-workshop-publishing-survey.md), [2026-11-06-probe2-play-run-a](../../../ops/knowledge/trials/2026-11-06-probe2-play-run-a.md), [2026-11-12-build-210942-port](../trials/2026-11-12-build-210942-port.md), [2026-11-12-twin-strike-210942-play1](../../../ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md), [2026-11-12-twin-strike-workshop-upload](../trials/2026-11-12-twin-strike-workshop-upload.md), [2026-11-17-build-211352-port](../trials/2026-11-17-build-211352-port.md), [2026-11-18-twin-strike-211352-play4](../../../ops/knowledge/trials/2026-11-18-twin-strike-211352-play4.md)
 - Shapes: [`modkit.core.packaging.VERSION_NDF`](../../src/modkit/core/packaging.py), [`modkit.core.packaging.CONFIG_INI`](../../src/modkit/core/packaging.py)
 - Skills: [`components/core/skills/warno-launch-triage/SKILL.md`](../../skills/warno-launch-triage/SKILL.md), [`components/core/skills/warno-setup/SKILL.md`](../../skills/warno-setup/SKILL.md), [`components/core/skills/warno-ship/SKILL.md`](../../skills/warno-ship/SKILL.md), [`components/core/skills/warno-ship/references/workshop-publishing.md`](../../skills/warno-ship/references/workshop-publishing.md)
-- Records: [2026-11-12-twin-strike-210942-play1](../../../ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md), [2026-11-12-twin-strike-workshop-upload](../trials/2026-11-12-twin-strike-workshop-upload.md), [2026-11-17-build-211352-port](../trials/2026-11-17-build-211352-port.md), [workshop-upload-folder](workshop-upload-folder.md)
+- Records: [2026-11-12-twin-strike-210942-play1](../../../ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md), [2026-11-12-twin-strike-workshop-upload](../trials/2026-11-12-twin-strike-workshop-upload.md), [2026-11-17-build-211352-port](../trials/2026-11-17-build-211352-port.md), [2026-11-18-twin-strike-211352-play4](../../../ops/knowledge/trials/2026-11-18-twin-strike-211352-play4.md), [workshop-upload-folder](workshop-upload-folder.md)
 <!-- referenced-by:end -->

@@ -9,9 +9,10 @@ Topic `script-flow`, declared by ops. Back to [the map](../README.md).
 
 ### PLAYED
 
+- [deck-page-lock](../../components/ops/knowledge/mechanisms/deck-page-lock.md): LockCombatGroup locks a page of a camp's deck while it runs; stock holds the buy menu in its GROUPS view with the view switch hidden (ops, verified 211352)
 - [dialog-reask-loop](../../components/ops/knowledge/mechanisms/dialog-reask-loop.md): A multiple-choice dialog can be asked again in a loop if the choice is reset before each ask (ops, verified 201602)
 - [fog-switch](../../components/ops/knowledge/mechanisms/fog-switch.md): A script can switch the fog of war off with TGDDescriptorFow; whether it is map-wide and comes back on is unseen (ops, verified 201602)
-- [gdscript-is-what-loads](../../components/ops/knowledge/mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (ops, verified 210942)
+- [gdscript-is-what-loads](../../components/ops/knowledge/mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (ops, verified 211352)
 - [mission-ends-only-by-script](../../components/ops/knowledge/mechanisms/mission-ends-only-by-script.md): With CheckEndGame off, only the script's TriggerEndGame ends the battle, and the first one wins (ops, verified 201602)
 - [script-container-semantics](../../components/ops/knowledge/mechanisms/script-container-semantics.md): How script containers run their children, and when each action finishes (ops, verified 201602)
 - [script-effects-self-contained](../../components/ops/knowledge/mechanisms/script-effects-self-contained.md): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (ops, verified 210942)
@@ -25,7 +26,6 @@ Topic `script-flow`, declared by ops. Back to [the map](../README.md).
 ### STOCK
 
 - [camera-shot-from-current-position](../../components/ops/knowledge/mechanisms/camera-shot-from-current-position.md): Mid-battle, a script flies the camera from wherever it is to a one-key path, in a cutscene that can hold the view (ops, verified 201602)
-- [deck-page-lock](../../components/ops/knowledge/mechanisms/deck-page-lock.md): LockCombatGroup locks a page of a camp's deck while it runs; stock holds the buy menu in its GROUPS view with the view switch hidden (ops, verified 210942)
 - [difficulty-branches](../../components/ops/knowledge/mechanisms/difficulty-branches.md): Difficulty reaches a script as three conditions; give it a Medium baseline (ops, verified 201602)
 - [scripted-economy](../../components/ops/knowledge/mechanisms/scripted-economy.md): A script sets the player's points, a zero income, one-time grants and a later income in stock's own nodes (ops, verified 201602)
 - [wave-ends-with-attack](../../components/ops/knowledge/mechanisms/wave-ends-with-attack.md): An AI-less wave stops at its last waypoint unless its route ends with an Attack on the player's units (ops, verified 201602)
@@ -49,6 +49,7 @@ Taught by the trials of these mechanisms.
 
 ## Trials, newest first
 
+- 2026-11-18 [2026-11-18-twin-strike-211352-play4](../../components/ops/knowledge/trials/2026-11-18-twin-strike-211352-play4.md) (ops): play, pass
 - 2026-11-13 [2026-11-13-twin-strike-210942-play2](../../components/ops/knowledge/trials/2026-11-13-twin-strike-210942-play2.md) (ops): play, pass
 - 2026-11-12 [2026-11-12-twin-strike-210942-play1](../../components/ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md) (ops): play, mixed
 - 2026-11-12 [2026-11-12-port-210942-survey](../../components/ops/knowledge/trials/2026-11-12-port-210942-survey.md) (ops): survey, pass

@@ -5,13 +5,18 @@ Twin Cities, then hold it against two NATO blows, and decide whether to ask Fron
 second. You play the Soviets.
 
 > **v0.1 showcase.** Twin Strike is a demonstration of what the toolkit builds, not a polished or historical scenario.
-> Its context, its formations and their orders of battle are fictional. It has been played on game builds 201602 and
-> 210942. Its text is in English and Simplified Chinese; the Chinese, reviewed by a native reader but for the deck's
-> names, the reserve's unlock and the briefing's later edit (written since), has not yet been seen in a Chinese play.
+> Its context, its formations and their orders of battle are fictional. It has been played on game builds 201602,
+> 210942 and 211352. Its text is in English and Simplified Chinese; the Chinese, reviewed by a native reader but for
+> the deck's names, the reserve's unlock and the briefing's later edit (written since), has not yet been seen in a
+> Chinese play.
 >
 > Known issues:
-> - **The deck:** the op's own deck, its page and platoon names and its reserve's page lock are new and not yet
->   played: the first launch, a mission restart and the locked pages are on the play sheet.
+> - **The deck:** the op's own deck, its page and platoon names and its reserve's page lock played on build 211352.
+>   A mission restart is not yet played, and is on the play sheet.
+> - **The loading screen** shows RedJuggernaut's stock deck, not the op's own. The game's out-game screens show the
+>   menu's deck, which must be one of the game's; the op's script gives you its own deck as the battle loads, and
+>   the buy menu shows it. Kept for now. The other route, untried: a stock deck of the same division with no groups
+>   (`OP_BASE_SH_Ally_L`) as the menu's deck.
 > - **The nuke's effects:** the game can slow down markedly after the strike, and the strike plays in fog, so the
 >   second battalion isn't seen being hit.
 > - **Balance:** untuned, and played only a handful of times, on Medium.

@@ -11,6 +11,8 @@ How far each mechanism is proven: `PLAYED` worked in a real play; `PROBED` loade
 - [content-identity-unique](../components/ops/knowledge/mechanisms/content-identity-unique.md) (ops): Two mods cloned from one template must not share an identity
 - [count-race-forced-owner](../components/ops/knowledge/mechanisms/count-race-forced-owner.md) (ops): Decide a zone by a timed unit count, then force its owner so the map shows it
 - [custom-operation-from-stock-parts](../components/ops/knowledge/mechanisms/custom-operation-from-stock-parts.md) (ops): A custom Operation can be built entirely from cloned stock files plus a generated LevelDesign and GDScript
+- [deck-names-from-op-dictionaries](../components/ops/knowledge/mechanisms/deck-names-from-op-dictionaries.md) (ops): A deck's page and platoon names resolve in the game's COMPANIES and PLATOONS lists, to which an Operation can append its own dictionaries
+- [deck-page-lock](../components/ops/knowledge/mechanisms/deck-page-lock.md) (ops): LockCombatGroup locks a page of a camp's deck while it runs; stock holds the buy menu in its GROUPS view with the view switch hidden
 - [deployment-phase-recipe](../components/ops/knowledge/mechanisms/deployment-phase-recipe.md) (ops): A deployment phase needs six parts, and buying after the launch needs player arrival entries
 - [detector-circles-only](../components/ops/knowledge/mechanisms/detector-circles-only.md) (ops): DetectUnitDansDetecteur works only on circular zones
 - [dialog-button-ingame-dictionary](../components/ops/knowledge/mechanisms/dialog-button-ingame-dictionary.md) (ops): Dialog button labels resolve only in the game's in-game interface dictionary
@@ -23,10 +25,12 @@ How far each mechanism is proven: `PLAYED` worked in a real play; `PROBED` loade
 - [leveldesign-guid-binding](../components/ops/knowledge/mechanisms/leveldesign-guid-binding.md) (ops): A script names a map item by the item's GUID in LevelDesign (210942 one GUID value, 201602 four words)
 - [load-time-validation-rules](../components/core/knowledge/mechanisms/load-time-validation-rules.md) (core): Every object is validated at load, and the first broken rule stops the load
 - [localisation-tokens-packed](../components/core/knowledge/mechanisms/localisation-tokens-packed.md) (core): Localisation keys are tokens of up to 10 characters, packed 6 bits each
+- [menu-deck-until-setdeck](../components/ops/knowledge/mechanisms/menu-deck-until-setdeck.md) (ops): The out-game screens show the menu's deck (LocalPlayerDeck) until SetDeck runs; the battle uses SetDeck's deck
 - [mission-ends-only-by-script](../components/ops/knowledge/mechanisms/mission-ends-only-by-script.md) (ops): With CheckEndGame off, only the script's TriggerEndGame ends the battle, and the first one wins
 - [mod-version-and-config-lines](../components/core/knowledge/mechanisms/mod-version-and-config-lines.md) (core): A mod is active only with Gen/Version.ndf, and its [Config] hashes mark it outdated after an update
 - [ndfbin-round-trip](../components/core/knowledge/mechanisms/ndfbin-round-trip.md) (core): Compiled NDF (CNDF ndfbin) decodes and re-encodes byte for byte
 - [objective-counters](../components/ops/knowledge/mechanisms/objective-counters.md) (ops): Objective text shows live counters from a variable list
+- [op-exported-deck](../components/ops/knowledge/mechanisms/op-exported-deck.md) (ops): An Operation can export its own deck from its script and give it to a camp with SetDeck
 - [operation-menu-registration](../components/ops/knowledge/mechanisms/operation-menu-registration.md) (ops): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden
 - [script-container-semantics](../components/ops/knowledge/mechanisms/script-container-semantics.md) (ops): How script containers run their children, and when each action finishes
 - [script-effects-self-contained](../components/ops/knowledge/mechanisms/script-effects-self-contained.md) (ops): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them
@@ -56,7 +60,6 @@ How far each mechanism is proven: `PLAYED` worked in a real play; `PROBED` loade
 
 - [arrival-end-in-zone](../components/ops/knowledge/mechanisms/arrival-end-in-zone.md) (ops): Every player arrival entry must end inside a deployment zone of its side or a command zone
 - [camera-shot-from-current-position](../components/ops/knowledge/mechanisms/camera-shot-from-current-position.md) (ops): Mid-battle, a script flies the camera from wherever it is to a one-key path, in a cutscene that can hold the view
-- [deck-page-lock](../components/ops/knowledge/mechanisms/deck-page-lock.md) (ops): LockCombatGroup locks a page of a camp's deck while it runs; stock holds the buy menu in its GROUPS view with the view switch hidden
 - [dialog-text-takes-no-variables](../components/ops/knowledge/mechanisms/dialog-text-takes-no-variables.md) (ops): Dialog text cannot show live numbers; counts go in an objective counter or a hint
 - [difficulty-branches](../components/ops/knowledge/mechanisms/difficulty-branches.md) (ops): Difficulty reaches a script as three conditions; give it a Medium baseline
 - [game-build-classes](../components/ops/knowledge/mechanisms/game-build-classes.md) (ops): A game update removes and renames classes and properties; a mod's files may hold only those the installed build's stock holds
@@ -76,6 +79,4 @@ How far each mechanism is proven: `PLAYED` worked in a real play; `PROBED` loade
 
 ## UNTESTED
 
-- [deck-names-from-op-dictionaries](../components/ops/knowledge/mechanisms/deck-names-from-op-dictionaries.md) (ops): A deck's page and platoon names resolve in the game's COMPANIES and PLATOONS lists, to which an Operation can append its own dictionaries
-- [op-exported-deck](../components/ops/knowledge/mechanisms/op-exported-deck.md) (ops): An Operation can export its own deck from its script and give it to a camp with SetDeck
 - [script-and-battle-scale](../components/ops/knowledge/mechanisms/script-and-battle-scale.md) (ops): How big a script and a battle can get is untested beyond the probes

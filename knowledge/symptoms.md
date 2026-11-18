@@ -60,6 +60,7 @@ The game's own words for a failure, the mechanism behind them, and the gate that
 | The game crashed while loading the Operation, at the same place every time | [ai-grid-tiles-playable-zone](../components/ops/knowledge/mechanisms/ai-grid-tiles-playable-zone.md) | [`modkit.ops.gates.check_details_generators`](../components/ops/src/modkit/ops/gates.py) |
 | The helicopter and its infantry stayed apart again | [helicopter-boarding](../components/ops/knowledge/mechanisms/helicopter-boarding.md) | none yet |
 | The helicopter spawned without its infantry and flew off by script | [helicopter-boarding](../components/ops/knowledge/mechanisms/helicopter-boarding.md) | none yet |
+| The loading screen shows the stock deck, not the Operation's own | [menu-deck-until-setdeck](../components/ops/knowledge/mechanisms/menu-deck-until-setdeck.md) | none yet |
 | The mod was listed as outdated; once active, the stock Operation still showed its stock title and briefing | [mod-version-and-config-lines](../components/core/knowledge/mechanisms/mod-version-and-config-lines.md) | none yet |
 | The mod was listed as outdated; once active, the stock Operation still showed its stock title and briefing | [operation-menu-registration](../components/ops/knowledge/mechanisms/operation-menu-registration.md) | none yet |
 | The opening camera sat on the ground somewhere | [start-camera-before-loading-done](../components/ops/knowledge/mechanisms/start-camera-before-loading-done.md) | [`modkit.ops.maps.check_camera_paths`](../components/ops/src/modkit/ops/maps.py) |
