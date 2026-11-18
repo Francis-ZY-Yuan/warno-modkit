@@ -177,13 +177,16 @@ class StockCommanders(unittest.TestCase):
 @paths.skip_unless_game_dir("Mods", "ModData", "base.zip")
 class StockFallZone(unittest.TestCase):
     def test_no_stock_script_tests_a_capture(self):
-        """The 35 stock GDScripts: 74 type-filtered place tests in 4 scripts. 10 (Survivors 7, BackhandBlow 3) name
-        their types only to leave them out (NoContrainte); the other 64 (63 circles, 1 command zone, in
-        CampagneStrat_Invasion_of_Cuba and RunningTheGauntlet) count strategic pawns and units, none with the
-        commander module. No stock script holds a test of what the game captures, so the gate passes all of them."""
+        """The 35 stock GDScripts of build 211352, the corpus this pin was read from: 112 type-filtered place tests in
+        4 scripts. 10 (Survivors 7, BackhandBlow 3) name their types only to leave them out (NoContrainte); the other
+        102 count strategic pawns and units, none with the commander module: CampagneStrat_Invasion_of_Cuba 100 (all
+        circles) and RunningTheGauntlet 2 (1 circle, 1 command zone). Build 210942 had 64 (Cuba 62): 211352's Cuba
+        adds 19 reinforcement pawns, each waited for and then gathered on its arrival circle (detect_renfort_US,
+        detect_renfort_sov), one type per test. No stock script holds a test of what the game captures, so the gate
+        passes all of them."""
         total, bad = {}, []
         for name, nodes in stock_scripts():
             counts, why = gates.fall_zone_violations(nodes, {}, gates.commander_units)
             total, bad = {k: total.get(k, 0) + v for k, v in counts.items()}, bad + [f"{name}: {w}" for w in why]
         self.assertEqual(len(stock_scripts()), 35)
-        self.assertEqual((total, bad), ({"typed place tests": 64, "command tests": 0}, []))
+        self.assertEqual((total, bad), ({"typed place tests": 102, "command tests": 0}, []))
