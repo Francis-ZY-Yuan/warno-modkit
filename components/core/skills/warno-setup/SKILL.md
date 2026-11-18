@@ -59,7 +59,8 @@ Work from your own project folder (a contributor works from the repository clone
 
 `setup check` reports STALE. Re-run steps 4 to 8, rebuild every mod, and play each again before sharing it: see
 [[mod-version-and-config-lines]]. A rules diff from `ndfrules extract` lists the checks that changed. Review it
-before trusting the gate.
+before trusting the gate. Then keep a copy of the `WARNO.exe` the new table was read from, outside the repository
+and the game folder: the next update replaces it, and only that copy lets the two builds be compared at the exe level.
 
 ## Common mistakes
 
