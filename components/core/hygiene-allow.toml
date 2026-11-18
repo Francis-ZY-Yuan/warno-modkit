@@ -83,6 +83,11 @@ reason = "generic term: no exe-specific value"
 
 [[allow]]
 path = "components/core/tests/test_ndfrules.py"
+text = "rva"
+reason = "generic term: no exe-specific value"
+
+[[allow]]
+path = "components/core/tests/test_ndfrules.py"
 text = "slot"
 reason = "generic term: no exe-specific value"
 

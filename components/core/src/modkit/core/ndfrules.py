@@ -162,6 +162,14 @@ class _Exe:
         s = bytes(self.pe.m[o:o + 300]).split(b"\0")[0]
         return s.decode("latin-1") if s and all(32 <= c < 127 for c in s) else ""
 
+    def code_pointer(self, rva: int) -> bool:
+        """Whether the qword at `rva` is an address in .text: the object there is not a string, however its first
+        bytes read. A check may load such an object (one whose first member points to code) before the strings it
+        passes, and the low bytes of that pointer can read as a short printable C string, which `checks_in` would
+        then take for the check's property or the first part of its message."""
+        q = self.q(rva)
+        return q is not None and self.pe.base + self.pe.tva <= q < self.pe.base + self.pe.tva + self.pe.tlen
+
     def insns(self, fn: int) -> list[tuple[int, str]]:
         b, e = self.pe.func_of(fn) or (fn, fn + 256)
         r, out = b, []
@@ -354,7 +362,7 @@ def checks_in(x: _Exe, fn: int, helpers: dict[int, str]) -> list[tuple[str, str,
             if a.startswith("ret") or ab and (ab[0] != "call" or ab[1] in helpers):
                 break
             m = re.match(r"lea (\w+), \[([0-9a-f]+)\]$", a)
-            if m and (s := x.cstr(int(m.group(2), 16))):
+            if m and not x.code_pointer(int(m.group(2), 16)) and (s := x.cstr(int(m.group(2), 16))):
                 strs.insert(0, s)
                 args.setdefault(m.group(1), s)
             m = re.match(r"(?:mov|xor) (r8d|r9d|edx), (0x-?[0-9a-f]+|-?\d+|r8d|r9d|edx)$", a)

@@ -13,6 +13,7 @@ import collections
 import contextlib
 import io
 import os
+import struct
 import tempfile
 import unittest
 from pathlib import Path
@@ -242,6 +243,53 @@ class Thrower(unittest.TestCase):
         x = FakeExe({0: (ndfrules.HELPER_MAX + 1, self.HELPER[1])})
         self.assertFalse(ndfrules.is_thrower(x, (0, ndfrules.HELPER_MAX + 1)))
         self.assertFalse(ndfrules.is_thrower(x, None))
+
+
+class CodePointer(unittest.TestCase):
+    """A lea target whose first qword points into .text is an object, not a string, however its bytes read. All the
+    bytes here are made up: a small image whose code section holds the pointer's target, an object holding that
+    pointer (its low bytes the printable "AB"), and the strings a check passes."""
+
+    BASE, TEXT, TEXT_LEN = 1 << 32, 0x4000, 0x1000
+    OBJ, PROP, COND, CONDITION, MSG, HELPER = 0x00, 0x20, 0x40, 0x80, 0xa0, 0x4800
+
+    def exe(self, insns=()):
+        m = bytearray(0x100)
+        struct.pack_into("<Q", m, self.OBJ, self.BASE + int.from_bytes(b"AB", "little"))  # into .text
+        for at, s in ((self.PROP, "Speed"), (self.COND, ndfrules.COND), (self.CONDITION, "Speed > 0"),
+                      (self.MSG, "free text")):
+            m[at:at + len(s) + 1] = s.encode() + b"\0"
+        pe = mock.Mock(m=m, base=self.BASE, tva=self.TEXT, tlen=self.TEXT_LEN,
+                       rva2off=lambda rva: rva if 0 <= rva < len(m) else None)
+        x = object.__new__(ndfrules._Exe)
+        x.pe = pe
+        x.insns = lambda fn: list(insns)
+        return x
+
+    def test_an_object_holding_a_code_pointer_is_not_a_string(self):
+        x = self.exe()
+        self.assertTrue(self.TEXT <= int.from_bytes(b"AB", "little") < self.TEXT + self.TEXT_LEN)
+        self.assertEqual(x.cstr(self.OBJ), "AB")  # what its bytes read as
+        self.assertTrue(x.code_pointer(self.OBJ))
+        for at in (self.PROP, self.COND, self.CONDITION, self.MSG):
+            self.assertFalse(x.code_pointer(at))
+        self.assertFalse(x.code_pointer(0x1000))  # outside the image
+
+    def test_a_check_keeps_its_property_and_message(self):
+        """The object loaded before a check's strings no longer becomes a cond rule's property or a custom
+        message's first part."""
+        def call(*leas):
+            return [(8 * k, f"lea {reg}, [{at:x}]") for k, (reg, at) in enumerate(leas)] + [
+                (8 * len(leas), f"call {self.HELPER:x}")]
+
+        helpers = {self.HELPER: "custom"}
+        cond = self.exe(call(("rcx", self.OBJ), ("rdx", self.PROP), ("r8", self.COND), ("r9", self.CONDITION)))
+        self.assertEqual(ndfrules.checks_in(cond, 0, helpers), [("cond", "Speed", "", "Speed > 0")])
+        custom = self.exe(call(("rcx", self.OBJ), ("rdx", self.MSG)))
+        self.assertEqual(ndfrules.checks_in(custom, 0, helpers), [("custom", "", "", "free text")])
+        with mock.patch.object(ndfrules._Exe, "code_pointer", return_value=False):  # the misread the check stops
+            self.assertEqual(ndfrules.checks_in(cond, 0, helpers), [("cond", "AB", "", "Speed")])
+            self.assertEqual(ndfrules.checks_in(custom, 0, helpers), [("custom", "", "", "AB | free text")])
 
 
 class Output(unittest.TestCase):
