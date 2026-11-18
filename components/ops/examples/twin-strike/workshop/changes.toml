@@ -9,6 +9,8 @@ note = """
 Simplified Chinese: set the game to Simplified Chinese and every text of the operation (the menu, the briefing, \
 hints, objectives and dialogs) is in Chinese, in the game's own terms. A native reader reviewed it.
 Its own deck: the buy menu shows the Operation's five named pages, the reserve's two locked until the village \nfalls, and no RedJuggernaut card.
+The village's fall counts its whole zone, the one the game captures, not a circle at its centre: with its garrison \
+down and one of your command units anywhere in the zone, the village falls.
 """
 
 [1794521820]

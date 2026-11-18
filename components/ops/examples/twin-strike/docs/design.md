@@ -146,7 +146,8 @@ fire the 2S7Ms' alone. Nothing on the map is far enough for the BM-30, so it is 
 
 - **Phase 1.** If the village has not fallen 20 min after launch, the battle is lost: "The detachment failed to take
   the village." The deck carries enough command units for the fall (6.1), so the deadline is a real failure, not a
-  lost key.
+  lost key. Both parts of the fall's test, the garrison left and the command unit, read the village's command zone,
+  the outline the player sees and the place the game captures (5.1): a command unit anywhere in it counts.
 - **Phase 3.** Battalion 1 is beaten when it is broken or after 15 min of counter-attack with the village still held,
   whichever comes first.
   - On the deadline, its survivors break off: FastMoveAndAttack by road to their lane's entry in the south zone (no
@@ -195,8 +196,14 @@ still left NATO well ahead in the next smoke play; the balance (6.5) sets the va
   [[spawn-and-create-units]]. Its camp has no AI, so at load the script gives it stock's orders, last after its group
   is filled: HOLD POSITION when idle and Aggressive when fired on, then a Hold smart order at the village
   (RedJuggernaut's village defenders) ◐ [[garrison-roe-and-hold]]. In the first play, with none, it stood idle.
-- **The fall.** A circular detector over the village counts NATO units ✓ [[detector-circles-only]]. The village falls
-  when that count is at or below the garrison's threshold (6.4) and a Soviet command unit is inside.
+- **The fall.** The script counts the NATO units in the village's command zone (`ConditionUnitDansZone`, ZoneType 1),
+  as the losses do (4.2). The village falls when that count is at or below the garrison's threshold (6.4) and a
+  Soviet command unit, one of the player's units with the commander module the game's capture counts (6.1), is in the
+  zone too: the test reads what the game captures by [[zone-capture-command-units]]. The build of 13 Nov read the
+  40 px circle at the village's centre, 44 % of the zone; in a play on build 211352 the zone turned the player's and
+  none of the fall's consequences followed, that circle the likely cause [[detector-circles-only]]. The toolkit's
+  `fall-zone` gate now fails any test of command units on a circle. All 14 of the garrison start inside both, so the
+  thresholds (5, 4 and 2 left) are unchanged.
 - **On the fall**, the script forces the village's owner to the player, so the map shows it ✓
   [[count-race-forced-owner]] [[zone-capture-command-units]].
 

@@ -32,9 +32,9 @@ What stands from the start (LevelDesign, every item in ITEMS):
   the strike's spots (STRIKE_SPOTS).
 
 The phases, every one with a deadline (design 4.2), each a timed beat from "Launch battle" that waits for its flag:
-- phase 1 (phase1, H+0:00): P1 on the village, its count and the fall (the garrison left in the circle at or below
-  ts_fall_n and a Soviet command unit inside: the zone forced to the player, FALLEN), the 20 min deadline, and the
-  preparation fire's dialog, asked again every 2 min (prep);
+- phase 1 (phase1, H+0:00): P1 on the village, its count and the fall (the garrison left in the village's command
+  zone at or below ts_fall_n and a Soviet command unit in it: the zone forced to the player, FALLEN), the 20 min
+  deadline, and the preparation fire's dialog, asked again every 2 min (prep);
 - phase 2 (phase2): on FALLEN FALL_GRANT points and FALL_INCOME, and the deck's reserve pages unlock (load_deck);
   PHASE2_S later phase 3 (PH3) [[scripted-economy]];
 - the losses (losses, from FALLEN): P2, NATO owning the village for 60 s, no Soviet unit in its command zone for
@@ -64,7 +64,7 @@ from __future__ import annotations
 
 import dataclasses
 from collections import Counter
-from typing import Iterable, NamedTuple
+from typing import Callable, Iterable, NamedTuple
 
 from modkit.core import ndfbin
 from modkit.core.gates import check
@@ -73,7 +73,7 @@ from modkit.ops import mission as ops_mission
 from modkit.ops import script as ops_script
 from modkit.ops import shapes
 from modkit.ops.bricks import (
-    c_all, c_any, c_none, c_team, c_type, g_and, g_attack, g_choice, g_cmp, g_collect, g_compete, g_count,
+    c_all, c_none, c_team, c_type, g_and, g_attack, g_choice, g_cmp, g_collect, g_compete, g_count,
     g_detect, g_fx, g_grant, g_hint, g_idle_roe, g_if, g_ignored, g_income, g_kill, g_losses, g_modify, g_or,
     g_fow, g_planes_spent, g_roe, g_seq, g_set, g_simul, g_smart_hold, g_spawn, g_start_timer, g_stress, g_union,
     g_units_in_zones, g_until, g_vanish, g_wait, g_zone_control, g_zone_owner, unit_path,
@@ -223,7 +223,7 @@ NATO_GROUND = (GARRISON, BN1, f"{BN1}_inf", BN2)
 CLOCK_R, CLOCK_W = "ts_clock_r", "ts_clock_w"
 # The LevelDesign items the mission names.
 VILLAGE_ZONE = "TS_CZ_Village"         # the village's command zone (twinstrike.map)
-VILLAGE_RING = "TS_RingVillage"        # the detector circle over the village: the fall's count, a sweep's target
+VILLAGE_RING = "TS_RingVillage"        # the detector circle over the village: a sweep's target, not the fall's
 BOX_RINGS = {"W": "TS_RingBoxW", "C": "TS_RingBoxC"}   # the fire boxes' circles: the plan's count, the sweeps' targets
 STRIKE_RING = "TS_RingStrike"          # the strike zone's circle, radius R round ASSEMBLY: the kill's detector
 BN2_PIN = "TS_Bn2"                     # B2's label, at battalion 2's north edge (the zone's label is at its centre)
@@ -260,10 +260,12 @@ ENDINGS: dict[int, Ending] = {
     END_EMPTY: Ending("ts_dempty", shapes.TOTAL_VICTORY, True),   # no Soviet unit in the village's zone for EMPTY_S
 }
 
-# Phase 1 (seconds after "Launch battle"). The village falls once the NATO units left in its circle are ts_fall_n or
-# fewer (a difficulty knob) and a Soviet command unit (forces.COMMAND_UNITS) is inside; the circle is counted every
-# RING_POLL_S into P1's counter. If it has not fallen P1_DEADLINE_S after the launch, the battle is lost (design 4.2).
-RING_POLL_S = 2.0
+# Phase 1 (seconds after "Launch battle"). The village falls once the NATO units left in its command zone are
+# ts_fall_n or fewer (a difficulty knob) and a Soviet command unit (forces.COMMAND_UNITS) is in it: the zone the game
+# captures by, not the circle inside it [[zone-capture-command-units]] (seen in play on 211352: the zone turned the
+# player's and nothing followed, the circle the likely cause). The zone is counted every ZONE_POLL_S into P1's
+# counter. If it has not fallen P1_DEADLINE_S after the launch, the battle is lost (design 4.2).
+ZONE_POLL_S = 2.0
 P1_DEADLINE_S = 1200.0
 GARRISON_N = group_total(forces.force_rows("garrison"), "garrison")   # P1's count before its first round
 # The preparation fire (design 5.4): its warning hint at PREP_HINT_T, after the phase hint and the difficulty's; the
@@ -719,22 +721,36 @@ def prep(ctx: Ctx) -> Node:
                   g_if(g_cmp(ans, NOW), g_seq([fire(ctx, HEAVY, "TS_Village", None)]))])
 
 
+def zone_count(ctx: Ctx, zone: str, contrainte: Callable[[], Node], var: Node, most: int) -> Node:
+    """`var` = the units matching `contrainte()` in the command zone `zone`, `most` or more written as `most`: an
+    IfThenElse per k = 0 .. most - 1 on And[UnitDansZone(`zone`, ZoneType 1) <= k] (stock holds UnitDansZone in an
+    And, and IfThenElse's Condition an And), its branch `var` = k, the last else `var` = `most`. One write a round, so
+    no reader sees a half-done value; the nodes run in one instant chain."""
+    pick = g_seq([g_set(var, most)])
+    for k in reversed(range(most)):
+        pick = g_if(g_and(g_units_in_zones([ctx.tag(zone)], contrainte(), k, LE)), g_seq([g_set(var, k)]), pick)
+    return pick
+
+
 def phase1(ctx: Ctx) -> Node:
     """H+0:00, phase 1 (design 4, 5.1, 4.2): the phase hint ts_hph1 beside
-      - the fall: ts_left = GARRISON_N, then Competition[every RING_POLL_S a ring_round of the NATO units in the
-        village's circle into ts_left (modkit.ops.mission: one write a round), WaitCondition(And[ts_fall_n >= ts_left
-        (MoreOrEqual against a variable, stock's form), a Soviet command unit (forces.COMMAND_UNITS) in the circle])],
+      - the fall: ts_left = GARRISON_N, then Competition[every ZONE_POLL_S a zone_count of the NATO units in the
+        village's command zone into ts_left, WaitCondition(And[ts_fall_n >= ts_left (MoreOrEqual against a variable,
+        stock's form), a Soviet command unit (forces.COMMAND_UNITS) in the command zone: Or[And[UnitDansZone(ZoneType
+        1, AllContrainte[Team player, Type]) >= 1] per type], stock's forms (no stock UnitDansZone filters by an
+        AnyContrainte, and no stock AllContrainte holds one)])],
         then FALLEN = 1 and the zone forced to the player with the hint ts_hfall (zone_handover: the game shows nothing
-        when a zone changes hands by script) [[count-race-forced-owner]] [[zone-capture-command-units]];
+        when a zone changes hands by script) [[count-race-forced-owner]]. Both read the zone the game captures by,
+        not a detector circle inside it [[zone-capture-command-units]] [[detector-circles-only]];
       - the deadline: Competition[the fall, P1_DEADLINE_S then set_end(END_FAIL)];
       - the preparation fire (prep);
       - P1 TAKE THE VILLAGE, pinned on the village, "%1" = ts_left, done on FALLEN (design 4.1: no failure), last."""
     left, fallen, end = ctx.int_var("ts_left"), ctx.int_var(FALLEN), ctx.int_var(END)
-    ring = ctx.tag(VILLAGE_RING)
-    count = g_seq([*ring_round(ctx, ctx.group("ts_villg"), [VILLAGE_RING], lambda: c_team(ctx.camp(ENEMY)), left),
-                   g_wait(RING_POLL_S)], runs=FOREVER)
-    falls = g_and(g_cmp(ctx.int_var("ts_fall_n"), op=GE, other=left),
-                  g_detect(ring, c_any(*(c_type(u) for u in forces.COMMAND_UNITS)), 1, GE))
+    count = g_seq([zone_count(ctx, VILLAGE_ZONE, lambda: c_team(ctx.camp(ENEMY)), left, GARRISON_N),
+                   g_wait(ZONE_POLL_S)], runs=FOREVER)
+    command = g_or(*(g_and(g_units_in_zones([ctx.tag(VILLAGE_ZONE)], c_all(c_team(ctx.camp(PLAYER)), c_type(u)), 1,
+                                            GE)) for u in forces.COMMAND_UNITS))
+    falls = g_and(g_cmp(ctx.int_var("ts_fall_n"), op=GE, other=left), command)
     fall = g_seq([g_set(left, GARRISON_N), g_compete([count, g_until(falls)]), g_set(fallen, 1),
                   zone_handover(ctx, PLAYER, [VILLAGE_ZONE], "ts_hfall")])
     deadline = g_compete([g_until(g_cmp(fallen, 1)), g_seq([g_wait(P1_DEADLINE_S), set_end(end, END_FAIL)])])

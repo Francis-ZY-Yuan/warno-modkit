@@ -122,8 +122,10 @@ DECK_PAGES: tuple[DeckPage, ...] = (
 # The division's reserve: pages 3 and 4, by their 0-based place in DECK_PAGES (LockCombatGroup's index), locked from
 # the start until the village falls; the fall adds no card [[deck-page-lock]].
 RESERVE_PAGES: tuple[int, ...] = (3, 4)
-# The Soviet command units the player can field: every *_CMD_* card of the deck (a test holds it so). The village falls
-# only with one of them inside (design 5.1) [[zone-capture-command-units]].
+# The Soviet command units the player can field: every unit of the deck's cards (units and transports) and of the
+# player's scripted rows that carries the commander module in the game's unit database, the units the game captures a
+# zone with (a test derives it so; on 211352 the deck's *_CMD_* cards, and no other unit of the deck carries it). The
+# village falls only with one of them in its command zone (design 5.1) [[zone-capture-command-units]].
 COMMAND_UNITS: tuple[str, ...] = ("T80BV_CMD_SOV", "BMP_2_CMD_SOV", "MTLB_CMD_SOV", "T80U_CMD_SOV")
 
 # The deck's own name, DeckName: a stock token of the game's UNITS list, the division's own name ("79-YA GV. TANK.

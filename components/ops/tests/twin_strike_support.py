@@ -193,8 +193,8 @@ def at(steps: Steps, t: int) -> int:
 class World:
     """What the model reads of the battle, by second:
     - `rings`: a circle's or a command zone's tag name -> what its detectors (or zone counts) find -> Steps. What is a
-      camp export name (a constraint on that camp's team, alone or with unit types left out) or "cmd" (a constraint of
-      unit types only: the command units);
+      camp export name (a constraint on that camp's team, alone or with unit types left out) or "cmd" (a constraint
+      that keeps unit types, with or without a team: the command units);
     - `spent`: a group's name -> Steps of how many of its units are out of fuel or ammunition (UnitGroupWithFilter);
     - `captures`: second -> {zone tag name: camp export name}: zones taken by capture (every zone starts `owner`'s);
     - `groups`: a group's name -> Steps of its alive count, for groups the script does not fill itself;
@@ -244,9 +244,14 @@ class Model:
 
     @staticmethod
     def finds(contrainte: Node) -> str:
-        """What a detector's constraint finds (World.rings' keys)."""
+        """What a detector's constraint finds (World.rings' keys): "cmd" when it keeps unit types (a type not under a
+        NoContrainte), else its team's camp."""
+        def kept(c: Node) -> bool:
+            return c.cls == "TGDContrainteOnUnitType" or c.cls in (
+                "TGDContrainteOnUnitAllContrainte", "TGDContrainteOnUnitAnyContrainte") and any(
+                kept(k) for k in prop(c, "ContrainteList"))
         teams = [k for k in walk([contrainte]) if k.cls == "TGDContrainteOnUnitTeam"]
-        return last(prop(teams[0], "Camp")) if teams else "cmd"
+        return "cmd" if kept(contrainte) or not teams else last(prop(teams[0], "Camp"))
 
     def compare(self, left: int, op: Node) -> bool:
         other, value, kind = prop(op, "Variable"), prop(op, "Value"), prop(op, "OperatorType")

@@ -156,9 +156,10 @@ minutes per fire, then vanish)
 9. AI pathing: do the first battalion's columns drive up the roads (the main road through BOX W; the east road through
    BOX C, then west across the stream) into the village, and once there keep attacking your units rather than stand?
    Does the garrison fight from the village (into the houses, or holding its ground)?
-10. At the fall, did the village's zone turn yours, did 8,000 points arrive and then 500 a minute, and did the two
-    reserve pages unlock (T-80U obr. 1989, Ka-50, the Konkurs-M teams in BTR-80s, the Buk and Kub SAM battery, the
-    Su-24M cluster bombers and the rest)? Did the forces feel even against each battalion?
+10. At the fall, did the village's zone turn yours, and at that moment did "Village taken" show, did 8,000 points
+    arrive and then 500 a minute, and did the two reserve pages unlock (T-80U obr. 1989, Ka-50, the Konkurs-M teams
+    in BTR-80s, the Buk and Kub SAM battery, the Su-24M cluster bombers and the rest)? Did the forces feel even
+    against each battalion?
 11. The frame rate at the peak, when the second battalion appears with the first's survivors and your force on the
     map: smooth, or stuttering?
 
@@ -215,8 +216,8 @@ left)
   pages of its own [[op-exported-deck]], their names in two dictionaries of the op's appended to the game's lists
   [[deck-names-from-op-dictionaries]], the reserve's two pages locked until the village falls with the buy menu held
   in its GROUPS view [[deck-page-lock]].
-- The fall: a count in the village's circle and a command unit inside, then the zone forced to the player
-  [[count-race-forced-owner]] [[zone-capture-command-units]].
+- The fall: a count in the village's command zone and a command unit in it, the place the game captures by, then the
+  zone forced to the player [[count-race-forced-owner]] [[zone-capture-command-units]].
 - The waves and lanes: [[fast-move-and-attack-keeps-roads]], each ending with an Attack on your units
   [[wave-ends-with-attack]]; B1's count, battalion 1's tanks created less those alive: [[kill-counts-by-type]].
 - The fires: ShootOnPosition from a battery created for each fire in your allied camp, inside the playable zone, and

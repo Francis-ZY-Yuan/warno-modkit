@@ -49,10 +49,11 @@ def run(world: World, until: int, *checks: str, values: dict | None = None) -> M
 
 def village(nato: list, cmd: list | None = None, mine: list | None = None, zone: list | None = None,
             **extra) -> dict:
-    """World.rings with the village's circle (NATO's Steps, the command units' and the player's) and its command zone
-    (the player's units in it: `zone`, else as in the circle)."""
+    """World.rings with the village's command zone (NATO's Steps, the command units' and the player's: `zone`, else
+    `mine`), the place the fall and the losses read, and its circle (the player's units in it: `mine`), which none of
+    them reads."""
     mine = mine or [(0, 5)]
-    return {op.VILLAGE_RING: {NATO: nato, "cmd": cmd or [], JOUEUR: mine}, VILLAGE_CZ: {JOUEUR: zone or mine},
+    return {VILLAGE_CZ: {NATO: nato, "cmd": cmd or [], JOUEUR: zone or mine}, op.VILLAGE_RING: {JOUEUR: mine},
             **extra}
 
 
@@ -168,8 +169,8 @@ class Places(unittest.TestCase):
                 self.assertGreater(gap, 0)
 
     def test_command_units_and_infantry(self):
-        """The command units are the player's (Soviet) *_CMD_* types; NATO's infantry are NATO rows' types, every
-        carried squad among them."""
+        """The command units are the player's (Soviet) *_CMD_* types (twin strike forces' test derives them from the
+        commander module); NATO's infantry are NATO rows' types, every carried squad among them."""
         self.assertTrue(all("_CMD_" in u and u.endswith("_SOV") for u in forces.COMMAND_UNITS))
         nato = {r.unit for r in forces.ROWS if r.camp == "NATO"}
         self.assertLessEqual(set(forces.NATO_INFANTRY), nato)
@@ -306,18 +307,32 @@ class Shapes(unittest.TestCase):
 
     def test_the_fall(self):
         """Phase 1's fall waits for And[ts_fall_n >= ts_left (MoreOrEqual against a variable), a command unit of
-        forces.COMMAND_UNITS in the village's circle (>= 1)]; then FALLEN = 1 and the zone forced to the player with
-        the hint ts_hfall."""
+        forces.COMMAND_UNITS in the village's command zone], the place the game captures
+        [[zone-capture-command-units]]; then FALLEN = 1 and the zone forced to the player with the hint ts_hfall. The
+        command unit is Or[And[UnitDansZone ZoneType 1 >= 1, AllContrainte[Team player, Type]] per type], stock's
+        forms: no stock UnitDansZone filters by an AnyContrainte, and no stock AllContrainte holds one. No test of
+        the fall reads the village's circle."""
         (wait,) = [w for w in of(self.nodes, "WaitCondition") if prop(w, "Condition").cls == "TGDConditionAnd"
-                   and any(k.cls == "TGDConditionDetectUnitDansDetecteur" for k in prop(prop(w, "Condition"),
-                                                                                       "SousConditions"))]
-        left, cmd = prop(prop(wait, "Condition"), "SousConditions")
+                   and any(last(prop(k, "Variable")) == "ts_fall_n" for k in prop(prop(w, "Condition"),
+                                                                                  "SousConditions")
+                           if k.cls == "TGDConditionVariable")]
+        left, command = prop(prop(wait, "Condition"), "SousConditions")
         self.assertEqual((last(prop(left, "Variable")), last(prop(prop(left, "Operator"), "Variable")),
                           prop(prop(left, "Operator"), "OperatorType").v), ("ts_fall_n", "ts_left", shapes.GE))
-        self.assertEqual(last(prop(cmd, "Detecteur")), op.VILLAGE_RING)
-        types = [prop(c, "TypeUnit").path.rsplit("_Unit_", 1)[1] for c in prop(prop(cmd, "Contrainte"),
-                                                                                 "ContrainteList")]
+        self.assertEqual(command.cls, "TGDConditionOr")
+        types = []
+        for one in prop(command, "SousConditions"):
+            (cmd,) = prop(one, "SousConditions")
+            self.assertEqual((one.cls, cmd.cls, [last(z) for z in prop(cmd, "Detecteurs")], prop(cmd, "ZoneType").v),
+                             ("TGDConditionAnd", "TGDConditionUnitDansZone", [VILLAGE_CZ], 1))
+            team, unit = prop(prop(cmd, "Contrainte"), "ContrainteList")
+            self.assertEqual((prop(cmd, "Contrainte").cls, team.cls, last(prop(team, "Camp"))),
+                             ("TGDContrainteOnUnitAllContrainte", "TGDContrainteOnUnitTeam", JOUEUR))
+            types.append(prop(unit, "TypeUnit").path.rsplit("_Unit_", 1)[1])
         self.assertEqual(types, list(forces.COMMAND_UNITS))
+        rings = [n for n in self.nodes if n.cls == "TGDConditionDetectUnitDansDetecteur"
+                 and last(prop(n, "Detecteur")) == op.VILLAGE_RING]
+        self.assertEqual(rings, [])
         owners = [n for n in of(self.nodes, "SetCommandZoneOwner") if last(prop(n, "Camp")) == JOUEUR]
         self.assertEqual([[last(z) for z in prop(n, "Positions")] for n in owners], [[VILLAGE_CZ]])
 
@@ -622,6 +637,30 @@ class Phase1(unittest.TestCase):
         self.assertEqual(m.vars.get(op.FALLEN, 0), 0)
         self.assertEqual(m.when("owner"), [])
 
+    def test_the_zone_not_the_circle(self):
+        """Play 3 on 211352 (the 13 Nov build): the village turned the player's and nothing followed, the fall's test
+        reading the 40 px circle at its centre. The fall reads the command zone, the place the game captures: a
+        command unit at the zone's edge with the garrison down to 4 is the fall though the circle sees neither
+        [[zone-capture-command-units]]; the circle full of command units over an empty garrison is not, while the
+        zone still holds the garrison."""
+        edge = {VILLAGE_CZ: {NATO: [(0, 14), (300, 4)], "cmd": [(FALL_T, 1)]},
+                op.VILLAGE_RING: {NATO: [(0, 14)], "cmd": [(0, 0)]}}
+        m = run(World(rings=edge), FALL_T + 5, "difficulty", "phase1")
+        self.assertEqual((m.vars.get(op.FALLEN, 0), m.when("owner", JOUEUR, [VILLAGE_CZ])), (1, [FALL_T]))
+        circle = {VILLAGE_CZ: {NATO: [(0, 14)], "cmd": [(0, 0)]},
+                  op.VILLAGE_RING: {NATO: [(0, 0)], "cmd": [(0, 3)]}}
+        m = run(World(rings=circle), 600, "difficulty", "phase1")
+        self.assertEqual((m.vars.get(op.FALLEN, 0), m.when("owner")), (0, []))
+
+    def test_the_counter_reads_the_zone(self):
+        """P1's counter ts_left is the garrison left in the command zone, the place the fall reads, 14 or more
+        written as 14, a round every ZONE_POLL_S."""
+        rings = village([(0, 20), (100, 9), (200, 3)])
+        for t, left in ((50, op.GARRISON_N), (150, 9), (250, 3)):
+            with self.subTest(t=t):
+                m = run(World(rings=rings), t, "difficulty", "phase1")
+                self.assertEqual(m.vars["ts_left"], left)
+
     def test_the_deadline(self):
         """Not fallen 20 min after the launch: END_FAIL, the funnel's dialog ts_dfail and a loss (alliance 1)."""
         m = run(World(rings=village([(0, 14)], [(0, 1)])), 1210, "difficulty", "funnel", "phase1")
@@ -670,8 +709,8 @@ class Phase2(unittest.TestCase):
 
 
 class Losses(unittest.TestCase):
-    """From the fall (design 4.2): NATO owns the village for 60 s, or none of the player's units is in its circle for
-    3 min; P2."""
+    """From the fall (design 4.2): NATO owns the village for 60 s, or none of the player's units is in its command zone
+    for 3 min; P2."""
 
     def test_nato_owns_the_village(self):
         """Captured at 500 s: the warning at once, the loss 60 s on; P2 fails, the funnel ends the battle."""
