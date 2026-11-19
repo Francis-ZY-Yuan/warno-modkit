@@ -1,6 +1,7 @@
 """Tests for Twin Strike's Workshop page files (examples/twin-strike/workshop): the item.toml loads, passes
 modkit.core.workshop's offline checks, names the item and the mod its profile does, shows each half its own
-changelog and fits Steam's description limit. No network."""
+changelog (the newest releases item.toml's changes_shown allows, and where the rest are) and fits Steam's description
+limit. No network."""
 from __future__ import annotations
 
 import unittest
@@ -27,14 +28,24 @@ class Item(unittest.TestCase):
         self.assertEqual(self.item.vars, ("repo",))
 
     def test_each_half_shows_its_changelog(self):
-        text = workshop.render(workshop.uploaded(self.item), {"repo": "example.invalid/warno-modkit"})
+        item = workshop.uploaded(self.item)
+        text = workshop.render(item, {"repo": "example.invalid/warno-modkit"})
         english, chinese = text.split("[hr][/hr]")
-        for r in self.item.releases:
-            self.assertIn(r.note, english)
-            self.assertIn(r.text("zh"), chinese)
-            self.assertNotIn(r.note, chinese)
+        for n, r in enumerate(item.releases):
+            shown = item.changes_shown is None or n < item.changes_shown
+            with self.subTest(update=r.update, shown=shown):
+                self.assertEqual(r.note in english, shown)
+                self.assertEqual(r.text("zh") in chinese, shown)
+                self.assertNotIn(r.note, chinese)
+
+    def test_each_half_points_to_the_change_notes_page(self):
+        text = workshop.render(self.item, {"repo": "example.invalid/warno-modkit"})
+        page = workshop.CHANGELOG_URL.format(id=self.item.id)
+        for half in text.split("[hr][/hr]"):
+            self.assertIn(f"[url={page}]", half)
 
     def test_the_page_fits_once_next_is_uploaded(self):
+        # as Steam will hold it: [next] uploaded, and only the releases item.toml's changes_shown keeps on the page;
         # the longest path the repo can have: github.com/, a 39-character user name, /warno-modkit
         values = {"repo": "github.com/" + "x" * 39 + "/warno-modkit"}
         size = workshop.description_size(workshop.render(workshop.uploaded(self.item), values))

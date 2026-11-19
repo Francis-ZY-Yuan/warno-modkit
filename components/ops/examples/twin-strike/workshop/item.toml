@@ -7,6 +7,7 @@ mod_name = "TwinStrike"         # twinstrike.profile.MOD_NAME: Config.ini's Name
 title = "Operation Twin Strike | 双重突击行动 | The first custom scripted Operation on the Workshop (WIP)"
 description = "description.bbcode"
 changes = "changes.toml"        # the change notes, one per upload: WARNO's upload writes only a default one
+changes_shown = 1               # the page's changelog shows the newest upload; all are on the Change Notes page
 # The images are in docs/screenshots/, the one folder where the hygiene gate admits pictures. A path that starts
 # with / is from the repository root, as in the README's links.
 preview = "/docs/screenshots/twin-strike-workshop-preview.jpg"  # the main image: set by the upload, from Config.ini's PreviewImagePath

@@ -3,9 +3,13 @@
 # its note as [next]; after it, paste the note over the default on the item's Change Notes page
 # (python -m modkit.core.workshop note item.toml prints it), then rename [next] to the note's id, which
 # `workshop check` names (the update's Unix time). Steam BBCode works in a note; keep a note short, for players.
-# Each note_zh is its release's note in Simplified Chinese: the description's Changelog shows each uploaded note
-# ({{changes}}), its 更新日志 each note_zh ({{changes_zh}}), so render and paste the description again after the
-# rename. The Chinese notes are not yet reviewed by a native reader.
+# Each note_zh is its release's note in Simplified Chinese: the description's Changelog shows the newest uploaded
+# notes ({{changes}}, as many as item.toml's changes_shown), its 更新日志 their note_zh ({{changes_zh}}), so render
+# and paste the description again after the rename. The Chinese notes are not yet reviewed by a native reader.
+
+[next]
+note = "Fixed for WARNO build 212400: the game's 18 Nov update had stopped the Operation loading (an NDF parsing error at launch)."
+note_zh = "为WARNO 212400版本修复：游戏11月18日的更新导致本行动无法载入（启动时出现NDF解析错误）。"
 
 [1795010309]
 note = """
