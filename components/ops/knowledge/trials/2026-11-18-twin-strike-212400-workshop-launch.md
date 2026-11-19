@@ -31,3 +31,5 @@ check, so the game compiles their sources. A mod ships none, and the ScenarioInf
 now fails it on all four tags, naming each source and both hashes; with 211352's it passes. `python -m
 modkit.ops.coinstall` flags it as stale while it is active. The fix is a rebuild from 212400's stock and a re-upload.
 Every Workshop copy of a scenario breaks for every player at a game update that changes a scenario template.
+
+**Re-upload.** The build the modder played on 212400, made from 212400's stock, was uploaded to the same item as update 1795053656 on 2026-11-19. The installed folder's packs and `Gen/Version.ndf` were unchanged by the upload; `Config.ini` was rewritten as before (TagList set; `Description`, `CosmeticOnly` and `[Config]` dropped; `ModGenVersion` 212400). No one has yet played the copy downloaded from the Workshop.

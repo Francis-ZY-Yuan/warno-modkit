@@ -7,7 +7,7 @@
 # notes ({{changes}}, as many as item.toml's changes_shown), its 更新日志 their note_zh ({{changes_zh}}), so render
 # and paste the description again after the rename. The Chinese notes are not yet reviewed by a native reader.
 
-[next]
+[1795053656]
 note = "Fixed for WARNO build 212400: the game's 18 Nov update had stopped the Operation loading (an NDF parsing error at launch)."
 note_zh = "为WARNO 212400版本修复：游戏11月18日的更新导致本行动无法载入（启动时出现NDF解析错误）。"
 
