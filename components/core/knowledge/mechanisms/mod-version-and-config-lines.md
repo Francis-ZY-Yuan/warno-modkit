@@ -2,11 +2,11 @@
 id: mod-version-and-config-lines
 title: A mod is active only with Gen/Version.ndf, and its [Config] hashes mark it outdated after an update
 status: PLAYED
-last_verified: 211352 2026-11-18
+last_verified: 212400 2026-11-19
 source: play
 topics: [mod-packaging, game-updates]
 shapes: [modkit.core.packaging.VERSION_NDF, modkit.core.packaging.CONFIG_INI]
-trials: [2026-11-02-same-name-pack-override, 2026-11-02-new-scenario-id-loads, 2026-11-02-workshop-publishing-survey, 2026-11-06-probe2-play-run-a, 2026-11-12-build-210942-port, 2026-11-12-twin-strike-210942-play1, 2026-11-12-twin-strike-workshop-upload, 2026-11-17-build-211352-port, 2026-11-18-twin-strike-211352-play4, 2026-11-18-twin-strike-workshop-update, 2026-11-18-build-212400-port]
+trials: [2026-11-02-same-name-pack-override, 2026-11-02-new-scenario-id-loads, 2026-11-02-workshop-publishing-survey, 2026-11-06-probe2-play-run-a, 2026-11-12-build-210942-port, 2026-11-12-twin-strike-210942-play1, 2026-11-12-twin-strike-workshop-upload, 2026-11-17-build-211352-port, 2026-11-18-twin-strike-211352-play4, 2026-11-18-twin-strike-workshop-update, 2026-11-18-build-212400-port, 2026-11-19-twin-strike-212400-workshop-copy]
 stock_precedent: every current (201602) Workshop mod ships the same one-line Gen/Version.ndf
 ---
 **What the game does.** The Mod Center lists a mod folder that holds only `Config.ini` and `Scenarios/` as
@@ -33,8 +33,9 @@ outdated until it is rebuilt.
   loaded on 210942 ([[2026-11-12-twin-strike-210942-play1]]), and its Workshop copy, so stamped, was active and
   played on 211352 ([[2026-11-17-build-211352-port]]).
 - On 210942 the Workshop upload rewrites the installed `Config.ini` without the empty `[Config]` section's header line
-  (and without the `Description` and `CosmeticOnly` lines) ([[2026-11-12-twin-strike-workshop-upload]]). Whether the
-  game still lists a mod with no `[Config]` section is unseen, so packaging keeps writing it.
+  (and without the `Description` and `CosmeticOnly` lines) ([[2026-11-12-twin-strike-workshop-upload]]). The game
+  loads such a copy: the 212400 re-upload, downloaded from the Workshop, loaded with no `[Config]` section
+  ([[2026-11-19-twin-strike-212400-workshop-copy]]). Packaging keeps writing the section.
 - An upload made on a newer build stamps that build into `Config.ini`'s `ModGenVersion`, while `Gen/Version.ndf` keeps
   the build the mod was made for: the Workshop copy then no longer pairs the two lines. Twin Strike's update, uploaded
   on 212400's exe, pairs `Gen/Version.ndf` 211352 with `ModGenVersion` 212400
@@ -44,7 +45,7 @@ outdated until it is rebuilt.
 <!-- referenced-by:start -->
 ## Referenced by
 
-- Trials: [2026-11-02-new-scenario-id-loads](../../../ops/knowledge/trials/2026-11-02-new-scenario-id-loads.md), [2026-11-02-same-name-pack-override](../trials/2026-11-02-same-name-pack-override.md), [2026-11-02-workshop-publishing-survey](../trials/2026-11-02-workshop-publishing-survey.md), [2026-11-06-probe2-play-run-a](../../../ops/knowledge/trials/2026-11-06-probe2-play-run-a.md), [2026-11-12-build-210942-port](../trials/2026-11-12-build-210942-port.md), [2026-11-12-twin-strike-210942-play1](../../../ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md), [2026-11-12-twin-strike-workshop-upload](../trials/2026-11-12-twin-strike-workshop-upload.md), [2026-11-17-build-211352-port](../trials/2026-11-17-build-211352-port.md), [2026-11-18-build-212400-port](../trials/2026-11-18-build-212400-port.md), [2026-11-18-twin-strike-211352-play4](../../../ops/knowledge/trials/2026-11-18-twin-strike-211352-play4.md), [2026-11-18-twin-strike-workshop-update](../trials/2026-11-18-twin-strike-workshop-update.md)
+- Trials: [2026-11-02-new-scenario-id-loads](../../../ops/knowledge/trials/2026-11-02-new-scenario-id-loads.md), [2026-11-02-same-name-pack-override](../trials/2026-11-02-same-name-pack-override.md), [2026-11-02-workshop-publishing-survey](../trials/2026-11-02-workshop-publishing-survey.md), [2026-11-06-probe2-play-run-a](../../../ops/knowledge/trials/2026-11-06-probe2-play-run-a.md), [2026-11-12-build-210942-port](../trials/2026-11-12-build-210942-port.md), [2026-11-12-twin-strike-210942-play1](../../../ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md), [2026-11-12-twin-strike-workshop-upload](../trials/2026-11-12-twin-strike-workshop-upload.md), [2026-11-17-build-211352-port](../trials/2026-11-17-build-211352-port.md), [2026-11-18-build-212400-port](../trials/2026-11-18-build-212400-port.md), [2026-11-18-twin-strike-211352-play4](../../../ops/knowledge/trials/2026-11-18-twin-strike-211352-play4.md), [2026-11-18-twin-strike-workshop-update](../trials/2026-11-18-twin-strike-workshop-update.md), [2026-11-19-twin-strike-212400-workshop-copy](../../../ops/knowledge/trials/2026-11-19-twin-strike-212400-workshop-copy.md)
 - Shapes: [`modkit.core.packaging.VERSION_NDF`](../../src/modkit/core/packaging.py), [`modkit.core.packaging.CONFIG_INI`](../../src/modkit/core/packaging.py)
 - Skills: [`components/core/skills/warno-launch-triage/SKILL.md`](../../skills/warno-launch-triage/SKILL.md), [`components/core/skills/warno-setup/SKILL.md`](../../skills/warno-setup/SKILL.md), [`components/core/skills/warno-ship/SKILL.md`](../../skills/warno-ship/SKILL.md), [`components/core/skills/warno-ship/references/workshop-publishing.md`](../../skills/warno-ship/references/workshop-publishing.md)
 - Records: [2026-11-12-twin-strike-210942-play1](../../../ops/knowledge/trials/2026-11-12-twin-strike-210942-play1.md), [2026-11-12-twin-strike-workshop-upload](../trials/2026-11-12-twin-strike-workshop-upload.md), [2026-11-17-build-211352-port](../trials/2026-11-17-build-211352-port.md), [2026-11-18-build-212400-port](../trials/2026-11-18-build-212400-port.md), [2026-11-18-twin-strike-211352-play4](../../../ops/knowledge/trials/2026-11-18-twin-strike-211352-play4.md), [2026-11-18-twin-strike-workshop-update](../trials/2026-11-18-twin-strike-workshop-update.md), [workshop-upload-folder](workshop-upload-folder.md)

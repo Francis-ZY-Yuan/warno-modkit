@@ -28,6 +28,7 @@ Taught by the trials of these mechanisms.
 
 ## Trials, newest first
 
+- 2026-11-19 [2026-11-19-twin-strike-212400-workshop-copy](../../components/ops/knowledge/trials/2026-11-19-twin-strike-212400-workshop-copy.md) (ops): launch, pass
 - 2026-11-18 [2026-11-18-twin-strike-212400-workshop-launch](../../components/ops/knowledge/trials/2026-11-18-twin-strike-212400-workshop-launch.md) (ops): launch, fail
 - 2026-11-18 [2026-11-18-twin-strike-211352-play4](../../components/ops/knowledge/trials/2026-11-18-twin-strike-211352-play4.md) (ops): play, pass
 - 2026-11-18 [2026-11-18-build-212400-port](../../components/core/knowledge/trials/2026-11-18-build-212400-port.md) (core): survey, pass

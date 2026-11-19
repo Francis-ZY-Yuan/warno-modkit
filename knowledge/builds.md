@@ -8,11 +8,13 @@ A fact holds for the build it was last verified on. After a game update, a recor
 ### Mechanisms last verified on it
 
 - [edat-revision-chain](../components/core/knowledge/mechanisms/edat-revision-chain.md) (core): Game data is a chain of edat archives, read newest revision first (RE, 2026-11-18)
-- [txn-tag-config-hash](../components/ops/knowledge/mechanisms/txn-tag-config-hash.md) (ops): The game loads a compiled .txn only when its .txn.tag holds the ConfigHash it computes for the transaction and lists every source with the hash the install holds now; anything else makes it compile the sources (RE, 2026-11-18)
+- [mod-version-and-config-lines](../components/core/knowledge/mechanisms/mod-version-and-config-lines.md) (core): A mod is active only with Gen/Version.ndf, and its [Config] hashes mark it outdated after an update (PLAYED, 2026-11-19)
+- [txn-tag-config-hash](../components/ops/knowledge/mechanisms/txn-tag-config-hash.md) (ops): The game loads a compiled .txn only when its .txn.tag holds the ConfigHash it computes for the transaction and lists every source with the hash the install holds now; anything else makes it compile the sources (RE, 2026-11-19)
 - [workshop-upload-folder](../components/core/knowledge/mechanisms/workshop-upload-folder.md) (core): The Workshop upload sends the mod folder as it is; a scenario mod needs no generate step (PROBED, 2026-11-18)
 
 ### Trials run on it
 
+- 2026-11-19 [2026-11-19-twin-strike-212400-workshop-copy](../components/ops/knowledge/trials/2026-11-19-twin-strike-212400-workshop-copy.md) (ops): launch, pass
 - 2026-11-18 [2026-11-18-twin-strike-workshop-update](../components/core/knowledge/trials/2026-11-18-twin-strike-workshop-update.md) (core): launch, pass
 - 2026-11-18 [2026-11-18-twin-strike-212400-workshop-launch](../components/ops/knowledge/trials/2026-11-18-twin-strike-212400-workshop-launch.md) (ops): launch, fail
 - 2026-11-18 [2026-11-18-build-212400-port](../components/core/knowledge/trials/2026-11-18-build-212400-port.md) (core): survey, pass
@@ -27,7 +29,6 @@ A fact holds for the build it was last verified on. After a game update, a recor
 - [gdscript-is-what-loads](../components/ops/knowledge/mechanisms/gdscript-is-what-loads.md) (ops): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (PLAYED, 2026-11-18)
 - [load-time-validation-rules](../components/core/knowledge/mechanisms/load-time-validation-rules.md) (core): Every object is validated at load, and the first broken rule stops the load (PLAYED, 2026-11-18)
 - [menu-deck-until-setdeck](../components/ops/knowledge/mechanisms/menu-deck-until-setdeck.md) (ops): The out-game screens show the menu's deck (LocalPlayerDeck) until SetDeck runs; the battle uses SetDeck's deck (PLAYED, 2026-11-18)
-- [mod-version-and-config-lines](../components/core/knowledge/mechanisms/mod-version-and-config-lines.md) (core): A mod is active only with Gen/Version.ndf, and its [Config] hashes mark it outdated after an update (PLAYED, 2026-11-18)
 - [op-exported-deck](../components/ops/knowledge/mechanisms/op-exported-deck.md) (ops): An Operation can export its own deck from its script and give it to a camp with SetDeck (PLAYED, 2026-11-18)
 - [operation-menu-registration](../components/ops/knowledge/mechanisms/operation-menu-registration.md) (ops): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden (PLAYED, 2026-11-18)
 - [scenario-definition-layout](../components/ops/knowledge/mechanisms/scenario-definition-layout.md) (ops): Build 210942 reads a scenario's Definition files as NDF/Scenarios/<scenario>/<Kind>.txn, each beside its .txn.tag and .dbg (STOCK, 2026-11-18)

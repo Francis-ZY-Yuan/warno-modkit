@@ -18,14 +18,14 @@ A mechanism filed under two topics is listed under both.
 
 ### Mod packaging
 
-- [mod-version-and-config-lines](mechanisms/mod-version-and-config-lines.md): A mod is active only with Gen/Version.ndf, and its [Config] hashes mark it outdated after an update (PLAYED, verified 211352 2026-11-18)
+- [mod-version-and-config-lines](mechanisms/mod-version-and-config-lines.md): A mod is active only with Gen/Version.ndf, and its [Config] hashes mark it outdated after an update (PLAYED, verified 212400 2026-11-19)
 - [workshop-item-page](mechanisms/workshop-item-page.md): The upload sets a Workshop item's main image and resets its title; the item's own pages set its text and gallery (PROBED, verified 210942 2026-11-12)
 - [workshop-upload-folder](mechanisms/workshop-upload-folder.md): The Workshop upload sends the mod folder as it is; a scenario mod needs no generate step (PROBED, verified 212400 2026-11-18)
 
 ### Game updates
 
 - [load-time-validation-rules](mechanisms/load-time-validation-rules.md): Every object is validated at load, and the first broken rule stops the load (PLAYED, verified 211352 2026-11-18)
-- [mod-version-and-config-lines](mechanisms/mod-version-and-config-lines.md): A mod is active only with Gen/Version.ndf, and its [Config] hashes mark it outdated after an update (PLAYED, verified 211352 2026-11-18)
+- [mod-version-and-config-lines](mechanisms/mod-version-and-config-lines.md): A mod is active only with Gen/Version.ndf, and its [Config] hashes mark it outdated after an update (PLAYED, verified 212400 2026-11-19)
 - [workshop-upload-folder](mechanisms/workshop-upload-folder.md): The Workshop upload sends the mod folder as it is; a scenario mod needs no generate step (PROBED, verified 212400 2026-11-18)
 - [edat-revision-chain](mechanisms/edat-revision-chain.md): Game data is a chain of edat archives, read newest revision first (RE, verified 212400 2026-11-18)
 

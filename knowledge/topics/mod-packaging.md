@@ -11,7 +11,7 @@ Topic `mod-packaging`, declared by core. Back to [the map](../README.md).
 
 - [content-identity-unique](../../components/ops/knowledge/mechanisms/content-identity-unique.md): Two mods cloned from one template must not share an identity (ops, verified 201602)
 - [gameplay-mod-relaunch](../../components/ops/knowledge/mechanisms/gameplay-mod-relaunch.md): Operations and Gameplay mods don't mix; an Operation mod must ship none of the 16 Gameplay files (ops, verified 201602)
-- [mod-version-and-config-lines](../../components/core/knowledge/mechanisms/mod-version-and-config-lines.md): A mod is active only with Gen/Version.ndf, and its [Config] hashes mark it outdated after an update (core, verified 211352)
+- [mod-version-and-config-lines](../../components/core/knowledge/mechanisms/mod-version-and-config-lines.md): A mod is active only with Gen/Version.ndf, and its [Config] hashes mark it outdated after an update (core, verified 212400)
 
 ### PROBED
 
@@ -31,6 +31,7 @@ Taught by the trials of these mechanisms.
 
 ## Trials, newest first
 
+- 2026-11-19 [2026-11-19-twin-strike-212400-workshop-copy](../../components/ops/knowledge/trials/2026-11-19-twin-strike-212400-workshop-copy.md) (ops): launch, pass
 - 2026-11-18 [2026-11-18-twin-strike-workshop-update](../../components/core/knowledge/trials/2026-11-18-twin-strike-workshop-update.md) (core): launch, pass
 - 2026-11-18 [2026-11-18-twin-strike-211352-play4](../../components/ops/knowledge/trials/2026-11-18-twin-strike-211352-play4.md) (ops): play, pass
 - 2026-11-18 [2026-11-18-build-212400-port](../../components/core/knowledge/trials/2026-11-18-build-212400-port.md) (core): survey, pass

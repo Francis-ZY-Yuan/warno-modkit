@@ -2,12 +2,12 @@
 id: txn-tag-config-hash
 title: The game loads a compiled .txn only when its .txn.tag holds the ConfigHash it computes for the transaction and lists every source with the hash the install holds now; anything else makes it compile the sources
 status: RE
-last_verified: 212400 2026-11-18
+last_verified: 212400 2026-11-19
 source: exe-analysis
 topics: [files-and-formats, loading-and-crashes, game-updates]
 gates: [modkit.ops.gates.check_config_hashes, modkit.ops.gates.check_tag_sources]
 shapes: [modkit.core.txntag.config_hash]
-trials: [2026-11-12-twin-strike-launch-config-hash, 2026-11-12-config-hash-stock-survey, 2026-11-12-twin-strike-210942-play1, 2026-11-13-twin-strike-210942-play2, 2026-11-18-twin-strike-211352-play4, 2026-11-18-twin-strike-212400-workshop-launch]
+trials: [2026-11-12-twin-strike-launch-config-hash, 2026-11-12-config-hash-stock-survey, 2026-11-12-twin-strike-210942-play1, 2026-11-13-twin-strike-210942-play2, 2026-11-18-twin-strike-211352-play4, 2026-11-18-twin-strike-212400-workshop-launch, 2026-11-19-twin-strike-212400-workshop-copy]
 stock_precedent: every one of the 331 stock .txn.tag of a 210942 extraction whose transaction the data names (by a TNDFTransaction, or by a folder scan) holds exactly the computed ConfigHash, all 167 of the scenario packs' among them; in each of 211352 and 212400, the 1473 tags of the 357 stock scenario packs hold one source list per kind and one hash per source, the scenario's own folder aside
 ---
 **What the game does.** Before it loads a compiled transaction, `<BaseName>.txn`, the game computes a ConfigHash from
@@ -53,9 +53,9 @@ against its own build.
 <!-- referenced-by:start -->
 ## Referenced by
 
-- Trials: [2026-11-12-config-hash-stock-survey](../trials/2026-11-12-config-hash-stock-survey.md), [2026-11-12-twin-strike-210942-play1](../trials/2026-11-12-twin-strike-210942-play1.md), [2026-11-12-twin-strike-launch-config-hash](../trials/2026-11-12-twin-strike-launch-config-hash.md), [2026-11-13-twin-strike-210942-play2](../trials/2026-11-13-twin-strike-210942-play2.md), [2026-11-18-twin-strike-211352-play4](../trials/2026-11-18-twin-strike-211352-play4.md), [2026-11-18-twin-strike-212400-workshop-launch](../trials/2026-11-18-twin-strike-212400-workshop-launch.md)
+- Trials: [2026-11-12-config-hash-stock-survey](../trials/2026-11-12-config-hash-stock-survey.md), [2026-11-12-twin-strike-210942-play1](../trials/2026-11-12-twin-strike-210942-play1.md), [2026-11-12-twin-strike-launch-config-hash](../trials/2026-11-12-twin-strike-launch-config-hash.md), [2026-11-13-twin-strike-210942-play2](../trials/2026-11-13-twin-strike-210942-play2.md), [2026-11-18-twin-strike-211352-play4](../trials/2026-11-18-twin-strike-211352-play4.md), [2026-11-18-twin-strike-212400-workshop-launch](../trials/2026-11-18-twin-strike-212400-workshop-launch.md), [2026-11-19-twin-strike-212400-workshop-copy](../trials/2026-11-19-twin-strike-212400-workshop-copy.md)
 - Gates: [`modkit.ops.gates.check_config_hashes`](../../src/modkit/ops/gates.py), [`modkit.ops.gates.check_tag_sources`](../../src/modkit/ops/gates.py)
 - Shapes: [`modkit.core.txntag.config_hash`](../../../core/src/modkit/core/txntag.py)
 - Skills: [`components/core/skills/warno-ship/SKILL.md`](../../../core/skills/warno-ship/SKILL.md), [`components/core/skills/warno-ship/references/workshop-publishing.md`](../../../core/skills/warno-ship/references/workshop-publishing.md)
-- Records: [2026-11-12-config-hash-stock-survey](../trials/2026-11-12-config-hash-stock-survey.md), [2026-11-12-twin-strike-210942-play1](../trials/2026-11-12-twin-strike-210942-play1.md), [2026-11-12-twin-strike-launch-config-hash](../trials/2026-11-12-twin-strike-launch-config-hash.md), [2026-11-13-twin-strike-210942-play2](../trials/2026-11-13-twin-strike-210942-play2.md), [2026-11-18-build-212400-port](../../../core/knowledge/trials/2026-11-18-build-212400-port.md), [2026-11-18-twin-strike-211352-play4](../trials/2026-11-18-twin-strike-211352-play4.md), [2026-11-18-twin-strike-212400-workshop-launch](../trials/2026-11-18-twin-strike-212400-workshop-launch.md), [mod-version-and-config-lines](../../../core/knowledge/mechanisms/mod-version-and-config-lines.md), [scenario-definition-layout](scenario-definition-layout.md)
+- Records: [2026-11-12-config-hash-stock-survey](../trials/2026-11-12-config-hash-stock-survey.md), [2026-11-12-twin-strike-210942-play1](../trials/2026-11-12-twin-strike-210942-play1.md), [2026-11-12-twin-strike-launch-config-hash](../trials/2026-11-12-twin-strike-launch-config-hash.md), [2026-11-13-twin-strike-210942-play2](../trials/2026-11-13-twin-strike-210942-play2.md), [2026-11-18-build-212400-port](../../../core/knowledge/trials/2026-11-18-build-212400-port.md), [2026-11-18-twin-strike-211352-play4](../trials/2026-11-18-twin-strike-211352-play4.md), [2026-11-18-twin-strike-212400-workshop-launch](../trials/2026-11-18-twin-strike-212400-workshop-launch.md), [2026-11-19-twin-strike-212400-workshop-copy](../trials/2026-11-19-twin-strike-212400-workshop-copy.md), [mod-version-and-config-lines](../../../core/knowledge/mechanisms/mod-version-and-config-lines.md), [scenario-definition-layout](scenario-definition-layout.md)
 <!-- referenced-by:end -->

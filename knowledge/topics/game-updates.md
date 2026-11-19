@@ -13,7 +13,7 @@ Topic `game-updates`, declared by core. Back to [the map](../README.md).
 - [gdscript-is-what-loads](../../components/ops/knowledge/mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (ops, verified 211352)
 - [leveldesign-guid-binding](../../components/ops/knowledge/mechanisms/leveldesign-guid-binding.md): A script names a map item by the item's GUID in LevelDesign (210942 one GUID value, 201602 four words) (ops, verified 210942)
 - [load-time-validation-rules](../../components/core/knowledge/mechanisms/load-time-validation-rules.md): Every object is validated at load, and the first broken rule stops the load (core, verified 211352)
-- [mod-version-and-config-lines](../../components/core/knowledge/mechanisms/mod-version-and-config-lines.md): A mod is active only with Gen/Version.ndf, and its [Config] hashes mark it outdated after an update (core, verified 211352)
+- [mod-version-and-config-lines](../../components/core/knowledge/mechanisms/mod-version-and-config-lines.md): A mod is active only with Gen/Version.ndf, and its [Config] hashes mark it outdated after an update (core, verified 212400)
 - [operation-menu-registration](../../components/ops/knowledge/mechanisms/operation-menu-registration.md): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden (ops, verified 211352)
 - [script-effects-self-contained](../../components/ops/knowledge/mechanisms/script-effects-self-contained.md): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (ops, verified 210942)
 
@@ -50,6 +50,7 @@ Taught by the trials of these mechanisms.
 
 ## Trials, newest first
 
+- 2026-11-19 [2026-11-19-twin-strike-212400-workshop-copy](../../components/ops/knowledge/trials/2026-11-19-twin-strike-212400-workshop-copy.md) (ops): launch, pass
 - 2026-11-18 [2026-11-18-twin-strike-workshop-update](../../components/core/knowledge/trials/2026-11-18-twin-strike-workshop-update.md) (core): launch, pass
 - 2026-11-18 [2026-11-18-twin-strike-212400-workshop-launch](../../components/ops/knowledge/trials/2026-11-18-twin-strike-212400-workshop-launch.md) (ops): launch, fail
 - 2026-11-18 [2026-11-18-twin-strike-211352-play4](../../components/ops/knowledge/trials/2026-11-18-twin-strike-211352-play4.md) (ops): play, pass

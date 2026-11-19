@@ -90,14 +90,14 @@ A mechanism filed under two topics is listed under both.
 ### Files and formats
 
 - [gdscript-is-what-loads](mechanisms/gdscript-is-what-loads.md): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (PLAYED, verified 211352 2026-11-18)
-- [txn-tag-config-hash](mechanisms/txn-tag-config-hash.md): The game loads a compiled .txn only when its .txn.tag holds the ConfigHash it computes for the transaction and lists every source with the hash the install holds now; anything else makes it compile the sources (RE, verified 212400 2026-11-18)
+- [txn-tag-config-hash](mechanisms/txn-tag-config-hash.md): The game loads a compiled .txn only when its .txn.tag holds the ConfigHash it computes for the transaction and lists every source with the hash the install holds now; anything else makes it compile the sources (RE, verified 212400 2026-11-19)
 
 ### Loading and crashes
 
 - [ai-grid-tiles-playable-zone](mechanisms/ai-grid-tiles-playable-zone.md): The AI strategic grid must tile the playable zone (PLAYED, verified 201602 2026-11-03)
 - [changestress-damagetype-zero](mechanisms/changestress-damagetype-zero.md): A script's ChangeStress damages with Physical and cannot suppress; DamageType 0 fails at load (PLAYED, verified 210942 2026-11-12)
 - [dialog-button-ingame-dictionary](mechanisms/dialog-button-ingame-dictionary.md): Dialog button labels resolve only in the game's in-game interface dictionary (PLAYED, verified 201602 2026-11-03)
-- [txn-tag-config-hash](mechanisms/txn-tag-config-hash.md): The game loads a compiled .txn only when its .txn.tag holds the ConfigHash it computes for the transaction and lists every source with the hash the install holds now; anything else makes it compile the sources (RE, verified 212400 2026-11-18)
+- [txn-tag-config-hash](mechanisms/txn-tag-config-hash.md): The game loads a compiled .txn only when its .txn.tag holds the ConfigHash it computes for the transaction and lists every source with the hash the install holds now; anything else makes it compile the sources (RE, verified 212400 2026-11-19)
 
 ### Mod packaging
 
@@ -111,7 +111,7 @@ A mechanism filed under two topics is listed under both.
 - [leveldesign-guid-binding](mechanisms/leveldesign-guid-binding.md): A script names a map item by the item's GUID in LevelDesign (210942 one GUID value, 201602 four words) (PLAYED, verified 210942 2026-11-12)
 - [operation-menu-registration](mechanisms/operation-menu-registration.md): A new scenario id in a mod's Scenarios folder is listed and launches; a stock name is not overridden (PLAYED, verified 211352 2026-11-18)
 - [script-effects-self-contained](mechanisms/script-effects-self-contained.md): A script launches a GameFx effect that takes no parameters, or a parameterised one through a wrapper of its own that binds them (PLAYED, verified 210942 2026-11-12)
-- [txn-tag-config-hash](mechanisms/txn-tag-config-hash.md): The game loads a compiled .txn only when its .txn.tag holds the ConfigHash it computes for the transaction and lists every source with the hash the install holds now; anything else makes it compile the sources (RE, verified 212400 2026-11-18)
+- [txn-tag-config-hash](mechanisms/txn-tag-config-hash.md): The game loads a compiled .txn only when its .txn.tag holds the ConfigHash it computes for the transaction and lists every source with the hash the install holds now; anything else makes it compile the sources (RE, verified 212400 2026-11-19)
 - [game-build-classes](mechanisms/game-build-classes.md): A game update removes and renames classes and properties; a mod's files may hold only those the installed build's stock holds (STOCK, verified 210942 2026-11-12)
 - [scenario-definition-layout](mechanisms/scenario-definition-layout.md): Build 210942 reads a scenario's Definition files as NDF/Scenarios/<scenario>/<Kind>.txn, each beside its .txn.tag and .dbg (STOCK, verified 211352 2026-11-18)
 
@@ -188,6 +188,7 @@ The game's own words in this component's trials, the mechanism behind them, and 
 
 ## Trials, newest first
 
+- 2026-11-19 [2026-11-19-twin-strike-212400-workshop-copy](trials/2026-11-19-twin-strike-212400-workshop-copy.md): launch, pass
 - 2026-11-18 [2026-11-18-twin-strike-212400-workshop-launch](trials/2026-11-18-twin-strike-212400-workshop-launch.md): launch, fail. NDF parsing error. Retry? @file:ScenariosData:/challenge_OperationTwinStrike/Scenario.ndf@(0:0): File not found : 'ScenariosData:/challenge_OperationTwinStrike/Scenario.ndf'
 - 2026-11-18 [2026-11-18-twin-strike-211352-play4-loading-screen-deck](trials/2026-11-18-twin-strike-211352-play4-loading-screen-deck.md): play, pass. The loading screen shows the stock deck, not the Operation's own
 - 2026-11-18 [2026-11-18-twin-strike-211352-play4](trials/2026-11-18-twin-strike-211352-play4.md): play, pass
