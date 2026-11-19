@@ -60,7 +60,8 @@ The modder runs the upload, never Claude. Full checklist:
    coming one `[next]`), paste it over the default on the item's Change Notes page (`python -m modkit.core.workshop
    note workshop/item.toml` prints it), then rename `[next]` to the note's id, which the check names. The
    description can show the uploaded notes, newest first, with `{{changes}}` (`{{changes_<lang>}}` for a translated
-   half, from each note's `note_<lang>`); render and paste it again after the rename.
+   half, from each note's `note_<lang>`; item.toml's `changes_shown` keeps only the newest few); render and paste it
+   again after the rename.
 8. **Check the live page:** `python -m modkit.core.workshop check workshop/item.toml`.
 
 **Every later upload** resets the title to `Config.ini`'s `Name` and may add a default change note

@@ -636,6 +636,59 @@ class ChangelogPlaceholders(Env):
         code, out, _ = self.run_main("check", str(self.toml(template="x")), "--offline")
         self.assertIn("ok    size: the description is 1 bytes, of Steam's 8000", out)
 
+    # item.toml's changes_shown: the changelog shows only the newest N uploaded releases
+
+    def test_changes_shown_keeps_the_newest_uploaded_releases(self):
+        item = self.item(changes_shown=1)
+        self.assertEqual(item.changes_shown, 1)
+        self.assertEqual(workshop.changelog(item), "[list]\n[*][b]2025-11-13[/b] [b]Two[/b]\nlines\n[/list]")
+        self.assertEqual(workshop.changelog(item, "zh"), "[list]\n[*][b]2025-11-13[/b] 二\n[/list]")
+        # once [next] is uploaded it is the newest, and pushes [1762992000] out
+        self.assertEqual(workshop.changelog(workshop.uploaded(item), "zh"),
+                         "[list]\n[*][b]2025-11-13[/b] 下一个\n[/list]")
+        self.assertEqual(workshop.validate(item), [])
+        for n in (2, 3):
+            with self.subTest(n=n):
+                self.assertEqual(workshop.changelog(self.item(changes_shown=n)), self.EN)
+        self.assertIsNone(self.item().changes_shown)
+
+    def test_changes_shown_drops_a_release_from_the_page_not_the_file(self):
+        notes = self.NOTES.replace('note_zh = "一"\n', "")
+        item = self.item(notes=notes, changes_shown=1)
+        self.assertEqual(len(item.releases), 3)
+        self.assertEqual(workshop.changelog(item, "zh"), "[list]\n[*][b]2025-11-13[/b] 二\n[/list]")
+        self.assertEqual(workshop.validate(item), ["changes: [1762905600] has no note_zh, which {{changes_zh}} shows"])
+
+    def test_changes_shown_problems(self):
+        self.assertEqual(workshop.validate(self.item(changes_shown=0)), [
+            "changes_shown: 0, write 1 or more (the newest releases the changelog shows)"])
+        self.assertEqual(workshop.changelog(self.item(changes_shown=0)), "")
+        self.assertEqual(workshop.validate(self.item(changes_shown=2, template="x")), [
+            "changes_shown: the description shows no changelog ({{changes}} or {{changes_<lang>}})"])
+        for value, kind in ((True, "bool"), ("2", "str"), (1.5, "float")):
+            with (self.subTest(value=value),
+                  self.assertRaisesRegex(ValueError, rf"'changes_shown' must be int, not {kind}")):
+                self.item(changes_shown=value)
+
+    def test_changes_shown_check_counts_only_the_shown_releases(self):
+        """The size gate measures what Steam will hold after the upload: [next] in, the release it pushes out not."""
+        limited = self.item(changes_shown=1)
+        ahead = workshop.description_size(workshop.render(workshop.uploaded(limited), {}))
+        self.assertLess(ahead, workshop.description_size(workshop.render(workshop.uploaded(self.item()), {})))
+        pad = "x" * (workshop.MAX_DESCRIPTION - ahead)
+        code, out, _ = self.run_main("check", str(self.toml(template=pad + self.TEMPLATE, changes_shown=1)),
+                                     "--offline")
+        self.assertEqual(code, 0, out)
+        self.assertIn(f"ok    size: the description is {workshop.MAX_DESCRIPTION} bytes once [next] is uploaded", out)
+        code, out, _ = self.run_main("check", str(self.toml(template=pad + self.TEMPLATE)), "--offline")
+        self.assertEqual(code, 1, out)  # every release shown: over the limit
+        self.assertIn("FAIL  size: the description is", out)
+        code, out, _ = self.run_main("check", str(self.toml(template=pad + "x" + self.TEMPLATE, changes_shown=1)),
+                                     "--offline")
+        self.assertEqual(code, 1, out)
+        self.assertIn(f"FAIL  size: the description is {workshop.MAX_DESCRIPTION + 1} bytes once [next] is uploaded",
+                      out)
+
 
 if __name__ == "__main__":
     unittest.main()

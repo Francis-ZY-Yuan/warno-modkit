@@ -3,11 +3,11 @@
 An ``item.toml`` names the item and the files its page shows: ``id``, ``mod_name`` (``Config.ini``'s ``Name``, the
 title every upload resets to), ``title``, ``description`` (a BBCode template), ``preview`` (the main image), ``gallery``
 (the extra images, in order) and ``vars``, the ``{{name}}`` placeholders of the template; optionally ``changes``, the
-item's change notes (below). A path is relative to the
-toml's folder, or, when it starts with ``/``, to the repository root: the nearest folder above the toml that holds
-``.git`` (a folder, or a file in a worktree) or ``modkit.repo.toml``. A placeholder's value is personal (such as the
-GitHub owner), so it is never in the tracked files: it comes from the git-ignored ``modkit.local.toml``, table
-``[workshop.vars]``.
+item's change notes, and ``changes_shown``, how many releases the description's changelog shows (both below). A path
+is relative to the toml's folder, or, when it starts with ``/``, to the repository root: the nearest folder above the
+toml that holds ``.git`` (a folder, or a file in a worktree) or ``modkit.repo.toml``. A placeholder's value is
+personal (such as the GitHub owner), so it is never in the tracked files: it comes from the git-ignored
+``modkit.local.toml``, table ``[workshop.vars]``.
 
 The live page is read from Steam's public ``GetPublishedFileDetails``, which needs no key: the title, description,
 main image, visibility and counts, not the gallery. What sets each part of the page: [[workshop-item-page]].
@@ -27,9 +27,11 @@ listed in ``vars``: ``{{changes}}`` renders the uploaded releases, newest first,
 renders each release's ``note_<lang>`` instead (``{{changes_zh}}``: ``note_zh``), so a language's half never shows
 English, and every release then needs that note, ``[next]`` included. ``[next]`` is left out: it has no date before
 its upload, and the description is pasted after the upload, once ``[next]`` is renamed to its id, so the live page and
-the files match before and after. Steam keeps a description of at most ``MAX_DESCRIPTION`` bytes; ``check`` counts
-the rendered description as ``description_size`` does, with ``[next]`` counted as uploaded, so it fails before the
-upload whose description would not fit.
+the files match before and after. With ``changes_shown = N`` both render only the newest N uploaded releases; the
+older ones stay in the changes file and on the Change Notes page, and the template can say so in its own words.
+Steam keeps a description of at most ``MAX_DESCRIPTION`` bytes; ``check`` counts the rendered description as
+``description_size`` does, with ``[next]`` counted as uploaded (so with ``changes_shown`` the release it pushes out is
+not counted), and fails before the upload whose description would not fit.
 
   python -m modkit.core.workshop check <item.toml> [--offline]   validate, then compare with the live page
   python -m modkit.core.workshop render <item.toml>              the filled description, to paste (UTF-8)
@@ -78,7 +80,7 @@ PLACEHOLDER = re.compile(r"\{\{([A-Za-z_]\w*)\}\}")
 BRACES = re.compile(r"\{\{.*?\}\}")
 _FIELDS = {"id": int, "mod_name": str, "title": str, "description": str, "preview": str, "gallery": list,
            "vars": list}
-_OPTIONAL = {"changes": str}
+_OPTIONAL = {"changes": str, "changes_shown": int}
 NEXT = "next"  # the changes file's table for the next upload's note
 # The built-in placeholders, filled from the changes file: {{changes}} (each release's note) and {{changes_<lang>}}
 # (its note_<lang>); group 1 is the language, None for note.
@@ -126,6 +128,7 @@ class Item:
     description: Path  # the template's file; ``template`` is "" when it is missing
     changes: Path | None = None  # the change notes' file, when the toml names one
     releases: tuple[Release, ...] = ()  # read from ``changes``; () when it is missing
+    changes_shown: int | None = None  # the changelog shows only the newest this many uploaded releases; None: all
 
 
 @dataclass(frozen=True)
@@ -163,7 +166,7 @@ def load_item(path) -> Item:
         if kind is list and not all(isinstance(v, str) for v in value):
             raise ValueError(f"{path.name}: {name!r} must be a list of strings")
     for name, kind in _OPTIONAL.items():
-        if name in raw and not isinstance(raw[name], kind):
+        if name in raw and (not isinstance(raw[name], kind) or isinstance(raw[name], bool)):
             raise ValueError(f"{path.name}: {name!r} must be {kind.__name__}, not {type(raw[name]).__name__}")
     root = None
 
@@ -183,7 +186,8 @@ def load_item(path) -> Item:
     releases = load_changes(changes) if changes is not None and changes.is_file() else ()
     return Item(path=path, id=raw["id"], mod_name=raw["mod_name"], title=raw["title"], template=template,
                 preview=resolve(raw["preview"]), gallery=tuple(resolve(g) for g in raw["gallery"]),
-                vars=tuple(raw["vars"]), description=description, changes=changes, releases=releases)
+                vars=tuple(raw["vars"]), description=description, changes=changes, releases=releases,
+                changes_shown=raw.get("changes_shown"))
 
 
 def load_changes(path) -> tuple[Release, ...]:
@@ -271,6 +275,12 @@ def validate(item: Item) -> list[str]:
             out.append(f"vars: {name!r} is built in (the changelog, from the changes file), not a var")
         elif name not in used:
             out.append(f"vars: {name!r} is not used in the description")
+    if item.changes_shown is not None:
+        if item.changes_shown < 1:
+            out.append(f"changes_shown: {item.changes_shown}, write 1 or more (the newest releases the changelog "
+                       f"shows)")
+        if not builtin:
+            out.append("changes_shown: the description shows no changelog ({{changes}} or {{changes_<lang>}})")
     if item.changes is None:
         for name in builtin:
             out.append(f"description: {{{{{name}}}}} renders the change notes, but {item.path.name} names no "
@@ -297,11 +307,11 @@ def local_vars() -> dict[str, str]:
 def changelog(item: Item, lang: str | None = None) -> str:
     """The uploaded releases, newest first, as a Steam BBCode list: one item per release, its date (its ``update`` in
     UTC, ``YYYY-MM-DD``) in bold, then its note (``note_<lang>`` with ``lang``), line breaks kept. ``[next]`` is left
-    out; "" when no release is uploaded. Raises ``ValueError`` naming a release without the language's note."""
+    out, and with ``changes_shown`` every release after the newest that many; "" when no release is uploaded. Raises
+    ``ValueError`` naming a shown release without the language's note."""
     rows = []
-    for r in item.releases:
-        if r.update is None:
-            continue
+    shown = [r for r in item.releases if r.update is not None]
+    for r in shown if item.changes_shown is None else shown[:max(item.changes_shown, 0)]:
         text = r.text(lang)
         if text is None:
             raise ValueError(f"[{r.update}] of {item.changes.name} has no note_{lang}")

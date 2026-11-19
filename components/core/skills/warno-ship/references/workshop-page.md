@@ -30,6 +30,7 @@ listed in its README.
 | `description`, `preview`, `gallery` | paths relative to `item.toml`, or from the repository root when they start with `/` |
 | `vars` | the placeholders the description uses, written `{{name}}`; the changelog's (below) are built in |
 | `changes` | optional: the change notes' file (below) |
+| `changes_shown` | optional: how many releases the description's changelog shows, the newest (below) |
 
 Anything personal in the description, such as your GitHub user name in a link, is a placeholder: its value goes in
 your git-ignored `modkit.local.toml`, under `[workshop.vars]` (`repo = "github.com/<you>/<repo>"`).
@@ -46,6 +47,13 @@ list: each one's date (its id, UTC, `YYYY-MM-DD`) in bold, then its `note`. `{{c
 `note_<lang>` instead (`{{changes_zh}}` for a Chinese half), so every release then needs that note, `[next]` too, and
 the check fails on one without it: a half never falls back to English. Neither goes in `vars`. `[next]` is not
 shown: it has no date until its upload, and you paste the description after the upload, once `[next]` has its id.
+
+**A long changelog.** Every upload adds a row, and the description has a size limit (Writing it, below). With
+`changes_shown = 3` in `item.toml`, both placeholders show only the newest three uploaded releases. The older ones stay
+in `changes.toml` (each still needs its `note_<lang>`) and on the item's Change Notes page; the placeholder says
+nothing about them, so if you want a line pointing readers to that page, write it in the description after the
+placeholder, in each language. The size check counts what the page will show after the upload: `[next]` in, the
+release it pushes out not.
 
 ## What sets each part
 
