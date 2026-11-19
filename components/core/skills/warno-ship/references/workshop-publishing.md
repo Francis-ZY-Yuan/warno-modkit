@@ -84,9 +84,12 @@ produces too ([[mod-version-and-config-lines]]).
 ## After a game update
 
 The game marks a mod outdated, and switches it off, when its `Gen/Version.ndf` is missing or a `[Config]` cluster
-hash no longer matches the game. A scenario-only mod has no cluster lines, so an update rarely makes it outdated, but
-it can still break: its packs depend on the stock class schemas, map item GUIDs, dictionary tokens and the files it
-cloned. After each update: re-extract, rebuild, play it again, then upload to the same ID.
+hash no longer matches the game. A scenario-only mod has no cluster lines, so an update rarely makes it outdated.
+It breaks anyway when the update changes a scenario template: its compiled transactions are stale, and the game stops
+with "NDF parsing error. Retry?" for every player ([[txn-tag-config-hash]]). Its packs also depend on the stock class
+schemas, map item GUIDs, dictionary tokens and the files it cloned. Right after each update, run `python -m
+modkit.ops.coinstall` with the mod active; it fails a mod whose scenario tags aren't current for the newest installed
+build. Then re-extract, rebuild, play it again, and upload to the same ID.
 
 The build number in `Gen/Version.ndf` and `ModGenVersion` is not the modder's to set: both live in
 `modkit.core.packaging` (`VERSION_NDF` and `CONFIG_INI`), and a new game build needs a toolkit release that updates

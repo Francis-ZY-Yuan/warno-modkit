@@ -24,7 +24,7 @@ Topic `game-updates`, declared by core. Back to [the map](../README.md).
 ### RE
 
 - [edat-revision-chain](../../components/core/knowledge/mechanisms/edat-revision-chain.md): Game data is a chain of edat archives, read newest revision first (core, verified 212400)
-- [txn-tag-config-hash](../../components/ops/knowledge/mechanisms/txn-tag-config-hash.md): Build 210942 loads a compiled .txn only when its .txn.tag holds the ConfigHash the game computes for the transaction; any other makes it compile the sources (ops, verified 211352)
+- [txn-tag-config-hash](../../components/ops/knowledge/mechanisms/txn-tag-config-hash.md): The game loads a compiled .txn only when its .txn.tag holds the ConfigHash it computes for the transaction and lists every source with the hash the install holds now; anything else makes it compile the sources (ops, verified 212400)
 
 ### STOCK
 
@@ -51,6 +51,7 @@ Taught by the trials of these mechanisms.
 ## Trials, newest first
 
 - 2026-11-18 [2026-11-18-twin-strike-workshop-update](../../components/core/knowledge/trials/2026-11-18-twin-strike-workshop-update.md) (core): launch, pass
+- 2026-11-18 [2026-11-18-twin-strike-212400-workshop-launch](../../components/ops/knowledge/trials/2026-11-18-twin-strike-212400-workshop-launch.md) (ops): launch, fail
 - 2026-11-18 [2026-11-18-twin-strike-211352-play4](../../components/ops/knowledge/trials/2026-11-18-twin-strike-211352-play4.md) (ops): play, pass
 - 2026-11-18 [2026-11-18-build-212400-port](../../components/core/knowledge/trials/2026-11-18-build-212400-port.md) (core): survey, pass
 - 2026-11-17 [2026-11-17-build-211352-port](../../components/core/knowledge/trials/2026-11-17-build-211352-port.md) (core): survey, pass

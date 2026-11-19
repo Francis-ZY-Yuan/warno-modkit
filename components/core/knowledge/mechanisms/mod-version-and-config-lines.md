@@ -22,7 +22,7 @@ outdated until it is rebuilt.
 - A scenario-only mod has an empty `[Config]`, so an update cannot make it outdated by hash. It does break when an
   update re-ships the stock scenario templates: the tags of its compiled transactions still hold the old build's
   source hashes, so the game compiles them from sources the mod does not ship, and the load stops at "File not
-  found" for the mod's own `Scenario.ndf` ([[txn-tag-config-hash]], [[2026-11-18-build-212400-port]]). Its packs
+  found" for the mod's own `Scenario.ndf` ([[txn-tag-config-hash]], [[2026-11-18-build-212400-port]], [[2026-11-18-twin-strike-212400-workshop-launch]]). Its packs
   also depend on stock class schemas, map item GUIDs, dictionary tokens and cloned files. After each update:
   re-extract, rebuild, set the new build in `Gen/Version.ndf` and `ModGenVersion`, and play it again.
 - Whether the value in `Gen/Version.ndf` must equal the running build is not known.

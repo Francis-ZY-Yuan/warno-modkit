@@ -24,3 +24,6 @@ upload ([[2026-11-12-twin-strike-workshop-upload]]): `WARNO.exe -headless -datap
 Nothing about 212400 has been surveyed, built or played: this upload shows only that 212400's exe uploads a folder,
 not that Twin Strike, or any record, holds on 212400. Not seen: what the game makes of a Workshop copy whose two build
 lines differ.
+
+Launched on 212400, the copy this upload published stops with "NDF parsing error. Retry?"
+([[2026-11-18-twin-strike-212400-workshop-launch]]).

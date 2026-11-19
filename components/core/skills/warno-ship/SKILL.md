@@ -70,9 +70,13 @@ set `PreviewImagePath` again before uploading.
 
 ## After a game update
 
-A scenario-only mod has an empty `[Config]`, so the game won't mark it outdated, but it can still break
-([[mod-version-and-config-lines]]). Re-extract (`warno-setup`), rebuild, play it again, then re-share or re-upload to
-the same ID.
+A scenario-only mod has an empty `[Config]`, so the game won't mark it outdated ([[mod-version-and-config-lines]]).
+**But an update that changes a scenario template breaks a shared scenario for every player at the update itself:**
+its compiled transactions are stale, and the game stops with "NDF parsing error. Retry?" ([[txn-tag-config-hash]]).
+So right after a game update, before anyone reports it, run `python -m modkit.ops.coinstall` with the mod active (or
+`python -m modkit.ops.packs check <mod folder>`). Each fails a mod whose scenario tags aren't current for the newest
+installed build and names the tag and source. Then re-extract (`warno-setup`), rebuild, play it again, and re-share
+or re-upload to the same ID.
 
 The build number a mod ships, in `Gen/Version.ndf` and `ModGenVersion`, is not yours to set: it lives in
 `modkit.core.packaging` (`VERSION_NDF`, `CONFIG_INI`), so a new game build needs a toolkit release that updates it.
