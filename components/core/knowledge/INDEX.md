@@ -9,7 +9,7 @@ A mechanism filed under two topics is listed under both.
 
 - [localisation-tokens-packed](mechanisms/localisation-tokens-packed.md): Localisation keys are tokens of up to 10 characters, packed 6 bits each (PLAYED, verified 201602 2026-11-06)
 - [ndfbin-round-trip](mechanisms/ndfbin-round-trip.md): Compiled NDF (CNDF ndfbin) decodes and re-encodes byte for byte (PLAYED, verified 201602 2026-11-06)
-- [edat-revision-chain](mechanisms/edat-revision-chain.md): Game data is a chain of edat archives, read newest revision first (RE, verified 211352 2026-11-17)
+- [edat-revision-chain](mechanisms/edat-revision-chain.md): Game data is a chain of edat archives, read newest revision first (RE, verified 212400 2026-11-18)
 
 ### Loading and crashes
 
@@ -27,7 +27,7 @@ A mechanism filed under two topics is listed under both.
 - [load-time-validation-rules](mechanisms/load-time-validation-rules.md): Every object is validated at load, and the first broken rule stops the load (PLAYED, verified 211352 2026-11-18)
 - [mod-version-and-config-lines](mechanisms/mod-version-and-config-lines.md): A mod is active only with Gen/Version.ndf, and its [Config] hashes mark it outdated after an update (PLAYED, verified 211352 2026-11-18)
 - [workshop-upload-folder](mechanisms/workshop-upload-folder.md): The Workshop upload sends the mod folder as it is; a scenario mod needs no generate step (PROBED, verified 212400 2026-11-18)
-- [edat-revision-chain](mechanisms/edat-revision-chain.md): Game data is a chain of edat archives, read newest revision first (RE, verified 211352 2026-11-17)
+- [edat-revision-chain](mechanisms/edat-revision-chain.md): Game data is a chain of edat archives, read newest revision first (RE, verified 212400 2026-11-18)
 
 ## Symptom index
 
@@ -43,6 +43,7 @@ The game's own words in this component's trials, the mechanism behind them, and 
 ## Trials, newest first
 
 - 2026-11-18 [2026-11-18-twin-strike-workshop-update](trials/2026-11-18-twin-strike-workshop-update.md): launch, pass
+- 2026-11-18 [2026-11-18-build-212400-port](trials/2026-11-18-build-212400-port.md): survey, pass
 - 2026-11-17 [2026-11-17-build-211352-port](trials/2026-11-17-build-211352-port.md): survey, pass
 - 2026-11-12 [2026-11-12-twin-strike-workshop-upload](trials/2026-11-12-twin-strike-workshop-upload.md): launch, pass
 - 2026-11-12 [2026-11-12-twin-strike-workshop-page](trials/2026-11-12-twin-strike-workshop-page.md): launch, pass

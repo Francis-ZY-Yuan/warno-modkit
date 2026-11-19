@@ -7,11 +7,13 @@ A fact holds for the build it was last verified on. After a game update, a recor
 
 ### Mechanisms last verified on it
 
+- [edat-revision-chain](../components/core/knowledge/mechanisms/edat-revision-chain.md) (core): Game data is a chain of edat archives, read newest revision first (RE, 2026-11-18)
 - [workshop-upload-folder](../components/core/knowledge/mechanisms/workshop-upload-folder.md) (core): The Workshop upload sends the mod folder as it is; a scenario mod needs no generate step (PROBED, 2026-11-18)
 
 ### Trials run on it
 
 - 2026-11-18 [2026-11-18-twin-strike-workshop-update](../components/core/knowledge/trials/2026-11-18-twin-strike-workshop-update.md) (core): launch, pass
+- 2026-11-18 [2026-11-18-build-212400-port](../components/core/knowledge/trials/2026-11-18-build-212400-port.md) (core): survey, pass
 
 ## 211352
 
@@ -20,7 +22,6 @@ A fact holds for the build it was last verified on. After a game update, a recor
 - [custom-operation-from-stock-parts](../components/ops/knowledge/mechanisms/custom-operation-from-stock-parts.md) (ops): A custom Operation can be built entirely from cloned stock files plus a generated LevelDesign and GDScript (PLAYED, 2026-11-18)
 - [deck-names-from-op-dictionaries](../components/ops/knowledge/mechanisms/deck-names-from-op-dictionaries.md) (ops): A deck's page and platoon names resolve in the game's COMPANIES and PLATOONS lists, to which an Operation can append its own dictionaries (PLAYED, 2026-11-18)
 - [deck-page-lock](../components/ops/knowledge/mechanisms/deck-page-lock.md) (ops): LockCombatGroup locks a page of a camp's deck while it runs; stock holds the buy menu in its GROUPS view with the view switch hidden (PLAYED, 2026-11-18)
-- [edat-revision-chain](../components/core/knowledge/mechanisms/edat-revision-chain.md) (core): Game data is a chain of edat archives, read newest revision first (RE, 2026-11-17)
 - [gdscript-is-what-loads](../components/ops/knowledge/mechanisms/gdscript-is-what-loads.md) (ops): An Operation runs from its compiled GDScript (build 201602's ndfbin, 210942's .txn), a compiled form of the stock Python (PLAYED, 2026-11-18)
 - [load-time-validation-rules](../components/core/knowledge/mechanisms/load-time-validation-rules.md) (core): Every object is validated at load, and the first broken rule stops the load (PLAYED, 2026-11-18)
 - [menu-deck-until-setdeck](../components/ops/knowledge/mechanisms/menu-deck-until-setdeck.md) (ops): The out-game screens show the menu's deck (LocalPlayerDeck) until SetDeck runs; the battle uses SetDeck's deck (PLAYED, 2026-11-18)

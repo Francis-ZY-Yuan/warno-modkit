@@ -86,8 +86,14 @@ own, run `python -m modkit.core.gamebuild`: it prints the installed build and th
 `GAME BUILD:` warning when yours is another. The build driver prints the same warning when it starts. It is a
 warning only: nothing fails and no output changes.
 
-Eugen's game updates often change how mods are built and loaded. At 211352, little did: the load-time rules are
-210942's, and packaging stamps mods with the new build
+Eugen's game updates often change how mods are built and loaded. What changed for mods at 212400, found in
+[2026-11-18-build-212400-port](components/core/knowledge/trials/2026-11-18-build-212400-port.md):
+
+- The stock scenario templates were re-shipped, so an Operation built on 211352 stops at load with "File not found"
+  for its own `Scenario.ndf` until it is rebuilt on 212400:
+  [txn-tag-config-hash](components/ops/knowledge/mechanisms/txn-tag-config-hash.md).
+
+At 211352, little changed: the load-time rules are 210942's, and packaging stamps mods with the new build
 ([2026-11-17-build-211352-port](components/core/knowledge/trials/2026-11-17-build-211352-port.md)).
 
 What changed for mods at 210942, found in
