@@ -79,9 +79,10 @@ In a session, Claude picks a skill by what you ask; you can also call one by nam
 ## Game version
 
 This toolkit was verified on WARNO builds **201602**, **210942** and **211352**. Its core (stock paths, the load-time
-rules reader, packaging) has moved to 211352, and Twin Strike played on it
-([2026-11-18-twin-strike-211352-play4](components/ops/knowledge/trials/2026-11-18-twin-strike-211352-play4.md)). To see
-your own, run `python -m modkit.core.gamebuild`: it prints the installed build and the verified ones, and a
+rules reader) has moved to 211352, and Twin Strike played on it
+([2026-11-18-twin-strike-211352-play4](components/ops/knowledge/trials/2026-11-18-twin-strike-211352-play4.md)).
+Packaging stamps mods with the current build, 212400, which joins the verified builds after a clean play. To see your
+own, run `python -m modkit.core.gamebuild`: it prints the installed build and the verified ones, and a
 `GAME BUILD:` warning when yours is another. The build driver prints the same warning when it starts. It is a
 warning only: nothing fails and no output changes.
 

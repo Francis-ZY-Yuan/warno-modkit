@@ -24,16 +24,18 @@ CONFIG_INI = "".join(line + "\n" for line in [
     "ID = 0 ; Mod Steam ID, do not modify",
     "Version = 0 ; Value to increment when an update in this mod is incompatible with the current version",
     "DeckFormatVersion = 0 ; At least 1 for Gameplay mods. Increment this value to invalidate all decks for this mod",
-    "ModGenVersion = 211352 ; ModGen revision, do not modify",
+    "ModGenVersion = 212400 ; ModGen revision, do not modify",
     "",
     # Cluster=md5 lines go here when a mod changes a GFX cluster; this one changes none.
     CONFIG_HEADER,
 ])
 
 # Gen/Version.ndf. The game writes the build it generates a mod on into this file and into ModGenVersion: every
-# Workshop mod pairs the two with the build that made it (five builds seen, up to 201602). 211352 follows that rule;
-# no mod generated on 211352 has been seen yet. A mod stamped 210942 stayed active and played on 211352.
-VERSION_NDF = b"version is '211352'\n"
+# Workshop mod pairs the two with the build that made it (five builds seen, up to 201602). 212400 follows that rule;
+# no mod generated on 212400 has been seen yet. A mod stamped 210942 stayed active and played on 211352. A mod whose
+# Gen/Version.ndf says 211352 stayed active on 212400 (its Workshop upload there rewrote ModGenVersion to 212400): its
+# load failed on stale transaction tags, not on the stamp.
+VERSION_NDF = b"version is '212400'\n"
 
 # A mod is tagged Gameplay when it ships a file under its Gen folder whose path ends with one of these (the Gameplay
 # tag's FilesForTag in the game's NDF/ModManager.txn, build 210942; up to 201602 it was NDF/ModManager.ndfbin, which
